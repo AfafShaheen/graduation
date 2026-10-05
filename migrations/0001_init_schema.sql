@@ -109,7 +109,8 @@ CREATE TABLE graduates (
   password_hash varchar(255) NOT NULL,
   university_id varchar(100) NOT NULL,
   unique_graduate_code uuid NOT NULL DEFAULT gen_random_uuid(),
-  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT unique_graduate_college_university UNIQUE (college_id, university_id)
 );
 
 CREATE INDEX idx_graduates_college_id ON graduates(college_id);
