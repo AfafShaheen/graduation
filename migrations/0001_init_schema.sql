@@ -109,8 +109,7 @@ CREATE TABLE graduates (
   password_hash varchar(255) NOT NULL,
   university_id varchar(100) NOT NULL,
   unique_graduate_code uuid NOT NULL DEFAULT gen_random_uuid(),
-  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT unique_graduate_university_id UNIQUE (university_id)
+  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_graduates_college_id ON graduates(college_id);
@@ -193,6 +192,7 @@ CREATE TABLE qr_codes (
 
 CREATE INDEX idx_qr_codes_ticket_id ON qr_codes(ticket_id);
 CREATE INDEX idx_qr_codes_code_value ON qr_codes(code_value);
+CREATE INDEX idx_qr_codes_type ON qr_codes(code_type);
 CREATE INDEX idx_qr_codes_scanned_by_scanner_id ON qr_codes(scanned_by_scanner_id);
 CREATE INDEX idx_qr_codes_is_activated ON qr_codes(is_activated);
 
@@ -206,7 +206,7 @@ CREATE TABLE otp_codes (
   used_at timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT chk_otp_used_expired CHECK (
-    (used_at IS NULL) OR (expires_at >= used_at OR expires_at < created_at)
+    (used_at IS NULL) OR (used_at <= expires_at)
   )
 );
 
