@@ -6,7 +6,7 @@ SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
+SET search_path TO public;
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
@@ -167,11 +167,12 @@ CREATE INDEX idx_tickets_status ON tickets(status);
 CREATE TABLE payments (
   id serial PRIMARY KEY,
   ticket_id integer NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
-  transaction_number varchar(100) NOT NULL UNIQUE,
+  transaction_number varchar(100) NOT NULL,
   amount decimal(10,2) NOT NULL,
   sender_name varchar(255) NOT NULL,
   submitted_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  reviewed_at timestamp with time zone
+  reviewed_at timestamp with time zone,
+  CONSTRAINT unique_transaction_number UNIQUE (transaction_number)
 );
 
 CREATE INDEX idx_payments_ticket_id ON payments(ticket_id);

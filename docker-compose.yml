@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: graduation_db
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-secret123}
+      POSTGRES_DB: ${DATABASE_NAME:-graduation}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./back/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-postgres} -d ${DATABASE_NAME:-graduation}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  back:
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+    container_name: graduation_back
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-secret123}@db:${DATABASE_PORT:-5432}/${DATABASE_NAME:-graduation}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./back:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: graduation_front
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./front:/app
+    environment:
+      - VITE_API_URL=http://localhost:8000
+
+volumes:
+  postgres_data:
