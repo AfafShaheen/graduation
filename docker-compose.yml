@@ -57,7 +57,7 @@ services:
       dockerfile: Dockerfile
     container_name: graduation_front
     ports:
-      - "5173:5173"
+      - "5173:80"
     volumes:
       - ./front:/app
     environment:
