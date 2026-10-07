@@ -1,0 +1,607 @@
+/* ===== صفحة تأكيد البريد (OTP): بنفس هوية صفحات التسجيل وبنفس الكلاسات ev- ===== */
+
+/* التنسيقات العامة */
+.ev-app-container {
+  display: flex;
+  justify-content: center;
+  background-color: #fcf6ed;
+  color: #201b0f;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Ghroob', 'Cairo', sans-serif;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ev-mobile-shell {
+  width: 100%;
+  max-width: 100%;
+  background-color: #fcf6ed;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: none;
+  padding-bottom: 20px;
+  box-sizing: border-box;
+  isolation: isolate;
+  overflow: clip; /* بيقص النقشة الدوّارة بدون ما يكسر الهيدر والفوتر الثابتين */
+}
+
+/* نقشة SVG دوّارة خلف الصفحة (نفس صفحات التسجيل) */
+.ev-mobile-shell::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(300%, 1800px);
+  aspect-ratio: 1;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #e6d3a6;
+  opacity: 0.5;
+  -webkit-mask-image: url('../assets/pattern.svg');
+  mask-image: url('../assets/pattern.svg');
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 520px auto;
+  mask-size: 520px auto;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: ev-pattern-spin 180s linear infinite;
+  will-change: transform;
+}
+
+@keyframes ev-pattern-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-mobile-shell::before { animation: none; }
+}
+
+/* الهيدر العلوي */
+.ev-header-main {
+  width: 100%;
+  background-color: #124d44;
+  color: #ffffff;
+  border-top: 3px solid #ca4b00;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.ev-header-top {
+  width: 100%;
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.ev-header-title {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  text-align: center;
+}
+
+.ev-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ev-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.ev-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* لوغو اتحاد الطلبة (عنصر غير قابل للضغط) */
+.ev-icon-btn.static {
+  cursor: default;
+}
+
+.ev-icon-btn.static:hover {
+  background-color: transparent;
+}
+
+.ev-icon-btn.static:active {
+  transform: none;
+}
+
+.ev-header-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+}
+
+.ev-header-subband {
+  background-color: rgba(18, 77, 68, 0.95);
+  padding: 6px 16px 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ev-subband-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff8f1;
+}
+
+.ev-badge-batch {
+  background-color: #d94e00;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* شريط التقدم */
+.ev-progress-section {
+  padding: 14px 16px 8px 16px;
+}
+
+.ev-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.ev-progress-title {
+  color: #201b0f;
+}
+
+.ev-progress-percent {
+  color: #ca4b00;
+}
+
+.ev-progress-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  height: 8px;
+}
+
+.ev-progress-fill {
+  background-color: #ca4b00;
+  border-radius: 9999px;
+}
+
+/* المحتوى الرئيسي */
+.ev-main-stage {
+  flex: 1;
+  margin: 0 clamp(12px, 4vw, 16px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* البطاقة البيضاء */
+.ev-ticket-card {
+  background-color: #ffffff;
+  border-radius: 24px;
+  padding: 24px 16px;
+  border: 1px solid #eedebd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.ev-emblem-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  background-color: #124d44;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  margin-bottom: 16px;
+}
+
+.ev-card-headline {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 800;
+  color: #124d44;
+  margin: 0 0 8px 0;
+}
+
+.ev-card-subtext {
+  font-size: 13px;
+  line-height: 22px;
+  color: #725b51;
+  max-width: 290px;
+  margin: 0 0 12px 0;
+}
+
+/* البريد الإلكتروني وزر التعديل */
+.ev-email-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f8edd9;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  margin-bottom: 8px;
+  border: 1px solid #eedebd;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ev-email-address {
+  font-size: 13px;
+  line-height: 18px;
+  color: #201b0f;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.ev-pill-dot {
+  color: #e2bfb2;
+}
+
+.ev-edit-btn {
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 14px;
+  color: #ca4b00;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  white-space: nowrap;
+  transition: transform 0.15s ease;
+}
+
+.ev-edit-btn:hover {
+  text-decoration: underline;
+}
+
+.ev-edit-btn:active {
+  transform: scale(0.95);
+}
+
+/* خانات الـ OTP */
+.ev-otp-form {
+  width: 100%;
+}
+
+.ev-otp-wrapper {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.ev-otp-label {
+  display: block;
+  font-size: 13px;
+  line-height: 16px;
+  color: #201b0f;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.ev-otp-inputs-grid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(4px, 1.6vw, 8px);
+  direction: ltr;
+}
+
+.ev-otp-field {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 52px;
+  height: 52px;
+  padding: 0;
+  text-align: center;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  color: #124d44;
+  background-color: #fffdfa;
+  border: 1px solid #e2bfb2;
+  border-radius: 12px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+}
+
+.ev-otp-field:focus {
+  border-color: #124d44;
+  box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.15);
+  background-color: #ffffff;
+}
+
+.ev-otp-field:disabled:not(.success) {
+  opacity: 0.6;
+}
+
+/* رمز خاطئ */
+.ev-otp-field.error {
+  border-color: #ba1a1a;
+  background-color: #fdecec;
+  color: #ba1a1a;
+}
+
+/* رمز صحيح: المربعات تصير خضراء */
+.ev-otp-field.success {
+  background-color: #1e8a5a;
+  border-color: #1e8a5a;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  opacity: 1;
+}
+
+.ev-otp-inputs-grid.shake {
+  animation: ev-otp-shake 0.4s ease;
+}
+
+@keyframes ev-otp-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-otp-inputs-grid.shake { animation: none; }
+}
+
+/* رسائل الخطأ والنجاح تحت الخانات */
+.ev-otp-message {
+  min-height: 20px;
+  margin-top: 10px;
+}
+
+.ev-error-text,
+.ev-success-text {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.ev-error-text {
+  color: #ba1a1a;
+}
+
+.ev-success-text {
+  color: #1e8a5a;
+}
+
+/* العدّاد وإعادة الإرسال */
+.ev-meta-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 18px;
+  margin: 12px 0 16px 0;
+}
+
+.ev-timer-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #594138;
+  font-weight: 500;
+}
+
+.ev-timer-badge.expired {
+  color: #ba1a1a;
+  font-weight: 700;
+}
+
+.ev-timer-text {
+  color: #201b0f;
+  font-weight: 700;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-resend-btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8d7166;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.ev-resend-btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ev-resend-btn.active {
+  color: #ca4b00;
+  cursor: pointer;
+}
+
+.ev-resend-btn.active:hover {
+  text-decoration: underline;
+}
+
+/* صندوق الملاحظة */
+.ev-info-box {
+  width: 100%;
+  background-color: #f8edd9;
+  border-radius: 12px;
+  padding: 10px 12px;
+  border: 1px solid #eedebd;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: right;
+  box-sizing: border-box;
+}
+
+.ev-info-text {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #594138;
+  margin: 0;
+  flex: 1;
+}
+
+.ev-info-text strong {
+  font-weight: 700;
+  color: #201b0f;
+}
+
+.ev-support-link-wrapper {
+  text-align: center;
+  margin: 16px 0;
+}
+
+.ev-support-link {
+  font-size: 12px;
+  color: #594138;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.ev-support-link:hover {
+  color: #ca4b00;
+}
+
+/* الشريط السفلي والزر */
+.ev-footer-section {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  margin-top: auto;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
+  background-color: rgba(252, 246, 237, 0.95);
+  backdrop-filter: blur(4px);
+  z-index: 20;
+  border-top: 1px solid #eedebd;
+  box-sizing: border-box;
+}
+
+.ev-submit-btn {
+  width: 100%;
+  height: 52px;
+  background-color: #124d44;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 9999px;
+  border: 1px solid rgba(202, 75, 0, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.ev-submit-btn:hover {
+  background-color: #1d6358;
+}
+
+.ev-submit-btn:active {
+  transform: scale(0.98);
+}
+
+.ev-submit-btn:disabled {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.ev-institutional-label {
+  text-align: center;
+  font-size: 11px;
+  color: #725b51;
+  margin: 8px 0 0 0;
+}
+
+/* أيقونات Material Symbols */
+.ev-symbol {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+}
+
+/* ===== Responsive ===== */
+
+/* شاشات صغيرة جداً */
+@media (max-width: 359px) {
+  .ev-header-title { font-size: 15px; }
+  .ev-card-headline { font-size: 16px; }
+  .ev-ticket-card { padding: 20px 12px; }
+  .ev-otp-field { height: 46px; font-size: 20px; }
+}
+
+/* تابلت ولابتوب */
+@media (min-width: 600px) {
+  .ev-app-container { padding: 24px 0; }
+  .ev-mobile-shell {
+    max-width: 560px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-radius: 24px;
+  }
+  .ev-header-top,
+  .ev-header-subband { padding-left: 24px; padding-right: 24px; }
+  .ev-progress-section { padding: 16px 24px 8px; }
+  .ev-main-stage { margin: 0 24px; }
+  .ev-ticket-card { padding: 28px 20px; }
+  .ev-footer-section { padding: 12px 24px 16px; }
+}
+
+@media (min-width: 1024px) {
+  .ev-app-container { padding: 40px 0; }
+  .ev-mobile-shell { max-width: 640px; }
+  .ev-ticket-card { padding: 32px 28px; }
+}

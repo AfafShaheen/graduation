@@ -4,19 +4,56 @@
   justify-content: center;
   background-color: #fcf6ed;
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: 'Ghroob', sans-serif;
   direction: rtl;
 }
 
 .mobile-shell {
   width: 100%;
-  max-width: 390px;
+  max-width: 100%;
   background-color: #fcf6ed;
   display: flex;
   flex-direction: column;
   position: relative;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   padding-bottom: 20px;
+  isolation: isolate;
+  overflow: clip; /* بيقص النقشة الدوّارة بدون ما يكسر الهيدر والفوتر الثابتين */
+}
+
+/* نقشة SVG خلف كل الصفحة (اللون من background-color والشكل من الـ SVG) */
+/* مربع كبير بنص الصفحة بيدور ببطء، فما بتبين حواف النقشة وقت الدوران */
+.mobile-shell::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(300%, 1800px);
+  aspect-ratio: 1;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #e6d3a6; /* لون النقشة: كريمي */
+  opacity: 0.5;              /* كل ما قلّ الرقم صارت أكتر شفافية */
+  -webkit-mask-image: url('../assets/pattern.svg');
+  mask-image: url('../assets/pattern.svg');
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 520px auto; /* كبّر الرقم لتصير الزخارف أكبر */
+  mask-size: 520px auto;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: pattern-spin 180s linear infinite; /* دورة كاملة كل 180 ثانية، صغّر الرقم لتدور أسرع */
+  will-change: transform;
+}
+
+@keyframes pattern-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* للي مفعّل "تقليل الحركة" بجهازه: بدون دوران */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-shell::before { animation: none; }
 }
 
 /* الهيدر العلوي */
@@ -54,12 +91,22 @@
   padding: 4px;
 }
 
+/* لوغو اتحاد الطلبة بالهيدر */
+.header-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+}
+
 .header-subband {
   background-color: rgba(18, 77, 68, 0.95);
   padding: 6px 16px 10px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -101,7 +148,7 @@
 
 .progress-bar-bg {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   height: 8px;
 }
@@ -118,7 +165,7 @@
 
 /* بطاقة النموذج */
 .form-card {
-  margin: 0 16px;
+  margin: 0 clamp(12px, 4vw, 16px);
   background-color: #ffffff;
   border-radius: 24px;
   padding: 20px 16px;
@@ -133,12 +180,15 @@
   border-bottom: 1px solid #f2e7d3;
 }
 
+/* لوغو الجامعة أبيض، فالخلفية خضرا غامقة ليبين */
 .logo-circle {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 1px solid #eedebd;
-  background-color: #fcf6ed;
+  border: 1px solid #124d44;
+  background-color: #124d44;
+  padding: 6px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,7 +245,8 @@
   background-color: #fffdfa;
   border: 1px solid #e2bfb2;
   font-family: 'Ghroob', sans-serif;
-  font-size: 14px;
+  /* 16px تمنع الآيفون من عمل زوم عند الضغط على الحقل */
+  font-size: 16px;
   color: #201b0f;
   outline: none;
   box-sizing: border-box;
@@ -219,6 +270,15 @@
 .form-input.error,
 .form-select.error {
   border-color: #ba1a1a;
+}
+
+/* رسالة الخطأ تحت الحقل */
+.error-text {
+  color: #ba1a1a;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 4px 0 0 0;
+  line-height: 1.4;
 }
 
 .input-icon {
@@ -267,12 +327,15 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  align-items: start;
 }
 
 .label-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   margin-bottom: 6px;
 }
 
@@ -311,7 +374,7 @@
   position: sticky;
   bottom: 0;
   width: 100%;
-  padding: 12px 16px 16px 16px;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
   background-color: rgba(252, 246, 237, 0.95);
   backdrop-filter: blur(4px);
   z-index: 20;
@@ -362,4 +425,81 @@
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
+}
+
+/* ===== Responsive ===== */
+
+/* شاشات صغيرة جداً: اسم الأب والأم تحت بعض */
+@media (max-width: 359px) {
+  .grid-two-cols {
+    grid-template-columns: 1fr;
+  }
+  .header-title { font-size: 15px; }
+  .card-title { font-size: 16px; }
+  .form-card { padding: 16px 12px; }
+}
+
+/* تابلت ولابتوب */
+@media (min-width: 600px) {
+  .app-container { padding: 24px 0; }
+  .mobile-shell {
+    max-width: 560px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-radius: 24px;
+    overflow: clip;
+  }
+  .header-top,
+  .header-subband { padding-left: 24px; padding-right: 24px; }
+  .progress-section { padding: 16px 24px 8px; }
+  .form-card { margin: 0 24px; padding: 24px 20px; }
+  .footer-deck { padding: 12px 24px 16px; }
+  .form-input,
+  .form-select { font-size: 14px; }
+}
+
+@media (min-width: 1024px) {
+  .app-container { padding: 40px 0; }
+  .mobile-shell { max-width: 640px; }
+  .form-card { padding: 28px; }
+}
+
+
+/* تحسينات حقل كلمة السر ورابط تسجيل الدخول في Step2 */
+.password-toggle-btn {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #8d7166;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  z-index: 2;
+}
+
+.password-toggle-btn:hover {
+  color: #124d44;
+}
+
+.password-toggle-btn svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.login-link {
+  color: #ca4b00;
+  font-weight: bold;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.login-link:hover {
+  text-decoration: underline;
 }

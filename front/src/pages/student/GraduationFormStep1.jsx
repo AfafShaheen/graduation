@@ -1,8 +1,58 @@
 import React, { useState } from 'react';
 import '../../style/GraduationForm.css';
+import universityLogo from '../../assets/homs-university-white.png';
+import unionLogo from '../../assets/only-logo.png';
+import useFormDraft from '../../hooks/useFormDraft';
 
-export default function GraduationFormStep1() {
-  const [formData, setFormData] = useState({
+/* حروف عربية ومسافات فقط (بدون أرقام أو رموز) */
+const ARABIC_ONLY = /^[\u0621-\u064A\u064B-\u0652\s]+$/;
+/* أرقام فقط، بدون تحديد عدد معين */
+const DIGITS_ONLY = /^[0-9]+$/;
+
+/* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
+const validators = {
+  fullName: (v) => {
+    const t = v.trim().replace(/\s+/g, ' ');
+    if (!t) return 'الاسم والكنية مطلوبان';
+    if (!ARABIC_ONLY.test(t)) return 'يرجى كتابة الاسم بحروف عربية فقط';
+    if (t.split(' ').length < 2) return 'يرجى كتابة الاسم والكنية (كلمتان على الأقل)';
+    return '';
+  },
+  faculty: (v) => (v ? '' : 'اختر الكلية'),
+  studentId: (v) => {
+    const t = v.trim();
+    if (!t) return 'الرقم الجامعي مطلوب';
+    if (!DIGITS_ONLY.test(t)) return 'يجب أن يكون الرقم الجامعي أرقاماً فقط';
+    return '';
+  },
+  fatherName: (v) => {
+    const t = v.trim();
+    if (!t) return 'اسم الأب مطلوب';
+    if (!ARABIC_ONLY.test(t)) return 'يجب أن يتكون اسم الأب من حروف عربية فقط';
+    if (t.length < 2) return 'اسم الأب قصير جداً';
+    return '';
+  },
+  motherName: (v) => {
+    const t = v.trim();
+    if (!t) return 'اسم الأم مطلوب';
+    if (!ARABIC_ONLY.test(t)) return 'يجب أن يتكون اسم الأم من حروف عربية فقط';
+    if (t.length < 2) return 'اسم الأم قصير جداً';
+    return '';
+  },
+};
+
+function FieldError({ message }) {
+  if (!message) return null;
+  return (
+    <p className="error-text" role="alert">
+      {message}
+    </p>
+  );
+}
+
+export default function GraduationFormStep1({ onNext }) {
+  // البيانات محفوظة بـ sessionStorage حتى ما تضيع عند الرجوع
+  const [formData, setFormData] = useFormDraft('step1', {
     fullName: '',
     gender: 'male',
     faculty: '',
@@ -12,13 +62,15 @@ export default function GraduationFormStep1() {
   });
 
   const [errors, setErrors] = useState({});
+  const [submitted, setSubmitted] = useState(false); // الأخطاء ما بتبين إلا بعد أول ضغطة على الزر
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: false }));
+    // بعد أول ضغطة على الزر، الخطأ بيتحدّث مباشرة أثناء الكتابة
+    if (submitted && validators[name]) {
+      setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
     }
   };
 
@@ -28,21 +80,27 @@ export default function GraduationFormStep1() {
 
   const handleNextStep = (e) => {
     e.preventDefault();
+    if (isLoading) return;
+
     const newErrors = {};
+    Object.keys(validators).forEach((name) => {
+      newErrors[name] = validators[name](formData[name]);
+    });
+    setErrors(newErrors);
+    setSubmitted(true);
 
-    if (!formData.fullName.trim()) newErrors.fullName = true;
-    if (!formData.faculty) newErrors.faculty = true;
-    if (!formData.studentId.trim()) newErrors.studentId = true;
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    // إذا في أي خطأ: وقّف وروح لأول حقل فيه خطأ
+    const firstInvalid = Object.keys(newErrors).find((k) => newErrors[k]);
+    if (firstInvalid) {
+      document.getElementsByName(firstInvalid)[0]?.focus();
       return;
     }
 
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      alert('تم تأكيد بيانات المرحلة الأولى بنجاح! الانتقال إلى خطوة معلومات التواصل.');
+      if (onNext) onNext(formData);
+      else alert('تم تأكيد بيانات المرحلة الأولى بنجاح! الانتقال إلى خطوة معلومات التواصل.');
     }, 700);
   };
 
@@ -57,7 +115,7 @@ export default function GraduationFormStep1() {
             </button>
             <h1 className="header-title">حفل تخرج جامعة حمص</h1>
             <div className="icon-btn">
-              <span className="material-symbols-outlined">school</span>
+              <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
             </div>
           </div>
           <div className="header-subband">
@@ -69,11 +127,12 @@ export default function GraduationFormStep1() {
         {/* شريط التقدم */}
         <section className="progress-section">
           <div className="progress-labels">
-            <span className="progress-title">خطوة 1 من 2: معلومات التخرج الأساسية</span>
-            <span className="progress-percent">50%</span>
+            <span className="progress-title">خطوة 1 من 3: معلومات التخرج الأساسية</span>
+            <span className="progress-percent">33%</span>
           </div>
           <div className="progress-bar-bg">
             <div className="progress-bar-fill"></div>
+            <div className="progress-bar-empty"></div>
             <div className="progress-bar-empty"></div>
           </div>
         </section>
@@ -82,34 +141,33 @@ export default function GraduationFormStep1() {
         <div className="form-card">
           <div className="card-header">
             <div className="logo-circle">
-              <img
-                src="https://lh3.googleusercontent.com/aida/AEtjO1W5XnO0ut9JGDdrQCNqF9P1fgvLHu3gUDkgwxkzUj3d9vtprfhpfij06j5-ElsJkkhxSu2QtNIve8z8vrepio8875EyWlYGVHfLMGD43j5Iy0dd8xoOVJh5l3L3fwHNfJFwM2UjxlUYDaIgDgfl9Sw_fgI7bGNeZaIdgac5UPNEBuObWoE-UsNnRJ6UNS_IbPP_LvoWN8iA67rrrhBCqNrxUxkp2FjAicCcbp5q6GnE0NOGuEM0s6IpS3Q"
-                alt="شعار جامعة البعث"
-              />
+              <img src={universityLogo} alt="شعار جامعة حمص" />
             </div>
             <div>
-              <h2 className="card-title">ألف مبروك التخرج! 🎓</h2>
+              <h2 className="card-title">ألف مبروك التخرج </h2>
               <p className="card-subtitle">سجّل بياناتك لتأكيد حجز مقعدك وتذكرتك الرقمية</p>
             </div>
           </div>
 
-          <form onSubmit={handleNextStep}>
-            {/* الاسم الثلاثي */}
+          <form onSubmit={handleNextStep} noValidate>
+            {/* الاسم والكنية */}
             <div className="form-group">
               <label className="form-label">
-                الاسم الثلاثي الكامل <span className="required-star">*</span>
+                الاسم والكنية <span className="required-star">*</span>
               </label>
               <div className="input-wrapper">
                 <input
                   type="text"
                   name="fullName"
                   className={`form-input input-with-icon ${errors.fullName ? 'error' : ''}`}
-                  placeholder="مثلاً: مجد أحمد العلي"
+                  placeholder="مثلاً: مجد العلي"
                   value={formData.fullName}
                   onChange={handleInputChange}
+                  aria-invalid={!!errors.fullName}
                 />
                 <span className="material-symbols-outlined input-icon">badge</span>
               </div>
+              <FieldError message={errors.fullName} />
             </div>
 
             {/* الجنس */}
@@ -152,6 +210,7 @@ export default function GraduationFormStep1() {
                   className={`form-select select-with-icon ${errors.faculty ? 'error' : ''}`}
                   value={formData.faculty}
                   onChange={handleInputChange}
+                  aria-invalid={!!errors.faculty}
                 >
                   <option value="" disabled>
                     اختر كليتك من القائمة...
@@ -167,6 +226,7 @@ export default function GraduationFormStep1() {
                 </select>
                 <span className="material-symbols-outlined input-icon">expand_more</span>
               </div>
+              <FieldError message={errors.faculty} />
             </div>
 
             {/* الرقم الجامعي */}
@@ -179,15 +239,18 @@ export default function GraduationFormStep1() {
               </div>
               <div className="input-wrapper">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   name="studentId"
                   className={`form-input input-with-icon ${errors.studentId ? 'error' : ''}`}
                   placeholder="مثلاً: 201910432"
                   value={formData.studentId}
                   onChange={handleInputChange}
+                  aria-invalid={!!errors.studentId}
                 />
                 <span className="material-symbols-outlined input-icon">pin</span>
               </div>
+              <FieldError message={errors.studentId} />
             </div>
 
             {/* اسم الأب والأم */}
@@ -199,11 +262,13 @@ export default function GraduationFormStep1() {
                 <input
                   type="text"
                   name="fatherName"
-                  className="form-input"
+                  className={`form-input ${errors.fatherName ? 'error' : ''}`}
                   placeholder="اسم الوالد"
                   value={formData.fatherName}
                   onChange={handleInputChange}
+                  aria-invalid={!!errors.fatherName}
                 />
+                <FieldError message={errors.fatherName} />
               </div>
               <div>
                 <label className="form-label">
@@ -212,11 +277,13 @@ export default function GraduationFormStep1() {
                 <input
                   type="text"
                   name="motherName"
-                  className="form-input"
+                  className={`form-input ${errors.motherName ? 'error' : ''}`}
                   placeholder="الاسم والكنية"
                   value={formData.motherName}
                   onChange={handleInputChange}
+                  aria-invalid={!!errors.motherName}
                 />
+                <FieldError message={errors.motherName} />
               </div>
             </div>
 
@@ -242,7 +309,7 @@ export default function GraduationFormStep1() {
               </>
             )}
           </button>
-          <p className="footer-copy">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+          <p className="footer-copy">جامعة حمص • اتحاد الطلبة فرع حمص</p>
         </div>
       </main>
     </div>
