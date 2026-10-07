@@ -1,0 +1,35 @@
+
+@font-face {
+  font-family: 'Ghroob';
+  src: url('./assets/fonts/itfGhroobArabic-Light.otf') format('opentype');
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Ghroob';
+  src: url('./assets/fonts/itfGhroobArabic-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Ghroob';
+  src: url('./assets/fonts/itfGhroobArabic-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Ghroob';
+  src: url('./assets/fonts/itfGhroobArabic-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Ghroob';
+  src: url('./assets/fonts/itfGhroobArabic-ExtraBold.otf') format('opentype');
+  font-weight: 800;
+  font-display: swap;
+}
