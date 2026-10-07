@@ -3,23 +3,26 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
+NAME_REGEX = r"^[\u0600-\u06FFa-zA-Z\s]{2,255}$"
+PHONE_REGEX = r"^\+?[0-9]{7,15}$"
+
 class UserCreate(BaseModel):
-    full_name: str = Field(..., min_length=2, max_length=255)
+    full_name: str = Field(..., pattern=NAME_REGEX, description="Full name must contain letters only.")
     gender: str = Field(..., min_length=3, max_length=10)
-    college_id: int
+    college_id: int = Field(..., gt=0)
     email: EmailStr
-    phone: str = Field(..., min_length=5, max_length=50)
-    father_name: str = Field(..., min_length=2, max_length=255)
-    mother_name: str = Field(..., min_length=2, max_length=255)
-    password: str = Field(..., min_length=6)
+    phone: str = Field(..., pattern=PHONE_REGEX, description="Phone number must contain digits only.")
+    father_name: str = Field(..., pattern=NAME_REGEX, description="Father's name must contain letters only.")
+    mother_name: str = Field(..., pattern=NAME_REGEX, description="Mother's name must contain letters only.")
+    password: str = Field(..., min_length=8, description="Password must be at least 8 characters long.")
     university_id: str = Field(..., min_length=1, max_length=100)
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str] = Field(None, min_length=2, max_length=255)
-    phone: Optional[str] = Field(None, min_length=5, max_length=50)
-    father_name: Optional[str] = Field(None, min_length=2, max_length=255)
-    mother_name: Optional[str] = Field(None, min_length=2, max_length=255)
-    password: Optional[str] = Field(None, min_length=6)
+    full_name: Optional[str] = Field(None, pattern=NAME_REGEX)
+    phone: Optional[str] = Field(None, pattern=PHONE_REGEX)
+    father_name: Optional[str] = Field(None, pattern=NAME_REGEX)
+    mother_name: Optional[str] = Field(None, pattern=NAME_REGEX)
+    password: Optional[str] = Field(None, min_length=8)
 
 class UserSoftDelete(BaseModel):
     is_active: bool = False

@@ -1,11 +1,10 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv(
+raw_url = os.getenv(
     "DATABASE_URL",
     f"postgresql://{os.getenv('DATABASE_USERNAME', 'postgres')}:"
     f"{os.getenv('DATABASE_PASSWORD', 'secret123')}@"
@@ -14,12 +13,35 @@ DATABASE_URL = os.getenv(
     f"{os.getenv('DATABASE_NAME', 'graduation')}"
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Ensure asyncpg driver is used in DATABASE_URL
+if raw_url.startswith("postgresql://") and "+asyncpg" not in raw_url:
+    DATABASE_URL = raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+else:
+    DATABASE_URL = raw_url
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_size=20,
+    max_overflow=10,
+    echo=True,  # bing is true
+    pool_pre_ping=True
+)
+
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False
+)
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()

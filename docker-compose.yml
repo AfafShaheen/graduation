@@ -19,6 +19,19 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: graduation_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+
   back:
     build:
       context: ./back
@@ -27,9 +40,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-secret123}@db:${DATABASE_PORT:-5432}/${DATABASE_NAME:-graduation}
+      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-secret123}@db:${DATABASE_PORT:-5432}/${DATABASE_NAME:-graduation}
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./back:/app
@@ -49,3 +65,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:

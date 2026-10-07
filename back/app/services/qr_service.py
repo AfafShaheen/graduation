@@ -1,16 +1,18 @@
-"""Shared helpers for QR code value generation and companion activation.
+"""Shared helpers for QR code value generation, companion activation, and secure scanning.
 
 Constraints:
 - No database connections are created here; the caller passes a live session.
-- No authentication or business rules (payment status, registration window...).
+- Uses row-level locking (.with_for_update()) to prevent race conditions during concurrent scans (FR-25 / UC-11).
 - The caller owns the transaction and commits.
 """
 
 import enum
 import secrets
+from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, Column, Integer, MetaData, Table, Text, update
+from sqlalchemy import Boolean, Column, Integer, MetaData, Table, Text, update, select
 from sqlalchemy.orm import Session
+from app.models.qr_code import QrCodeModel
 
 
 class QrCodeType(str, enum.Enum):
@@ -62,3 +64,35 @@ def activate_companion_codes(db: Session, ticket_id: int) -> int:
     )
     db.flush()
     return result.rowcount
+
+
+def scan_qr_code(db: Session, code_value, scanner_id: int) -> dict:
+    """Scan and activate a QR code using row-level locking (.with_for_update()).
+
+    This is the core implementation for FR-25 and UC-11, ensuring that no two
+    scanners can scan the exact same QR code simultaneously.
+    """
+    # Select For Update: locks this row in the database until the transaction completes.
+    qr_record = db.execute(
+        select(QrCodeModel)
+        .where(QrCodeModel.code_value == code_value)
+        .with_for_update()
+    ).scalar_one_or_none()
+
+    if qr_record is None:
+        return {"status": "not_found", "message": "الرمز غير معروف"}
+
+    if qr_record.is_activated:
+        return {"status": "already_used", "message": "رمز مستخدم سابقاً"}
+
+    now = datetime.now(UTC)
+    qr_record.is_activated = True
+    qr_record.scanned_at = now
+    qr_record.scanned_by_scanner_id = scanner_id
+
+    # If it's a graduate code, activate companion codes (UC-12)
+    if qr_record.code_type == QrCodeTypeEnum.GRADUATE.value if hasattr(QrCodeTypeEnum, "GRADUATE") else qr_record.code_type == "GRADUATE":
+        activate_companion_codes(db, qr_record.ticket_id)
+
+    db.flush()
+    return {"status": "success", "message": "تم تسجيل الدخول بنجاح"}
