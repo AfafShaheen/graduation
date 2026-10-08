@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import users, auth
+from app.routers import graduates, auth, admin_graduates
 
 app = FastAPI(
     title="Graduation Ticket System API",
@@ -7,8 +7,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
-app.include_router(users.router)
+app.include_router(graduates.router)
 app.include_router(auth.router)
+app.include_router(admin_graduates.router)
 
 @app.get("/")
 def read_root():

@@ -9,7 +9,7 @@ raw_url = os.getenv(
     f"postgresql://{os.getenv('DATABASE_USERNAME', 'postgres')}:"
     f"{os.getenv('DATABASE_PASSWORD', 'secret123')}@"
     f"{os.getenv('DATABASE_HOST', 'localhost')}:"
-    f"{os.getenv('DATABASE_PORT', '5433')}/"
+    f"{os.getenv('DATABASE_PORT', '5432')}/"
     f"{os.getenv('DATABASE_NAME', 'graduation')}"
 )
 
