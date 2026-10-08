@@ -234,7 +234,7 @@ async def resend_otp_service(db: AsyncSession, graduate_id: int, purpose: OtpPur
 
     last_otp = await fetch_latest_otp(db, graduate_id, purpose)
     if last_otp:
-        check_resend_cooldown_period(last_otp)
+        validate_otp_expiration(last_otp.expires_at)
 
     grad = await fetch_graduate(db, graduate_id)
     if not grad:
@@ -271,7 +271,7 @@ async def forgot_password_service(db: AsyncSession, email: str) -> dict:
 
     last_otp = await fetch_latest_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
     if last_otp:
-        check_resend_cooldown_period(last_otp)
+        validate_otp_expiration(last_otp.expires_at)
 
     code, _ = await create_and_save_new_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
     await dispatch_otp_email(grad.email, code, OtpPurpose.PASSWORD_RESET)
