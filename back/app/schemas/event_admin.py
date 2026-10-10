@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
+from typing import List, Optional
 
 class EventCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -12,11 +12,12 @@ class EventCreate(BaseModel):
     is_3companions_enabled: bool = True
     price_2_companions: Decimal = Field(..., ge=Decimal("0.00"))
     price_3_companions: Decimal = Field(..., ge=Decimal("0.00"))
+    college_names: List[str] = Field(..., min_items=1)
 
     @model_validator(mode="after")
     def validate_dates(self) -> "EventCreate":
         if self.registration_end < self.registration_start:
-            raise ValueError("Registration end date cannot be before registration start date.")
+            raise ValueError("تاريخ نهاية التسجيل يجب ألا يكون قبل تاريخ بداية التسجيل.")
         return self
 
 class EventUpdate(BaseModel):
@@ -32,8 +33,13 @@ class EventUpdate(BaseModel):
     @model_validator(mode="after")
     def validate_dates(self) -> "EventUpdate":
         if self.registration_start and self.registration_end and self.registration_end < self.registration_start:
-            raise ValueError("Registration end date cannot be before registration start date.")
+            raise ValueError("تاريخ نهاية التسجيل يجب ألا يكون قبل تاريخ بداية التسجيل.")
         return self
+
+class CollegeItem(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
 
 class EventResponse(BaseModel):
     id: int
@@ -46,4 +52,10 @@ class EventResponse(BaseModel):
     price_2_companions: Decimal
     price_3_companions: Decimal
     created_at: datetime
+    colleges: List[CollegeItem] = []
+    model_config = ConfigDict(from_attributes=True)
+
+class EventListResponse(BaseModel):
+    total: int
+    items: List[EventResponse]
     model_config = ConfigDict(from_attributes=True)
