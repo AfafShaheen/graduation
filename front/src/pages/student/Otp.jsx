@@ -26,13 +26,33 @@ const ERROR_MESSAGES = {
 
 const emptyOtp = () => Array(CODE_LENGTH).fill('');
 
+/* نصوص الهيدر وشريط التقدم حسب نوع المسار */
+const FLOWS = {
+  register: {
+    subtitle: 'إنشاء حساب',
+    progressTitle: 'خطوة 3 من 3: تأكيد البريد الإلكتروني',
+    percent: '100%',
+    total: 3,
+    done: 3,
+  },
+  reset: {
+    subtitle: 'استعادة كلمة السر',
+    progressTitle: 'خطوة 1 من 2: تأكيد البريد الإلكتروني',
+    percent: '50%',
+    total: 2,
+    done: 1,
+  },
+};
+
 export default function Otp({
+  mode = 'register', // register | reset
   email = 'student@gmail.com',
   onBack,
   onVerified,
   onResend,
   verifyCode = mockVerify,
 }) {
+  const flow = FLOWS[mode] || FLOWS.register;
   const [otp, setOtp] = useState(emptyOtp());
   const [timer, setTimer] = useState(CODE_LIFETIME);
   const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN);
@@ -244,21 +264,27 @@ export default function Otp({
           </div>
 
           <div className="ev-header-subband">
-            <span className="ev-subband-title">إنشاء حساب</span>
+            <span className="ev-subband-title">{flow.subtitle}</span>
             <span className="ev-badge-batch">دفعة 2026</span>
           </div>
         </header>
 
-        {/* شريط التقدم 100% */}
+        {/* شريط التقدم */}
         <section className="ev-progress-section">
           <div className="ev-progress-labels">
-            <span className="ev-progress-title">خطوة 3 من 3: تأكيد البريد الإلكتروني</span>
-            <span className="ev-progress-percent">100%</span>
+            <span className="ev-progress-title">{flow.progressTitle}</span>
+            <span className="ev-progress-percent">{flow.percent}</span>
           </div>
-          <div className="ev-progress-bar">
-            <div className="ev-progress-fill"></div>
-            <div className="ev-progress-fill"></div>
-            <div className="ev-progress-fill"></div>
+          <div
+            className="ev-progress-bar"
+            style={{ gridTemplateColumns: `repeat(${flow.total}, 1fr)` }}
+          >
+            {Array.from({ length: flow.total }).map((_, i) => (
+              <div
+                key={i}
+                className={i < flow.done ? 'ev-progress-fill' : 'ev-progress-empty'}
+              ></div>
+            ))}
           </div>
         </section>
 

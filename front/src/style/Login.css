@@ -1,0 +1,496 @@
+/* ==========================================================================
+   صفحة تسجيل الدخول (.lg-*): بنفس هوية صفحات التسجيل
+   ========================================================================== */
+
+/* حاوية الصفحة */
+.lg-app-container {
+  display: flex;
+  justify-content: center;
+  background-color: #fcf6ed;
+  color: #201b0f;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Ghroob', 'Cairo', sans-serif;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+.lg-mobile-shell {
+  width: 100%;
+  max-width: 100%;
+  background-color: #fcf6ed;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: none;
+  padding-bottom: 20px;
+  box-sizing: border-box;
+  isolation: isolate;
+  overflow: clip; /* بيقص النقشة الدوّارة بدون ما يكسر الهيدر الثابت */
+}
+
+/* نقشة SVG دوّارة خلف الصفحة (نفس صفحات التسجيل) */
+.lg-mobile-shell::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(300%, 1800px);
+  aspect-ratio: 1;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #e6d3a6;
+  opacity: 0.5;
+  -webkit-mask-image: url('../assets/pattern.svg');
+  mask-image: url('../assets/pattern.svg');
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 520px auto;
+  mask-size: 520px auto;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: lg-pattern-spin 180s linear infinite;
+  will-change: transform;
+}
+
+@keyframes lg-pattern-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-mobile-shell::before { animation: none; }
+}
+
+/* الهيدر العلوي */
+.lg-header-main {
+  width: 100%;
+  background-color: #124d44;
+  color: #ffffff;
+  border-top: 3px solid #ca4b00;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.lg-header-top {
+  width: 100%;
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.lg-header-title {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  text-align: center;
+}
+
+.lg-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lg-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.lg-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* لوغو اتحاد الطلبة (عنصر غير قابل للضغط) */
+.lg-icon-btn.static {
+  cursor: default;
+}
+
+.lg-icon-btn.static:hover {
+  background-color: transparent;
+}
+
+.lg-icon-btn.static:active {
+  transform: none;
+}
+
+.lg-header-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+}
+
+.lg-header-subband {
+  background-color: rgba(18, 77, 68, 0.95);
+  padding: 6px 16px 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lg-subband-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff8f1;
+}
+
+.lg-badge-batch {
+  background-color: #d94e00;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* المحتوى الرئيسي */
+.lg-main-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 clamp(12px, 4vw, 16px);
+  padding: 20px 0;
+  box-sizing: border-box;
+}
+
+/* البطاقة البيضاء */
+.lg-ticket-card {
+  background-color: #ffffff;
+  border-radius: 24px;
+  padding: 24px 16px;
+  border: 1px solid #eedebd;
+  position: relative;
+}
+
+.lg-card-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* لوغو الجامعة أبيض، فالخلفية خضرا غامقة ليبين */
+.lg-logo-wrapper {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background-color: #124d44;
+  padding: 12px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lg-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.lg-card-headline {
+  font-size: 22px;
+  line-height: 32px;
+  font-weight: 800;
+  color: #124d44;
+  margin: 0 0 8px 0;
+}
+
+.lg-card-subtext {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #725b51;
+  max-width: 290px;
+  margin: 0;
+}
+
+/* الفورم */
+.lg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lg-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lg-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.lg-label {
+  font-size: 13px;
+  line-height: 18px;
+  color: #201b0f;
+  font-weight: 700;
+  text-align: right;
+  display: block;
+}
+
+.lg-forgot-link {
+  font-size: 12px;
+  line-height: 14px;
+  font-weight: 700;
+  color: #ca4b00;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.lg-forgot-link:hover {
+  text-decoration: underline;
+}
+
+.lg-input-wrapper {
+  position: relative;
+  border-radius: 12px;
+  border: 1px solid #e2bfb2;
+  background-color: #fffdfa;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lg-input-wrapper:focus-within {
+  border-color: #124d44;
+  box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
+}
+
+.lg-input-wrapper.error {
+  border-color: #ba1a1a;
+}
+
+.lg-input-wrapper.error:focus-within {
+  box-shadow: 0 0 0 3px rgba(186, 26, 26, 0.12);
+}
+
+.lg-input-icon-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  padding-right: 14px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: #8d7166;
+}
+
+.lg-input-icon-left {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  padding-left: 14px;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: #8d7166;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.lg-input-icon-left:hover {
+  color: #124d44;
+}
+
+.lg-input {
+  width: 100%;
+  height: 46px;
+  padding-right: 44px;
+  padding-left: 14px;
+  border-radius: 12px;
+  /* 16px تمنع الآيفون من عمل زوم عند الضغط على الحقل */
+  font-size: 16px;
+  color: #201b0f;
+  border: none;
+  background: transparent;
+  box-sizing: border-box;
+  font-family: inherit;
+  text-align: left;
+}
+
+.lg-input.has-left-icon {
+  padding-left: 44px;
+}
+
+.lg-input::placeholder {
+  color: rgba(89, 65, 56, 0.45);
+}
+
+.lg-input:focus {
+  outline: none;
+}
+
+/* رسالة نجاح أعلى البطاقة (مثلاً بعد تغيير كلمة السر) */
+.lg-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #e6f4ec;
+  border: 1px solid #b9dfc9;
+  color: #17603f;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* رسالة الخطأ تحت الحقل */
+.lg-error-text {
+  color: #ba1a1a;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* زر الدخول */
+.lg-submit-btn {
+  width: 100%;
+  height: 52px;
+  margin-top: 8px;
+  border-radius: 9999px;
+  background-color: #124d44;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(202, 75, 0, 0.2);
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.lg-submit-btn:hover {
+  background-color: #1d6358;
+}
+
+.lg-submit-btn:active {
+  transform: scale(0.98);
+}
+
+/* الفاصل وروابط التسجيل */
+.lg-divider-text {
+  text-align: center;
+  margin: 20px 0 12px 0;
+  font-size: 12px;
+  color: #725b51;
+  font-weight: 700;
+}
+
+.lg-register-prompt {
+  text-align: center;
+  font-size: 13px;
+  color: #594138;
+  margin: 0;
+}
+
+.lg-register-link {
+  font-weight: 700;
+  color: #ca4b00;
+  text-decoration: none;
+}
+
+.lg-register-link:hover {
+  text-decoration: underline;
+}
+
+/* التذييل */
+.lg-footer {
+  margin-top: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lg-footer-org {
+  font-size: 11px;
+  color: #725b51;
+  margin: 0;
+}
+
+.lg-footer-copy {
+  font-size: 10px;
+  color: #8d7166;
+  margin: 0;
+}
+
+/* أيقونات Material Symbols */
+.lg-symbol {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+}
+
+/* ===== Responsive ===== */
+
+/* شاشات صغيرة جداً */
+@media (max-width: 359px) {
+  .lg-header-title { font-size: 15px; }
+  .lg-card-headline { font-size: 19px; }
+  .lg-ticket-card { padding: 20px 12px; }
+}
+
+/* تابلت ولابتوب */
+@media (min-width: 600px) {
+  .lg-app-container { padding: 24px 0; }
+  .lg-mobile-shell {
+    max-width: 560px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-radius: 24px;
+  }
+  .lg-header-top,
+  .lg-header-subband { padding-left: 24px; padding-right: 24px; }
+  .lg-main-stage { margin: 0 24px; }
+  .lg-ticket-card { padding: 28px 24px; }
+  .lg-input { font-size: 14px; }
+}
+
+@media (min-width: 1024px) {
+  .lg-app-container { padding: 40px 0; }
+  .lg-mobile-shell { max-width: 640px; }
+  .lg-ticket-card { padding: 32px 32px; }
+}

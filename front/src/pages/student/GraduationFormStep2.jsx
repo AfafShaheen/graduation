@@ -4,8 +4,8 @@ import universityLogo from "../../assets/homs-university-white.png";
 import unionLogo from "../../assets/only-logo.png";
 import useFormDraft from "../../hooks/useFormDraft";
 
-/* رقم سوري: 09 وبعدها 8 أرقام */
-const PHONE = /^09[0-9]{8}$/;
+/* رقم سوري: 9 وبعدها 8 أرقام (بدون الصفر، لأن +963 ظاهرة بالحقل) */
+const PHONE = /^9[0-9]{8}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
@@ -15,7 +15,7 @@ const validators = {
     if (!t) return "يرجى إدخال رقم الهاتف";
     if (!/^[0-9]+$/.test(t)) return "يجب أن يكون رقم الهاتف أرقاماً فقط";
     if (!PHONE.test(t))
-      return "يجب أن يبدأ رقم الهاتف بـ 09 وأن يتكون من 10 أرقام";
+      return "يجب أن يبدأ رقم الهاتف بـ 9 وأن يتكون من 9 أرقام";
     return "";
   },
   email: (v) => {
@@ -49,7 +49,11 @@ function FieldError({ message }) {
   );
 }
 
-export default function GraduationFormStep2({ onBack, onNext }) {
+export default function GraduationFormStep2({
+  onBack,
+  onNext,
+  onNavigateToLogin,
+}) {
   // الهاتف والإيميل بنحفظهم، أما كلمة السر فلا (ما منخزّنها بالمتصفح)
   const [contact, setContact] = useFormDraft("step2", { phone: "", email: "" });
   const [password, setPassword] = useState("");
@@ -64,10 +68,21 @@ export default function GraduationFormStep2({ onBack, onNext }) {
     let { name, value } = e.target;
 
     if (name === "phone") {
-      value = value
+      let digits = value
         .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d)) // الأرقام العربية → إنجليزية
-        .replace(/\D/g, "") // أرقام فقط
-        .slice(0, 10); // 10 أرقام كحد أقصى
+        .replace(/\D/g, ""); // أرقام فقط
+
+      // لصق رقم بصيغة +963... أو 00963...
+      if (digits.length > 9 && digits.startsWith("963")) {
+        digits = digits.slice(3);
+      }
+      // حذف الأصفار من البداية (لصق 09...)
+      digits = digits.replace(/^0+/, "");
+
+      // أول رقم لازم يكون 9
+      if (digits && digits[0] !== "9") return;
+
+      value = digits.slice(0, 9); // 9 أرقام كحد أقصى
     }
 
     if (name === "password") setPassword(value);
@@ -197,7 +212,7 @@ export default function GraduationFormStep2({ onBack, onNext }) {
                   name="phone"
                   autoComplete="off"
                   className={`form-input ${errors.phone ? "error" : ""}`}
-                  placeholder="09xxxxxxxx"
+                  placeholder="9xxxxxxxx"
                   style={{
                     paddingRight: "40px",
                     paddingLeft: "56px",
@@ -230,7 +245,6 @@ export default function GraduationFormStep2({ onBack, onNext }) {
                 </span>
               </div>
               <FieldError message={errors.phone} />
-             
             </div>
 
             {/* البريد الإلكتروني */}
@@ -263,8 +277,8 @@ export default function GraduationFormStep2({ onBack, onNext }) {
                 </span>
               </div>
               <FieldError message={errors.email} />
-               <p className="label-hint" style={{ marginTop: "4px" }}>
-               سيتم ارسال الرمز عبر بريدك الالكترونيّ
+              <p className="label-hint" style={{ marginTop: "4px" }}>
+                سيتم إرسال الرمز عبر بريدك الإلكتروني
               </p>
             </div>
 
@@ -357,8 +371,17 @@ export default function GraduationFormStep2({ onBack, onNext }) {
         <div style={{ textAlign: "center", margin: "16px 0" }}>
           <p style={{ fontSize: "13px", color: "#725b51", margin: 0 }}>
             هل لديك حساب مسبقاً؟{" "}
-            <a href="/login" className="login-link">
-              سجّل دخولك &lsaquo;
+            <a
+              href="/login"
+              className="login-link"
+              onClick={(e) => {
+                if (onNavigateToLogin) {
+                  e.preventDefault();
+                  onNavigateToLogin();
+                }
+              }}
+            >
+              سجّل دخولك
             </a>
           </p>
         </div>

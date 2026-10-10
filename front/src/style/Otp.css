@@ -192,6 +192,11 @@
   border-radius: 9999px;
 }
 
+.ev-progress-empty {
+  background-color: #eedebd;
+  border-radius: 9999px;
+}
+
 /* المحتوى الرئيسي */
 .ev-main-stage {
   flex: 1;
