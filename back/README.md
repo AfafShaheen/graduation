@@ -16,6 +16,10 @@ back/
     main.py      # تطبيق FastAPI (نقطة الدخول)
   migrations/
     0001_init_schema.sql   # مخطط قاعدة البيانات الأولي (لا يُعدَّل، تغييرات المخطط عبر Alembic)
+  alembic/
+    env.py                 # بيئة Alembic (async) — يقرأ الـ URL من app.core.database
+    versions/              # مراجعات الترحيل (migrations)
+  alembic.ini              # إعدادات Alembic (بدون الـ URL؛ يُؤخذ من التطبيق)
   scripts/
     create_admin.py        # إنشاء/تعديل حساب المسؤول الوحيد
   tests/                   # الاختبارات (pytest)
@@ -50,6 +54,26 @@ docker compose exec back python -m scripts.create_admin --username admin
 - يُطلب إدخال كلمة السر مرّتين (لا تُمرَّر كوسيط سطري)، بحد أدنى 12 حرفاً.
 - السكربت يرفض إنشاء مسؤول ثانٍ ويعيد رمز خروج غير صفري.
 - لتغيير كلمة سر المسؤول الموجود: أضف `--reset-password`.
+
+## ترحيل قاعدة البيانات (Alembic)
+
+تُدار تغييرات المخطط عبر Alembic (async). المراجعة `0001_baseline` تمثّل
+المخطط الذي يُنشئه `0001_init_schema.sql`، ويُطبَّق `alembic upgrade head`
+تلقائياً عند إقلاع حاوية الـ backend وقبل تشغيل الاختبارات.
+
+```sh
+# ترقية قاعدة البيانات إلى أحدث مراجعة
+docker compose exec back python -m alembic upgrade head
+
+# إنشاء مراجعة جديدة بفارق تلقائي (autogenerate) بعد تعديل نماذج SQLAlchemy
+docker compose exec back python -m alembic revision --autogenerate -m "وصف التغيير"
+
+# الرجوع خطوة واحدة (تنفيذ الدالة downgrade)
+docker compose exec back python -m alembic downgrade -1
+```
+
+مُلاحظة: لا تُخزَّن بيانات الاتصال في `alembic.ini` — يأخذ Alembic URL قاعدة
+البيانات من `app.core.database.DATABASE_URL` نفسها التي يستخدمها التطبيق.
 
 ## تشغيل الاختبارات
 

@@ -13,6 +13,8 @@ never touched.
 
 import os
 import secrets
+import subprocess
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -88,6 +90,29 @@ def _connect(dbname: str):
     return psycopg2.connect(url.render_as_string(hide_password=False))
 
 
+def _alembic_upgrade_head() -> None:
+    """Run ``alembic upgrade head`` as a subprocess.
+
+    Alembic's async environment runs ``asyncio.run`` internally, so it cannot
+    execute inside the pytest event loop (asyncpg/redis would bind to the wrong
+    loop). A subprocess avoids the whole problem.
+    """
+    backend_dir = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd=str(backend_dir),
+        env=os.environ.copy(),
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            "alembic upgrade head failed:\n"
+            + result.stdout
+            + result.stderr
+        )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _prepare_database():
     """Drop/create the test DB and load the base schema exactly once."""
@@ -108,6 +133,11 @@ def _prepare_database():
         conn.commit()
     finally:
         conn.close()
+
+    # 0001_init_schema.sql creates the base schema; the baseline Alembic
+    # revision represents exactly that state, so from here on the schema
+    # evolves only through revisions (0002_... etc.).
+    _alembic_upgrade_head()
 
     yield
 
