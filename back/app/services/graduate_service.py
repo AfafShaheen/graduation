@@ -9,9 +9,11 @@ from app.models.event import EventModel
 from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request
 from app.services.email_service import OtpPurpose
 from app.services.auth_service import issue_and_send_otp
+from sqlalchemy.exc import IntegrityError
 from app.core import messages
 from app.core.redis import redis_client
 from app.core.security import secret_key, create_verification_token
+from app.services.settings_service import get_setting, CONTACT_PHONE
 import bcrypt
 import re
 from jose import jwt, JWTError
@@ -19,6 +21,16 @@ from jose import jwt, JWTError
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 15
 _VERIFICATION_FIELD = "verification" + "_token"
+
+
+async def _generic_verify_fail(db: AsyncSession) -> str:
+    phone = await get_setting(db, CONTACT_PHONE)
+    return messages.append_contact_phone(messages.GENERIC_VERIFY_FAIL, phone)
+
+
+async def _register_fail(db: AsyncSession) -> str:
+    phone = await get_setting(db, CONTACT_PHONE)
+    return messages.append_contact_phone(messages.REGISTER_FAIL, phone)
 
 
 def normalize_arabic(text: str) -> str:
@@ -59,7 +71,7 @@ async def check_step1_rate_limit(university_id: str) -> None:
         if attempts and int(attempts) >= 10:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many verification attempts. Please try again later."
+                detail=messages.VERIFY_RATE_LIMITED
             )
         await redis_client.incr(key)
         await redis_client.expire(key, 300)
@@ -78,7 +90,7 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     if existing_grad.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="University ID already registered (الرقم الجامعي مسجل مسبقاً)."
+            detail=await _generic_verify_fail(db)
         )
 
     uni_record_result = await db.execute(
@@ -92,7 +104,7 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     if not uni_record:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Student record not found in university records (سجل الطالب غير موجود في السجلات الجامعية)."
+            detail=await _generic_verify_fail(db)
         )
 
     if (
@@ -103,7 +115,7 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Student record not found in university records (سجل الطالب غير موجود في السجلات الجامعية أو البيانات غير مطابقة)."
+            detail=await _generic_verify_fail(db)
         )
 
     token_payload = {
@@ -143,7 +155,7 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
     if email_check.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="البريد الإلكتروني مسجل مسبقاً."
+            detail=await _register_fail(db)
         )
 
     password_hash = bcrypt.hashpw(data.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
@@ -160,9 +172,17 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
         password_hash=password_hash,
         university_id=university_id
     )
-    db.add(new_graduate)
-    await db.flush()
-    await db.refresh(new_graduate)
+    try:
+        db.add(new_graduate)
+        await db.flush()
+        await db.refresh(new_graduate)
+    except IntegrityError:
+        # Race between two concurrent registrations (unique email/university id).
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _register_fail(db)
+        )
 
     sent = await issue_and_send_otp(db, new_graduate, OtpPurpose.EMAIL_VERIFICATION, new_graduate.email)
 

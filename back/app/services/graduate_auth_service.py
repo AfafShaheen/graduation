@@ -7,6 +7,7 @@ from app.schemas.auth import GraduateLoginRequest
 from app.core.redis import redis_client
 from app.core.security import (
     verify_password,
+    get_password_hash,
     create_access_token,
     create_verification_token,
     secret_key,
@@ -14,8 +15,10 @@ from app.core.security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 from jose import jwt
+import uuid
 
 _VERIFICATION_FIELD = "verification" + "_token"
+_DUMMY_HASH = get_password_hash(uuid.uuid4().hex)
 
 
 async def check_graduate_login_rate_limit(email: str) -> None:
@@ -71,7 +74,17 @@ async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
     result = await db.execute(stmt)
     graduate = result.scalar_one_or_none()
 
-    if not graduate or not verify_password(data.password, graduate.password_hash):
+    if not graduate:
+        # Run a dummy bcrypt check so an unknown email and a wrong password
+        # take the same time (do not reveal which emails exist).
+        verify_password(data.password, _DUMMY_HASH)
+        await increment_graduate_login_failure(data.email)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="البريد الإلكتروني أو كلمة السر غير صحيحة."
+        )
+
+    if not verify_password(data.password, graduate.password_hash):
         await increment_graduate_login_failure(data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

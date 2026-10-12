@@ -15,7 +15,8 @@ from app.services.email_service import (
 )
 from app.core.redis import redis_client
 from app.core import messages
-from app.core.security import create_graduate_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.services.graduate_auth_service import create_graduate_access_token
 import hmac
 import bcrypt
 
@@ -288,7 +289,7 @@ async def forgot_password_service(db: AsyncSession, email: str) -> dict:
 async def reset_password_service(db: AsyncSession, email: str, code: str, new_password: str) -> dict:
     grad = await fetch_graduate_by_email(db, email)
     if not grad:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="البريد الإلكتروني غير مسجل.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     redis_attempts = await check_redis_failed_attempts(str(grad.id))
     if check_failed_attempts(redis_attempts):
@@ -299,10 +300,10 @@ async def reset_password_service(db: AsyncSession, email: str, code: str, new_pa
 
     otp_row = await fetch_latest_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
     if not otp_row or otp_row.used_at is not None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="رمز التحقق غير موجود أو مستخدم مسبقاً.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     if not validate_otp_expiration(otp_row.expires_at):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="انتهت صلاحية رمز التحقق.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     if check_failed_attempts(otp_row.failed_attempts) or check_failed_attempts(redis_attempts):
         raise HTTPException(
@@ -318,7 +319,7 @@ async def reset_password_service(db: AsyncSession, email: str, code: str, new_pa
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Too many failed attempts. Request a new code."
             )
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="رمز التحقق غير صحيح.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     await mark_otp_as_used(db, otp_row)
     await update_graduate_password(db, grad, new_password)
