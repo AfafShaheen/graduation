@@ -256,9 +256,10 @@ async def revert_scan_service(db: AsyncSession, graduate_id: int, admin: dict) -
     if grad_qr.scanned_at is None and not scanned_companions:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.NOTHING_TO_REVERT)
 
-    # D5: reverting clears the graduate scan and every companion scan, and
-    # deactivates the companion codes so they must follow the graduate again.
-    grad_qr.is_activated = False
+    # D5: the graduate code stays activated after a revert so the graduate can
+    # be scanned again; only its scan markers are cleared. Companion codes are
+    # frozen again so they must follow the graduate anew.
+    grad_qr.is_activated = True
     grad_qr.scanned_at = None
     grad_qr.scanned_by_scanner_id = None
     db.add(grad_qr)

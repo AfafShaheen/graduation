@@ -7,9 +7,14 @@ admin API, including the guard rails added in Phase 2.
 from sqlalchemy import select
 
 from app.core import messages
-from app.models.qr_code import QrCodeModel
+from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
-from app.services.qr_service import issue_qr_codes_for_ticket
+from app.services.admin_graduate_service import revert_scan_service
+from app.services.qr_service import (
+    ScanDecision,
+    issue_qr_codes_for_ticket,
+    scan_qr_code,
+)
 
 _PW_FIELD = "pass" + "word"
 _ADMIN_PW = "Admin" + "Pass" + "123!"
@@ -113,7 +118,67 @@ async def test_revert_scan_nothing_then_reset(
     ).scalars().all()
     assert len(codes) == 4
     assert all(code.scanned_at is None for code in codes)
-    assert all(code.is_activated is False for code in codes)
+    graduate_codes = [c for c in codes if c.code_type == QrCodeTypeEnum.GRADUATE]
+    companion_codes = [c for c in codes if c.code_type == QrCodeTypeEnum.COMPANION]
+    assert len(graduate_codes) == 1
+    assert graduate_codes[0].is_activated is True
+    assert all(c.is_activated is False for c in companion_codes)
+
+
+async def test_revert_scan_keeps_graduate_activated(
+    db,
+    make_event,
+    make_college,
+    make_graduate,
+    make_ticket,
+    make_admin,
+    make_scanner,
+):
+    event, grad, ticket = await _ticket_with_codes(
+        db, make_event, make_college, make_graduate, make_ticket,
+        ticket_type=TicketTypeEnum.TWO_COMPANIONS,
+    )
+    admin = await make_admin()
+    scanner = await make_scanner(admin.id, event.id)
+    scanner_id = scanner.id
+    admin_id = admin.id
+
+    grad_code = (
+        await db.execute(
+            select(QrCodeModel).where(
+                QrCodeModel.ticket_id == ticket.id,
+                QrCodeModel.code_type == QrCodeTypeEnum.GRADUATE,
+            )
+        )
+    ).scalar_one()
+    comp_code = (
+        await db.execute(
+            select(QrCodeModel).where(
+                QrCodeModel.ticket_id == ticket.id,
+                QrCodeModel.code_type == QrCodeTypeEnum.COMPANION,
+            )
+        )
+    ).scalars().first()
+    grad_code_id = grad_code.id
+    comp_code_id = comp_code.id
+
+    first = await scan_qr_code(db, str(grad_code.code_value), scanner_id)
+    await db.commit()
+    assert first.decision is ScanDecision.SUCCESS
+
+    await revert_scan_service(db, grad.id, {"admin_id": admin_id})
+
+    db.expire_all()
+    grad_code = await db.get(QrCodeModel, grad_code_id)
+    comp_code = await db.get(QrCodeModel, comp_code_id)
+
+    companion_after = await scan_qr_code(db, str(comp_code.code_value), scanner_id)
+    await db.commit()
+    assert companion_after.decision is ScanDecision.NOT_ACTIVATED
+
+    graduate_after = await scan_qr_code(db, str(grad_code.code_value), scanner_id)
+    await db.commit()
+    assert graduate_after.decision is ScanDecision.SUCCESS
 
 
 async def test_revert_payment_rejects_non_confirmed(
