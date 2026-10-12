@@ -1,7 +1,9 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+
+from app.core.security import validate_password_policy
 
 NAME_REGEX = r"^[\u0600-\u06FFa-zA-Z\s]{2,255}$"
 PHONE_REGEX = r"^\+?[0-9]{7,15}$"
@@ -19,6 +21,12 @@ class RegisterStep2Request(BaseModel):
     email: EmailStr
     phone: str = Field(..., pattern=PHONE_REGEX, description="Phone number must contain digits only.")
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters long.")
+
+
+    @model_validator(mode="after")
+    def _enforce_password_policy(self):
+        validate_password_policy(self.password)
+        return self
 
 class GraduateResponse(BaseModel):
     id: int
