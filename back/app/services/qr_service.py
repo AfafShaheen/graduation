@@ -40,6 +40,7 @@ from app.core.messages import (
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.scanner import ScannerModel
 from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
+from app.services.audit_log import ActorType, record_audit
 
 
 class ScanDecision(str, Enum):
@@ -72,6 +73,24 @@ _COMPANION_COUNTS = {
     TicketTypeEnum.TWO_COMPANIONS: 2,
     TicketTypeEnum.THREE_COMPANIONS: 3,
 }
+
+
+async def _audit_scan(
+    db: AsyncSession, scanner_id: int, target: str, result: ScanResult
+) -> None:
+    """Record one audit row for a scan attempt (FR-25 / NFR audit trail).
+
+    Every attempt is logged — success and failure alike — so the audit trail
+    shows what a scanner presented even when no code was consumed.
+    """
+    await record_audit(
+        db,
+        actor_type=ActorType.SCANNER,
+        actor_id=scanner_id,
+        action="qr_scanned",
+        target=target,
+        details=result.decision.value,
+    )
 
 
 def _parse_code_value(code_value: str | uuid.UUID) -> uuid.UUID | None:
@@ -169,7 +188,9 @@ async def scan_qr_code(
     """
     value = _parse_code_value(code_value)
     if value is None:
-        return ScanResult(ScanDecision.NOT_FOUND, SCAN_UNKNOWN)
+        result = ScanResult(ScanDecision.NOT_FOUND, SCAN_UNKNOWN)
+        await _audit_scan(db, scanner_id, str(code_value), result)
+        return result
 
     qr_record = (
         await db.execute(
@@ -179,48 +200,60 @@ async def scan_qr_code(
         )
     ).scalar_one_or_none()
     if qr_record is None:
-        return ScanResult(ScanDecision.NOT_FOUND, SCAN_UNKNOWN)
+        result = ScanResult(ScanDecision.NOT_FOUND, SCAN_UNKNOWN)
+        await _audit_scan(db, scanner_id, str(code_value), result)
+        return result
 
     ticket = await db.get(TicketModel, qr_record.ticket_id)
     if ticket is None:
-        return ScanResult(ScanDecision.NOT_FOUND, SCAN_UNKNOWN)
+        result = ScanResult(ScanDecision.NOT_FOUND, SCAN_UNKNOWN)
+        await _audit_scan(db, scanner_id, str(value), result)
+        return result
 
     scanner = await db.get(ScannerModel, scanner_id)
     if scanner is not None and scanner.event_id != ticket.event_id:
-        return ScanResult(
+        result = ScanResult(
             ScanDecision.WRONG_EVENT,
             SCAN_WRONG_EVENT,
             qr_record.id,
             ticket.graduate_id,
             qr_record.code_type,
         )
+        await _audit_scan(db, scanner_id, str(value), result)
+        return result
 
     if ticket.status != TicketStatusEnum.CONFIRMED:
-        return ScanResult(
+        result = ScanResult(
             ScanDecision.TICKET_NOT_CONFIRMED,
             SCAN_TICKET_NOT_CONFIRMED,
             qr_record.id,
             ticket.graduate_id,
             qr_record.code_type,
         )
+        await _audit_scan(db, scanner_id, str(value), result)
+        return result
 
     if qr_record.scanned_at is not None:
-        return ScanResult(
+        result = ScanResult(
             ScanDecision.ALREADY_USED,
             SCAN_ALREADY_USED,
             qr_record.id,
             ticket.graduate_id,
             qr_record.code_type,
         )
+        await _audit_scan(db, scanner_id, str(value), result)
+        return result
 
     if not qr_record.is_activated:
-        return ScanResult(
+        result = ScanResult(
             ScanDecision.NOT_ACTIVATED,
             SCAN_NOT_ACTIVATED,
             qr_record.id,
             ticket.graduate_id,
             qr_record.code_type,
         )
+        await _audit_scan(db, scanner_id, str(value), result)
+        return result
 
     qr_record.is_activated = True
     qr_record.scanned_at = datetime.now(UTC)
@@ -229,10 +262,12 @@ async def scan_qr_code(
         await activate_companion_codes(db, ticket.id)
     await db.flush()
 
-    return ScanResult(
+    result = ScanResult(
         ScanDecision.SUCCESS,
         SCAN_VALID,
         qr_record.id,
         ticket.graduate_id,
         qr_record.code_type,
     )
+    await _audit_scan(db, scanner_id, str(value), result)
+    return result
