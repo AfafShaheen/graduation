@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-secret123}
       POSTGRES_DB: ${DATABASE_NAME:-graduation}
     ports:
-      - "5433:5432"
+      - "${DATABASE_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./back/migrations:/docker-entrypoint-initdb.d
@@ -40,8 +40,17 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-secret123}@db:${DATABASE_PORT:-5432}/${DATABASE_NAME:-graduation}
+      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-secret123}@db:5432/${DATABASE_NAME:-graduation}
       - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - APP_ENV=${APP_ENV:-development}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - SQL_ECHO=${SQL_ECHO:-}
     depends_on:
       db:
         condition: service_healthy
