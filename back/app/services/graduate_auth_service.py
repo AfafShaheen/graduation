@@ -16,6 +16,9 @@ from app.core.security import (
 )
 from jose import jwt
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 _VERIFICATION_FIELD = "verification" + "_token"
 _DUMMY_HASH = get_password_hash(uuid.uuid4().hex)
@@ -32,8 +35,8 @@ async def check_graduate_login_rate_limit(email: str) -> None:
             )
     except HTTPException:
         raise
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis login rate-limit check failed (%s); failing open", exc)
 
 
 async def increment_graduate_login_failure(email: str) -> None:
@@ -42,16 +45,16 @@ async def increment_graduate_login_failure(email: str) -> None:
         val = await redis_client.incr(key)
         if val == 1:
             await redis_client.expire(key, 900)  # 15 minutes TTL
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis login failure increment failed (%s); failing open", exc)
 
 
 async def reset_graduate_login_failure(email: str) -> None:
     key = f"graduate_login_attempts:{email}"
     try:
         await redis_client.delete(key)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis login failure reset failed (%s); failing open", exc)
 
 
 def create_graduate_access_token(graduate: GraduateModel) -> str:

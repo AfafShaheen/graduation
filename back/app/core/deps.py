@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.models.admin import AdminModel
 from app.models.graduate import GraduateModel
 from app.core.redis import redis_client
+from app.core import messages
 from app.core.security import secret_key, ALGORITHM
 from jose import jwt, JWTError
 
@@ -35,7 +36,14 @@ async def get_current_admin(
             )
 
         if jti:
-            blacklisted = await redis_client.get(f"token_blacklist:{jti}")
+            try:
+                blacklisted = await redis_client.get(f"token_blacklist:{jti}")
+            except Exception:
+                # Fail closed: if we cannot verify the token status, deny.
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=messages.SERVICE_UNAVAILABLE,
+                )
             if blacklisted:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -90,7 +98,14 @@ async def get_current_graduate(
             )
 
         if jti:
-            blacklisted = await redis_client.get(f"token_blacklist:{jti}")
+            try:
+                blacklisted = await redis_client.get(f"token_blacklist:{jti}")
+            except Exception:
+                # Fail closed: if we cannot verify the token status, deny.
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=messages.SERVICE_UNAVAILABLE,
+                )
             if blacklisted:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,

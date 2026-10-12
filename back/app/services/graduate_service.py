@@ -17,6 +17,9 @@ from app.services.settings_service import get_setting, CONTACT_PHONE
 import bcrypt
 import re
 from jose import jwt, JWTError
+import logging
+
+logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 15
@@ -77,8 +80,8 @@ async def check_step1_rate_limit(university_id: str) -> None:
         await redis_client.expire(key, 300)
     except HTTPException:
         raise
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis step1 rate-limit check failed (%s); failing open", exc)
 
 
 async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:

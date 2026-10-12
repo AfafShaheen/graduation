@@ -19,6 +19,9 @@ from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.services.graduate_auth_service import create_graduate_access_token
 import hmac
 import bcrypt
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def check_redis_cooldown(identifier: str, action: str) -> None:
@@ -33,16 +36,16 @@ async def check_redis_cooldown(identifier: str, action: str) -> None:
             )
     except HTTPException:
         raise
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis cooldown check failed (%s); failing open", exc)
 
 
 async def set_redis_cooldown(identifier: str, action: str, seconds: int = 60) -> None:
     key = f"cooldown:{action}:{identifier}"
     try:
         await redis_client.setex(key, seconds, "1")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis cooldown write failed (%s); failing open", exc)
 
 
 async def check_redis_failed_attempts(identifier: str) -> int:
@@ -50,7 +53,8 @@ async def check_redis_failed_attempts(identifier: str) -> int:
     try:
         val = await redis_client.get(key)
         return int(val) if val else 0
-    except Exception:
+    except Exception as exc:
+        logger.warning("Redis failed-attempts read failed (%s); failing open", exc)
         return 0
 
 
@@ -60,7 +64,8 @@ async def increment_redis_failed_attempts(identifier: str) -> int:
         val = await redis_client.incr(key)
         await redis_client.expire(key, 600)  # 10 mins TTL
         return val
-    except Exception:
+    except Exception as exc:
+        logger.warning("Redis failed-attempts increment failed (%s); failing open", exc)
         return 1
 
 
@@ -68,8 +73,8 @@ async def reset_redis_failed_attempts(identifier: str) -> None:
     key = f"attempts:otp:{identifier}"
     try:
         await redis_client.delete(key)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis failed-attempts reset failed (%s); failing open", exc)
 
 
 async def fetch_latest_otp(db: AsyncSession, graduate_id: int, purpose: OtpPurpose) -> OtpCodeModel | None:

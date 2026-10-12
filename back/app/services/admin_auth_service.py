@@ -8,6 +8,9 @@ from app.schemas.admin_auth import AdminLoginRequest
 from app.core.redis import redis_client
 from app.core.security import verify_password, get_password_hash, create_access_token, secret_key, ALGORITHM
 from jose import jwt
+import logging
+
+logger = logging.getLogger(__name__)
 
 _DUMMY_HASH = get_password_hash(uuid.uuid4().hex)
 
@@ -23,8 +26,8 @@ async def check_login_rate_limit(username: str) -> None:
             )
     except HTTPException:
         raise
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis admin login rate-limit check failed (%s); failing open", exc)
 
 
 async def increment_login_failure(username: str) -> None:
@@ -33,16 +36,16 @@ async def increment_login_failure(username: str) -> None:
         val = await redis_client.incr(key)
         if val == 1:
             await redis_client.expire(key, 900)  # 15 minutes TTL
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis admin login failure increment failed (%s); failing open", exc)
 
 
 async def reset_login_failure(username: str) -> None:
     key = f"admin_login_attempts:{username}"
     try:
         await redis_client.delete(key)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis admin login failure reset failed (%s); failing open", exc)
 
 
 async def login_admin(data: AdminLoginRequest, db: AsyncSession) -> dict:
