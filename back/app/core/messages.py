@@ -14,6 +14,7 @@ PASSWORD_POLICY = "كلمة السر يجب ألا تقل عن 8 أحرف وأن
 VERIFY_RATE_LIMITED = "محاولات تحقق كثيرة، يرجى المحاولة بعد قليل"
 ALREADY_CHECKED_IN = "تم تسجيل دخول الخريج مسبقاً"
 NOTHING_TO_REVERT = "لا يوجد مسح لإلغائه"
+PAYMENT_NOT_REVERTIBLE = "يمكن إلغاء الدفع فقط لتذكرة مؤكدة"
 
 SCAN_VALID = "رمز صالح"
 SCAN_UNKNOWN = "رمز غير معروف"
