@@ -51,6 +51,7 @@ async def test_script_reset_password_updates_hash(monkeypatch, db, make_admin):
     monkeypatch.setattr(create_admin, "_read_new_password", lambda: _ADMIN_PW + "Z")
     assert await create_admin._run("admin", reset=True) == 0
 
+    db.expire_all()
     fresh = (
         await db.execute(select(AdminModel).where(AdminModel.username == "admin"))
     ).scalar_one()
