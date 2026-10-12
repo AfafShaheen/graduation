@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+import asyncio
+from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
@@ -10,8 +11,10 @@ from app.services.email_service import (
     hash_otp,
     send_otp_email,
     OTP_TTL_MINUTES,
+    RESEND_COOLDOWN_SECONDS,
 )
 from app.core.redis import redis_client
+from app.core import messages
 import bcrypt
 
 
@@ -124,31 +127,28 @@ async def mark_email_verified(db: AsyncSession, graduate_id: int) -> None:
         await db.commit()
 
 
-async def create_and_save_new_otp(db: AsyncSession, graduate_id: int, purpose: OtpPurpose) -> tuple[str, str]:
-    now = datetime.now(UTC)
-    code = generate_otp()
-    code_hash = hash_otp(code)
-    expires_at = now.replace(minute=now.minute + OTP_TTL_MINUTES)
+async def issue_and_send_otp(db: AsyncSession, graduate: GraduateModel, purpose: OtpPurpose, to_email: str) -> bool:
+    """Create a fresh OTP, send it, and arm the cooldown only after success.
 
-    new_entry = OtpCodeModel(
-        graduate_id=graduate_id,
+    The OTP row is committed before sending so a mail failure still leaves a
+    usable code that the user can resend. Returns True when the email was sent.
+    """
+    code = generate_otp()
+    expires_at = datetime.now(UTC) + timedelta(minutes=OTP_TTL_MINUTES)
+    db.add(OtpCodeModel(
+        graduate_id=graduate.id,
         purpose=purpose.value,
-        code_hash=code_hash,
+        code_hash=hash_otp(code),
         expires_at=expires_at,
-        failed_attempts=0
-    )
-    db.add(new_entry)
+        failed_attempts=0,
+    ))
     await db.commit()
 
-    # Set Redis cooldown and reset attempts counter
-    await set_redis_cooldown(str(graduate_id), purpose.value, 60)
-    await reset_redis_failed_attempts(str(graduate_id))
-
-    return code, purpose.value
-
-
-async def dispatch_otp_email(email: str, code: str, purpose: OtpPurpose) -> bool:
-    return send_otp_email(email, code, purpose)
+    sent = await asyncio.to_thread(send_otp_email, to_email, code, purpose)
+    if sent:
+        await set_redis_cooldown(str(graduate.id), purpose.value, RESEND_COOLDOWN_SECONDS)
+        await reset_redis_failed_attempts(str(graduate.id))
+    return sent
 
 
 async def check_email_uniqueness(db: AsyncSession, new_email: str, graduate_id: int) -> None:
@@ -232,24 +232,22 @@ async def verify_otp_service(db: AsyncSession, graduate_id: int, code: str, purp
 async def resend_otp_service(db: AsyncSession, graduate_id: int, purpose: OtpPurpose) -> dict:
     await check_redis_cooldown(str(graduate_id), purpose.value)
 
-    last_otp = await fetch_latest_otp(db, graduate_id, purpose)
-    if last_otp:
-        validate_otp_expiration(last_otp.expires_at)
-
     grad = await fetch_graduate(db, graduate_id)
     if not grad:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على حساب الخريج.")
 
-    code, _ = await create_and_save_new_otp(db, graduate_id, purpose)
-    await dispatch_otp_email(grad.email, code, purpose)
+    sent = await issue_and_send_otp(db, grad, purpose, grad.email)
+    if not sent:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=messages.EMAIL_SEND_FAIL)
 
     return {"status": "success", "message": "تم إرسال رمز تحقق جديد إلى بريدك الإلكتروني."}
 
 
 async def change_email_service(db: AsyncSession, graduate_id: int, new_email: str) -> dict:
     grad = await update_graduate_email_address(db, graduate_id, new_email)
-    code, purpose = await create_and_save_new_otp(db, graduate_id, OtpPurpose.EMAIL_VERIFICATION)
-    await dispatch_otp_email(new_email, code, OtpPurpose.EMAIL_VERIFICATION)
+    sent = await issue_and_send_otp(db, grad, OtpPurpose.EMAIL_VERIFICATION, new_email)
+    if not sent:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=messages.EMAIL_SEND_FAIL)
 
     return {
         "status": "success",
@@ -267,15 +265,12 @@ async def forgot_password_service(db: AsyncSession, email: str) -> dict:
     if not grad:
         return success_response
 
-    await check_redis_cooldown(str(grad.id), OtpPurpose.PASSWORD_RESET.value)
+    try:
+        await check_redis_cooldown(str(grad.id), OtpPurpose.PASSWORD_RESET.value)
+    except HTTPException:
+        return success_response
 
-    last_otp = await fetch_latest_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
-    if last_otp:
-        validate_otp_expiration(last_otp.expires_at)
-
-    code, _ = await create_and_save_new_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
-    await dispatch_otp_email(grad.email, code, OtpPurpose.PASSWORD_RESET)
-
+    await issue_and_send_otp(db, grad, OtpPurpose.PASSWORD_RESET, grad.email)
     return success_response
 
 

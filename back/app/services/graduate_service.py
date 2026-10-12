@@ -7,8 +7,9 @@ from app.models.university_record import UniversityRecordModel
 from app.models.college import CollegeModel
 from app.models.event import EventModel
 from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request
-from app.services.email_service import generate_otp, hash_otp, send_otp_email, OtpPurpose
-from app.models.otp_code import OtpCodeModel
+from app.services.email_service import OtpPurpose
+from app.services.auth_service import issue_and_send_otp
+from app.core import messages
 from app.core.redis import redis_client
 from app.core.security import secret_key
 import bcrypt
@@ -162,27 +163,19 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
     await db.flush()
     await db.refresh(new_graduate)
 
-    now = datetime.now(UTC)
-    otp_code = generate_otp()
-    otp_hash = hash_otp(otp_code)
-    expires_at = now.replace(minute=now.minute + 10)
+    sent = await issue_and_send_otp(db, new_graduate, OtpPurpose.EMAIL_VERIFICATION, new_graduate.email)
 
-    otp_entry = OtpCodeModel(
-        graduate_id=new_graduate.id,
-        purpose=OtpPurpose.EMAIL_VERIFICATION.value,
-        code_hash=otp_hash,
-        expires_at=expires_at,
-        failed_attempts=0
+    message = (
+        "تم إنشاء الحساب بنجاح. يرجى إدخال رمز التحقق (OTP) المرسل إلى بريدك الإلكتروني لتفعيله."
+        if sent
+        else messages.REGISTER_PARTIAL
     )
-    db.add(otp_entry)
-    await db.commit()
-
-    send_otp_email(data.email, otp_code, OtpPurpose.EMAIL_VERIFICATION)
 
     return {
         "status": "success",
-        "message": "تم إنشاء الحساب بنجاح. يرجى إدخال رمز التحقق (OTP) المرسل إلى بريدك الإلكتروني لتفعيله.",
-        "graduate_id": new_graduate.id
+        "message": message,
+        "graduate_id": new_graduate.id,
+        "otp_sent": sent,
     }
 
 

@@ -9,6 +9,7 @@ Constraints:
 
 import enum
 import hashlib
+import logging
 import os
 import secrets
 import smtplib
@@ -22,6 +23,8 @@ OTP_LENGTH = 6
 OTP_TTL_MINUTES = 10
 MAX_FAILED_ATTEMPTS = 5
 RESEND_COOLDOWN_SECONDS = 60
+
+logger = logging.getLogger(__name__)
 
 
 class OtpPurpose(str, enum.Enum):
@@ -77,13 +80,12 @@ def send_otp_email(
     *,
     smtp: dict[str, str | int] | None = None,
 ) -> bool:
-    """Send the OTP to the graduate's email via SMTP and print to terminal for testing."""
-    
-    # Always print OTP to terminal for development/testing convenience
-    print("\n" + "=" * 60)
-    print(f" 🔑 [OTP TEST MODE] Email: {to_email} | Purpose: {purpose.value} | Code: {code}")
-    print("=" * 60 + "\n")
+    """Send the OTP via SMTP. Return True only when delivery actually succeeded.
 
+    SMTP configured -> real send. Not configured -> the code is logged only in
+    development/test; any other environment is treated as a failure. The OTP
+    code is never written to the logs when sending fails.
+    """
     cfg = smtp if smtp is not None else {}
     host = str(cfg.get("host") or os.environ.get("SMTP_HOST", ""))
     port = int(cfg.get("port") or os.environ.get("SMTP_PORT", "587"))
@@ -93,8 +95,12 @@ def send_otp_email(
     use_tls = bool(cfg.get("tls", True))
     
     if not host or not user:
-        # Return True in development mode so OTP requests succeed even without SMTP configured
-        return True
+        app_env = os.environ.get("APP_ENV", "development").strip().lower()
+        if app_env in ("development", "test"):
+            logger.info("SMTP not configured; OTP for %s (%s): %s", to_email, purpose.value, code)
+            return True
+        logger.error("SMTP is not configured; refusing to send OTP email")
+        return False
 
     if purpose is OtpPurpose.PASSWORD_RESET:
         subject = "استعادة كلمة السر — رمز التحقق"
@@ -118,8 +124,9 @@ def send_otp_email(
             server.login(user, auth)
             server.send_message(message)
         return True
-    except smtplib.SMTPException:
-        return True  # Fallback to True so local testing isn't blocked by missing SMTP server
+    except (smtplib.SMTPException, OSError) as exc:
+        logger.error("Failed to send OTP email for %s: %s", to_email, exc)
+        return False
 
 
 def verify_otp(
