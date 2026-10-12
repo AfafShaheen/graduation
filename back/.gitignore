@@ -16,6 +16,7 @@ npm-debug.log*
 # --- Python ---
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
 # --- Build output ---
 dist/
