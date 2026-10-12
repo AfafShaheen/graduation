@@ -6,7 +6,7 @@ from app.models.graduate import GraduateModel
 from app.models.university_record import UniversityRecordModel
 from app.models.college import CollegeModel
 from app.models.event import EventModel
-from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request, UserUpdate, GraduateUpdateAdmin
+from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request
 from app.services.email_service import generate_otp, hash_otp, send_otp_email, OtpPurpose
 from app.models.otp_code import OtpCodeModel
 from app.core.redis import redis_client
@@ -184,38 +184,6 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
         "message": "تم إنشاء الحساب بنجاح. يرجى إدخال رمز التحقق (OTP) المرسل إلى بريدك الإلكتروني لتفعيله.",
         "graduate_id": new_graduate.id
     }
-
-
-async def update_graduate_self(db: AsyncSession, graduate_id: int, data: UserUpdate) -> GraduateModel:
-    grad = await fetch_graduate(db, graduate_id)
-    if not grad:
-        raise ValueError("الخريج غير موجود")
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(grad, key, value)
-    db.add(grad)
-    await db.commit()
-    await db.refresh(grad)
-    return grad
-
-
-async def update_graduate_admin(db: AsyncSession, graduate_id: int, data: GraduateUpdateAdmin) -> GraduateModel:
-    grad = await fetch_graduate(db, graduate_id)
-    if not grad:
-        raise ValueError("الخريج غير موجود")
-    if data.email is not None:
-        existing = await db.execute(
-            select(GraduateModel).where(GraduateModel.email == data.email, GraduateModel.id != graduate_id)
-        )
-        if existing.scalar_one_or_none():
-            raise ValueError("البريد الإلكتروني مستخدم من قبل حساب آخر")
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(grad, key, value)
-    db.add(grad)
-    await db.commit()
-    await db.refresh(grad)
-    return grad
 
 
 async def fetch_graduate(db: AsyncSession, graduate_id: int) -> GraduateModel | None:
