@@ -1,12 +1,15 @@
 from datetime import UTC, datetime
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 from app.models.admin import AdminModel
 from app.schemas.admin_auth import AdminLoginRequest
 from app.core.redis import redis_client
-from app.core.security import verify_password, create_access_token, secret_key, ALGORITHM
+from app.core.security import verify_password, get_password_hash, create_access_token, secret_key, ALGORITHM
 from jose import jwt
+
+_DUMMY_HASH = get_password_hash(uuid.uuid4().hex)
 
 
 async def check_login_rate_limit(username: str) -> None:
@@ -49,7 +52,17 @@ async def login_admin(data: AdminLoginRequest, db: AsyncSession) -> dict:
     result = await db.execute(stmt)
     admin = result.scalar_one_or_none()
 
-    if not admin or not (data.password == admin.password_hash):
+    if not admin:
+        # Run a dummy bcrypt check so an unknown username and a wrong password
+        # take the same time (do not reveal which usernames exist).
+        verify_password(data.password, _DUMMY_HASH)
+        await increment_login_failure(data.username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="اسم المستخدم أو كلمة السر غير صحيحة."
+        )
+
+    if not verify_password(data.password, admin.password_hash):
         await increment_login_failure(data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
