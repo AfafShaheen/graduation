@@ -216,3 +216,26 @@ async def test_revert_payment_success_sets_processing(
     refreshed = await db.get(TicketModel, ticket_id)
     assert refreshed.status == TicketStatusEnum.PROCESSING
     assert refreshed.confirmed_at is None
+
+
+async def test_manual_check_in_rejects_non_confirmed_ticket(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_admin
+):
+    _event, grad, ticket = await _ticket_with_codes(
+        db, make_event, make_college, make_graduate, make_ticket
+    )
+    token = await _token(client, make_admin)
+    grad_id = grad.id
+    ticket_id = ticket.id
+
+    revert = await client.post(
+        f"/api/admin/tickets/{ticket_id}/revert-payment", headers=_auth(token)
+    )
+    assert revert.status_code == 200, revert.text
+
+    response = await client.post(
+        f"/api/admin/graduates/{grad_id}/manual-check-in", headers=_auth(token)
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == messages.MANUAL_CHECKIN_TICKET_NOT_CONFIRMED

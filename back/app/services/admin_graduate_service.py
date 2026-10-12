@@ -188,6 +188,13 @@ async def manual_check_in_service(db: AsyncSession, graduate_id: int, admin: dic
 
     ticket_id = tickets[0].id
 
+    # FR-22-a/c: manual check-in is only allowed for a confirmed ticket.
+    if tickets[0].status != TicketStatusEnum.CONFIRMED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=messages.MANUAL_CHECKIN_TICKET_NOT_CONFIRMED,
+        )
+
     qr_res = await db.execute(
         select(QrCodeModel).where(
             QrCodeModel.ticket_id == ticket_id,

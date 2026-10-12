@@ -15,6 +15,7 @@ VERIFY_RATE_LIMITED = "محاولات تحقق كثيرة، يرجى المحا�
 ALREADY_CHECKED_IN = "تم تسجيل دخول الخريج مسبقاً"
 NOTHING_TO_REVERT = "لا يوجد مسح لإلغائه"
 PAYMENT_NOT_REVERTIBLE = "يمكن إلغاء الدفع فقط لتذكرة مؤكدة"
+MANUAL_CHECKIN_TICKET_NOT_CONFIRMED = "التذكرة غير مؤكدة، لا يمكن تسجيل الدخول اليدوي"
 
 SCAN_VALID = "رمز صالح"
 SCAN_UNKNOWN = "رمز غير معروف"
