@@ -10,12 +10,11 @@ from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request, UserUpda
 from app.services.email_service import generate_otp, hash_otp, send_otp_email, OtpPurpose
 from app.models.otp_code import OtpCodeModel
 from app.core.redis import redis_client
+from app.core.security import secret_key
 import bcrypt
 import re
 from jose import jwt, JWTError
-import os
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-graduation-key-change-in-prod")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 15
 
@@ -34,13 +33,15 @@ def normalize_arabic(text: str) -> str:
 def create_registration_token(data: dict) -> str:
     expire = datetime.now(UTC) + timedelta(minutes=TOKEN_EXPIRE_MINUTES)
     to_encode = data.copy()
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    to_encode.update({"exp": expire, "purpose": "registration"})
+    return jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
 
 
 def decode_registration_token(token: str) -> dict:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
+        if payload.get("purpose") != "registration":
+            raise JWTError("invalid token purpose")
         return payload
     except JWTError:
         raise HTTPException(

@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from app.models.graduate import GraduateModel
 from app.schemas.auth import GraduateLoginRequest
 from app.core.redis import redis_client
-from app.core.security import verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from app.core.security import verify_password, create_access_token, secret_key, ALGORITHM
 from jose import jwt
 
 
@@ -87,7 +87,7 @@ async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
 async def logout_graduate(credentials, current_graduate: GraduateModel) -> dict:
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         jti = payload.get("jti")
         exp = payload.get("exp")
         

@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from app.models.admin import AdminModel
 from app.schemas.admin_auth import AdminLoginRequest
 from app.core.redis import redis_client
-from app.core.security import verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from app.core.security import verify_password, create_access_token, secret_key, ALGORITHM
 from jose import jwt
 
 
@@ -74,7 +74,7 @@ async def login_admin(data: AdminLoginRequest, db: AsyncSession) -> dict:
 async def logout_admin(credentials, admin: dict) -> dict:
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         jti = payload.get("jti")
         exp = payload.get("exp")
         

@@ -5,7 +5,7 @@ from app.core.database import get_db
 from app.models.admin import AdminModel
 from app.models.graduate import GraduateModel
 from app.core.redis import redis_client
-from app.core.security import SECRET_KEY, ALGORITHM
+from app.core.security import secret_key, ALGORITHM
 from jose import jwt, JWTError
 
 security = HTTPBearer()
@@ -23,7 +23,7 @@ async def get_current_admin(
         )
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         jti = payload.get("jti")
         role = payload.get("role")
         admin_id = payload.get("sub")
@@ -78,7 +78,7 @@ async def get_current_graduate(
         )
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         jti = payload.get("jti")
         role = payload.get("role")
         graduate_id = payload.get("sub") or payload.get("graduate_id")

@@ -5,7 +5,14 @@ from typing import Optional
 import bcrypt
 from jose import jwt
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-graduation-key-change-in-prod")
+_jwt_key = os.getenv("JWT_SECRET_KEY")
+if _jwt_key is None or not _jwt_key.strip() or len(_jwt_key.strip()) < 32:
+    raise RuntimeError(
+        "JWT_SECRET_KEY is missing or too short (need at least 32 characters). "
+        "Set it in the environment before starting the backend."
+    )
+secret_key = _jwt_key.strip()
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
@@ -27,6 +34,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire, "jti": str(uuid.uuid4())})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
