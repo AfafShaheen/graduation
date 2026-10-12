@@ -336,6 +336,8 @@ def make_scanner(db):
 
 @pytest.fixture
 def make_ticket(db):
+    from datetime import UTC, datetime
+
     from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
 
     async def _make(
@@ -353,6 +355,11 @@ def make_ticket(db):
             companions_count=companions_count,
             price=price,
             status=status,
+            confirmed_at=(
+                datetime.now(UTC)
+                if status == TicketStatusEnum.CONFIRMED
+                else None
+            ),
         )
         db.add(ticket)
         await db.commit()
