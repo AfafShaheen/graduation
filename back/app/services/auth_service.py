@@ -15,6 +15,8 @@ from app.services.email_service import (
 )
 from app.core.redis import redis_client
 from app.core import messages
+from app.core.security import create_graduate_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+import hmac
 import bcrypt
 
 
@@ -211,10 +213,19 @@ async def verify_otp_service(db: AsyncSession, graduate_id: int, code: str, purp
         )
 
     submitted_hash = hash_otp(code)
-    if submitted_hash == otp_row.code_hash:
+    if hmac.compare_digest(submitted_hash, otp_row.code_hash):
         await mark_otp_as_used(db, otp_row)
         if purpose == OtpPurpose.EMAIL_VERIFICATION:
             await mark_email_verified(db, graduate_id)
+            grad = await fetch_graduate(db, graduate_id)
+            access_value = create_graduate_access_token(grad)
+            return {
+                "status": "success",
+                "message": "تم التحقق بنجاح.",
+                "access_token": access_value,
+                "token_type": "bearer",
+                "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            }
         return {"status": "success", "message": "تم التحقق بنجاح."}
     else:
         attempts = await increment_otp_failed_attempts(db, otp_row)
@@ -300,7 +311,7 @@ async def reset_password_service(db: AsyncSession, email: str, code: str, new_pa
         )
 
     submitted_hash = hash_otp(code)
-    if submitted_hash != otp_row.code_hash:
+    if not hmac.compare_digest(submitted_hash, otp_row.code_hash):
         attempts = await increment_otp_failed_attempts(db, otp_row)
         if check_failed_attempts(attempts):
             raise HTTPException(

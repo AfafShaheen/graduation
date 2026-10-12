@@ -15,6 +15,7 @@ secret_key = _jwt_key.strip()
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 120
+EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES = 30
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -37,3 +38,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
     to_encode.update({"exp": expire, "jti": str(uuid.uuid4())})
     return jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
+
+
+def create_verification_token(graduate_id: int) -> str:
+    """Create a short-lived token that proves ownership of a graduate account
+    during email verification (SRS FR-4). It carries purpose='email_verification'
+    so it is rejected by the access-token and registration-token dependencies.
+    """
+    data = {"sub": str(graduate_id), "purpose": "email_verification"}
+    return create_access_token(
+        data, expires_delta=timedelta(minutes=EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES)
+    )

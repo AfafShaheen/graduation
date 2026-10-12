@@ -117,3 +117,37 @@ async def get_current_graduate(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="رمز المصادقة غير صالح أو انتهت صلاحيته."
         )
+
+
+async def get_verification_graduate_id(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> int:
+    """Validate a short-lived email-verification token (SRS FR-4).
+
+    Only tokens with purpose='email_verification' are accepted, so access and
+    registration tokens are rejected. Returns the graduate id taken from the
+    token; callers must never accept the id from the request body.
+    """
+    raw = credentials.credentials
+    try:
+        payload = jwt.decode(raw, secret_key, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="رمز التحقق غير صالح أو انتهت صلاحيته. يرجى طلب رمز جديد."
+        )
+
+    if payload.get("purpose") != "email_verification":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="رمز التحقق غير صالح."
+        )
+
+    sub = payload.get("sub")
+    if not sub:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="رمز التحقق غير صالح."
+        )
+
+    return int(sub)

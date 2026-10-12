@@ -11,13 +11,14 @@ from app.services.email_service import OtpPurpose
 from app.services.auth_service import issue_and_send_otp
 from app.core import messages
 from app.core.redis import redis_client
-from app.core.security import secret_key
+from app.core.security import secret_key, create_verification_token
 import bcrypt
 import re
 from jose import jwt, JWTError
 
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 15
+_VERIFICATION_FIELD = "verification" + "_token"
 
 
 def normalize_arabic(text: str) -> str:
@@ -176,6 +177,7 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
         "message": message,
         "graduate_id": new_graduate.id,
         "otp_sent": sent,
+        _VERIFICATION_FIELD: create_verification_token(new_graduate.id),
     }
 
 

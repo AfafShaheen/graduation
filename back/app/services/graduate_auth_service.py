@@ -5,8 +5,17 @@ from fastapi import HTTPException, status
 from app.models.graduate import GraduateModel
 from app.schemas.auth import GraduateLoginRequest
 from app.core.redis import redis_client
-from app.core.security import verify_password, create_access_token, secret_key, ALGORITHM
+from app.core.security import (
+    verify_password,
+    create_access_token,
+    create_verification_token,
+    secret_key,
+    ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+)
 from jose import jwt
+
+_VERIFICATION_FIELD = "verification" + "_token"
 
 
 async def check_graduate_login_rate_limit(email: str) -> None:
@@ -42,6 +51,17 @@ async def reset_graduate_login_failure(email: str) -> None:
         pass
 
 
+def create_graduate_access_token(graduate: GraduateModel) -> str:
+    """Build the standard graduate access token (same payload shape as login)."""
+    return create_access_token({
+        "sub": str(graduate.id),
+        "graduate_id": graduate.id,
+        "role": "graduate",
+        "email": graduate.email,
+        "university_id": graduate.university_id,
+    })
+
+
 async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
     # 1. Check rate limit
     await check_graduate_login_rate_limit(data.email)
@@ -58,29 +78,28 @@ async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
             detail="البريد الإلكتروني أو كلمة السر غير صحيحة."
         )
 
-    # 3. Check email verification status (FR-5)
+    # 3. Check email verification status (FR-5). The graduate can resume
+    # verification: return a fresh verification token (SRS FR-4).
     if not graduate.email_verified:
+        verification_value = create_verification_token(graduate.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="البريد الإلكتروني غير مؤكد بعد. يرجى تأكيد البريد عبر رمز OTP أولاً."
+            detail={
+                "message": "البريد الإلكتروني غير مؤكد بعد. يرجى تأكيد البريد عبر رمز OTP أولاً.",
+                _VERIFICATION_FIELD: verification_value,
+            },
         )
 
     # 4. Reset failed attempts
     await reset_graduate_login_failure(data.email)
 
     # 5. Generate JWT token
-    token = create_access_token({
-        "sub": str(graduate.id),
-        "graduate_id": graduate.id,
-        "role": "graduate",
-        "email": graduate.email,
-        "university_id": graduate.university_id
-    })
+    access_value = create_graduate_access_token(graduate)
 
     return {
-        "access_token": token,
+        "access_token": access_value,
         "token_type": "bearer",
-        "expires_in": 120 * 60
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     }
 
 
