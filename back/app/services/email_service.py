@@ -88,7 +88,7 @@ def send_otp_email(
     """
     cfg = smtp if smtp is not None else {}
     host = str(cfg.get("host") or os.environ.get("SMTP_HOST", ""))
-    port = int(cfg.get("port") or os.environ.get("SMTP_PORT", "587"))
+    port = int(cfg.get("port") or os.environ.get("SMTP_PORT") or "587")
     user = str(cfg.get("user") or os.environ.get("SMTP_USER", ""))
     auth = str(cfg.get("auth") or os.environ.get("SMTP_PASSWORD", ""))
     sender = str(cfg.get("from") or os.environ.get("SMTP_FROM", user))
