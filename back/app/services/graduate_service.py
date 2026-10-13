@@ -14,6 +14,7 @@ from app.core import messages
 from app.core.redis import redis_client
 from app.core.security import secret_key, create_verification_token
 from app.services.settings_service import get_setting, CONTACT_PHONE
+from app.services.registration_window import get_college_event, ensure_registration_open
 import bcrypt
 import re
 from jose import jwt, JWTError
@@ -87,6 +88,14 @@ async def check_step1_rate_limit(university_id: str) -> None:
 async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     await check_step1_rate_limit(data.university_id)
 
+    event = await get_college_event(db, data.college_id)
+    if event is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _generic_verify_fail(db)
+        )
+    await ensure_registration_open(event)
+
     existing_grad = await db.execute(
         select(GraduateModel).where(GraduateModel.university_id == data.university_id)
     )
@@ -151,6 +160,14 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Registration session expired. Please redo Step 1 (انتهت جلسة التسجيل. يرجى إعادة الخطوة الأولى.)"
         )
+
+    event = await get_college_event(db, college_id)
+    if event is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _register_fail(db)
+        )
+    await ensure_registration_open(event)
 
     email_check = await db.execute(
         select(GraduateModel).where(GraduateModel.email == data.email)

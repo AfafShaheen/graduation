@@ -200,9 +200,9 @@ def make_event(db):
             name=name,
             event_date=event_date,
             registration_start=registration_start
-            or datetime.combine(date(2029, 1, 1), time(0, 0), tzinfo=timezone.utc),
+            or datetime.combine(date(2020, 1, 1), time(0, 0), tzinfo=timezone.utc),
             registration_end=registration_end
-            or datetime.combine(date(2031, 1, 1), time(0, 0), tzinfo=timezone.utc),
+            or datetime.combine(date(2035, 1, 1), time(0, 0), tzinfo=timezone.utc),
             whatsapp_group_link=whatsapp_group_link,
             is_3companions_enabled=is_3companions_enabled,
             price_2_companions=price_2_companions,

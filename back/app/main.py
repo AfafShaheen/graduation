@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.redis import redis_client
-from app.routers import graduates, auth, admin_graduates, admin_university_records, admin_auth, admin_events, graduate_auth
+from app.routers import graduates, auth, admin_graduates, admin_university_records, admin_auth, admin_events, graduate_auth, public
 
 app = FastAPI(
     title="Graduation Ticket System API",
@@ -35,6 +35,7 @@ app.include_router(admin_university_records.router)
 app.include_router(admin_auth.router)
 app.include_router(admin_events.router)
 app.include_router(graduate_auth.router)
+app.include_router(public.router)
 
 @app.get("/")
 def read_root():
