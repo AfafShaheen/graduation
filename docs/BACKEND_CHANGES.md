@@ -2,7 +2,7 @@
 
 يُحدَّث هذا الملف في نهاية كل مرحلة، ويصف فقط ما تغيّر فعلياً في تلك المرحلة وما تراكم منها.
 
-المرحلة الحالية: **Phase 3 / M1** (نافذة التسجيل، نقاط عامة، إعدادات المدير ورمز الدفع).
+المرحلة الحالية: **Phase 3 / M2** (اختيار التذكرة، الدفع، «تذكرتي»، مراجعة المدير).
 
 ---
 
@@ -33,6 +33,24 @@
 | `PUT /api/admin/settings/shamcash-qr` | مدير (multipart، الحقل `file`) | يتحقق من نوع الصورة ببايتات السحر (PNG/JPEG/WEBP) وحجم ≤ 1 ميغابايت، ويخزّنها كـ data URI. يعيد `{message, shamcash_qr_image}`. عند الفشل 400 برسالة `INVALID_IMAGE`. |
 | `DELETE /api/admin/settings/shamcash-qr` | مدير | يحذف صورة رمز الدفع. يعيد `{message}`. |
 
+**المرحلة 3 / M2 — نقاط جديدة:**
+
+| المسار | المصادقة | الجسم/المعاملات | الاستجابة | الأخطاء |
+|---|---|---|---|---|
+| `GET /api/graduates/me/ticket-options` | خريج | — | `{event:{id,name,event_date}, registration:{is_open,start,end}, has_ticket, info_text, options:[{ticket_type,companions_count,price}]}` (خيار الـ3 مرافقين يظهر فقط عند تفعيله) | 403 `REGISTRATION_NOT_OPEN` |
+| `POST /api/graduates/me/ticket` | خريج | `{ticket_type, confirm}` (حقول زائدة مرفوضة) | 201 ملخّص التذكرة (status `AWAITING_PAYMENT`) | 400 `TICKET_CHOICE_NOT_CONFIRMED`، 400 `THREE_COMPANIONS_DISABLED`، 403 `REGISTRATION_*`، 409 `TICKET_ALREADY_EXISTS` |
+| `GET /api/graduates/me/payment-info` | خريج | — | `{amount, receiver_name, account_number, qr_image_url\|null, note_instruction}` | 404 `NO_TICKET`، 409 `PAYMENT_NOT_ALLOWED` |
+| `POST /api/graduates/me/payment` | خريج | `{transaction_number, amount, sender_name}` (حقول زائدة مرفوضة) | 201 `{status:"PROCESSING", message}` | 422 (صيغة)، 404 `NO_TICKET`، 409 `PAYMENT_NOT_ALLOWED`/`TRANSACTION_ALREADY_USED`، 403 `REGISTRATION_*` |
+| `GET /api/graduates/me/ticket` | خريج | — | بدون تذكرة: `{has_ticket:false, registration}`. مع تذكرة: `{has_ticket, ticket, event, message, payment_info?}` + عند `CONFIRMED` فقط: `qr_codes:[{id,code_type,code_value,is_activated,scanned}]` و`whatsapp_group_link` | — |
+| `GET /api/admin/events/{event_id}/payments` | مدير | `status=PROCESSING` (أحد الحالات الأربع)، `limit` (1–200)، `offset` | `{total, items:[{ticket_id, graduate:{id,full_name,university_id,college_name}, ticket_type, price, status, payment:{transaction_number,amount,sender_name,submitted_at}\|null, amount_mismatch}]}` مرتبة زمنياً تصاعدياً | 404 (حفل غير موجود) |
+| `GET /api/admin/tickets/{ticket_id}` | مدير | — | تفاصيل التذكرة والخريج وكامل سجلّ المدفوعات | 404 |
+| `POST /api/admin/tickets/{ticket_id}/confirm` | مدير | — | `{status, message}`؛ يثبّت الدفع ويصدر الرموز في نفس المعاملة | 404، 409 `REQUEST_NOT_PROCESSING` |
+| `POST /api/admin/tickets/{ticket_id}/reject` | مدير | `{reason}` (3–255 بعد التشذيب) | `{status, message}` | 400 `REJECT_REASON_REQUIRED`، 404، 409 `REQUEST_NOT_PROCESSING` |
+
+قاعدة صارمة (FR-10، FR-22-c): في `GET /api/graduates/me/ticket` لا تُعاد أي قيم رموز QR ولا رابط واتساب لأي حالة غير `CONFIRMED`، حتى إن وُجدت صفوف رموز (بعد إرجاع تأكيد إداري).
+
+ملاحظة للواجهة: كل مبالغ الدفع/الأسعار تُعاد **نصوصاً** (مثل `"100000.00"`) في عقود الخريج وفي نقاط مراجعة المدير.
+
 لم يتغيّر عقد `POST /api/auth/forgot-password` و`POST /api/auth/reset-password` (يبقيان `email + code + new_password` في نداء واحد). ملاحظة للواجهة: شاشة «reset-otp» المنفصلة لا يمكنها التحقق من الرمز وحدها؛ يجب حمل الرمز إلى النداء النهائي. تغيّر سلوك `forgot-password` داخلياً فقط (إصدار الرمز في مهمة خلفية) — التفاصيل في القسم 4.
 
 كما صار التحقق من سياسة كلمة السر مطبَّقاً على `password` في التسجيل و`new_password` في الاستعادة، ويعيد 422 عند المخالفة.
@@ -54,6 +72,8 @@
 
 **المرحلة 3 / M1**: لا تغييرات مخطط؛ تُستخدم جداول `settings` و`colleges` و`audit_logs` القائمة.
 
+**المرحلة 3 / M2**: لا تغييرات مخطط (D15)؛ تُستخدم جداول `tickets` و`payments` و`qr_codes` القائمة. المدفوعات بلا عمود حالة: الدفعة الحالية للتذكرة هي أحدث صف بحسب المعرّف (D16).
+
 ## 3. تغييرات البيئة والتشغيل (Environment / operations)
 
 ### متغيرات جديدة في نموذج متغيرات البيئة (من Phase 0)
@@ -72,6 +92,8 @@
 **المرحلة 2**: لا متغيرات بيئة جديدة. صار إقلاع الحاوية يشغّل `alembic upgrade head` قبل `uvicorn` (عبر `command` في `docker-compose.yml` و`CMD` في `Dockerfile`)، لذا تُطبَّق الترقيات تلقائياً. عنوان قاعدة البيانات لا يُخزَّن في `alembic.ini`؛ يُقرأ من `app.core.database.DATABASE_URL`.
 
 **المرحلة 3 / M1**: لا متغيرات بيئة جديدة ولا ترقيات قاعدة بيانات جديدة (جدول `settings` موجود من المرحلة 0).
+
+**المرحلة 3 / M2**: لا متغيرات بيئة جديدة ولا تغييرات تشغيلية.
 
 ### ما يجب على كل زميل فعله بعد سحب `dev`
 
@@ -99,6 +121,10 @@
 - **كشف أخطاء رمز التحقق**: صار كل فشل في `reset-password` (رمز خاطئ/منتهٍ/محاولات متجاوزة) يعيد 400 برسالة عامة واحدة `OTP_INVALID_GENERIC` دون كشف السبب.
 - **تزامن OTP**: يجري جلب صف رمز التحقق بـ `SELECT ... FOR UPDATE` قبل التحقق/الاستهلاك في `verify-otp` و`reset-password` لمنع الاستخدام المزدوج تحت التزامن.
 - **إعدادات المدير (FR-21، D12)**: نقاط المدير تقرأ وتعدّل رقم التواصل واسم وأرقام حساب الشام كاش، وترفع/تحذف صورة رمز الدفع (data URI، تُتحقق ببايتات السحر وحد 1 ميغابايت). كل تعديل يُسجَّل في سجل التدقيق (`SETTINGS_UPDATED` / `SHAMCASH_QR_UPDATED` / `SHAMCASH_QR_DELETED`).
+- **اختيار التذكرة (FR-7، FR-8، D9، D10)**: `GET /api/graduates/me/ticket-options` يعرض نوعي التذكرة وسعريهما بحسب إعدادات الحفل (يُخفى خيار الـ3 مرافقين عند تعطيله) ونصّ توضيحي (`TICKET_INFO_TEXT`). الاختيار يتطلب `confirm=true` (وإلا 400)، ولا يعمل إلا داخل نافذة التسجيل (403)، وتذكرة واحدة لكل خريج (409، ويُلتقط سباق القيد الفريد ويعاد 409 أيضاً). السعر يُجمَّد لحظة الاختيار في التذكرة (لقطة). لا تُطلب أسماء المرافقين، فقط العدد (2 أو 3).
+- **إرسال الدفع (FR-9، D16)**: `POST /api/graduates/me/payment` يقبل ثلاثة حقول فقط (رقم العملية، المبلغ، اسم المرسل). يُشذَّب رقم العملية ويُحوَّل لأحرف كبيرة ويطابق `^[A-Z0-9-]{4,100}$`؛ المبلغ `Decimal` موجب بمنزلتين عشريتين كحد أقصى؛ الاسم حروف ومسافات فقط (عربي/لاتيني). التذكرة تُقفل بـ `FOR UPDATE` أولاً. رقم عملية مسجَّل لتذكرة أخرى يعيد 409 `TRANSACTION_ALREADY_USED`، أما إعادة إرسال الرقم نفسه لنفس التذكرة فيُحدِّث صف الدفعة (المبلغ/المرسل و`reviewed_at=NULL`) دون صف جديد (D16). عند النجاح تصبح الحالة `PROCESSING` و`rejection_reason=NULL`. المبلغ المخالف للسعر يُعلَّم فقط (`amount_mismatch`) ولا يُمنع (D18).
+- **«تذكرتي» (FR-5، FR-10، FR-12، FR-22-c)**: `GET /api/graduates/me/ticket` يعيد رسالة عربية بحسب الحالة، ومعلومات الدفع في حالتي `AWAITING_PAYMENT`/`REJECTED`، ورموز QR ورابط واتساب في حالة `CONFIRMED` فقط (رمز الخريج أولاً). أي حالة أخرى لا تكشف أي رمز أو رابط حتى لو وُجدت صفوف رموز.
+- **مراجعة المدير (FR-17، FR-12)**: قائمة الطلبات تُصفّى بالحالة (افتراضياً `PROCESSING`) وتُرصّف زمنياً؛ `amount_mismatch` يوضّح اختلاف المبلغ عن سعر التذكرة. التأكيد يقفل التذكرة، ويتطلب حالة `PROCESSING` مع دفعة قائمة (وإلا 409 `REQUEST_NOT_PROCESSING`)، ويضبط `CONFIRMED`+`confirmed_at` و`reviewed_at`، ثم يصدر الرموز في **نفس المعاملة** (الفشل يُرجِع كل شيء، لا تذكرة نصف مؤكَّدة). الرفض يتطلب سبباً (3–255). كلاهما مسموح بعد انتهاء نافذة التسجيل، ويُسجَّل في التدقيق (`PAYMENT_CONFIRMED` / `PAYMENT_REJECTED`) مع إبطال مخزن بيانات المدير (`invalidate_admin_cache`).
 
 ## 5. كيفية تشغيل الاختبارات
 
@@ -108,7 +134,7 @@ docker compose exec back sh -c "pip install -r requirements-dev.txt && pytest -q
 
 - قاعدة بيانات الاختبار `graduation_test` و Redis رقم 15 معزولتان تماماً. يوجد حاجز يمنع تشغيل الاختبارات على قاعدة لا ينتهي اسمها بـ `_test`.
 - إعدادات التوافق: `asyncio_mode = auto`، وحلقة حدث واحدة للجلسة كاملة.
-- آخر تشغيل: 100 اختباراً ناجحاً (71 حتى نهاية المرحلة 2 + 10 لإصلاحات مراجعة المرحلة 2.5 + 9 لنافذة التسجيل/النقاط العامة في M1 + 10 لإعدادات المدير ورمز الدفع في M1).
+- آخر تشغيل: 145 اختباراً ناجحاً (100 حتى نهاية M1 + 10 لاختيار التذكرة + 14 لإرسال الدفع + 7 لـ«تذكرتي» + 14 لمراجعة المدير في M2).
 
 ### أوامر إنشاء المدير (من Phase 0)
 
@@ -119,7 +145,7 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 
 - كلمة سر المدير 12 محرفاً على الأقل، ويُرفض إنشاء مدير ثانٍ (SRS FR-13)، ولا يوجد endpoint HTTP لإنشاء المديرين.
 
-## 6. القرارات (D1–D8)
+## 6. القرارات (D1–D18)
 
 - **D1**: Redis يبقى (تحديد المعدل، قائمة الرموز الملغاة، الـ cache). مقبول من المالك ولا يُزال.
 - **D2**: دلالات QR: العمود `is_activated` يعني «مسموح له بالمسح»، والمرافقون يُفعَّلون بعد مسح رمز الخريج. لا إعادة تسمية ولا أعمدة جديدة (المرحلة 2).
@@ -130,6 +156,14 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 - **D7**: كل رسالة للمستخدم عربية فقط، ورسائل المرحلة 1 في `app/core/messages.py`.
 - **D8**: تغييرات عقد الـ API موثّقة هنا (القسم 1).
 - **D12 (Phase 3)**: تُخزَّن صورة رمز دفع الشام كاش في جدول الإعدادات كـ data URI واحد (`data:image/...;base64,...`) بدل ملفات على القرص؛ يُتحقق من نوعها ببايتات السحر ومن حجمها (≤ 1 ميغابايت) قبل التخزين.
+- **D9 (Phase 3)**: اختيار التذكرة وإرسال/(إعادة إرسال) الدفع مسموحان فقط داخل نافذة تسجيل الحفل (`ensure_registration_open`). مراجعة المدير (تأكيد/رفض) والدخول وعرض التذكرة و«تذكرتي» متاحة في أي وقت.
+- **D10 (Phase 3)**: نوع التذكرة نهائي بعد الاختيار؛ أي اختيار ثانٍ يعيد 409.
+- **D13 (Phase 3)**: نقطة المسح تعيد 200 لكل نتيجة عمل مع علم `valid` دون أي بيانات شخصية للخريج (تُنفَّذ في M3).
+- **D14 (Phase 3)**: النقاط الجديدة غير مخزَّنة مؤقتاً؛ بعد أي تغيير في التذاكر/المدفوعات/رموز QR يُنادى `invalidate_admin_cache()`.
+- **D15 (Phase 3)**: لا تغييرات مخطط ولا ترقية Alembic جديدة.
+- **D16 (Phase 3)**: الدفعة الحالية للتذكرة هي أحدث صف `payments` بحسب المعرّف. إعادة إرسال رقم العملية نفسه لنفس التذكرة تُحدِّث ذلك الصف (`reviewed_at=NULL`) بدل إدراج صف جديد؛ الرقم نفسه لتذكرة أخرى مكرَّر (409).
+- **D17 (Phase 3)**: تصدير Excel للمدير فقط ومُدقَّق، ويُحيّد حقن الصيغ (نصوص تبدأ بـ `=`/`+`/`-`/`@` تُكتب نصاً خالصاً) (تُنفَّذ في M3).
+- **D18 (Phase 3)**: تُستخدم `Decimal` للمبالغ. المبلغ المخالف لسعر التذكرة يُعلَّم للمدير (`amount_mismatch`) ولا يُمنع.
 
 ## 7. تتبّع متطلبات SRS (SRS traceability)
 
@@ -142,11 +176,16 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 | FR-15 (رسائل التسجيل غير مفتوح/مغلق) | محقق | M1: `REGISTRATION_NOT_OPEN` / `REGISTRATION_CLOSED`. |
 | FR-21 (إعدادات المدير: رقم التواصل، صورة وبيانات دفع الشام كاش) | محقق | M1: نقاط `/api/admin/settings*` والنقاط العامة `GET /api/settings/public` و`GET /api/settings/shamcash-qr`. |
 | FR-4 (OTP: 6 أرقام، 10 دقائق، مرة واحدة، قفل بعد 5، إعادة إرسال بعد دقيقة، تعديل البريد قبل التأكيد) | محقق | 1.2 + 1.3. |
-| FR-5 (دخول بالبريد وكلمة السر مع تحديد المعدل) | محقق (جزئي للبيانات) | 1.2/1.3/1.5؛ بيانات «تذكرتي» لاحقاً. |
+| FR-5 (دخول بالبريد وكلمة السر مع تحديد المعدل) | محقق | 1.2/1.3/1.5؛ بيانات «تذكرتي» في M2 (`GET /api/graduates/me/ticket`). |
 | FR-6 (استعادة كلمة السر عبر OTP بنفس الخصائص) | محقق | 1.2 + 1.4 (رد عام). |
+| FR-7 (شرح أهمية التذكرة وشروطها قبل الاختيار) | محقق | M2: `TICKET_INFO_TEXT` في `GET /api/graduates/me/ticket-options`. |
+| FR-8 (اختيار النوع/السعر مع تأكيد الاختيار، العدد دون الأسماء) | محقق | M2: `POST /api/graduates/me/ticket` (+ `companions_count` دون أسماء مرافقين). |
+| FR-9 (بيانات دفع الشام كاش وإرسال ثلاثة حقول ورفض الرقم المكرر) | محقق | M2: `GET /api/graduates/me/payment-info` و`POST /api/graduates/me/payment` (D16/D18). |
+| FR-10 (إظهار رابط واتساب عند التأكيد فقط) | محقق | M2: رابط المجموعة يُعاد في «تذكرتي» عند `CONFIRMED` فقط. |
 | FR-11 (معرّف فريد لكل خريج) | موجود مسبقاً | المخطط. |
-| FR-12 (QR فريد...) | محقق | 2.2 + 2.3 + 2.4 (قيود القاعدة، النموذج، `issue_qr_codes_for_ticket`/`scan_qr_code`). |
+| FR-12 (QR فريد...) | محقق | 2.2 + 2.3 + 2.4 + إصدار الرموز عند تأكيد الدفع في M2 (`POST /api/admin/tickets/{id}/confirm`). |
 | FR-13 (دخول المدير محدود المعدل) | محقق جزئياً | 0.3؛ الحساب الواحد مفروض في السكربت. |
+| FR-17 (مراجعة طلبات الدفع ومطابقتها والتأكيد/الرفض) | محقق | M2: نقاط `/api/admin/events/{event_id}/payments` و`/api/admin/tickets/{id}` و`confirm`/`reject`. |
 | FR-22 (إجراءات المدير الاستثنائية) | محقق | 2.5 + إصلاحات المراجعة 2.5-1/2.5-2 (مع 2.2/2.3 لدعم قيود المسح). |
 | FR-24/25 (رسائل الماسح، مسح ذرّي مرة واحدة) | محقق | 2.4 (قفل `FOR UPDATE` + ترتيب القرار) + 2.6 (تدقيق كل محاولة). |
 | NFR (bcrypt/argon2) | محقق | 0.3 للمدير؛ التسجيل والعودة يستخدمان bcrypt. |
@@ -158,5 +197,4 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 
 ## 8. ما لم يُنجَز بعد (Still not done)
 
-- endpoints: FR-8/9/10/17/18/19/20/23/24، وربط المسح بـ HTTP (شاشة/جهاز الماسح).
-- بيانات «تذكرتي» (FR-5)، وربط `revert_payment` بإبطال الرموز المُصدَرة عند إعادة بناء نقطة تذكرتي.
+- endpoints: FR-18/19/20/23/24، وربط المسح بـ HTTP (شاشة/جهاز الماسح).
