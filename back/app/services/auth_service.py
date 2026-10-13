@@ -24,6 +24,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Strong references to fire-and-forget tasks. asyncio only keeps a weak
+# reference to running tasks, so without this the event loop could garbage
+# collect the password-reset task mid-flight.
+_background_tasks: set[asyncio.Task] = set()
+
 
 async def check_redis_cooldown(identifier: str, action: str) -> None:
     """Check Redis-backed 60-second cooldown rate limit for maximum performance."""
@@ -78,7 +83,13 @@ async def reset_redis_failed_attempts(identifier: str) -> None:
         logger.warning("Redis failed-attempts reset failed (%s); failing open", exc)
 
 
-async def fetch_latest_otp(db: AsyncSession, graduate_id: int, purpose: OtpPurpose) -> OtpCodeModel | None:
+async def fetch_latest_otp(
+    db: AsyncSession,
+    graduate_id: int,
+    purpose: OtpPurpose,
+    *,
+    for_update: bool = False,
+) -> OtpCodeModel | None:
     stmt = (
         select(OtpCodeModel)
         .where(
@@ -88,6 +99,8 @@ async def fetch_latest_otp(db: AsyncSession, graduate_id: int, purpose: OtpPurpo
         .order_by(OtpCodeModel.id.desc())
         .limit(1)
     )
+    if for_update:
+        stmt = stmt.with_for_update()
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -203,7 +216,7 @@ async def verify_otp_service(db: AsyncSession, graduate_id: int, code: str, purp
             detail="لقد تجاوزت الحد الأقصى لمحاولات الإدخال الفاشلة (5). يرجى طلب رمز جديد."
         )
 
-    otp_row = await fetch_latest_otp(db, graduate_id, purpose)
+    otp_row = await fetch_latest_otp(db, graduate_id, purpose, for_update=True)
     if not otp_row:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="رمز التحقق غير موجود.")
 
@@ -305,7 +318,9 @@ async def forgot_password_service(db: AsyncSession, email: str) -> dict:
         "message": "إذا كان هذا البريد مسجلاً، فقد تم إرسال رمز استعادة كلمة المرور."
     }
 
-    asyncio.create_task(_send_password_reset_otp(email))
+    task = asyncio.create_task(_send_password_reset_otp(email))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     return success_response
 
 
@@ -316,12 +331,9 @@ async def reset_password_service(db: AsyncSession, email: str, code: str, new_pa
 
     redis_attempts = await check_redis_failed_attempts(str(grad.id))
     if check_failed_attempts(redis_attempts):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=messages.RESET_ATTEMPTS_EXCEEDED
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
-    otp_row = await fetch_latest_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
+    otp_row = await fetch_latest_otp(db, grad.id, OtpPurpose.PASSWORD_RESET, for_update=True)
     if not otp_row or otp_row.used_at is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
@@ -329,19 +341,11 @@ async def reset_password_service(db: AsyncSession, email: str, code: str, new_pa
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     if check_failed_attempts(otp_row.failed_attempts) or check_failed_attempts(redis_attempts):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=messages.RESET_ATTEMPTS_EXCEEDED
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     submitted_hash = hash_otp(code)
     if not hmac.compare_digest(submitted_hash, otp_row.code_hash):
-        attempts = await increment_otp_failed_attempts(db, otp_row)
-        if check_failed_attempts(attempts):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=messages.RESET_ATTEMPTS_EXCEEDED
-            )
+        await increment_otp_failed_attempts(db, otp_row)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     await mark_otp_as_used(db, otp_row)
