@@ -303,9 +303,10 @@ async def revert_payment_service(db: AsyncSession, ticket_id: int, admin: dict) 
     ticket.confirmed_at = None
     db.add(ticket)
 
-    # NOTE: once the graduate "my ticket" endpoint (FR-5) exists, reverting a
-    # confirmed payment must also invalidate the QRs issued for that ticket, so
-    # a code from a no-longer-confirmed ticket can never be scanned or shown.
+    # The QR rows are intentionally kept: the "my ticket" endpoint (M2) exposes
+    # NO code values or WhatsApp link for any status other than CONFIRMED, so a
+    # code of a no-longer-confirmed ticket can never be shown; on re-confirmation
+    # the SAME code values become visible and scannable again.
     await write_audit_log(
         db,
         admin_id=admin["admin_id"],
