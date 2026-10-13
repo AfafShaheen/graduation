@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.admin import AdminModel
 from app.models.graduate import GraduateModel
+from app.models.scanner import ScannerModel
 from app.core.redis import redis_client
 from app.core import messages
 from app.core.security import secret_key, ALGORITHM
@@ -27,19 +28,18 @@ async def get_current_admin(
         payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         jti = payload.get("jti")
         role = payload.get("role")
-        admin_id = payload.get("sub")
+        scanner_id = payload.get("sub") or payload.get("scanner_id")
 
-        if role != "admin" or not admin_id:
+        if role != "scanner" or not scanner_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="ليس لديك صلاحيات المسؤول."
+                detail="ليس لديك صلاحيات الماسح الضوئي."
             )
 
         if jti:
             try:
                 blacklisted = await redis_client.get(f"token_blacklist:{jti}")
             except Exception:
-                # Fail closed: if we cannot verify the token status, deny.
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail=messages.SERVICE_UNAVAILABLE,
@@ -50,14 +50,14 @@ async def get_current_admin(
                     detail="انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً."
                 )
 
-        admin = await db.get(AdminModel, int(admin_id))
-        if not admin:
+        scanner = await db.get(ScannerModel, int(scanner_id))
+        if not scanner:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="حساب المسؤول غير موجود."
+                detail="حساب الماسح الضوئي غير موجود."
             )
 
-        return {"admin_id": admin.id, "username": admin.username}
+        return scanner
 
     except JWTError:
         raise HTTPException(
