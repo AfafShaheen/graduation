@@ -114,7 +114,7 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
         normalize_arabic(uni_record.full_name) != normalize_arabic(data.full_name) or
         normalize_arabic(uni_record.father_name) != normalize_arabic(data.father_name) or
         normalize_arabic(uni_record.mother_name) != normalize_arabic(data.mother_name) or
-        uni_record.gender.strip() != data.gender.strip()
+        normalize_arabic(uni_record.gender) != normalize_arabic(data.gender)
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
