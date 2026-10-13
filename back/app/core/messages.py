@@ -41,6 +41,9 @@ SCANNER_USERNAME_TAKEN = "اسم المستخدم مستخدم مسبقاً"
 SCANNER_LOGIN_FAILED = "اسم المستخدم أو كلمة السر غير صحيحة"
 INVALID_IMAGE = "الصورة غير صالحة، المسموح PNG أو JPEG أو WEBP بحد أقصى 1 ميغابايت"
 TICKET_INFO_TEXT = "التذكرة تمنحك أنت ومرافقيك دخول حفل التخرج. لا يمكن تعديل التذكرة أو استرجاع قيمتها بعد تأكيد الدفع."
+SETTINGS_UPDATED = "تم تحديث الإعدادات بنجاح"
+SHAMCASH_QR_UPDATED = "تم تحديث رمز دفع الشام كاش بنجاح"
+SHAMCASH_QR_DELETED = "تم حذف رمز دفع الشام كاش"
 
 
 def append_contact_phone(message: str, contact_phone: str | None) -> str:
