@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+import asyncio
+from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
@@ -10,9 +11,23 @@ from app.services.email_service import (
     hash_otp,
     send_otp_email,
     OTP_TTL_MINUTES,
+    RESEND_COOLDOWN_SECONDS,
 )
 from app.core.redis import redis_client
+from app.core.database import AsyncSessionLocal
+from app.core import messages
+from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.services.graduate_auth_service import create_graduate_access_token
+import hmac
 import bcrypt
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Strong references to fire-and-forget tasks. asyncio only keeps a weak
+# reference to running tasks, so without this the event loop could garbage
+# collect the password-reset task mid-flight.
+_background_tasks: set[asyncio.Task] = set()
 
 
 async def check_redis_cooldown(identifier: str, action: str) -> None:
@@ -27,16 +42,16 @@ async def check_redis_cooldown(identifier: str, action: str) -> None:
             )
     except HTTPException:
         raise
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis cooldown check failed (%s); failing open", exc)
 
 
 async def set_redis_cooldown(identifier: str, action: str, seconds: int = 60) -> None:
     key = f"cooldown:{action}:{identifier}"
     try:
         await redis_client.setex(key, seconds, "1")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis cooldown write failed (%s); failing open", exc)
 
 
 async def check_redis_failed_attempts(identifier: str) -> int:
@@ -44,7 +59,8 @@ async def check_redis_failed_attempts(identifier: str) -> int:
     try:
         val = await redis_client.get(key)
         return int(val) if val else 0
-    except Exception:
+    except Exception as exc:
+        logger.warning("Redis failed-attempts read failed (%s); failing open", exc)
         return 0
 
 
@@ -54,7 +70,8 @@ async def increment_redis_failed_attempts(identifier: str) -> int:
         val = await redis_client.incr(key)
         await redis_client.expire(key, 600)  # 10 mins TTL
         return val
-    except Exception:
+    except Exception as exc:
+        logger.warning("Redis failed-attempts increment failed (%s); failing open", exc)
         return 1
 
 
@@ -62,11 +79,17 @@ async def reset_redis_failed_attempts(identifier: str) -> None:
     key = f"attempts:otp:{identifier}"
     try:
         await redis_client.delete(key)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis failed-attempts reset failed (%s); failing open", exc)
 
 
-async def fetch_latest_otp(db: AsyncSession, graduate_id: int, purpose: OtpPurpose) -> OtpCodeModel | None:
+async def fetch_latest_otp(
+    db: AsyncSession,
+    graduate_id: int,
+    purpose: OtpPurpose,
+    *,
+    for_update: bool = False,
+) -> OtpCodeModel | None:
     stmt = (
         select(OtpCodeModel)
         .where(
@@ -76,6 +99,8 @@ async def fetch_latest_otp(db: AsyncSession, graduate_id: int, purpose: OtpPurpo
         .order_by(OtpCodeModel.id.desc())
         .limit(1)
     )
+    if for_update:
+        stmt = stmt.with_for_update()
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -124,31 +149,28 @@ async def mark_email_verified(db: AsyncSession, graduate_id: int) -> None:
         await db.commit()
 
 
-async def create_and_save_new_otp(db: AsyncSession, graduate_id: int, purpose: OtpPurpose) -> tuple[str, str]:
-    now = datetime.now(UTC)
-    code = generate_otp()
-    code_hash = hash_otp(code)
-    expires_at = now.replace(minute=now.minute + OTP_TTL_MINUTES)
+async def issue_and_send_otp(db: AsyncSession, graduate: GraduateModel, purpose: OtpPurpose, to_email: str) -> bool:
+    """Create a fresh OTP, send it, and arm the cooldown only after success.
 
-    new_entry = OtpCodeModel(
-        graduate_id=graduate_id,
+    The OTP row is committed before sending so a mail failure still leaves a
+    usable code that the user can resend. Returns True when the email was sent.
+    """
+    code = generate_otp()
+    expires_at = datetime.now(UTC) + timedelta(minutes=OTP_TTL_MINUTES)
+    db.add(OtpCodeModel(
+        graduate_id=graduate.id,
         purpose=purpose.value,
-        code_hash=code_hash,
+        code_hash=hash_otp(code),
         expires_at=expires_at,
-        failed_attempts=0
-    )
-    db.add(new_entry)
+        failed_attempts=0,
+    ))
     await db.commit()
 
-    # Set Redis cooldown and reset attempts counter
-    await set_redis_cooldown(str(graduate_id), purpose.value, 60)
-    await reset_redis_failed_attempts(str(graduate_id))
-
-    return code, purpose.value
-
-
-async def dispatch_otp_email(email: str, code: str, purpose: OtpPurpose) -> bool:
-    return send_otp_email(email, code, purpose)
+    sent = await asyncio.to_thread(send_otp_email, to_email, code, purpose)
+    if sent:
+        await set_redis_cooldown(str(graduate.id), purpose.value, RESEND_COOLDOWN_SECONDS)
+        await reset_redis_failed_attempts(str(graduate.id))
+    return sent
 
 
 async def check_email_uniqueness(db: AsyncSession, new_email: str, graduate_id: int) -> None:
@@ -194,7 +216,7 @@ async def verify_otp_service(db: AsyncSession, graduate_id: int, code: str, purp
             detail="لقد تجاوزت الحد الأقصى لمحاولات الإدخال الفاشلة (5). يرجى طلب رمز جديد."
         )
 
-    otp_row = await fetch_latest_otp(db, graduate_id, purpose)
+    otp_row = await fetch_latest_otp(db, graduate_id, purpose, for_update=True)
     if not otp_row:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="رمز التحقق غير موجود.")
 
@@ -211,10 +233,19 @@ async def verify_otp_service(db: AsyncSession, graduate_id: int, code: str, purp
         )
 
     submitted_hash = hash_otp(code)
-    if submitted_hash == otp_row.code_hash:
+    if hmac.compare_digest(submitted_hash, otp_row.code_hash):
         await mark_otp_as_used(db, otp_row)
         if purpose == OtpPurpose.EMAIL_VERIFICATION:
             await mark_email_verified(db, graduate_id)
+            grad = await fetch_graduate(db, graduate_id)
+            access_value = create_graduate_access_token(grad)
+            return {
+                "status": "success",
+                "message": "تم التحقق بنجاح.",
+                "access_token": access_value,
+                "token_type": "bearer",
+                "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            }
         return {"status": "success", "message": "تم التحقق بنجاح."}
     else:
         attempts = await increment_otp_failed_attempts(db, otp_row)
@@ -232,29 +263,53 @@ async def verify_otp_service(db: AsyncSession, graduate_id: int, code: str, purp
 async def resend_otp_service(db: AsyncSession, graduate_id: int, purpose: OtpPurpose) -> dict:
     await check_redis_cooldown(str(graduate_id), purpose.value)
 
-    last_otp = await fetch_latest_otp(db, graduate_id, purpose)
-    if last_otp:
-        validate_otp_expiration(last_otp.expires_at)
-
     grad = await fetch_graduate(db, graduate_id)
     if not grad:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على حساب الخريج.")
 
-    code, _ = await create_and_save_new_otp(db, graduate_id, purpose)
-    await dispatch_otp_email(grad.email, code, purpose)
+    sent = await issue_and_send_otp(db, grad, purpose, grad.email)
+    if not sent:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=messages.EMAIL_SEND_FAIL)
 
     return {"status": "success", "message": "تم إرسال رمز تحقق جديد إلى بريدك الإلكتروني."}
 
 
 async def change_email_service(db: AsyncSession, graduate_id: int, new_email: str) -> dict:
     grad = await update_graduate_email_address(db, graduate_id, new_email)
-    code, purpose = await create_and_save_new_otp(db, graduate_id, OtpPurpose.EMAIL_VERIFICATION)
-    await dispatch_otp_email(new_email, code, OtpPurpose.EMAIL_VERIFICATION)
+    sent = await issue_and_send_otp(db, grad, OtpPurpose.EMAIL_VERIFICATION, new_email)
+    if not sent:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=messages.EMAIL_SEND_FAIL)
 
     return {
         "status": "success",
         "message": "تم تحديث البريد الإلكتروني بنجاح، وإرسال رمز تحقق جديد إلى بريدك الجديد."
     }
+
+
+async def _send_password_reset_otp(email: str) -> None:
+    """Look up the graduate and send a reset OTP, detached from the request.
+
+    Runs as a background task so the HTTP response time never reveals whether
+    the email is registered. It opens its own ``AsyncSessionLocal`` session
+    because the request-scoped session is closed once the response is sent.
+    This coroutine never raises; failures are logged without the OTP code.
+    """
+    try:
+        async with AsyncSessionLocal() as session:
+            grad = await fetch_graduate_by_email(session, email)
+            if not grad:
+                return
+
+            try:
+                await check_redis_cooldown(str(grad.id), OtpPurpose.PASSWORD_RESET.value)
+            except HTTPException:
+                return
+
+            await issue_and_send_otp(session, grad, OtpPurpose.PASSWORD_RESET, grad.email)
+    except Exception as exc:
+        logger.error(
+            "Background password-reset OTP task failed (%s)", type(exc).__name__
+        )
 
 
 async def forgot_password_service(db: AsyncSession, email: str) -> dict:
@@ -263,61 +318,40 @@ async def forgot_password_service(db: AsyncSession, email: str) -> dict:
         "message": "إذا كان هذا البريد مسجلاً، فقد تم إرسال رمز استعادة كلمة المرور."
     }
 
-    grad = await fetch_graduate_by_email(db, email)
-    if not grad:
-        return success_response
-
-    await check_redis_cooldown(str(grad.id), OtpPurpose.PASSWORD_RESET.value)
-
-    last_otp = await fetch_latest_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
-    if last_otp:
-        validate_otp_expiration(last_otp.expires_at)
-
-    code, _ = await create_and_save_new_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
-    await dispatch_otp_email(grad.email, code, OtpPurpose.PASSWORD_RESET)
-
+    task = asyncio.create_task(_send_password_reset_otp(email))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     return success_response
 
 
 async def reset_password_service(db: AsyncSession, email: str, code: str, new_password: str) -> dict:
     grad = await fetch_graduate_by_email(db, email)
     if not grad:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="البريد الإلكتروني غير مسجل.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     redis_attempts = await check_redis_failed_attempts(str(grad.id))
     if check_failed_attempts(redis_attempts):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many failed attempts. Request a new code."
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
-    otp_row = await fetch_latest_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
+    otp_row = await fetch_latest_otp(db, grad.id, OtpPurpose.PASSWORD_RESET, for_update=True)
     if not otp_row or otp_row.used_at is not None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="رمز التحقق غير موجود أو مستخدم مسبقاً.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     if not validate_otp_expiration(otp_row.expires_at):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="انتهت صلاحية رمز التحقق.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     if check_failed_attempts(otp_row.failed_attempts) or check_failed_attempts(redis_attempts):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many failed attempts. Request a new code."
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     submitted_hash = hash_otp(code)
-    if submitted_hash != otp_row.code_hash:
-        attempts = await increment_otp_failed_attempts(db, otp_row)
-        if check_failed_attempts(attempts):
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many failed attempts. Request a new code."
-            )
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="رمز التحقق غير صحيح.")
+    if not hmac.compare_digest(submitted_hash, otp_row.code_hash):
+        await increment_otp_failed_attempts(db, otp_row)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
     await mark_otp_as_used(db, otp_row)
     await update_graduate_password(db, grad, new_password)
 
     return {
         "status": "success",
-        "message": "Password has been reset successfully."
+        "message": messages.PASSWORD_RESET_SUCCESS
     }

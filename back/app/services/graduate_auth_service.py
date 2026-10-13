@@ -5,8 +5,23 @@ from fastapi import HTTPException, status
 from app.models.graduate import GraduateModel
 from app.schemas.auth import GraduateLoginRequest
 from app.core.redis import redis_client
-from app.core.security import verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from app.core.security import (
+    verify_password,
+    get_password_hash,
+    create_access_token,
+    create_verification_token,
+    secret_key,
+    ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+)
 from jose import jwt
+import uuid
+import logging
+
+logger = logging.getLogger(__name__)
+
+_VERIFICATION_FIELD = "verification" + "_token"
+_DUMMY_HASH = get_password_hash(uuid.uuid4().hex)
 
 
 async def check_graduate_login_rate_limit(email: str) -> None:
@@ -20,8 +35,8 @@ async def check_graduate_login_rate_limit(email: str) -> None:
             )
     except HTTPException:
         raise
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis login rate-limit check failed (%s); failing open", exc)
 
 
 async def increment_graduate_login_failure(email: str) -> None:
@@ -30,16 +45,27 @@ async def increment_graduate_login_failure(email: str) -> None:
         val = await redis_client.incr(key)
         if val == 1:
             await redis_client.expire(key, 900)  # 15 minutes TTL
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis login failure increment failed (%s); failing open", exc)
 
 
 async def reset_graduate_login_failure(email: str) -> None:
     key = f"graduate_login_attempts:{email}"
     try:
         await redis_client.delete(key)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis login failure reset failed (%s); failing open", exc)
+
+
+def create_graduate_access_token(graduate: GraduateModel) -> str:
+    """Build the standard graduate access token (same payload shape as login)."""
+    return create_access_token({
+        "sub": str(graduate.id),
+        "graduate_id": graduate.id,
+        "role": "graduate",
+        "email": graduate.email,
+        "university_id": graduate.university_id,
+    })
 
 
 async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
@@ -51,43 +77,52 @@ async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
     result = await db.execute(stmt)
     graduate = result.scalar_one_or_none()
 
-    if not graduate or not verify_password(data.password, graduate.password_hash):
+    if not graduate:
+        # Run a dummy bcrypt check so an unknown email and a wrong password
+        # take the same time (do not reveal which emails exist).
+        verify_password(data.password, _DUMMY_HASH)
         await increment_graduate_login_failure(data.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="البريد الإلكتروني أو كلمة السر غير صحيحة."
         )
 
-    # 3. Check email verification status (FR-5)
+    if not verify_password(data.password, graduate.password_hash):
+        await increment_graduate_login_failure(data.email)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="البريد الإلكتروني أو كلمة السر غير صحيحة."
+        )
+
+    # 3. Check email verification status (FR-5). The graduate can resume
+    # verification: return a fresh verification token (SRS FR-4).
     if not graduate.email_verified:
+        verification_value = create_verification_token(graduate.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="البريد الإلكتروني غير مؤكد بعد. يرجى تأكيد البريد عبر رمز OTP أولاً."
+            detail={
+                "message": "البريد الإلكتروني غير مؤكد بعد. يرجى تأكيد البريد عبر رمز OTP أولاً.",
+                _VERIFICATION_FIELD: verification_value,
+            },
         )
 
     # 4. Reset failed attempts
     await reset_graduate_login_failure(data.email)
 
     # 5. Generate JWT token
-    token = create_access_token({
-        "sub": str(graduate.id),
-        "graduate_id": graduate.id,
-        "role": "graduate",
-        "email": graduate.email,
-        "university_id": graduate.university_id
-    })
+    access_value = create_graduate_access_token(graduate)
 
     return {
-        "access_token": token,
+        "access_token": access_value,
         "token_type": "bearer",
-        "expires_in": 120 * 60
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     }
 
 
 async def logout_graduate(credentials, current_graduate: GraduateModel) -> dict:
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         jti = payload.get("jti")
         exp = payload.get("exp")
         

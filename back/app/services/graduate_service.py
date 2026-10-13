@@ -6,18 +6,35 @@ from app.models.graduate import GraduateModel
 from app.models.university_record import UniversityRecordModel
 from app.models.college import CollegeModel
 from app.models.event import EventModel
-from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request, UserUpdate, GraduateUpdateAdmin
-from app.services.email_service import generate_otp, hash_otp, send_otp_email, OtpPurpose
-from app.models.otp_code import OtpCodeModel
+from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request
+from app.services.email_service import OtpPurpose
+from app.services.auth_service import issue_and_send_otp
+from sqlalchemy.exc import IntegrityError
+from app.core import messages
 from app.core.redis import redis_client
+from app.core.security import secret_key, create_verification_token
+from app.services.settings_service import get_setting, CONTACT_PHONE
+from app.services.registration_window import get_college_event, ensure_registration_open
 import bcrypt
 import re
 from jose import jwt, JWTError
-import os
+import logging
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-graduation-key-change-in-prod")
+logger = logging.getLogger(__name__)
+
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 15
+_VERIFICATION_FIELD = "verification" + "_token"
+
+
+async def _generic_verify_fail(db: AsyncSession) -> str:
+    phone = await get_setting(db, CONTACT_PHONE)
+    return messages.append_contact_phone(messages.GENERIC_VERIFY_FAIL, phone)
+
+
+async def _register_fail(db: AsyncSession) -> str:
+    phone = await get_setting(db, CONTACT_PHONE)
+    return messages.append_contact_phone(messages.REGISTER_FAIL, phone)
 
 
 def normalize_arabic(text: str) -> str:
@@ -34,13 +51,15 @@ def normalize_arabic(text: str) -> str:
 def create_registration_token(data: dict) -> str:
     expire = datetime.now(UTC) + timedelta(minutes=TOKEN_EXPIRE_MINUTES)
     to_encode = data.copy()
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    to_encode.update({"exp": expire, "purpose": "registration"})
+    return jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
 
 
 def decode_registration_token(token: str) -> dict:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
+        if payload.get("purpose") != "registration":
+            raise JWTError("invalid token purpose")
         return payload
     except JWTError:
         raise HTTPException(
@@ -56,18 +75,26 @@ async def check_step1_rate_limit(university_id: str) -> None:
         if attempts and int(attempts) >= 10:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many verification attempts. Please try again later."
+                detail=messages.VERIFY_RATE_LIMITED
             )
         await redis_client.incr(key)
         await redis_client.expire(key, 300)
     except HTTPException:
         raise
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Redis step1 rate-limit check failed (%s); failing open", exc)
 
 
 async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     await check_step1_rate_limit(data.university_id)
+
+    event = await get_college_event(db, data.college_id)
+    if event is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _generic_verify_fail(db)
+        )
+    await ensure_registration_open(event)
 
     existing_grad = await db.execute(
         select(GraduateModel).where(GraduateModel.university_id == data.university_id)
@@ -75,7 +102,7 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     if existing_grad.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="University ID already registered (الرقم الجامعي مسجل مسبقاً)."
+            detail=await _generic_verify_fail(db)
         )
 
     uni_record_result = await db.execute(
@@ -89,18 +116,18 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     if not uni_record:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Student record not found in university records (سجل الطالب غير موجود في السجلات الجامعية)."
+            detail=await _generic_verify_fail(db)
         )
 
     if (
         normalize_arabic(uni_record.full_name) != normalize_arabic(data.full_name) or
         normalize_arabic(uni_record.father_name) != normalize_arabic(data.father_name) or
         normalize_arabic(uni_record.mother_name) != normalize_arabic(data.mother_name) or
-        uni_record.gender.strip() != data.gender.strip()
+        normalize_arabic(uni_record.gender) != normalize_arabic(data.gender)
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Student record not found in university records (سجل الطالب غير موجود في السجلات الجامعية أو البيانات غير مطابقة)."
+            detail=await _generic_verify_fail(db)
         )
 
     token_payload = {
@@ -134,13 +161,21 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
             detail="Registration session expired. Please redo Step 1 (انتهت جلسة التسجيل. يرجى إعادة الخطوة الأولى.)"
         )
 
+    event = await get_college_event(db, college_id)
+    if event is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _register_fail(db)
+        )
+    await ensure_registration_open(event)
+
     email_check = await db.execute(
         select(GraduateModel).where(GraduateModel.email == data.email)
     )
     if email_check.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="البريد الإلكتروني مسجل مسبقاً."
+            detail=await _register_fail(db)
         )
 
     password_hash = bcrypt.hashpw(data.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
@@ -157,64 +192,33 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
         password_hash=password_hash,
         university_id=university_id
     )
-    db.add(new_graduate)
-    await db.flush()
-    await db.refresh(new_graduate)
+    try:
+        db.add(new_graduate)
+        await db.flush()
+        await db.refresh(new_graduate)
+    except IntegrityError:
+        # Race between two concurrent registrations (unique email/university id).
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _register_fail(db)
+        )
 
-    now = datetime.now(UTC)
-    otp_code = generate_otp()
-    otp_hash = hash_otp(otp_code)
-    expires_at = now.replace(minute=now.minute + 10)
+    sent = await issue_and_send_otp(db, new_graduate, OtpPurpose.EMAIL_VERIFICATION, new_graduate.email)
 
-    otp_entry = OtpCodeModel(
-        graduate_id=new_graduate.id,
-        purpose=OtpPurpose.EMAIL_VERIFICATION.value,
-        code_hash=otp_hash,
-        expires_at=expires_at,
-        failed_attempts=0
+    message = (
+        "تم إنشاء الحساب بنجاح. يرجى إدخال رمز التحقق (OTP) المرسل إلى بريدك الإلكتروني لتفعيله."
+        if sent
+        else messages.REGISTER_PARTIAL
     )
-    db.add(otp_entry)
-    await db.commit()
-
-    send_otp_email(data.email, otp_code, OtpPurpose.EMAIL_VERIFICATION)
 
     return {
         "status": "success",
-        "message": "تم إنشاء الحساب بنجاح. يرجى إدخال رمز التحقق (OTP) المرسل إلى بريدك الإلكتروني لتفعيله.",
-        "graduate_id": new_graduate.id
+        "message": message,
+        "graduate_id": new_graduate.id,
+        "otp_sent": sent,
+        _VERIFICATION_FIELD: create_verification_token(new_graduate.id),
     }
-
-
-async def update_graduate_self(db: AsyncSession, graduate_id: int, data: UserUpdate) -> GraduateModel:
-    grad = await fetch_graduate(db, graduate_id)
-    if not grad:
-        raise ValueError("الخريج غير موجود")
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(grad, key, value)
-    db.add(grad)
-    await db.commit()
-    await db.refresh(grad)
-    return grad
-
-
-async def update_graduate_admin(db: AsyncSession, graduate_id: int, data: GraduateUpdateAdmin) -> GraduateModel:
-    grad = await fetch_graduate(db, graduate_id)
-    if not grad:
-        raise ValueError("الخريج غير موجود")
-    if data.email is not None:
-        existing = await db.execute(
-            select(GraduateModel).where(GraduateModel.email == data.email, GraduateModel.id != graduate_id)
-        )
-        if existing.scalar_one_or_none():
-            raise ValueError("البريد الإلكتروني مستخدم من قبل حساب آخر")
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(grad, key, value)
-    db.add(grad)
-    await db.commit()
-    await db.refresh(grad)
-    return grad
 
 
 async def fetch_graduate(db: AsyncSession, graduate_id: int) -> GraduateModel | None:

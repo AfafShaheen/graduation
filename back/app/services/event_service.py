@@ -12,6 +12,47 @@ from app.models.university_record import UniversityRecordModel
 from app.models.audit_log import AuditLogModel
 from app.schemas.event_admin import EventCreate, EventUpdate
 from app.core.redis import redis_client
+from app.core import messages
+from app.services.graduate_service import normalize_arabic
+
+
+def _normalize_college_key(name: str) -> str:
+    return normalize_arabic(name).casefold()
+
+
+def _dedupe_college_names(names: List[str]) -> tuple[list[str], set[str]]:
+    """Drop blank names and collapse duplicates (after normalization)."""
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for name in names:
+        cleaned = name.strip()
+        if not cleaned:
+            continue
+        key = _normalize_college_key(cleaned)
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append(cleaned)
+    return ordered, seen
+
+
+async def _ensure_college_names_available(
+    db: AsyncSession,
+    normalized_keys: set[str],
+    exclude_event_id: int | None = None,
+) -> None:
+    """Reject college names already linked to a different event (FR-14, UC-6 alt-a)."""
+    if not normalized_keys:
+        return
+    res = await db.execute(select(CollegeModel.name, CollegeModel.event_id))
+    for existing_name, existing_event_id in res.all():
+        if exclude_event_id is not None and existing_event_id == exclude_event_id:
+            continue
+        if _normalize_college_key(existing_name) in normalized_keys:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=messages.COLLEGE_LINKED_TO_OTHER_EVENT,
+            )
 
 
 async def invalidate_events_cache() -> None:
@@ -35,6 +76,9 @@ async def write_audit_log(db: AsyncSession, admin_id: int, action: str, target: 
 
 
 async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict) -> dict:
+    college_names, normalized_keys = _dedupe_college_names(data.college_names)
+    await _ensure_college_names_available(db, normalized_keys)
+
     # 1. Create Event record
     new_event = EventModel(
         name=data.name,
@@ -52,12 +96,10 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
 
     # 2. Create linked College records
     colleges = []
-    for c_name in data.college_names:
-        cleaned_name = c_name.strip()
-        if cleaned_name:
-            college = CollegeModel(name=cleaned_name, event_id=new_event.id)
-            db.add(college)
-            colleges.append(cleaned_name)
+    for cleaned_name in college_names:
+        college = CollegeModel(name=cleaned_name, event_id=new_event.id)
+        db.add(college)
+        colleges.append(cleaned_name)
 
     # 3. Audit log
     await write_audit_log(

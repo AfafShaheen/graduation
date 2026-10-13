@@ -1,0 +1,6 @@
+*.pdf
+*.docx
+tests/
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, DateTime, Enum, CheckConstraint
+from sqlalchemy import Column, Integer, Boolean, ForeignKey, DateTime, Enum, CheckConstraint, Index, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -25,7 +25,17 @@ class QrCodeModel(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "(is_activated IS TRUE AND scanned_at IS NOT NULL AND scanned_by_scanner_id IS NOT NULL) OR (is_activated IS FALSE AND scanned_at IS NULL AND scanned_by_scanner_id IS NULL)",
-            name="chk_qr_scanned_fields"
+            "scanned_at IS NULL OR is_activated",
+            name="chk_qr_scanned_at_requires_activation",
+        ),
+        CheckConstraint(
+            "scanned_by_scanner_id IS NULL OR scanned_at IS NOT NULL",
+            name="chk_qr_scanned_by_requires_scanned_at",
+        ),
+        Index(
+            "uq_qr_codes_graduate_ticket",
+            "ticket_id",
+            unique=True,
+            postgresql_where=text("code_type = 'GRADUATE'"),
         ),
     )

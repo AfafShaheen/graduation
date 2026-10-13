@@ -8,6 +8,8 @@ from app.models.ticket import TicketModel, TicketStatusEnum
 from app.models.payment import PaymentModel
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.audit_log import AuditLogModel
+from app.services.qr_service import activate_companion_codes
+from app.core import messages
 from app.core.redis import redis_client
 
 
@@ -186,40 +188,43 @@ async def manual_check_in_service(db: AsyncSession, graduate_id: int, admin: dic
 
     ticket_id = tickets[0].id
 
+    # FR-22-a/c: manual check-in is only allowed for a confirmed ticket.
+    if tickets[0].status != TicketStatusEnum.CONFIRMED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=messages.MANUAL_CHECKIN_TICKET_NOT_CONFIRMED,
+        )
+
     qr_res = await db.execute(
         select(QrCodeModel).where(
             QrCodeModel.ticket_id == ticket_id,
-            QrCodeModel.code_type == QrCodeTypeEnum.GRADUATE.value
+            QrCodeModel.code_type == QrCodeTypeEnum.GRADUATE
         )
     )
     grad_qr = qr_res.scalar_one_or_none()
     if not grad_qr:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="رمز الاستجابة السريعة للخريج غير موجود.")
 
-    now = datetime.now(UTC)
+    if grad_qr.scanned_at is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.ALREADY_CHECKED_IN)
+
     grad_qr.is_activated = True
-    grad_qr.scanned_at = now
+    grad_qr.scanned_at = datetime.now(UTC)
+    # An admin override is not a scanner event, so no scanner id is recorded.
+    # The DB check allows a NULL scanner as long as scanned_at is set.
+    grad_qr.scanned_by_scanner_id = None
     db.add(grad_qr)
 
-    # Activate companion QRs (UC-12)
-    comp_res = await db.execute(
-        select(QrCodeModel).where(
-            QrCodeModel.ticket_id == ticket_id,
-            QrCodeModel.code_type == QrCodeTypeEnum.COMPANION.value,
-            QrCodeModel.is_activated.is_(False)
-        )
-    )
-    comp_qrs = comp_res.scalars().all()
-    for cq in comp_qrs:
-        cq.is_activated = True
-        db.add(cq)
+    # Activate companion QRs (UC-12), reusing the QR service so the rules stay
+    # in one place.
+    activated_count = await activate_companion_codes(db, ticket_id)
 
     await write_audit_log(
         db,
         admin_id=admin["admin_id"],
         action="MANUAL_CHECK_IN",
         target=f"Graduate ID {graduate_id}",
-        details=f"Manual check-in override by admin. Activated graduate and {len(comp_qrs)} companion QR(s)."
+        details=f"Manual check-in override by admin. Activated graduate and {activated_count} companion QR(s)."
     )
 
     await db.commit()
@@ -239,26 +244,33 @@ async def revert_scan_service(db: AsyncSession, graduate_id: int, admin: dict) -
     qr_res = await db.execute(
         select(QrCodeModel).where(
             QrCodeModel.ticket_id == ticket_id,
-            QrCodeModel.code_type == QrCodeTypeEnum.GRADUATE.value
+            QrCodeModel.code_type == QrCodeTypeEnum.GRADUATE
         )
     )
     grad_qr = qr_res.scalar_one_or_none()
     if not grad_qr:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="رمز الاستجابة السريعة للخريج غير موجود.")
 
-    grad_qr.is_activated = False
+    comp_res = await db.execute(
+        select(QrCodeModel).where(
+            QrCodeModel.ticket_id == ticket_id,
+            QrCodeModel.code_type == QrCodeTypeEnum.COMPANION
+        )
+    )
+    comp_qrs = comp_res.scalars().all()
+
+    scanned_companions = [cq for cq in comp_qrs if cq.scanned_at is not None]
+    if grad_qr.scanned_at is None and not scanned_companions:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.NOTHING_TO_REVERT)
+
+    # D5: the graduate code stays activated after a revert so the graduate can
+    # be scanned again; only its scan markers are cleared. Companion codes are
+    # frozen again so they must follow the graduate anew.
+    grad_qr.is_activated = True
     grad_qr.scanned_at = None
     grad_qr.scanned_by_scanner_id = None
     db.add(grad_qr)
 
-    # Deactivate companion QRs
-    comp_res = await db.execute(
-        select(QrCodeModel).where(
-            QrCodeModel.ticket_id == ticket_id,
-            QrCodeModel.code_type == QrCodeTypeEnum.COMPANION.value
-        )
-    )
-    comp_qrs = comp_res.scalars().all()
     for cq in comp_qrs:
         cq.is_activated = False
         cq.scanned_at = None
@@ -284,10 +296,16 @@ async def revert_payment_service(db: AsyncSession, ticket_id: int, admin: dict) 
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على التذكرة.")
 
-    ticket.status = TicketStatusEnum.PROCESSING.value
+    if ticket.status != TicketStatusEnum.CONFIRMED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.PAYMENT_NOT_REVERTIBLE)
+
+    ticket.status = TicketStatusEnum.PROCESSING
     ticket.confirmed_at = None
     db.add(ticket)
 
+    # NOTE: once the graduate "my ticket" endpoint (FR-5) exists, reverting a
+    # confirmed payment must also invalidate the QRs issued for that ticket, so
+    # a code from a no-longer-confirmed ticket can never be scanned or shown.
     await write_audit_log(
         db,
         admin_id=admin["admin_id"],

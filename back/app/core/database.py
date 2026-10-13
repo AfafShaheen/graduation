@@ -19,11 +19,18 @@ if raw_url.startswith("postgresql://") and "+asyncpg" not in raw_url:
 else:
     DATABASE_URL = raw_url
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ("1", "true", "yes", "on")
+
+
 engine = create_async_engine(
     DATABASE_URL,
     pool_size=20,
     max_overflow=10,
-    echo=True,  # bing is true
+    echo=_env_flag("SQL_ECHO", False),
     pool_pre_ping=True
 )
 
