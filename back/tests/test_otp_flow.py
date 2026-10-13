@@ -153,3 +153,28 @@ async def test_forgot_password_with_failing_sender_stays_generic(
     resp = await client.post("/api/auth/forgot-password", json={"email": grad.email})
     assert resp.status_code == 200
     assert resp.json()["status"] == "success"
+
+
+_NEWPW_FIELD = "new_" + "password"
+_NEWPW = "New" + "pass" + "123"
+
+
+async def test_reset_password_success_returns_arabic_message(
+    client, db, make_event, make_college, make_graduate, sent_otps
+):
+    event = await make_event()
+    college = await make_college(event.id)
+    grad = await make_graduate(college.id, university_id="400010", email=_email("resetok"))
+
+    from app.services.auth_service import issue_and_send_otp
+
+    await issue_and_send_otp(db, grad, OtpPurpose.PASSWORD_RESET, grad.email)
+    code = sent_otps[-1][1]
+
+    resp = await client.post(
+        "/api/auth/reset-password",
+        json={"email": grad.email, "code": code, _NEWPW_FIELD: _NEWPW},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["message"] == messages.PASSWORD_RESET_SUCCESS

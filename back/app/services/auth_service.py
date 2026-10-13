@@ -300,7 +300,7 @@ async def reset_password_service(db: AsyncSession, email: str, code: str, new_pa
     if check_failed_attempts(redis_attempts):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many failed attempts. Request a new code."
+            detail=messages.RESET_ATTEMPTS_EXCEEDED
         )
 
     otp_row = await fetch_latest_otp(db, grad.id, OtpPurpose.PASSWORD_RESET)
@@ -313,7 +313,7 @@ async def reset_password_service(db: AsyncSession, email: str, code: str, new_pa
     if check_failed_attempts(otp_row.failed_attempts) or check_failed_attempts(redis_attempts):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many failed attempts. Request a new code."
+            detail=messages.RESET_ATTEMPTS_EXCEEDED
         )
 
     submitted_hash = hash_otp(code)
@@ -322,7 +322,7 @@ async def reset_password_service(db: AsyncSession, email: str, code: str, new_pa
         if check_failed_attempts(attempts):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many failed attempts. Request a new code."
+                detail=messages.RESET_ATTEMPTS_EXCEEDED
             )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=messages.OTP_INVALID_GENERIC)
 
@@ -331,5 +331,5 @@ async def reset_password_service(db: AsyncSession, email: str, code: str, new_pa
 
     return {
         "status": "success",
-        "message": "Password has been reset successfully."
+        "message": messages.PASSWORD_RESET_SUCCESS
     }
