@@ -17,15 +17,68 @@ async def get_current_admin(
     db: AsyncSession = Depends(get_db)
 ) -> dict:
     """Dependency to protect admin endpoints using standard HTTPBearer and centralized security settings."""
-    token = credentials.credentials
-    if not token:
+    if not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="غير مصرح، يجب تسجيل دخول المسؤول."
         )
 
     try:
-        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
+        payload = jwt.decode(credentials.credentials, secret_key, algorithms=[ALGORITHM])
+        jti = payload.get("jti")
+        role = payload.get("role")
+        admin_id = payload.get("sub")
+
+        if role != "admin" or not admin_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="ليس لديك صلاحيات المسؤول."
+            )
+
+        if jti:
+            try:
+                blacklisted = await redis_client.get(f"token_blacklist:{jti}")
+            except Exception:
+                # Fail closed: if we cannot verify the token status, deny.
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=messages.SERVICE_UNAVAILABLE,
+                )
+            if blacklisted:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً."
+                )
+
+        admin = await db.get(AdminModel, int(admin_id))
+        if not admin:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="حساب المسؤول غير موجود."
+            )
+
+        return {"admin_id": admin.id, "username": admin.username}
+
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="رمز المصادقة غير صالح أو انتهت صلاحيته."
+        )
+
+
+async def get_current_scanner(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> ScannerModel:
+    """Dependency to protect scanner endpoints (FR-23/24/25)."""
+    if not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="غير مصرح، يجب تسجيل دخول الماسح الضوئي."
+        )
+
+    try:
+        payload = jwt.decode(credentials.credentials, secret_key, algorithms=[ALGORITHM])
         jti = payload.get("jti")
         role = payload.get("role")
         scanner_id = payload.get("sub") or payload.get("scanner_id")
@@ -40,6 +93,7 @@ async def get_current_admin(
             try:
                 blacklisted = await redis_client.get(f"token_blacklist:{jti}")
             except Exception:
+                # Fail closed: if we cannot verify the token status, deny.
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail=messages.SERVICE_UNAVAILABLE,
