@@ -45,9 +45,22 @@ SETTINGS_UPDATED = "تم تحديث الإعدادات بنجاح"
 SHAMCASH_QR_UPDATED = "تم تحديث رمز دفع الشام كاش بنجاح"
 SHAMCASH_QR_DELETED = "تم حذف رمز دفع الشام كاش"
 
+TICKET_STATUS_AWAITING_PAYMENT = "تذكرتك بانتظار إتمام الدفع"
+TICKET_STATUS_PROCESSING = "تم استلام بيانات دفعك والاتحاد يراجعها حالياً"
+TICKET_STATUS_CONFIRMED = "تم تأكيد تذكرتك بنجاح"
+TICKET_STATUS_REJECTED = "تم رفض بيانات الدفع، يمكنك إعادة إرسالها"
+
+PAYMENT_CONFIRMED = "تم تأكيد الدفع بنجاح"
+PAYMENT_REJECTED = "تم رفض الدفع"
+
 
 def append_contact_phone(message: str, contact_phone: str | None) -> str:
     """Append the union contact number when the setting is configured (SRS FR-2)."""
     if contact_phone:
         return f"{message} رقم التواصل: {contact_phone}"
     return message
+
+
+def payment_note_instruction(university_id: str) -> str:
+    """Instruction shown to the graduate before transferring (SRS FR-9)."""
+    return f"يرجى كتابة رقمك الجامعي ({university_id}) في خانة ملاحظة الحوالة"

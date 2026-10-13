@@ -370,6 +370,34 @@ def make_ticket(db):
 
 
 @pytest.fixture
+def make_payment(db):
+    from app.models.payment import PaymentModel
+
+    async def _make(
+        ticket_id,
+        transaction_number="TXN1234",
+        amount=100000,
+        sender_name="أحمد محمد",
+        submitted_at=None,
+        reviewed_at=None,
+    ):
+        payment = PaymentModel(
+            ticket_id=ticket_id,
+            transaction_number=transaction_number,
+            amount=amount,
+            sender_name=sender_name,
+            submitted_at=submitted_at,
+            reviewed_at=reviewed_at,
+        )
+        db.add(payment)
+        await db.commit()
+        await db.refresh(payment)
+        return payment
+
+    return _make
+
+
+@pytest.fixture
 def sent_otps(monkeypatch):
     """Capture OTP codes instead of sending real emails.
 
