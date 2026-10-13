@@ -14,6 +14,7 @@ from app.services.email_service import (
     RESEND_COOLDOWN_SECONDS,
 )
 from app.core.redis import redis_client
+from app.core.database import AsyncSessionLocal
 from app.core import messages
 from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.services.graduate_auth_service import create_graduate_access_token
@@ -272,22 +273,39 @@ async def change_email_service(db: AsyncSession, graduate_id: int, new_email: st
     }
 
 
+async def _send_password_reset_otp(email: str) -> None:
+    """Look up the graduate and send a reset OTP, detached from the request.
+
+    Runs as a background task so the HTTP response time never reveals whether
+    the email is registered. It opens its own ``AsyncSessionLocal`` session
+    because the request-scoped session is closed once the response is sent.
+    This coroutine never raises; failures are logged without the OTP code.
+    """
+    try:
+        async with AsyncSessionLocal() as session:
+            grad = await fetch_graduate_by_email(session, email)
+            if not grad:
+                return
+
+            try:
+                await check_redis_cooldown(str(grad.id), OtpPurpose.PASSWORD_RESET.value)
+            except HTTPException:
+                return
+
+            await issue_and_send_otp(session, grad, OtpPurpose.PASSWORD_RESET, grad.email)
+    except Exception as exc:
+        logger.error(
+            "Background password-reset OTP task failed (%s)", type(exc).__name__
+        )
+
+
 async def forgot_password_service(db: AsyncSession, email: str) -> dict:
     success_response = {
         "status": "success",
         "message": "إذا كان هذا البريد مسجلاً، فقد تم إرسال رمز استعادة كلمة المرور."
     }
 
-    grad = await fetch_graduate_by_email(db, email)
-    if not grad:
-        return success_response
-
-    try:
-        await check_redis_cooldown(str(grad.id), OtpPurpose.PASSWORD_RESET.value)
-    except HTTPException:
-        return success_response
-
-    await issue_and_send_otp(db, grad, OtpPurpose.PASSWORD_RESET, grad.email)
+    asyncio.create_task(_send_password_reset_otp(email))
     return success_response
 
 
