@@ -69,6 +69,23 @@ class ScanResult:
     code_type: QrCodeTypeEnum | None = None
 
 
+class QrServiceError(Exception):
+    """Base class for domain errors raised by this service.
+
+    These are programming/contract errors, not scan outcomes: the router layer
+    catches them and maps them to an HTTP response, whereas ordinary scan
+    problems are reported through :class:`ScanResult`.
+    """
+
+
+class ScannerNotFoundError(QrServiceError):
+    """The scanner id passed to a scan does not exist."""
+
+    def __init__(self, scanner_id: int) -> None:
+        self.scanner_id = scanner_id
+        super().__init__(f"scanner {scanner_id} not found")
+
+
 _COMPANION_COUNTS = {
     TicketTypeEnum.TWO_COMPANIONS: 2,
     TicketTypeEnum.THREE_COMPANIONS: 3,
@@ -211,7 +228,9 @@ async def scan_qr_code(
         return result
 
     scanner = await db.get(ScannerModel, scanner_id)
-    if scanner is not None and scanner.event_id != ticket.event_id:
+    if scanner is None:
+        raise ScannerNotFoundError(scanner_id)
+    if scanner.event_id != ticket.event_id:
         result = ScanResult(
             ScanDecision.WRONG_EVENT,
             SCAN_WRONG_EVENT,

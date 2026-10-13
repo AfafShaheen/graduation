@@ -7,6 +7,7 @@ the audit row written for each attempt.
 import asyncio
 import uuid
 
+import pytest
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
@@ -14,6 +15,7 @@ from app.models.audit_log import AuditLogModel
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.ticket import TicketStatusEnum, TicketTypeEnum
 from app.services.qr_service import (
+    ScannerNotFoundError,
     ScanDecision,
     activate_companion_codes,
     issue_qr_codes_for_ticket,
@@ -246,6 +248,21 @@ async def test_scan_unknown_values_are_not_found(
 
     assert malformed.decision is ScanDecision.NOT_FOUND
     assert unknown.decision is ScanDecision.NOT_FOUND
+
+
+async def test_scan_with_unknown_scanner_raises(
+    db, make_event, make_college, make_graduate, make_ticket
+):
+    _event, _grad, ticket = await _setup_ticket(
+        db, make_event, make_college, make_graduate, make_ticket
+    )
+    await issue_qr_codes_for_ticket(db, ticket.id)
+    await db.commit()
+    graduate_code = (await _code_of_type(db, ticket.id, QrCodeTypeEnum.GRADUATE))[0]
+
+    with pytest.raises(ScannerNotFoundError):
+        await scan_qr_code(db, str(graduate_code.code_value), 999999)
+    await db.rollback()
 
 
 async def test_every_attempt_writes_an_audit_row(
