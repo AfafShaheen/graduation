@@ -78,6 +78,14 @@ class QrServiceError(Exception):
     """
 
 
+class TicketNotEligibleError(QrServiceError):
+    """The ticket does not exist or is not CONFIRMED, so codes cannot be issued."""
+
+    def __init__(self, ticket_id: int) -> None:
+        self.ticket_id = ticket_id
+        super().__init__(f"ticket {ticket_id} is not eligible for QR issuance")
+
+
 class ScannerNotFoundError(QrServiceError):
     """The scanner id passed to a scan does not exist."""
 
@@ -122,13 +130,17 @@ def _parse_code_value(code_value: str | uuid.UUID) -> uuid.UUID | None:
         return None
 
 
-async def issue_qr_codes_for_ticket(db: AsyncSession, ticket_id: int) -> int:
-    """Create the QR codes a CONFIRMED ticket is entitled to.
+async def issue_qr_codes_for_ticket(
+    db: AsyncSession, ticket_id: int
+) -> list[QrCodeModel]:
+    """Return the QR codes a CONFIRMED ticket is entitled to.
 
-    Creates exactly one GRADUATE code and ``companions_count`` COMPANION codes.
-    Returns the number of codes created (``0`` when the ticket does not exist,
-    is not CONFIRMED, or already has codes). The ``SELECT ... FOR UPDATE`` on
-    the ticket serialises concurrent callers so a ticket is never double-issued.
+    On the first call this creates exactly one GRADUATE code and
+    ``companions_count`` COMPANION codes; on later calls it returns the
+    already-issued codes unchanged (idempotent). Raises
+    :class:`TicketNotEligibleError` when the ticket does not exist or is not
+    CONFIRMED. The ``SELECT ... FOR UPDATE`` on the ticket serialises concurrent
+    callers so a ticket is never double-issued.
     """
     ticket = (
         await db.execute(
@@ -139,28 +151,31 @@ async def issue_qr_codes_for_ticket(db: AsyncSession, ticket_id: int) -> int:
     ).scalar_one_or_none()
 
     if ticket is None or ticket.status != TicketStatusEnum.CONFIRMED:
-        return 0
+        raise TicketNotEligibleError(ticket_id)
 
     existing = (
         await db.execute(
-            select(QrCodeModel.id).where(QrCodeModel.ticket_id == ticket_id).limit(1)
+            select(QrCodeModel).where(QrCodeModel.ticket_id == ticket_id)
         )
-    ).scalar_one_or_none()
-    if existing is not None:
-        return 0
+    ).scalars().all()
+    if existing:
+        return list(existing)
 
     companion_count = _COMPANION_COUNTS.get(ticket.ticket_type, 0)
-    db.add(
+    codes = [
         QrCodeModel(
             ticket_id=ticket_id,
             code_type=QrCodeTypeEnum.GRADUATE,
             is_activated=True,
         )
+    ]
+    codes.extend(
+        QrCodeModel(ticket_id=ticket_id, code_type=QrCodeTypeEnum.COMPANION)
+        for _ in range(companion_count)
     )
-    for _ in range(companion_count):
-        db.add(QrCodeModel(ticket_id=ticket_id, code_type=QrCodeTypeEnum.COMPANION))
+    db.add_all(codes)
     await db.flush()
-    return companion_count + 1
+    return codes
 
 
 async def activate_companion_codes(db: AsyncSession, ticket_id: int) -> int:

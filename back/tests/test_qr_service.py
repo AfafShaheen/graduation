@@ -17,6 +17,7 @@ from app.models.ticket import TicketStatusEnum, TicketTypeEnum
 from app.services.qr_service import (
     ScannerNotFoundError,
     ScanDecision,
+    TicketNotEligibleError,
     activate_companion_codes,
     issue_qr_codes_for_ticket,
     scan_qr_code,
@@ -71,7 +72,7 @@ async def test_issue_creates_graduate_and_companion_codes(
     created = await issue_qr_codes_for_ticket(db, ticket.id)
     await db.commit()
 
-    assert created == 4
+    assert len(created) == 4
     codes = await _codes(db, ticket.id)
     graduate = [c for c in codes if c.code_type == QrCodeTypeEnum.GRADUATE]
     companions = [c for c in codes if c.code_type == QrCodeTypeEnum.COMPANION]
@@ -95,24 +96,32 @@ async def test_issue_is_idempotent(
     second = await issue_qr_codes_for_ticket(db, ticket.id)
     await db.commit()
 
-    assert first == 3
-    assert second == 0
-    assert len(await _codes(db, ticket.id)) == first
+    assert len(first) == 3
+    assert len(second) == 3
+    assert {c.id for c in first} == {c.id for c in second}
+    assert len(await _codes(db, ticket.id)) == 3
 
 
-async def test_issue_skips_non_confirmed_ticket(
+async def test_issue_rejects_non_confirmed_ticket(
     db, make_event, make_college, make_graduate, make_ticket
 ):
     _event, _grad, ticket = await _setup_ticket(
         db, make_event, make_college, make_graduate, make_ticket,
         status=TicketStatusEnum.AWAITING_PAYMENT,
     )
+    ticket_id = ticket.id
 
-    created = await issue_qr_codes_for_ticket(db, ticket.id)
-    await db.commit()
+    with pytest.raises(TicketNotEligibleError):
+        await issue_qr_codes_for_ticket(db, ticket_id)
+    await db.rollback()
 
-    assert created == 0
-    assert await _codes(db, ticket.id) == []
+    assert await _codes(db, ticket_id) == []
+
+
+async def test_issue_rejects_missing_ticket(db):
+    with pytest.raises(TicketNotEligibleError):
+        await issue_qr_codes_for_ticket(db, 999999)
+    await db.rollback()
 
 
 async def test_activate_companion_codes(
