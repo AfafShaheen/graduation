@@ -1,0 +1,263 @@
+/* ==========================================================================
+   الشريط الجانبي المشترك لصفحات الإدارة (.adm-sidebar)
+   ثابت على الشاشات الكبيرة، وقائمة منزلقة على الصغيرة
+   ========================================================================== */
+
+/* أيقونات Material Symbols */
+.adm-symbol {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+}
+
+.adm-symbol.fill {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* ================= الشريط الجانبي ================= */
+.adm-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(32, 27, 15, 0.45);
+  z-index: 44;
+}
+
+.adm-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: min(288px, 85vw);
+  z-index: 45;
+  background-color: #124d44;
+  border-top: 3px solid #ca4b00;
+  box-sizing: border-box;
+  overflow-y: auto;
+  /* مخفي افتراضياً على الشاشات الصغيرة */
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+}
+
+.adm-sidebar.open {
+  transform: translateX(0);
+}
+
+.adm-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.adm-brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.adm-brand-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.adm-brand-logo {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  display: block;
+}
+
+.adm-brand-titles h1 {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.adm-brand-titles p {
+  font-size: 11px;
+  color: rgba(181, 238, 226, 0.9);
+  margin: 2px 0 0 0;
+}
+
+.adm-sidebar-close {
+  margin-right: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.adm-sidebar-close:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.adm-nav-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.adm-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 9999px;
+  color: #b5eee2;
+  text-decoration: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  position: relative;
+}
+
+.adm-nav-link:hover {
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.18);
+}
+
+.adm-nav-link.active {
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+}
+
+.adm-nav-link.active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  background-color: #ca4b00;
+  border-radius: 9999px;
+}
+
+.adm-nav-badge {
+  margin-right: auto;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 9999px;
+  background-color: #ca4b00;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.adm-sidebar-cta {
+  margin-top: 24px;
+  padding: 0 4px;
+}
+
+.adm-btn-add {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 9999px;
+  background-color: #ca4b00;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
+  font-family: inherit;
+}
+
+.adm-btn-add:active {
+  transform: scale(0.97);
+}
+
+.adm-sidebar-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 16px;
+  margin-top: 24px;
+}
+
+.adm-user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 0 8px;
+}
+
+.adm-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background-color: rgba(202, 75, 0, 0.25);
+  border: 1px solid rgba(202, 75, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.adm-user-info p {
+  margin: 0;
+}
+
+.adm-user-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.adm-user-role {
+  font-size: 11px;
+  color: #b5eee2;
+}
+
+.adm-logout-btn {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* لابتوب: الشريط ثابت وبدون تعتيم */
+@media (min-width: 1024px) {
+  .adm-sidebar {
+    transform: none;
+    width: 288px;
+    transition: none;
+  }
+  .adm-overlay,
+  .adm-sidebar-close { display: none; }
+}

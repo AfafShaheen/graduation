@@ -1,8 +1,7 @@
-import React, { useState } from "react";
-import "../../style/GraduationForm.css";
-import universityLogo from "../../assets/homs-university-white.png";
-import unionLogo from "../../assets/only-logo.png";
-import useFormDraft from "../../hooks/useFormDraft";
+import React, { useState } from 'react';
+import '../../style/GraduationForm.css';
+import universityLogo from '../../assets/homs-university-white.png';
+import unionLogo from '../../assets/only-logo.png';
 
 /* حروف عربية ومسافات فقط (بدون أرقام أو رموز) */
 const ARABIC_ONLY = /^[\u0621-\u064A\u064B-\u0652\s]+$/;
@@ -12,33 +11,32 @@ const DIGITS_ONLY = /^[0-9]+$/;
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
   fullName: (v) => {
-    const t = v.trim().replace(/\s+/g, " ");
-    if (!t) return "الاسم والكنية مطلوبان";
-    if (!ARABIC_ONLY.test(t)) return "يرجى كتابة الاسم بحروف عربية فقط";
-    if (t.split(" ").length < 2)
-      return "يرجى كتابة الاسم والكنية (كلمتان على الأقل)";
-    return "";
+    const t = v.trim().replace(/\s+/g, ' ');
+    if (!t) return 'الاسم والكنية مطلوبان';
+    if (!ARABIC_ONLY.test(t)) return 'يرجى كتابة الاسم بحروف عربية فقط';
+    if (t.split(' ').length < 2) return 'يرجى كتابة الاسم والكنية (كلمتان على الأقل)';
+    return '';
   },
-  faculty: (v) => (v ? "" : "اختر الكلية"),
+  faculty: (v) => (v ? '' : 'اختر الكلية'),
   studentId: (v) => {
     const t = v.trim();
-    if (!t) return "الرقم الجامعي مطلوب";
-    if (!DIGITS_ONLY.test(t)) return "يجب أن يكون الرقم الجامعي أرقاماً فقط";
-    return "";
+    if (!t) return 'الرقم الجامعي مطلوب';
+    if (!DIGITS_ONLY.test(t)) return 'يجب أن يكون الرقم الجامعي أرقاماً فقط';
+    return '';
   },
   fatherName: (v) => {
     const t = v.trim();
-    if (!t) return "اسم الأب مطلوب";
-    if (!ARABIC_ONLY.test(t)) return "يجب أن يتكون اسم الأب من حروف عربية فقط";
-    if (t.length < 2) return "اسم الأب قصير جداً";
-    return "";
+    if (!t) return 'اسم الأب مطلوب';
+    if (!ARABIC_ONLY.test(t)) return 'يجب أن يتكون اسم الأب من حروف عربية فقط';
+    if (t.length < 2) return 'اسم الأب قصير جداً';
+    return '';
   },
   motherName: (v) => {
     const t = v.trim();
-    if (!t) return "اسم الأم مطلوب";
-    if (!ARABIC_ONLY.test(t)) return "يجب أن يتكون اسم الأم من حروف عربية فقط";
-    if (t.length < 2) return "اسم الأم قصير جداً";
-    return "";
+    if (!t) return 'اسم الأم مطلوب';
+    if (!ARABIC_ONLY.test(t)) return 'يجب أن يتكون اسم الأم من حروف عربية فقط';
+    if (t.length < 2) return 'اسم الأم قصير جداً';
+    return '';
   },
 };
 
@@ -52,14 +50,13 @@ function FieldError({ message }) {
 }
 
 export default function GraduationFormStep1({ onNext }) {
-  // البيانات محفوظة بـ sessionStorage حتى ما تضيع عند الرجوع
-  const [formData, setFormData] = useFormDraft("step1", {
-    fullName: "",
-    gender: "male",
-    faculty: "",
-    studentId: "",
-    fatherName: "",
-    motherName: "",
+  const [formData, setFormData] = useState({
+    fullName: '',
+    gender: 'male',
+    faculty: '',
+    studentId: '',
+    fatherName: '',
+    motherName: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -101,10 +98,7 @@ export default function GraduationFormStep1({ onNext }) {
     setTimeout(() => {
       setIsLoading(false);
       if (onNext) onNext(formData);
-      else
-        alert(
-          "تم تأكيد بيانات المرحلة الأولى بنجاح! الانتقال إلى خطوة معلومات التواصل.",
-        );
+      else alert('تم تأكيد بيانات المرحلة الأولى بنجاح! الانتقال إلى خطوة معلومات التواصل.');
     }, 700);
   };
 
@@ -114,20 +108,12 @@ export default function GraduationFormStep1({ onNext }) {
         {/* الهيدر العلوي */}
         <header className="header-main">
           <div className="header-top">
-            <button
-              className="icon-btn"
-              aria-label="الرجوع للخلف"
-              type="button"
-            >
+            <button className="icon-btn" aria-label="الرجوع للخلف" type="button">
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>
             <h1 className="header-title">حفل تخرج جامعة حمص</h1>
             <div className="icon-btn">
-              <img
-                className="header-logo"
-                src={unionLogo}
-                alt="شعار اتحاد الطلبة"
-              />
+              <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
             </div>
           </div>
           <div className="header-subband">
@@ -139,13 +125,12 @@ export default function GraduationFormStep1({ onNext }) {
         {/* شريط التقدم */}
         <section className="progress-section">
           <div className="progress-labels">
-            <span className="progress-title">
-              خطوة 1 من 3: معلومات التخرج الأساسية
-            </span>
-            <span className="progress-percent">33%</span>
+            <span className="progress-title">خطوة 1 من 4: معلومات التخرج الأساسية</span>
+            <span className="progress-percent">25%</span>
           </div>
           <div className="progress-bar-bg">
             <div className="progress-bar-fill"></div>
+            <div className="progress-bar-empty"></div>
             <div className="progress-bar-empty"></div>
             <div className="progress-bar-empty"></div>
           </div>
@@ -158,10 +143,8 @@ export default function GraduationFormStep1({ onNext }) {
               <img src={universityLogo} alt="شعار جامعة حمص" />
             </div>
             <div>
-              <h2 className="card-title">ألف مبروك التخرج </h2>
-              <p className="card-subtitle">
-                سجّل بياناتك لتأكيد حجز مقعدك وتذكرتك الرقمية
-              </p>
+              <h2 className="card-title">ألف مبروك التخرج! 🎓</h2>
+              <p className="card-subtitle">سجّل بياناتك لتأكيد حجز مقعدك وتذكرتك الرقمية</p>
             </div>
           </div>
 
@@ -175,15 +158,13 @@ export default function GraduationFormStep1({ onNext }) {
                 <input
                   type="text"
                   name="fullName"
-                  className={`form-input input-with-icon ${errors.fullName ? "error" : ""}`}
+                  className={`form-input input-with-icon ${errors.fullName ? 'error' : ''}`}
                   placeholder="مثلاً: مجد العلي"
                   value={formData.fullName}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.fullName}
                 />
-                <span className="material-symbols-outlined input-icon">
-                  badge
-                </span>
+                <span className="material-symbols-outlined input-icon">badge</span>
               </div>
               <FieldError message={errors.fullName} />
             </div>
@@ -196,25 +177,21 @@ export default function GraduationFormStep1({ onNext }) {
               <div className="gender-grid">
                 <button
                   type="button"
-                  className={`gender-btn ${formData.gender === "male" ? "active" : "inactive"}`}
-                  onClick={() => handleGenderSelect("male")}
+                  className={`gender-btn ${formData.gender === 'male' ? 'active' : 'inactive'}`}
+                  onClick={() => handleGenderSelect('male')}
                 >
                   <span className="material-symbols-outlined">
-                    {formData.gender === "male"
-                      ? "check_circle"
-                      : "radio_button_unchecked"}
+                    {formData.gender === 'male' ? 'check_circle' : 'radio_button_unchecked'}
                   </span>
                   <span>ذكر</span>
                 </button>
                 <button
                   type="button"
-                  className={`gender-btn ${formData.gender === "female" ? "active" : "inactive"}`}
-                  onClick={() => handleGenderSelect("female")}
+                  className={`gender-btn ${formData.gender === 'female' ? 'active' : 'inactive'}`}
+                  onClick={() => handleGenderSelect('female')}
                 >
                   <span className="material-symbols-outlined">
-                    {formData.gender === "female"
-                      ? "check_circle"
-                      : "radio_button_unchecked"}
+                    {formData.gender === 'female' ? 'check_circle' : 'radio_button_unchecked'}
                   </span>
                   <span>أنثى</span>
                 </button>
@@ -229,7 +206,7 @@ export default function GraduationFormStep1({ onNext }) {
               <div className="input-wrapper">
                 <select
                   name="faculty"
-                  className={`form-select select-with-icon ${errors.faculty ? "error" : ""}`}
+                  className={`form-select select-with-icon ${errors.faculty ? 'error' : ''}`}
                   value={formData.faculty}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.faculty}
@@ -246,9 +223,7 @@ export default function GraduationFormStep1({ onNext }) {
                   <option value="science">العلوم</option>
                   <option value="arts">الآداب والعلوم الإنسانية</option>
                 </select>
-                <span className="material-symbols-outlined input-icon">
-                  expand_more
-                </span>
+                <span className="material-symbols-outlined input-icon">expand_more</span>
               </div>
               <FieldError message={errors.faculty} />
             </div>
@@ -266,15 +241,13 @@ export default function GraduationFormStep1({ onNext }) {
                   type="text"
                   inputMode="numeric"
                   name="studentId"
-                  className={`form-input input-with-icon ${errors.studentId ? "error" : ""}`}
+                  className={`form-input input-with-icon ${errors.studentId ? 'error' : ''}`}
                   placeholder="مثلاً: 201910432"
                   value={formData.studentId}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.studentId}
                 />
-                <span className="material-symbols-outlined input-icon">
-                  pin
-                </span>
+                <span className="material-symbols-outlined input-icon">pin</span>
               </div>
               <FieldError message={errors.studentId} />
             </div>
@@ -288,7 +261,7 @@ export default function GraduationFormStep1({ onNext }) {
                 <input
                   type="text"
                   name="fatherName"
-                  className={`form-input ${errors.fatherName ? "error" : ""}`}
+                  className={`form-input ${errors.fatherName ? 'error' : ''}`}
                   placeholder="اسم الوالد"
                   value={formData.fatherName}
                   onChange={handleInputChange}
@@ -303,7 +276,7 @@ export default function GraduationFormStep1({ onNext }) {
                 <input
                   type="text"
                   name="motherName"
-                  className={`form-input ${errors.motherName ? "error" : ""}`}
+                  className={`form-input ${errors.motherName ? 'error' : ''}`}
                   placeholder="اسم الوالدة"
                   value={formData.motherName}
                   onChange={handleInputChange}
@@ -315,12 +288,9 @@ export default function GraduationFormStep1({ onNext }) {
 
             {/* الملاحظة التنبيهية */}
             <div className="info-box">
-              <span className="material-symbols-outlined info-icon">
-                verified_user
-              </span>
+              <span className="material-symbols-outlined info-icon">verified_user</span>
               <p className="info-text">
-                تُطابق هذه البيانات مع سجلات الامتحانات المركزية لإصدار التذكرة
-                الرسمية المعتمدة.
+                تُطابق هذه البيانات مع سجلات الامتحانات المركزية لإصدار التذكرة الرسمية المعتمدة.
               </p>
             </div>
           </form>
@@ -338,24 +308,7 @@ export default function GraduationFormStep1({ onNext }) {
               </>
             )}
           </button>
-          <div style={{ textAlign: "center", margin: "16px 0" }}>
-            <p style={{ fontSize: "13px", color: "#725b51", margin: 0 }}>
-              هل لديك حساب مسبقاً؟{" "}
-              <a
-                href="/login"
-                className="login-link"
-                onClick={(e) => {
-                  if (onNavigateToLogin) {
-                    e.preventDefault();
-                    onNavigateToLogin();
-                  }
-                }}
-              >
-                سجّل دخولك 
-              </a>
-            </p>
-          </div>
-          <p className="footer-copy">جامعة حمص • اتحاد الطلبة فرع حمص</p>
+          <p className="footer-copy">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
         </div>
       </main>
     </div>

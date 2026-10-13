@@ -30,9 +30,9 @@ const emptyOtp = () => Array(CODE_LENGTH).fill('');
 const FLOWS = {
   register: {
     subtitle: 'إنشاء حساب',
-    progressTitle: 'خطوة 3 من 3: تأكيد البريد الإلكتروني',
-    percent: '100%',
-    total: 3,
+    progressTitle: 'خطوة 3 من 4: تأكيد البريد الإلكتروني',
+    percent: '75%',
+    total: 4,
     done: 3,
   },
   reset: {

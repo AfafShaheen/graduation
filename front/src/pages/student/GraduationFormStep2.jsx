@@ -4,8 +4,8 @@ import universityLogo from "../../assets/homs-university-white.png";
 import unionLogo from "../../assets/only-logo.png";
 import useFormDraft from "../../hooks/useFormDraft";
 
-/* رقم سوري: 9 وبعدها 8 أرقام (بدون الصفر، لأن +963 ظاهرة بالحقل) */
-const PHONE = /^9[0-9]{8}$/;
+/* رقم سوري: 09 وبعدها 8 أرقام */
+const PHONE = /^09[0-9]{8}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
@@ -15,7 +15,7 @@ const validators = {
     if (!t) return "يرجى إدخال رقم الهاتف";
     if (!/^[0-9]+$/.test(t)) return "يجب أن يكون رقم الهاتف أرقاماً فقط";
     if (!PHONE.test(t))
-      return "يجب أن يبدأ رقم الهاتف بـ 9 وأن يتكون من 9 أرقام";
+      return "يجب أن يبدأ رقم الهاتف بـ 09 وأن يتكون من 10 أرقام";
     return "";
   },
   email: (v) => {
@@ -68,21 +68,10 @@ export default function GraduationFormStep2({
     let { name, value } = e.target;
 
     if (name === "phone") {
-      let digits = value
+      value = value
         .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d)) // الأرقام العربية → إنجليزية
-        .replace(/\D/g, ""); // أرقام فقط
-
-      // لصق رقم بصيغة +963... أو 00963...
-      if (digits.length > 9 && digits.startsWith("963")) {
-        digits = digits.slice(3);
-      }
-      // حذف الأصفار من البداية (لصق 09...)
-      digits = digits.replace(/^0+/, "");
-
-      // أول رقم لازم يكون 9
-      if (digits && digits[0] !== "9") return;
-
-      value = digits.slice(0, 9); // 9 أرقام كحد أقصى
+        .replace(/\D/g, "") // أرقام فقط
+        .slice(0, 10); // 10 أرقام كحد أقصى
     }
 
     if (name === "password") setPassword(value);
@@ -156,13 +145,14 @@ export default function GraduationFormStep2({
         <section className="progress-section">
           <div className="progress-labels">
             <span className="progress-title">
-              خطوة 2 من 3: معلومات الحساب والأمان
+              خطوة 2 من 4: معلومات الحساب والأمان
             </span>
-            <span className="progress-percent">66%</span>
+            <span className="progress-percent">50%</span>
           </div>
           <div className="progress-bar-bg">
             <div className="progress-bar-fill"></div>
             <div className="progress-bar-fill"></div>
+            <div className="progress-bar-empty"></div>
             <div className="progress-bar-empty"></div>
           </div>
         </section>
@@ -212,7 +202,7 @@ export default function GraduationFormStep2({
                   name="phone"
                   autoComplete="off"
                   className={`form-input ${errors.phone ? "error" : ""}`}
-                  placeholder="9xxxxxxxx"
+                  placeholder="09xxxxxxxx"
                   style={{
                     paddingRight: "40px",
                     paddingLeft: "56px",
@@ -381,7 +371,7 @@ export default function GraduationFormStep2({
                 }
               }}
             >
-              سجّل دخولك
+              سجّل دخولك &lsaquo;
             </a>
           </p>
         </div>

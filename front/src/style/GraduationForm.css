@@ -148,7 +148,9 @@
 
 .progress-bar-bg {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* أي عدد من المقاطع (2 أو 3 أو 4...) بنفس العرض، بدون ما نعدّل الـ CSS كل مرة */
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 8px;
   height: 8px;
 }

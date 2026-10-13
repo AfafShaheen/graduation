@@ -1,0 +1,490 @@
+/* ==========================================================================
+   تسجيل دخول الإدارة (.ad-*): بنفس هوية وريسبونسف بقية الصفحات
+   ========================================================================== */
+
+/* حاوية الصفحة */
+.ad-app-container {
+  display: flex;
+  justify-content: center;
+  background-color: #fcf6ed;
+  color: #201b0f;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Ghroob', 'Cairo', sans-serif;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ad-mobile-shell {
+  width: 100%;
+  max-width: 100%;
+  background-color: #fcf6ed;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: none;
+  padding-bottom: 20px;
+  box-sizing: border-box;
+  isolation: isolate;
+  overflow: clip; /* بيقص النقشة الدوّارة بدون ما يكسر الهيدر الثابت */
+}
+
+/* نقشة SVG دوّارة خلف الصفحة (نفس بقية الصفحات) */
+.ad-mobile-shell::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(300%, 1800px);
+  aspect-ratio: 1;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #e6d3a6;
+  opacity: 0.5;
+  -webkit-mask-image: url('../assets/pattern.svg');
+  mask-image: url('../assets/pattern.svg');
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 520px auto;
+  mask-size: 520px auto;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: ad-pattern-spin 180s linear infinite;
+  will-change: transform;
+}
+
+@keyframes ad-pattern-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-mobile-shell::before { animation: none; }
+}
+
+/* الهيدر العلوي */
+.ad-header-main {
+  width: 100%;
+  background-color: #124d44;
+  color: #ffffff;
+  border-top: 3px solid #ca4b00;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.ad-header-top {
+  width: 100%;
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.ad-header-title {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  text-align: center;
+}
+
+.ad-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.ad-header-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+}
+
+.ad-header-subband {
+  background-color: rgba(18, 77, 68, 0.95);
+  padding: 6px 16px 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ad-subband-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff8f1;
+}
+
+.ad-badge-auth {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #d94e00;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* المحتوى الرئيسي */
+.ad-main-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 clamp(12px, 4vw, 16px);
+  padding: 20px 0;
+  box-sizing: border-box;
+}
+
+/* البطاقة البيضاء */
+.ad-auth-card {
+  background-color: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #eedebd;
+  padding: 24px 16px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* الشعار والعناوين */
+.ad-crest-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.ad-logo-ring {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+/* لوغو الجامعة أبيض، فالخلفية خضرا غامقة ليبين */
+.ad-logo-frame {
+  width: 80px;
+  height: 80px;
+  border-radius: 9999px;
+  padding: 14px;
+  background-color: #124d44;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.ad-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ad-accent-node {
+  position: absolute;
+  bottom: 0;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background-color: #ca4b00;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+}
+
+.ad-headline {
+  font-size: 22px;
+  line-height: 32px;
+  font-weight: 800;
+  color: #124d44;
+  margin: 0 0 8px 0;
+}
+
+.ad-subtext {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #725b51;
+  max-width: 320px;
+  margin: 0;
+}
+
+/* الفورم */
+.ad-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ad-form-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fdecec;
+  border: 1px solid rgba(186, 26, 26, 0.3);
+  color: #ba1a1a;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.ad-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: right;
+}
+
+.ad-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.ad-label {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: #201b0f;
+  margin: 0;
+}
+
+.ad-protocol-tag {
+  font-size: 11px;
+  color: #8d7166;
+}
+
+.ad-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ad-input-icon-right {
+  position: absolute;
+  right: 14px;
+  color: #8d7166;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.ad-input {
+  width: 100%;
+  height: 46px;
+  background-color: #fffdfa;
+  color: #201b0f;
+  /* 16px تمنع الآيفون من عمل زوم عند الضغط على الحقل */
+  font-size: 16px;
+  padding: 0 44px 0 14px;
+  border-radius: 12px;
+  border: 1px solid #e2bfb2;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+  text-align: left;
+}
+
+.ad-input::placeholder {
+  color: rgba(89, 65, 56, 0.45);
+}
+
+.ad-input:focus {
+  border-color: #124d44;
+  box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
+}
+
+.ad-input-wrapper.error .ad-input {
+  border-color: #ba1a1a;
+}
+
+.ad-input-wrapper.error .ad-input:focus {
+  box-shadow: 0 0 0 3px rgba(186, 26, 26, 0.12);
+}
+
+/* رسالة الخطأ تحت الحقل */
+.ad-error-text {
+  color: #ba1a1a;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* تذكرني */
+.ad-remember-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ad-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #594138;
+  user-select: none;
+}
+
+.ad-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  accent-color: #124d44;
+  cursor: pointer;
+}
+
+/* زر الدخول */
+.ad-submit-btn {
+  width: 100%;
+  height: 52px;
+  background-color: #124d44;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(202, 75, 0, 0.2);
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s, background-color 0.15s;
+  font-family: inherit;
+}
+
+.ad-submit-btn:hover {
+  background-color: #1d6358;
+}
+
+.ad-submit-btn:active {
+  transform: scale(0.98);
+}
+
+/* التنبيه المؤسسي */
+.ad-support-box {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid #f2e7d3;
+}
+
+.ad-support-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  color: #725b51;
+}
+
+.ad-support-text {
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+  text-align: right;
+}
+
+/* التذييل */
+.ad-footer {
+  width: 100%;
+  padding: 0 16px calc(8px + env(safe-area-inset-bottom, 0px)) 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.ad-footer-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: #725b51;
+  font-size: 11px;
+}
+
+.ad-dot-sep {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: #e2bfb2;
+}
+
+.ad-version-highlight {
+  color: #124d44;
+  font-weight: 700;
+}
+
+/* أيقونات Material Symbols */
+.ad-symbol {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+}
+
+.ad-symbol.fill {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* ===== Responsive ===== */
+
+/* شاشات صغيرة جداً */
+@media (max-width: 359px) {
+  .ad-header-title { font-size: 15px; }
+  .ad-auth-card { padding: 20px 12px; }
+  .ad-headline { font-size: 19px; }
+}
+
+/* تابلت ولابتوب */
+@media (min-width: 600px) {
+  .ad-app-container { padding: 24px 0; }
+  .ad-mobile-shell {
+    max-width: 560px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-radius: 24px;
+  }
+  .ad-header-top,
+  .ad-header-subband { padding-left: 24px; padding-right: 24px; }
+  .ad-main-stage { margin: 0 24px; }
+  .ad-auth-card { padding: 28px 24px; }
+  .ad-input { font-size: 14px; }
+}
+
+@media (min-width: 1024px) {
+  .ad-app-container { padding: 40px 0; }
+  .ad-mobile-shell { max-width: 640px; }
+  .ad-auth-card { padding: 32px; }
+}
