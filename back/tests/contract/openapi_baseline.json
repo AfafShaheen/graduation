@@ -1,6 +1,14 @@
 {
   "components": {
     "schemas": {
+      "ActorType": {
+        "enum": [
+          "ADMIN",
+          "SCANNER"
+        ],
+        "title": "ActorType",
+        "type": "string"
+      },
       "AdminLoginRequest": {
         "properties": {
           "password": {
@@ -98,6 +106,165 @@
           "new_email"
         ],
         "title": "AdminUpdateEmailRequest",
+        "type": "object"
+      },
+      "AuditActor": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "role_label": {
+            "title": "Role Label",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "role_label"
+        ],
+        "title": "AuditActor",
+        "type": "object"
+      },
+      "AuditGraduate": {
+        "properties": {
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "university_id": {
+            "title": "University Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "university_id"
+        ],
+        "title": "AuditGraduate",
+        "type": "object"
+      },
+      "AuditLogItem": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "action_label": {
+            "title": "Action Label",
+            "type": "string"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/AuditActor"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "graduate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditGraduate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "ticket_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket Id"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "actor",
+          "action",
+          "action_label",
+          "target"
+        ],
+        "title": "AuditLogItem",
+        "type": "object"
+      },
+      "AuditLogList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "AuditLogList",
         "type": "object"
       },
       "Body_update_shamcash_qr_api_admin_settings_shamcash_qr_put": {
@@ -1382,6 +1549,197 @@
         ],
         "title": "VerifyOtpRequest",
         "type": "object"
+      },
+      "VolunteerAnswerResponse": {
+        "properties": {
+          "answered": {
+            "title": "Answered",
+            "type": "boolean"
+          },
+          "has_experience": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Experience"
+          },
+          "wants_responsibility": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wants Responsibility"
+          }
+        },
+        "required": [
+          "answered"
+        ],
+        "title": "VolunteerAnswerResponse",
+        "type": "object"
+      },
+      "VolunteerAnswerUpsert": {
+        "additionalProperties": false,
+        "description": "PUT body: exactly the two yes/no answers, nothing else.",
+        "properties": {
+          "has_experience": {
+            "enum": [
+              "yes",
+              "no"
+            ],
+            "title": "Has Experience",
+            "type": "string"
+          },
+          "wants_responsibility": {
+            "enum": [
+              "yes",
+              "no"
+            ],
+            "title": "Wants Responsibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "wants_responsibility",
+          "has_experience"
+        ],
+        "title": "VolunteerAnswerUpsert",
+        "type": "object"
+      },
+      "VolunteerListItem": {
+        "properties": {
+          "college_id": {
+            "title": "College Id",
+            "type": "integer"
+          },
+          "college_name": {
+            "title": "College Name",
+            "type": "string"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "graduate_id": {
+            "title": "Graduate Id",
+            "type": "integer"
+          },
+          "has_experience": {
+            "enum": [
+              "yes",
+              "no"
+            ],
+            "title": "Has Experience",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "registered_at": {
+            "format": "date-time",
+            "title": "Registered At",
+            "type": "string"
+          },
+          "university_id": {
+            "title": "University Id",
+            "type": "string"
+          },
+          "wants_responsibility": {
+            "enum": [
+              "yes",
+              "no"
+            ],
+            "title": "Wants Responsibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "graduate_id",
+          "full_name",
+          "university_id",
+          "college_id",
+          "college_name",
+          "phone",
+          "wants_responsibility",
+          "has_experience",
+          "registered_at"
+        ],
+        "title": "VolunteerListItem",
+        "type": "object"
+      },
+      "VolunteerListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VolunteerListItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/VolunteerStats"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "stats",
+          "total",
+          "items"
+        ],
+        "title": "VolunteerListResponse",
+        "type": "object"
+      },
+      "VolunteerStats": {
+        "properties": {
+          "all": {
+            "title": "All",
+            "type": "integer"
+          },
+          "both": {
+            "title": "Both",
+            "type": "integer"
+          },
+          "experienced": {
+            "title": "Experienced",
+            "type": "integer"
+          },
+          "wants": {
+            "title": "Wants",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "all",
+          "wants",
+          "experienced",
+          "both"
+        ],
+        "title": "VolunteerStats",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -1412,6 +1770,221 @@
           }
         },
         "summary": "Read Root"
+      }
+    },
+    "/api/admin/audit-logs": {
+      "get": {
+        "operationId": "list_audit_logs_api_admin_audit_logs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ActorType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "graduate_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Graduate Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ticket_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ticket Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "exceptional_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Exceptional Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_scans",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Scans",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Audit Logs",
+        "tags": [
+          "Admin Audit Log"
+        ]
       }
     },
     "/api/admin/auth/login": {
@@ -2884,6 +3457,311 @@
         ]
       }
     },
+    "/api/admin/volunteers": {
+      "get": {
+        "operationId": "list_volunteers_api_admin_volunteers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "college_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "College Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "wants_responsibility",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "yes",
+                    "no"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Wants Responsibility"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_experience",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "yes",
+                    "no"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Has Experience"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "newest",
+              "enum": [
+                "newest",
+                "name",
+                "college"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VolunteerListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Volunteers",
+        "tags": [
+          "Admin Volunteers"
+        ]
+      }
+    },
+    "/api/admin/volunteers/export": {
+      "get": {
+        "operationId": "export_volunteers_api_admin_volunteers_export_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "college_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "College Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "wants_responsibility",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "yes",
+                    "no"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Wants Responsibility"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_experience",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "yes",
+                    "no"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Has Experience"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "newest",
+              "enum": [
+                "newest",
+                "name",
+                "college"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Export Volunteers",
+        "tags": [
+          "Admin Volunteers"
+        ]
+      }
+    },
     "/api/auth/change-email": {
       "post": {
         "operationId": "change_email_endpoint_api_auth_change_email_post",
@@ -3322,6 +4200,76 @@
           }
         ],
         "summary": "Get Ticket Options",
+        "tags": [
+          "Graduates & Registration"
+        ]
+      }
+    },
+    "/api/graduates/me/volunteer-answers": {
+      "get": {
+        "operationId": "get_volunteer_answers_api_graduates_me_volunteer_answers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VolunteerAnswerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Volunteer Answers",
+        "tags": [
+          "Graduates & Registration"
+        ]
+      },
+      "put": {
+        "operationId": "put_volunteer_answers_api_graduates_me_volunteer_answers_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VolunteerAnswerUpsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VolunteerAnswerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Volunteer Answers",
         "tags": [
           "Graduates & Registration"
         ]
