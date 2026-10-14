@@ -8,34 +8,26 @@ import AdminSidebar from '../../components/AdminSidebar';
 const SCANNERS = [
   {
     id: '01',
-    username: 'scanner.civil.gate1',
+    username: 'scanner.civil.1',
     college: 'كلية الهندسة المدنية — المدرج الكبير',
-    gate: 'بوابة المدرج الرئيسية (أ)',
-    gateIcon: 'meeting_room',
     status: 'active',
   },
   {
     id: '02',
     username: 'scanner.it.vip',
     college: 'كلية الهندسة المعلوماتية والكهربائية',
-    gate: 'مدخل ضيوف الشرف والعمداء',
-    gateIcon: 'stars',
     status: 'active',
   },
   {
     id: '03',
     username: 'scanner.med.students',
     college: 'كلية الطب البشري والصيدلة',
-    gate: 'بوابة دخول الخريجين (الشرقية)',
-    gateIcon: 'groups',
     status: 'pending',
   },
   {
     id: '04',
     username: 'scanner.arts.b',
     college: 'كلية الآداب والعلوم الإنسانية',
-    gate: 'بوابة مدرج الباسل 2',
-    gateIcon: 'door_front',
     status: 'frozen',
   },
 ];
@@ -130,8 +122,6 @@ export default function AdminScannersSettings({
       id: String(list.length + 1).padStart(2, '0'),
       username,
       college: newScannerCeremony,
-      gate: 'لم تُحدد بعد',
-      gateIcon: 'door_front',
       status: 'pending',
     };
 
@@ -221,7 +211,7 @@ export default function AdminScannersSettings({
             <span className="scan-set-pulse-label">الماسحون والإعدادات</span>
             <span className="scan-set-pulse-venue">• {activeCount} ماسح نشط الآن</span>
           </div>
-          <h3>إدارة ماسحي البوابات وإعدادات الدفع</h3>
+          <h3>إدارة الماسحين وإعدادات الدفع</h3>
           <p>أضف حسابات الماسحين الميدانيين وتحكم بها، وحدّد بيانات حساب شام كاش المعتمد لاستلام رسوم التذاكر.</p>
         </section>
 
@@ -257,7 +247,7 @@ export default function AdminScannersSettings({
 
           <span className="scan-set-live-pill">
             <span className="scan-set-live-dot"></span>
-            <span>التحقق المباشر من البوابات متصل عبر QR Scanner</span>
+            <span>التحقق المباشر متصل عبر QR Scanner</span>
           </span>
         </div>
 
@@ -270,7 +260,7 @@ export default function AdminScannersSettings({
                   <div className="scan-set-title-icon">
                     <span className="scan-set-symbol">person_add</span>
                   </div>
-                  <h4>إضافة ماسح جديد للبوابات</h4>
+                  <h4>إضافة ماسح جديد</h4>
                 </div>
                 <p className="scan-set-hint">تُمنح الصلاحيات حصراً للكوادر الطلابية المنظمة للدخول</p>
               </div>
@@ -354,7 +344,6 @@ export default function AdminScannersSettings({
                     <tr>
                       <th>اسم المستخدم</th>
                       <th>الحفل المخصص والكلية</th>
-                      <th>البوابة الموكلة</th>
                       <th>حالة النشاط الميداني</th>
                       <th style={{ textAlign: 'center' }}>الإجراءات</th>
                     </tr>
@@ -373,13 +362,6 @@ export default function AdminScannersSettings({
 
                           <td data-label="الحفل المخصص والكلية">
                             <span className="scan-set-college">{item.college}</span>
-                          </td>
-
-                          <td data-label="البوابة الموكلة">
-                            <span className="scan-set-chip gate">
-                              <span className="scan-set-symbol">{item.gateIcon}</span>
-                              <span>{item.gate}</span>
-                            </span>
                           </td>
 
                           <td data-label="حالة النشاط الميداني">
