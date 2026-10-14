@@ -1,3 +1,4 @@
+import asyncio
 from datetime import UTC, datetime
 
 import freezegun
@@ -178,3 +179,44 @@ async def test_reset_password_success_returns_arabic_message(
 
     assert resp.status_code == 200
     assert resp.json()["message"] == messages.PASSWORD_RESET_SUCCESS
+
+
+async def test_reset_password_attempt_lock_holds_under_concurrency(
+    client, db, make_event, make_college, make_graduate, sent_otps
+):
+    event = await make_event()
+    college = await make_college(event.id)
+    grad = await make_graduate(college.id, university_id="400020", email=_email("lockout"))
+    grad_id = grad.id
+
+    from app.services.auth_service import issue_and_send_otp
+
+    await issue_and_send_otp(db, grad, OtpPurpose.PASSWORD_RESET, grad.email)
+    correct_code = sent_otps[-1][1]
+    wrong_code = "000000" if correct_code != "000000" else "111111"
+
+    responses = await asyncio.gather(
+        *(
+            client.post(
+                "/api/auth/reset-password",
+                json={"email": grad.email, "code": wrong_code, _NEWPW_FIELD: _NEWPW},
+            )
+            for _ in range(20)
+        )
+    )
+
+    for response in responses:
+        assert response.status_code == 400
+        assert response.json()["detail"] == messages.OTP_INVALID_GENERIC
+
+    row = await _latest_otp(db, grad_id)
+    await db.refresh(row)
+    assert row.failed_attempts == 5
+
+    # The lock is not bypassable: the correct code is still refused afterwards.
+    locked = await client.post(
+        "/api/auth/reset-password",
+        json={"email": grad.email, "code": correct_code, _NEWPW_FIELD: _NEWPW},
+    )
+    assert locked.status_code == 400
+    assert locked.json()["detail"] == messages.OTP_INVALID_GENERIC

@@ -39,11 +39,22 @@ REQUEST_NOT_PROCESSING = "هذا الطلب ليس قيد المعالجة"
 REJECT_REASON_REQUIRED = "يجب كتابة سبب الرفض"
 SCANNER_USERNAME_TAKEN = "اسم المستخدم مستخدم مسبقاً"
 SCANNER_LOGIN_FAILED = "اسم المستخدم أو كلمة السر غير صحيحة"
+SCANNER_NOT_FOUND = "لم يتم العثور على الماسح الضوئي"
+SCANNER_DELETED = "تم حذف حساب الماسح الضوئي"
+EVENT_NOT_FOUND = "لم يتم العثور على الحفل"
 INVALID_IMAGE = "الصورة غير صالحة، المسموح PNG أو JPEG أو WEBP بحد أقصى 1 ميغابايت"
 TICKET_INFO_TEXT = "التذكرة تمنحك أنت ومرافقيك دخول حفل التخرج. لا يمكن تعديل التذكرة أو استرجاع قيمتها بعد تأكيد الدفع."
 SETTINGS_UPDATED = "تم تحديث الإعدادات بنجاح"
 SHAMCASH_QR_UPDATED = "تم تحديث رمز دفع الشام كاش بنجاح"
 SHAMCASH_QR_DELETED = "تم حذف رمز دفع الشام كاش"
+
+TICKET_STATUS_AWAITING_PAYMENT = "تذكرتك بانتظار إتمام الدفع"
+TICKET_STATUS_PROCESSING = "تم استلام بيانات دفعك والاتحاد يراجعها حالياً"
+TICKET_STATUS_CONFIRMED = "تم تأكيد تذكرتك بنجاح"
+TICKET_STATUS_REJECTED = "تم رفض بيانات الدفع، يمكنك إعادة إرسالها"
+
+PAYMENT_CONFIRMED = "تم تأكيد الدفع بنجاح"
+PAYMENT_REJECTED = "تم رفض الدفع"
 
 
 def append_contact_phone(message: str, contact_phone: str | None) -> str:
@@ -51,3 +62,54 @@ def append_contact_phone(message: str, contact_phone: str | None) -> str:
     if contact_phone:
         return f"{message} رقم التواصل: {contact_phone}"
     return message
+
+
+def payment_note_instruction(university_id: str) -> str:
+    """Instruction shown to the graduate before transferring (SRS FR-9)."""
+    return f"يرجى كتابة رقمك الجامعي ({university_id}) في خانة ملاحظة الحوالة"
+
+
+# --- Audit log viewer (item 3.5.2, D22) --------------------------------------
+
+AUDIT_ROLE_LABELS = {
+    "ADMIN": "مسؤول الاتحاد",
+    "SCANNER": "ماسح",
+}
+
+AUDIT_ACTION_LABELS = {
+    "CREATE_EVENT": "إنشاء حفل",
+    "UPDATE_EVENT": "تعديل حفل",
+    "DELETE_EVENT": "حذف حفل",
+    "UPLOAD_UNIVERSITY_RECORDS": "رفع سجلات جامعية",
+    "DELETE_UNIVERSITY_RECORD": "حذف سجل جامعي",
+    "UPDATE_EMAIL": "تعديل بريد إلكتروني",
+    "MANUAL_CHECK_IN": "تسجيل دخول يدوي",
+    "REVERT_SCAN": "إلغاء مسح خاطئ",
+    "REVERT_PAYMENT": "إرجاع الدفع لقيد المعالجة",
+    "PAYMENT_CONFIRMED": "تأكيد دفع",
+    "PAYMENT_REJECTED": "رفض دفع",
+    "SETTINGS_UPDATED": "تحديث الإعدادات",
+    "SHAMCASH_QR_UPDATED": "تحديث رمز دفع الشام كاش",
+    "SHAMCASH_QR_DELETED": "حذف رمز دفع الشام كاش",
+    "SCANNER_CREATED": "إنشاء حساب ماسح",
+    "SCANNER_DELETED": "حذف حساب ماسح",
+    "DATA_EXPORTED": "تصدير بيانات",
+    "qr_scanned": "محاولة مسح",
+}
+
+
+def audit_action_label(action: str) -> str:
+    """Arabic label for an audit action; the raw code when it is unknown (D22)."""
+    return AUDIT_ACTION_LABELS.get(action, action)
+
+
+def audit_role_label(actor_type: str) -> str:
+    """Arabic label for an audit actor type; the raw value when it is unknown."""
+    return AUDIT_ROLE_LABELS.get(actor_type, actor_type)
+
+
+# --- Volunteer answers (SRS extension FR-26, item 3.5.3) ---------------------
+
+VOLUNTEER_ANSWER_SAVED = "تم حفظ إجاباتك بنجاح."
+VOLUNTEER_YES = "نعم"
+VOLUNTEER_NO = "لا"

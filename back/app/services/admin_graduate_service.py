@@ -7,8 +7,9 @@ from app.models.graduate import GraduateModel
 from app.models.ticket import TicketModel, TicketStatusEnum
 from app.models.payment import PaymentModel
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
-from app.models.audit_log import AuditLogModel
+from app.models.college import CollegeModel
 from app.services.qr_service import activate_companion_codes
+from app.services.audit_log import ActorType, record_audit
 from app.core import messages
 from app.core.redis import redis_client
 
@@ -21,24 +22,6 @@ async def invalidate_admin_cache() -> None:
             await redis_client.delete(*keys)
     except Exception:
         pass
-
-
-async def write_audit_log(
-    db: AsyncSession,
-    admin_id: int,
-    action: str,
-    target: str,
-    details: str
-) -> None:
-    """Atomically write audit log entry in the same transaction (FR-22)."""
-    log_entry = AuditLogModel(
-        actor_type="ADMIN",
-        actor_id=admin_id,
-        action=action,
-        target=target,
-        details=details
-    )
-    db.add(log_entry)
 
 
 async def search_graduates_service(
@@ -164,13 +147,20 @@ async def admin_force_update_email_service(db: AsyncSession, graduate_id: int, n
     grad.email = new_email
     db.add(grad)
 
-    # Atomic audit log
-    await write_audit_log(
+    # Atomic audit log (D21: structured event/graduate refs)
+    event_row = await db.execute(
+        select(CollegeModel.event_id).where(CollegeModel.id == grad.college_id)
+    )
+    event_id = event_row.scalar_one_or_none()
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="UPDATE_EMAIL",
-        target=f"Graduate ID {graduate_id}",
-        details=f"Changed email from {old_email} to {new_email}"
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "UPDATE_EMAIL",
+        f"Graduate ID {graduate_id}",
+        f"Changed email from {old_email} to {new_email}",
+        event_id=event_id,
+        graduate_id=graduate_id,
     )
 
     await db.commit()
@@ -219,12 +209,16 @@ async def manual_check_in_service(db: AsyncSession, graduate_id: int, admin: dic
     # in one place.
     activated_count = await activate_companion_codes(db, ticket_id)
 
-    await write_audit_log(
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="MANUAL_CHECK_IN",
-        target=f"Graduate ID {graduate_id}",
-        details=f"Manual check-in override by admin. Activated graduate and {activated_count} companion QR(s)."
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "MANUAL_CHECK_IN",
+        f"Graduate ID {graduate_id}",
+        f"Manual check-in override by admin. Activated graduate and {activated_count} companion QR(s).",
+        event_id=tickets[0].event_id,
+        graduate_id=graduate_id,
+        ticket_id=ticket_id,
     )
 
     await db.commit()
@@ -277,12 +271,16 @@ async def revert_scan_service(db: AsyncSession, graduate_id: int, admin: dict) -
         cq.scanned_by_scanner_id = None
         db.add(cq)
 
-    await write_audit_log(
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="REVERT_SCAN",
-        target=f"Graduate ID {graduate_id}",
-        details=f"Reverted scan for graduate and {len(comp_qrs)} companion QR(s)."
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "REVERT_SCAN",
+        f"Graduate ID {graduate_id}",
+        f"Reverted scan for graduate and {len(comp_qrs)} companion QR(s).",
+        event_id=tickets[0].event_id,
+        graduate_id=graduate_id,
+        ticket_id=ticket_id,
     )
 
     await db.commit()
@@ -303,15 +301,20 @@ async def revert_payment_service(db: AsyncSession, ticket_id: int, admin: dict) 
     ticket.confirmed_at = None
     db.add(ticket)
 
-    # NOTE: once the graduate "my ticket" endpoint (FR-5) exists, reverting a
-    # confirmed payment must also invalidate the QRs issued for that ticket, so
-    # a code from a no-longer-confirmed ticket can never be scanned or shown.
-    await write_audit_log(
+    # The QR rows are intentionally kept: the "my ticket" endpoint (M2) exposes
+    # NO code values or WhatsApp link for any status other than CONFIRMED, so a
+    # code of a no-longer-confirmed ticket can never be shown; on re-confirmation
+    # the SAME code values become visible and scannable again.
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="REVERT_PAYMENT",
-        target=f"Ticket ID {ticket_id}",
-        details=f"Reverted ticket status from CONFIRMED to PROCESSING for graduate ID {ticket.graduate_id}"
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "REVERT_PAYMENT",
+        f"Ticket ID {ticket_id}",
+        f"Reverted ticket status from CONFIRMED to PROCESSING for graduate ID {ticket.graduate_id}",
+        event_id=ticket.event_id,
+        graduate_id=ticket.graduate_id,
+        ticket_id=ticket_id,
     )
 
     await db.commit()

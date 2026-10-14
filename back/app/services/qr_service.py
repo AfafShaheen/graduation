@@ -67,6 +67,7 @@ class ScanResult:
     qr_code_id: int | None = None
     graduate_id: int | None = None
     code_type: QrCodeTypeEnum | None = None
+    ticket_id: int | None = None
 
 
 class QrServiceError(Exception):
@@ -108,6 +109,7 @@ async def _audit_scan(
     Every attempt is logged — success and failure alike — so the audit trail
     shows what a scanner presented even when no code was consumed.
     """
+    scanner = await db.get(ScannerModel, scanner_id)
     await record_audit(
         db,
         actor_type=ActorType.SCANNER,
@@ -115,6 +117,9 @@ async def _audit_scan(
         action="qr_scanned",
         target=target,
         details=result.decision.value,
+        event_id=scanner.event_id if scanner is not None else None,
+        graduate_id=result.graduate_id,
+        ticket_id=result.ticket_id,
     )
 
 
@@ -252,6 +257,7 @@ async def scan_qr_code(
             qr_record.id,
             ticket.graduate_id,
             qr_record.code_type,
+            ticket.id,
         )
         await _audit_scan(db, scanner_id, str(value), result)
         return result
@@ -263,6 +269,7 @@ async def scan_qr_code(
             qr_record.id,
             ticket.graduate_id,
             qr_record.code_type,
+            ticket.id,
         )
         await _audit_scan(db, scanner_id, str(value), result)
         return result
@@ -274,6 +281,7 @@ async def scan_qr_code(
             qr_record.id,
             ticket.graduate_id,
             qr_record.code_type,
+            ticket.id,
         )
         await _audit_scan(db, scanner_id, str(value), result)
         return result
@@ -285,6 +293,7 @@ async def scan_qr_code(
             qr_record.id,
             ticket.graduate_id,
             qr_record.code_type,
+            ticket.id,
         )
         await _audit_scan(db, scanner_id, str(value), result)
         return result

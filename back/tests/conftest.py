@@ -74,7 +74,8 @@ _SCHEMA_FILE = Path(__file__).resolve().parents[1] / "migrations" / "0001_init_s
 
 _TABLES = (
     "events, colleges, admins, scanners, settings, graduates, "
-    "university_records, tickets, payments, qr_codes, otp_codes, audit_logs"
+    "university_records, tickets, payments, qr_codes, otp_codes, audit_logs, "
+    "volunteer_answers"
 )
 
 _DEFAULT_PHONE = "+963" + "9" * 9
@@ -365,6 +366,34 @@ def make_ticket(db):
         await db.commit()
         await db.refresh(ticket)
         return ticket
+
+    return _make
+
+
+@pytest.fixture
+def make_payment(db):
+    from app.models.payment import PaymentModel
+
+    async def _make(
+        ticket_id,
+        transaction_number="TXN1234",
+        amount=100000,
+        sender_name="أحمد محمد",
+        submitted_at=None,
+        reviewed_at=None,
+    ):
+        payment = PaymentModel(
+            ticket_id=ticket_id,
+            transaction_number=transaction_number,
+            amount=amount,
+            sender_name=sender_name,
+            submitted_at=submitted_at,
+            reviewed_at=reviewed_at,
+        )
+        db.add(payment)
+        await db.commit()
+        await db.refresh(payment)
+        return payment
 
     return _make
 
