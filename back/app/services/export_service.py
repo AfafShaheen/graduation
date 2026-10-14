@@ -4,9 +4,11 @@ One sheet, right-to-left, Arabic headers, one row per graduate of the selected
 event(s). A graduate without a ticket still appears, with empty ticket and
 payment cells; an event without data yields a header-only file (UC-9 alt).
 
-Safety (D17): every cell is written as an explicit string (``data_type="s"``)
-so a user-controlled value such as ``=HYPERLINK(...)`` can never be treated as a
-formula by a spreadsheet program.
+Safety (D17): every user-controlled text cell is written as an explicit string
+(``data_type="s"``) so a value such as ``=HYPERLINK(...)`` can never be treated
+as a formula by a spreadsheet program. The numeric columns (companions count,
+price and amount) are written as real numbers so a spreadsheet can sum them;
+they come from integer/decimal columns, never from free text.
 """
 
 from datetime import UTC, datetime
@@ -74,6 +76,19 @@ def _string_cell(ws, row: int, col: int, value) -> None:
     cell = ws.cell(row=row, column=col)
     cell.value = _as_text(value)
     cell.data_type = "s"
+
+
+def _number_cell(ws, row: int, col: int, value) -> None:
+    """Write a numeric value as a real number so it can be summed.
+
+    ``None`` (for example a graduate without a ticket) leaves the cell empty.
+    Booleans are rejected to avoid ``True`` silently becoming ``1``.
+    """
+    if value is None or value == "" or isinstance(value, bool):
+        return
+    cell = ws.cell(row=row, column=col)
+    cell.value = int(value) if isinstance(value, int) else float(value)
+    cell.data_type = "n"
 
 
 async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
@@ -152,12 +167,12 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
         _string_cell(ws, row_idx, 9, graduate.phone)
         _string_cell(ws, row_idx, 10, "نعم" if graduate.email_verified else "لا")
         _string_cell(ws, row_idx, 11, _enum_value(ticket.ticket_type) if ticket else "")
-        _string_cell(ws, row_idx, 12, ticket.companions_count if ticket else "")
-        _string_cell(ws, row_idx, 13, ticket.price if ticket else "")
+        _number_cell(ws, row_idx, 12, ticket.companions_count if ticket else None)
+        _number_cell(ws, row_idx, 13, ticket.price if ticket else None)
         _string_cell(ws, row_idx, 14, _enum_value(ticket.status) if ticket else "")
         _string_cell(ws, row_idx, 15, ticket.rejection_reason if ticket else "")
         _string_cell(ws, row_idx, 16, payment.transaction_number if payment else "")
-        _string_cell(ws, row_idx, 17, payment.amount if payment else "")
+        _number_cell(ws, row_idx, 17, payment.amount if payment else None)
         _string_cell(ws, row_idx, 18, payment.sender_name if payment else "")
         _string_cell(ws, row_idx, 19, payment.submitted_at if payment else "")
         _string_cell(ws, row_idx, 20, payment.reviewed_at if payment else "")
