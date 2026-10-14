@@ -11,3 +11,4 @@ from app.models.payment import PaymentModel
 from app.models.qr_code import QrCodeModel
 from app.models.otp_code import OtpCodeModel
 from app.models.audit_log import AuditLogModel
+from app.models.volunteer_answer import VolunteerAnswerModel

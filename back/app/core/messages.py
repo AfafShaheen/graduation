@@ -106,3 +106,10 @@ def audit_action_label(action: str) -> str:
 def audit_role_label(actor_type: str) -> str:
     """Arabic label for an audit actor type; the raw value when it is unknown."""
     return AUDIT_ROLE_LABELS.get(actor_type, actor_type)
+
+
+# --- Volunteer answers (SRS extension FR-26, item 3.5.3) ---------------------
+
+VOLUNTEER_ANSWER_SAVED = "تم حفظ إجاباتك بنجاح."
+VOLUNTEER_YES = "نعم"
+VOLUNTEER_NO = "لا"

@@ -13,6 +13,10 @@ from app.schemas.ticket import (
     TicketSelectRequest,
     TicketSummary,
 )
+from app.schemas.volunteer_answer import (
+    VolunteerAnswerResponse,
+    VolunteerAnswerUpsert,
+)
 from app.services.graduate_service import (
     verify_step1_service,
     register_step2_service,
@@ -23,6 +27,10 @@ from app.services.ticket_service import (
     get_ticket_options_service,
     select_ticket_service,
     submit_payment_service,
+)
+from app.services.volunteer_service import (
+    get_volunteer_answer_service,
+    upsert_volunteer_answer_service,
 )
 
 router = APIRouter(prefix="/api/graduates", tags=["Graduates & Registration"])
@@ -86,3 +94,28 @@ async def get_my_ticket(
     graduate: GraduateModel = Depends(get_current_graduate),
 ):
     return await get_my_ticket_service(db, graduate)
+
+
+@router.get(
+    "/me/volunteer-answers",
+    response_model=VolunteerAnswerResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_volunteer_answers(
+    db: AsyncSession = Depends(get_db),
+    graduate: GraduateModel = Depends(get_current_graduate),
+):
+    return await get_volunteer_answer_service(db, graduate)
+
+
+@router.put(
+    "/me/volunteer-answers",
+    response_model=VolunteerAnswerResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def put_volunteer_answers(
+    data: VolunteerAnswerUpsert,
+    db: AsyncSession = Depends(get_db),
+    graduate: GraduateModel = Depends(get_current_graduate),
+):
+    return await upsert_volunteer_answer_service(db, graduate, data)
