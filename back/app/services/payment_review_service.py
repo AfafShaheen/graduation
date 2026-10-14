@@ -226,6 +226,9 @@ async def confirm_payment_service(
             f"Confirmed payment for graduate ID {ticket.graduate_id} "
             f"(amount {payment.amount}, transaction {payment.transaction_number})"
         ),
+        event_id=ticket.event_id,
+        graduate_id=ticket.graduate_id,
+        ticket_id=ticket_id,
     )
 
     await invalidate_admin_cache()
@@ -275,6 +278,9 @@ async def reject_payment_service(
         action="PAYMENT_REJECTED",
         target=f"Ticket ID {ticket_id}",
         details=f"Rejected payment for graduate ID {ticket.graduate_id}",
+        event_id=ticket.event_id,
+        graduate_id=ticket.graduate_id,
+        ticket_id=ticket_id,
     )
 
     await invalidate_admin_cache()

@@ -177,6 +177,7 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
         action="DATA_EXPORTED",
         target=target,
         details=f"scope={scope}; rows={len(rows)}",
+        event_id=event_id,
     )
 
     day = datetime.now(UTC).strftime("%Y%m%d")

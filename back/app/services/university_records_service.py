@@ -10,8 +10,8 @@ from app.models.university_record import UniversityRecordModel
 from app.models.college import CollegeModel
 from app.models.event import EventModel
 from app.models.graduate import GraduateModel
-from app.models.audit_log import AuditLogModel
 from app.services.graduate_service import normalize_arabic
+from app.services.audit_log import ActorType, record_audit
 from app.core.redis import redis_client
 
 
@@ -196,14 +196,15 @@ async def upload_university_records(
 
     counts = await upsert_records(records, event_id, db)
 
-    audit_log = AuditLogModel(
-        actor_type="ADMIN",
-        actor_id=admin["admin_id"],
-        action="UPLOAD_UNIVERSITY_RECORDS",
-        target=f"event_id={event_id}",
-        details=f"Added {counts['added']}, Updated {counts['updated']} records"
+    await record_audit(
+        db,
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "UPLOAD_UNIVERSITY_RECORDS",
+        f"event_id={event_id}",
+        f"Added {counts['added']}, Updated {counts['updated']} records",
+        event_id=event_id,
     )
-    db.add(audit_log)
     await db.commit()
 
     await invalidate_uni_records_cache(event_id)
@@ -314,14 +315,15 @@ async def delete_university_record(record_id: int, admin: dict, db: AsyncSession
 
     await db.delete(record)
 
-    audit_log = AuditLogModel(
-        actor_type="ADMIN",
-        actor_id=admin["admin_id"],
-        action="DELETE_UNIVERSITY_RECORD",
-        target=f"record_id={record_id}",
-        details=f"Deleted university record for university_id={uni_id}"
+    await record_audit(
+        db,
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "DELETE_UNIVERSITY_RECORD",
+        f"record_id={record_id}",
+        f"Deleted university record for university_id={uni_id}",
+        event_id=event_id,
     )
-    db.add(audit_log)
     await db.commit()
 
     await invalidate_uni_records_cache(event_id)

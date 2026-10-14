@@ -41,6 +41,10 @@ async def record_audit(
     action: str,
     target: str,
     details: str | None = None,
+    *,
+    event_id: int | None = None,
+    graduate_id: int | None = None,
+    ticket_id: int | None = None,
 ) -> None:
     """Append one row to ``audit_logs`` inside the caller's transaction.
 
@@ -55,6 +59,9 @@ async def record_audit(
             action=_clip(action),
             target=_clip(target),
             details=details,
+            event_id=event_id,
+            graduate_id=graduate_id,
+            ticket_id=ticket_id,
         )
     )
     await db.flush()
