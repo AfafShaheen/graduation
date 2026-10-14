@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_graduate
 from app.models.graduate import GraduateModel
-from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request
+from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request, GraduateMeResponse
 from app.schemas.ticket import (
     MyTicketResponse,
     PaymentInfoResponse,
@@ -16,6 +16,7 @@ from app.schemas.ticket import (
 from app.services.graduate_service import (
     verify_step1_service,
     register_step2_service,
+    get_graduate_me_service,
 )
 from app.services.ticket_service import (
     get_my_ticket_service,
@@ -86,3 +87,15 @@ async def get_my_ticket(
     graduate: GraduateModel = Depends(get_current_graduate),
 ):
     return await get_my_ticket_service(db, graduate)
+
+
+@router.get(
+    "/me",
+    response_model=GraduateMeResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_my_profile(
+    db: AsyncSession = Depends(get_db),
+    graduate: GraduateModel = Depends(get_current_graduate),
+):
+    return await get_graduate_me_service(db, graduate)
