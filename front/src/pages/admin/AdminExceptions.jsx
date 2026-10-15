@@ -18,7 +18,6 @@ const TICKETS = [
     form: '#HOMS-2024-88291',
     payment: 'confirmed',
     scanned: true,
-    scanGate: 'البوابة الشرقية',
     scanTime: '16:35',
   },
   {
@@ -33,7 +32,6 @@ const TICKETS = [
     form: '#HOMS-2024-11024',
     payment: 'confirmed',
     scanned: false,
-    scanGate: '',
     scanTime: '',
   },
   {
@@ -48,7 +46,6 @@ const TICKETS = [
     form: '#HOMS-2024-40912',
     payment: 'confirmed',
     scanned: true,
-    scanGate: 'البوابة الرئيسية (أ)',
     scanTime: '16:15',
   },
 ];
@@ -158,7 +155,6 @@ export default function AdminExceptions({
           t.id,
           t.name,
           t.college,
-          t.scanGate,
           t.scanned ? 'ممسوحة' : 'غير ممسوحة',
         ]
           .join(' ')
@@ -192,14 +188,14 @@ export default function AdminExceptions({
     setList((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
 
   const handleManualEntry = () => {
-    updateTicket(ticket.id, { scanned: true, scanGate: 'دخول يدوي', scanTime: nowLabel() });
+    updateTicket(ticket.id, { scanned: true, scanTime: nowLabel() });
     addLog(ticket, 'تسجيل دخول يدوي', 'تسجيل الدخول يدوياً بقرار المشرف');
     if (onManualEntry) onManualEntry(ticket);
     setNotice(`تم تسجيل دخول ${ticket.name} يدوياً`);
   };
 
   const handleCancelScan = () => {
-    updateTicket(ticket.id, { scanned: false, scanGate: '', scanTime: '' });
+    updateTicket(ticket.id, { scanned: false, scanTime: '' });
     addLog(ticket, 'إلغاء مسح خاطئ', 'فك قفل المسح لإعادة المسح من جديد');
     if (onCancelScan) onCancelScan(ticket);
     setNotice(`تم إلغاء المسح السابق لتذكرة ${ticket.id}`);
@@ -365,7 +361,7 @@ export default function AdminExceptions({
                 <span className="exc-symbol" style={{ fontSize: '18px' }}>
                   {ticket.scanned ? 'check_circle' : 'radio_button_unchecked'}
                 </span>
-                <span>{ticket.scanned ? 'ممسوحة عند البوابة (مؤكدة)' : 'غير ممسوحة بعد'}</span>
+                <span>{ticket.scanned ? 'ممسوحة (مؤكدة)' : 'غير ممسوحة بعد'}</span>
               </span>
             </div>
 
@@ -409,7 +405,7 @@ export default function AdminExceptions({
                 <div className="exc-alert">
                   <span className="exc-symbol">info</span>
                   <p style={{ margin: 0 }}>
-                    <strong>تنبيه أمني إداري:</strong> تم مسح رمز QR لهذه التذكرة عند {ticket.scanGate} الساعة {ticket.scanTime}. أي إجراء أدناه بيتسجل تلقائياً بالسجل الرقابي الموحد باسمك.
+                    <strong>تنبيه أمني إداري:</strong> تم مسح رمز QR لهذه التذكرة الساعة {ticket.scanTime}. أي إجراء أدناه بيتسجل تلقائياً بالسجل الرقابي الموحد باسمك.
                   </p>
                 </div>
               ) : (

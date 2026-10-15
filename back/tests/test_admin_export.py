@@ -110,15 +110,25 @@ async def test_export_single_event_headers_and_values(
     assert first[7] == "grad1001" + _AT + _DOMAIN
     assert first[9] == "نعم"
     assert first[10] == "TWO_COMPANIONS"
-    assert first[11] == "2"
-    assert first[12] == "100000.00"
+    assert first[11] == 2
+    assert first[12] == 100000.0
     assert first[13] == "PROCESSING"
     assert not first[14]
     assert first[15] == "TXN-1001"
-    assert first[16] == "100000.00"
+    assert first[16] == 100000.0
     assert first[17] == "أحمد محمد"
     assert first[18]  # submitted_at present
     assert not first[19]
+
+    # Numeric columns are stored as real numbers so Excel can sum them, while
+    # text columns stay explicit strings (D17).
+    assert isinstance(first[11], int)
+    assert isinstance(first[12], (int, float)) and not isinstance(first[12], bool)
+    assert isinstance(first[16], (int, float)) and not isinstance(first[16], bool)
+    assert ws.cell(row=2, column=12).data_type == "n"
+    assert ws.cell(row=2, column=13).data_type == "n"
+    assert ws.cell(row=2, column=17).data_type == "n"
+    assert ws.cell(row=2, column=3).data_type == "s"
 
     second = rows[2]
     assert second[4] == "1002"
@@ -183,6 +193,44 @@ async def test_export_neutralises_formula_injection(
         found[university_id] = sender_cell.value
 
     assert found == payloads
+
+
+async def test_export_amount_column_is_numeric_but_text_stays_string(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    event = await make_event(name="حفل أرقام")
+    college = await make_college(event.id, name="كلية الأرقام")
+    for index, amount in enumerate((100000, 250000), start=1):
+        graduate = await make_graduate(
+            college.id, university_id=f"300{index}", full_name="=1+1", email_verified=True
+        )
+        ticket = await make_ticket(
+            graduate.id, event.id, status=TicketStatusEnum.PROCESSING, price=amount
+        )
+        await make_payment(
+            ticket.id,
+            transaction_number=f"TXN-{index}",
+            amount=amount,
+            sender_name="=1+1",
+        )
+
+    headers = await _admin_headers(client, make_admin)
+    response = await client.get(
+        f"/api/admin/export?event_id={event.id}", headers=headers
+    )
+    assert response.status_code == 200
+
+    wb = load_workbook(BytesIO(response.content))
+    ws = wb.active
+    amounts = [ws.cell(row=r, column=17).value for r in range(2, ws.max_row + 1)]
+    assert amounts == [100000.0, 250000.0]
+    assert sum(amounts) == 350000.0
+    for r in range(2, ws.max_row + 1):
+        assert ws.cell(row=r, column=17).data_type == "n"
+        # User-controlled text must stay text, never become a formula (D17).
+        for col in (3, 18):
+            assert ws.cell(row=r, column=col).data_type == "s"
+            assert ws.cell(row=r, column=col).value == "=1+1"
 
 
 async def test_export_all_events(

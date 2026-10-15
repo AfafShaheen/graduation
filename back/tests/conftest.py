@@ -74,7 +74,8 @@ _SCHEMA_FILE = Path(__file__).resolve().parents[1] / "migrations" / "0001_init_s
 
 _TABLES = (
     "events, colleges, admins, scanners, settings, graduates, "
-    "university_records, tickets, payments, qr_codes, otp_codes, audit_logs"
+    "university_records, tickets, payments, qr_codes, otp_codes, audit_logs, "
+    "volunteer_answers"
 )
 
 _DEFAULT_PHONE = "+963" + "9" * 9

@@ -1,0 +1,376 @@
+/* ==========================================================================
+   استيراد بيانات الجامعة (.uni-data-*): تبويب داخل "الماسحون والإعدادات"
+   بيعتمد على كلاسات AdminScannersSettings.css (scan-set-card وغيرها)
+   ========================================================================== */
+
+.uni-data-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ملاحظة تنظيمية */
+.uni-data-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  background-color: #f8edd9;
+  border: 1px solid #eedebd;
+}
+
+.uni-data-note-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background-color: rgba(202, 75, 0, 0.12);
+  color: #ca4b00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.uni-data-note h4 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #201b0f;
+  margin: 0 0 4px 0;
+}
+
+.uni-data-note p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #594138;
+  margin: 0;
+}
+
+/* منطقة السحب والإفلات */
+.uni-data-dropzone {
+  border: 2px dashed #e2bfb2;
+  border-radius: 20px;
+  padding: 32px 16px;
+  text-align: center;
+  background-color: rgba(248, 237, 217, 0.4);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  outline: none;
+}
+
+.uni-data-dropzone:hover,
+.uni-data-dropzone:focus-visible,
+.uni-data-dropzone.over {
+  border-color: #124d44;
+  background-color: rgba(248, 237, 217, 0.8);
+}
+
+.uni-data-dropzone.error {
+  border-color: #ba1a1a;
+}
+
+.uni-data-drop-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  border: 1px solid #eedebd;
+  color: #124d44;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uni-data-drop-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #201b0f;
+  margin: 4px 0 0 0;
+  line-height: 1.6;
+}
+
+.uni-data-drop-title span {
+  color: #ca4b00;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.uni-data-error-text {
+  color: #ba1a1a;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 10px 0 0 0;
+}
+
+/* شريحة الملف المختار */
+.uni-data-file-chip {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  border: 1px solid #eedebd;
+  font-size: 13px;
+  color: #124d44;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.uni-data-file-name {
+  font-weight: 700;
+  direction: ltr;
+  word-break: break-all;
+}
+
+.uni-data-file-size {
+  color: #8d7166;
+  font-size: 12px;
+}
+
+.uni-data-file-state {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ca4b00;
+}
+
+.uni-data-file-remove {
+  margin-right: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: #8d7166;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.uni-data-file-remove:hover:not(:disabled) {
+  background-color: #f8edd9;
+  color: #ba1a1a;
+}
+
+.uni-data-file-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* الأعمدة الإلزامية */
+.uni-data-columns {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f2e7d3;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.uni-data-columns-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.uni-data-columns-head h5 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #124d44;
+  margin: 0;
+}
+
+.uni-data-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.uni-data-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background-color: #f8edd9;
+  border: 1px solid #eedebd;
+  color: #201b0f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* شارة نتيجة التدقيق */
+.uni-data-badge {
+  padding: 3px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.uni-data-badge.warn {
+  background-color: rgba(186, 26, 26, 0.1);
+  color: #ba1a1a;
+}
+
+.uni-data-badge.ok {
+  background-color: rgba(18, 77, 68, 0.12);
+  color: #124d44;
+}
+
+/* جدول التدقيق */
+.uni-data-table-wrapper {
+  overflow-x: auto;
+  border-top: 1px solid #f2e7d3;
+}
+
+.uni-data-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  text-align: right;
+  font-size: 13px;
+}
+
+.uni-data-table thead tr {
+  background-color: #124d44;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.uni-data-table th {
+  padding: 12px 16px;
+  white-space: nowrap;
+}
+
+.uni-data-table tbody tr {
+  border-bottom: 1px solid #f2e7d3;
+  transition: background-color 0.15s ease;
+}
+
+.uni-data-table tbody tr:hover {
+  background-color: rgba(248, 237, 217, 0.5);
+}
+
+.uni-data-table tbody tr.resolved {
+  opacity: 0.65;
+}
+
+.uni-data-table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  color: #594138;
+}
+
+.uni-data-line {
+  font-weight: 700;
+  color: #8d7166;
+}
+
+.uni-data-strong {
+  font-weight: 800;
+  color: #201b0f;
+}
+
+.uni-data-error-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background-color: rgba(186, 26, 26, 0.1);
+  color: #ba1a1a;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.uni-data-action-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #ca4b00;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: right;
+}
+
+.uni-data-action-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uni-data-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #1e8a5a;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* شريط الاعتماد */
+.uni-data-approve-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-top: 1px solid #f2e7d3;
+  background-color: #fcf6ed;
+}
+
+.uni-data-approve-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.uni-data-approve-info p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #594138;
+}
+
+.uni-data-approve-info .uni-data-warning {
+  color: #ca4b00;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.uni-data-approve-bar .scan-set-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ===== Responsive ===== */
+@media (min-width: 640px) {
+  .uni-data-note { padding: 20px; }
+  .uni-data-dropzone { padding: 40px 24px; }
+  .uni-data-approve-bar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+  }
+}
+/* حقل رفع الملف الأصلي مخفي (الضغط على منطقة السحب بيفتحه) */
+.uni-data-panel .scan-set-file-input {
+  display: none;
+}

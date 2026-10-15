@@ -68,3 +68,49 @@ def append_contact_phone(message: str, contact_phone: str | None) -> str:
 def payment_note_instruction(university_id: str) -> str:
     """Instruction shown to the graduate before transferring (SRS FR-9)."""
     return f"يرجى كتابة رقمك الجامعي ({university_id}) في خانة ملاحظة الحوالة"
+
+
+# --- Audit log viewer (item 3.5.2, D22) --------------------------------------
+
+AUDIT_ROLE_LABELS = {
+    "ADMIN": "مسؤول الاتحاد",
+    "SCANNER": "ماسح",
+}
+
+AUDIT_ACTION_LABELS = {
+    "CREATE_EVENT": "إنشاء حفل",
+    "UPDATE_EVENT": "تعديل حفل",
+    "DELETE_EVENT": "حذف حفل",
+    "UPLOAD_UNIVERSITY_RECORDS": "رفع سجلات جامعية",
+    "DELETE_UNIVERSITY_RECORD": "حذف سجل جامعي",
+    "UPDATE_EMAIL": "تعديل بريد إلكتروني",
+    "MANUAL_CHECK_IN": "تسجيل دخول يدوي",
+    "REVERT_SCAN": "إلغاء مسح خاطئ",
+    "REVERT_PAYMENT": "إرجاع الدفع لقيد المعالجة",
+    "PAYMENT_CONFIRMED": "تأكيد دفع",
+    "PAYMENT_REJECTED": "رفض دفع",
+    "SETTINGS_UPDATED": "تحديث الإعدادات",
+    "SHAMCASH_QR_UPDATED": "تحديث رمز دفع الشام كاش",
+    "SHAMCASH_QR_DELETED": "حذف رمز دفع الشام كاش",
+    "SCANNER_CREATED": "إنشاء حساب ماسح",
+    "SCANNER_DELETED": "حذف حساب ماسح",
+    "DATA_EXPORTED": "تصدير بيانات",
+    "qr_scanned": "محاولة مسح",
+}
+
+
+def audit_action_label(action: str) -> str:
+    """Arabic label for an audit action; the raw code when it is unknown (D22)."""
+    return AUDIT_ACTION_LABELS.get(action, action)
+
+
+def audit_role_label(actor_type: str) -> str:
+    """Arabic label for an audit actor type; the raw value when it is unknown."""
+    return AUDIT_ROLE_LABELS.get(actor_type, actor_type)
+
+
+# --- Volunteer answers (SRS extension FR-26, item 3.5.3) ---------------------
+
+VOLUNTEER_ANSWER_SAVED = "تم حفظ إجاباتك بنجاح."
+VOLUNTEER_YES = "نعم"
+VOLUNTEER_NO = "لا"

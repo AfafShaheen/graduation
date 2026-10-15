@@ -9,11 +9,11 @@ from app.models.event import EventModel
 from app.models.college import CollegeModel
 from app.models.graduate import GraduateModel
 from app.models.university_record import UniversityRecordModel
-from app.models.audit_log import AuditLogModel
 from app.schemas.event_admin import EventCreate, EventUpdate
 from app.core.redis import redis_client
 from app.core import messages
 from app.services.graduate_service import normalize_arabic
+from app.services.audit_log import ActorType, record_audit
 
 
 def _normalize_college_key(name: str) -> str:
@@ -64,17 +64,6 @@ async def invalidate_events_cache() -> None:
         pass
 
 
-async def write_audit_log(db: AsyncSession, admin_id: int, action: str, target: str, details: str) -> None:
-    log_entry = AuditLogModel(
-        actor_type="ADMIN",
-        actor_id=admin_id,
-        action=action,
-        target=target,
-        details=details
-    )
-    db.add(log_entry)
-
-
 async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict) -> dict:
     college_names, normalized_keys = _dedupe_college_names(data.college_names)
     await _ensure_college_names_available(db, normalized_keys)
@@ -102,12 +91,14 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
         colleges.append(cleaned_name)
 
     # 3. Audit log
-    await write_audit_log(
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="CREATE_EVENT",
-        target=f"Event ID {new_event.id}",
-        details=f"Created event '{new_event.name}' with colleges: {', '.join(colleges)}"
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "CREATE_EVENT",
+        f"Event ID {new_event.id}",
+        f"Created event '{new_event.name}' with colleges: {', '.join(colleges)}",
+        event_id=new_event.id,
     )
 
     await db.commit()
@@ -248,12 +239,14 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
 
     db.add(ev)
 
-    await write_audit_log(
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="UPDATE_EVENT",
-        target=f"Event ID {event_id}",
-        details=f"Updated event details for '{ev.name}'"
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "UPDATE_EVENT",
+        f"Event ID {event_id}",
+        f"Updated event details for '{ev.name}'",
+        event_id=event_id,
     )
 
     await db.commit()
@@ -288,12 +281,14 @@ async def delete_event_service(db: AsyncSession, event_id: int, admin: dict) -> 
 
     await db.delete(ev)
 
-    await write_audit_log(
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="DELETE_EVENT",
-        target=f"Event ID {event_id}",
-        details=f"Deleted event '{ev.name}' and its linked colleges"
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "DELETE_EVENT",
+        f"Event ID {event_id}",
+        f"Deleted event '{ev.name}' and its linked colleges",
+        event_id=event_id,
     )
 
     await db.commit()

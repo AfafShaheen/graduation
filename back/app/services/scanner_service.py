@@ -61,6 +61,7 @@ async def create_scanner_service(
         "SCANNER_CREATED",
         f"Scanner ID {scanner.id}",
         f"username={scanner.username}, event_id={scanner.event_id}",
+        event_id=scanner.event_id,
     )
     await db.commit()
     await db.refresh(scanner)
@@ -91,6 +92,7 @@ async def delete_scanner_service(
         )
 
     username = scanner.username
+    event_id = scanner.event_id
     await db.delete(scanner)
     await db.flush()
 
@@ -101,6 +103,7 @@ async def delete_scanner_service(
         "SCANNER_DELETED",
         f"Scanner ID {scanner_id}",
         f"username={username}",
+        event_id=event_id,
     )
     await db.commit()
     return {"message": messages.SCANNER_DELETED}

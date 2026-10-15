@@ -16,4 +16,9 @@ class AuditLogModel(Base):
     action = Column(String(255), nullable=False, index=True)
     target = Column(String(255), nullable=False, index=True)
     details = Column(Text)
+    # Structured references (D21): plain integers without foreign keys so the
+    # audit row survives deletion of the event / graduate / ticket it points to.
+    event_id = Column(Integer, nullable=True, index=True)
+    graduate_id = Column(Integer, nullable=True, index=True)
+    ticket_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)

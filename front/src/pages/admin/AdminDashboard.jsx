@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import '../../style/AdminDashboard.css';
-import AdminSidebar from '../../components/AdminSidebar.jsx';
+import AdminSidebar from '../../components/AdminSidebar';
 
 /* ==========================================================================
    بيانات تجريبية: لما يجهز الباك إند بدّلها ببيانات حقيقية (مثلاً عبر props)
    ========================================================================== */
 const STATS = {
-  capacity: 5200, // سعة المدرج
-  confirmedSeats: 4210, // مقاعد مؤكدة (خريجون + مرافقون)
-  pendingSeats: 680, // مقاعد قيد التدقيق
+  confirmedSeats: 4210, // حضور مؤكد (خريجون + مرافقون)
+  pendingSeats: 680, // حضور قيد التدقيق
   registeredGrads: 1840,
   totalGrads: 2100,
   confirmedBookings: 1580,
@@ -51,7 +50,6 @@ const STUDENTS = [
     faculty: 'الهندسة المدنية',
     major: 'إدارة التشييد',
     companions: 2,
-    seat: { kind: 'assigned', row: 'A-12', seats: '44-46' },
     status: 'confirmed',
   },
   {
@@ -60,7 +58,6 @@ const STUDENTS = [
     faculty: 'الهندسة المعمارية',
     major: 'التصميم الداخلي',
     companions: 3,
-    seat: { kind: 'hold', row: 'B-04' },
     status: 'review',
   },
   {
@@ -69,7 +66,6 @@ const STUDENTS = [
     faculty: 'الهندسة المدنية',
     major: 'هندسة المياه والبيئة',
     companions: 2,
-    seat: { kind: 'assigned', row: 'A-14', seats: '50-52' },
     status: 'confirmed',
   },
   {
@@ -78,7 +74,6 @@ const STUDENTS = [
     faculty: 'الهندسة المعمارية',
     major: 'تخطيط مدن',
     companions: 2,
-    seat: { kind: 'suspended' },
     status: 'rejected',
     rejectReason: 'رقم العملية مكرر',
   },
@@ -88,7 +83,6 @@ const STUDENTS = [
     faculty: 'الهندسة المدنية',
     major: 'الهندسة الإنشائية',
     companions: 3,
-    seat: { kind: 'assigned', row: 'A-18', seats: '62-65' },
     status: 'confirmed',
   },
 ];
@@ -102,7 +96,6 @@ const PAY_ICONS = { confirmed: 'check', review: 'schedule', rejected: 'close' };
 const OPTIONAL_COLUMNS = [
   { id: 'faculty', label: 'الكلية والتخصص' },
   { id: 'ticket', label: 'فئة التذكرة' },
-  { id: 'seat', label: 'تخصيص المقعد (مدرج الباسل)' },
   { id: 'status', label: 'حالة الدفع' },
   { id: 'reason', label: 'سبب الرفض' },
 ];
@@ -160,9 +153,6 @@ export default function AdminDashboard({
   }, []);
 
   const expectedTotal = STATS.confirmedSeats + STATS.pendingSeats;
-  const occupancy = pct(expectedTotal, STATS.capacity);
-  const confirmedWidth = pct(STATS.confirmedSeats, STATS.capacity);
-  const pendingWidth = pct(STATS.pendingSeats, STATS.capacity);
   const responseRate = ((STATS.registeredGrads / STATS.totalGrads) * 100).toFixed(1);
 
   const totalPages = Math.ceil(STATS.registeredGrads / PAGE_SIZE);
@@ -195,7 +185,6 @@ export default function AdminDashboard({
         onLogout={onLogout}
         adminName={adminName}
         adminRole={adminRole}
-        pendingCount={STATS.processing}
       />
 
       {/* الشريط العلوي */}
@@ -316,7 +305,7 @@ export default function AdminDashboard({
                 <span className="adm-symbol" style={{ color: '#ca4b00', fontSize: '18px' }}>
                   confirmation_number
                 </span>
-                <span>السعة الاستيعابية والقيد الرقمي</span>
+                <span>القيد الرقمي للحضور</span>
               </div>
               <h4 className="adm-highlight-title">إجمالي الحضور المتوقع في مدرج الباسل</h4>
               <p className="adm-highlight-desc">
@@ -331,7 +320,7 @@ export default function AdminDashboard({
             <div className="adm-metric-pills">
               <div className="adm-pill-box dark">
                 <div className="adm-pill-head">
-                  <span className="adm-pill-label">المقاعد المؤكدة</span>
+                  <span className="adm-pill-label">الحضور المؤكد</span>
                   <span className="adm-pill-icon">
                     <span className="adm-symbol" style={{ color: '#b5eee2', fontSize: '18px' }}>
                       verified
@@ -364,24 +353,6 @@ export default function AdminDashboard({
                   <span>بانتظار التحقق من إشعار الدفع</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* معدل الإشغال */}
-          <div className="adm-capacity">
-            <div className="adm-capacity-head">
-              <span>معدل إشغال مدرج الباسل المركزي (سعة {fmt(STATS.capacity)} مقعد)</span>
-              <span className="adm-capacity-value">{occupancy}% مكتمل</span>
-            </div>
-            <div
-              className="adm-capacity-bar"
-              role="progressbar"
-              aria-valuenow={occupancy}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <div className="adm-seg green" style={{ width: `${confirmedWidth}%` }}></div>
-              <div className="adm-seg orange" style={{ width: `${pendingWidth}%` }}></div>
             </div>
           </div>
         </section>
@@ -566,9 +537,9 @@ export default function AdminDashboard({
           <div className="adm-chart-col adm-bento-card">
             <div className="adm-bento-head bordered">
               <div>
-                <h4 className="adm-bento-title">التوزيع حسب الكلية ونسبة حجز المقاعد</h4>
+                <h4 className="adm-bento-title">التوزيع حسب الكلية ونسبة الحجز</h4>
                 <p className="adm-bento-sub">
-                  مقارنة المقاعد المؤكدة والمحجوزة لكل كلية داخل مدرج الباسل المركزي
+                  مقارنة الحجوزات المؤكدة وقيد التدقيق لكل كلية
                 </p>
               </div>
               <div className="adm-legend">
@@ -634,13 +605,13 @@ export default function AdminDashboard({
           </div>
         </section>
 
-        {/* سجل التدقيق والتوزيع المكاني للطلبة */}
+        {/* سجل تدقيق الطلبة */}
         <section className="adm-bento-card adm-table-card">
           <div className="adm-table-head">
             <div>
               <h4 className="adm-bento-title">سجل التدقيق والتوزيع المكاني للطلبة</h4>
               <p className="adm-bento-sub">
-                مراجعة تخصيص المقاعد وبطاقات الدخول الصادرة لكل كلية الهندسة المعلوماتية والمعمارية والمدنية
+                مراجعة بطاقات الدخول الصادرة وحالة الدفع لكل خريج
               </p>
             </div>
 
@@ -685,7 +656,6 @@ export default function AdminDashboard({
                   <th>اسم الخريج والرقم الجامعي</th>
                   {showCol('faculty') && <th>الكلية والتخصص</th>}
                   {showCol('ticket') && <th>فئة التذكرة</th>}
-                  {showCol('seat') && <th>تخصيص المقعد (مدرج الباسل)</th>}
                   {showCol('status') && <th>حالة الدفع</th>}
                   {showCol('reason') && <th>سبب الرفض</th>}
                   <th>إجراءات</th>
@@ -717,36 +687,6 @@ export default function AdminDashboard({
                       </td>
                     )}
 
-                    {showCol('seat') && (
-                      <td>
-                        {st.seat.kind === 'assigned' && (
-                          <span className="adm-seat-pill">
-                            <span className="adm-symbol" style={{ fontSize: '16px' }}>
-                              event_seat
-                            </span>
-                            <span>
-                              صف {st.seat.row} • المقاعد {st.seat.seats}
-                            </span>
-                          </span>
-                        )}
-                        {st.seat.kind === 'hold' && (
-                          <span className="adm-seat-pill hold">
-                            <span className="adm-symbol" style={{ fontSize: '16px' }}>
-                              hourglass_top
-                            </span>
-                            <span>حجز مبدئي • صف {st.seat.row}</span>
-                          </span>
-                        )}
-                        {st.seat.kind === 'suspended' && (
-                          <span className="adm-seat-pill suspended">
-                            <span className="adm-symbol" style={{ fontSize: '16px' }}>
-                              block
-                            </span>
-                            <span>موقوف مؤقتاً</span>
-                          </span>
-                        )}
-                      </td>
-                    )}
 
                     {showCol('status') && (
                       <td>

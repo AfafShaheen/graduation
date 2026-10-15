@@ -17,7 +17,6 @@ const REQUESTS = [
     paid: 125000,
     txRef: '#SC-9821408',
     senderName: 'سامر إبراهيم النجار',
-    senderPhone: '0944******12',
   },
   {
     id: '2020-04312',
@@ -30,7 +29,6 @@ const REQUESTS = [
     paid: 100000,
     txRef: '#SC-7731920',
     senderName: 'يوسف الياس الخوري',
-    senderPhone: '0933******89',
   },
   {
     id: '2019-33104',
@@ -43,7 +41,6 @@ const REQUESTS = [
     paid: 160000,
     txRef: '#SC-4490123',
     senderName: 'خالد عبد القادر السباعي',
-    senderPhone: '0991******91',
   },
   {
     id: '2020-08991',
@@ -56,7 +53,6 @@ const REQUESTS = [
     paid: 125000,
     txRef: '#SC-1102948',
     senderName: 'ميساء طارق الرفاعي',
-    senderPhone: '0966******66',
   },
   {
     id: '2019-12401',
@@ -69,7 +65,6 @@ const REQUESTS = [
     paid: 160000,
     txRef: '#SC-6582103',
     senderName: 'أحمد حسون (الوالد)',
-    senderPhone: '0955******55',
   },
 ];
 
@@ -393,7 +388,6 @@ export default function AdminPaymentRequests({
 
                       <td data-label="اسم المرسل">
                         <div className="pay-req-sender-name">{item.senderName}</div>
-                        <div className="pay-req-sender-phone">{item.senderPhone}</div>
                       </td>
 
                       <td className="pay-req-td-actions">

@@ -26,6 +26,8 @@ import AdminScannersSettings from "./pages/admin/AdminScannersSettings";
 import AdminExceptions from "./pages/admin/AdminExceptions";
 import AdminVolunteers from "./pages/admin/AdminVolunteers";
 import { AdminStatsProvider } from "./context/AdminStatsContext";
+import ScannerLogin from "./pages/scanner/ScannerLogin";
+import ScannerCamera from "./pages/scanner/ScannerCamera";
 
 /*
   وضع المعاينة (للتصميم فقط):
@@ -84,11 +86,13 @@ function App() {
   const [resetEmail, setResetEmail] = usePersistentState("grad.resetEmail", ""); // بريد استعادة كلمة السر
   const [ticket, setTicket] = usePersistentState("grad.ticket", null); // الباقة المختارة
   const [payment, setPayment] = usePersistentState("grad.payment", null); // بيانات تحويل شام كاش
-  const [student, setStudent] = usePersistentState("grad.student", null); // اسم الخريج وكليته ورقمه الجامعي
+  const [student, setStudent] = usePersistentState("grad.student", null); // بيانات الخريج: الاسم والكلية والتخصص والرقم الجامعي والترتيب والمعدل
   const [, setSurvey] = usePersistentState("grad.survey", null); // إجابات سؤالَي المسؤولية والخبرة
   const [resetVerified, setResetVerified] = useState(false); // هل تأكد رمز الاستعادة؟ (ما منحفظها)
   const [admin, setAdmin] = usePersistentState("grad.admin", null); // جلسة الإدارة (مؤقتة لحد ما يجهز الباك إند)
   const [adminError, setAdminError] = useState(""); // رسالة خطأ دخول الإدارة
+  const [scanner, setScanner] = usePersistentState("grad.scanner", null); // جلسة الماسح (مؤقتة لحد ما يجهز الباك إند)
+  const [scannerError, setScannerError] = useState(""); // رسالة خطأ دخول الماسح
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -103,11 +107,14 @@ function App() {
         element={
           <GraduationFormStep1
             onNext={(data) => {
-              // نحفظ فقط ما تحتاجه التذكرة
+              // نحفظ بيانات الخريج (التذكرة + التخصص والترتيب والمعدل للباك إند)
               setStudent({
                 fullName: data.fullName.trim(),
                 faculty: data.faculty,
+                major: data.major, // "none" = لا يوجد
                 studentId: data.studentId.trim(),
+                topRank: data.topRank, // none | first | second | third
+                gpa: Number(data.gpa), // المعدل كنسبة مئوية (0-100)
               });
               navigate("/register");
             }}
@@ -477,6 +484,64 @@ function App() {
             </div>
           ) : (
             <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* ===== الماسح: بتنفتح من الرابط /scanner فقط، وما في أي رابط إلها بصفحات الطلاب ===== */}
+      <Route
+        path="/scanner"
+        element={
+          <ScannerLogin
+            errorMessage={scannerError}
+            onLoginSuccess={(credentials) => {
+              // مؤقت: لما يجهز الباك إند، تحقق من البيانات هناك، وإذا فشل أو كان الحساب مجمّداً:
+              // setScannerError("بيانات الدخول غير صحيحة أو الحساب مجمّد")
+              setScannerError("");
+              setScanner({ username: credentials.username });
+              navigate("/scanner/scan");
+            }}
+          />
+        }
+      />
+
+      {/* ===== شاشة المسح ===== */}
+      <Route
+        path="/scanner/scan"
+        element={
+          scanner || PREVIEW ? (
+            <ScannerCamera
+              onLogout={() => {
+                setScanner(null);
+                navigate("/scanner", { replace: true });
+              }}
+            />
+          ) : (
+            <Navigate to="/scanner" replace />
+          )
+        }
+      />
+
+      {/* أي مسار ماسح غير معرّف: مؤقتاً لحد ما يجهز */}
+      <Route
+        path="/scanner/*"
+        element={
+          scanner || PREVIEW ? (
+            <div style={{ padding: 24, textAlign: "center", direction: "rtl" }}>
+              شاشة المسح قيد الإنشاء
+              <br />
+              <button
+                type="button"
+                onClick={() => {
+                  setScanner(null);
+                  navigate("/scanner", { replace: true });
+                }}
+              >
+                تسجيل الخروج
+              </button>
+            </div>
+          ) : (
+            <Navigate to="/scanner" replace />
           )
         }
       />

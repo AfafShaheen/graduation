@@ -8,6 +8,30 @@ const ARABIC_ONLY = /^[\u0621-\u064A\u064B-\u0652\s]+$/;
 /* أرقام فقط، بدون تحديد عدد معين */
 const DIGITS_ONLY = /^[0-9]+$/;
 
+/*
+  الاختصاصات حسب الكلية: كل مفتاح هو قيمة الكلية، وقيمته مصفوفة { value, label }.
+  فاضية هلأ، فبتظهر "لا يوجد" بس. أضف الاختصاصات لاحقاً، مثلاً:
+  it: [{ value: 'software', label: 'هندسة البرمجيات' }]
+*/
+const MAJORS = {
+  it: [],
+  civil: [],
+  med: [],
+  pharm: [],
+  dent: [],
+  mech: [],
+  science: [],
+  arts: [],
+};
+
+/* الترتيب بين الثلاثة الأوائل */
+const TOP_RANK_OPTIONS = [
+  { value: 'none', label: 'لا يوجد' },
+  { value: 'first', label: 'الأول' },
+  { value: 'second', label: 'الثاني' },
+  { value: 'third', label: 'الثالث' },
+];
+
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
   fullName: (v) => {
@@ -22,6 +46,14 @@ const validators = {
     const t = v.trim();
     if (!t) return 'الرقم الجامعي مطلوب';
     if (!DIGITS_ONLY.test(t)) return 'يجب أن يكون الرقم الجامعي أرقاماً فقط';
+    return '';
+  },
+  gpa: (v) => {
+    const t = String(v).trim();
+    if (!t) return 'المعدل مطلوب';
+    const n = Number(t);
+    if (Number.isNaN(n)) return 'يرجى إدخال المعدل كرقم';
+    if (n < 0 || n > 100) return 'المعدل يجب أن يكون بين 0 و 100';
     return '';
   },
   fatherName: (v) => {
@@ -54,7 +86,10 @@ export default function GraduationFormStep1({ onNext }) {
     fullName: '',
     gender: 'male',
     faculty: '',
+    major: 'none', // التخصص: "لا يوجد" افتراضياً
     studentId: '',
+    topRank: 'none', // من الثلاثة الأوائل: "لا يوجد" افتراضياً
+    gpa: '', // المعدل كنسبة مئوية
     fatherName: '',
     motherName: '',
   });
@@ -64,8 +99,24 @@ export default function GraduationFormStep1({ onNext }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let { name, value } = e.target;
+
+    if (name === 'gpa') {
+      value = value
+        .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)) // الأرقام العربية → إنجليزية
+        .replace(/٫/g, '.')
+        .replace(/[^0-9.]/g, ''); // أرقام ونقطة فقط
+      const [whole, ...rest] = value.split('.');
+      value = rest.length ? `${whole}.${rest.join('').slice(0, 2)}` : whole; // نقطة وحدة، ومنزلتين عشريتين
+      if (Number(value) > 100) return; // ما بنقبل أكتر من 100
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      // تغيير الكلية بيرجّع التخصص لـ "لا يوجد" لأن الاختصاصات تابعة للكلية
+      ...(name === 'faculty' ? { major: 'none' } : {}),
+    }));
     // بعد أول ضغطة على الزر، الخطأ بيتحدّث مباشرة أثناء الكتابة
     if (submitted && validators[name]) {
       setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
@@ -228,6 +279,27 @@ export default function GraduationFormStep1({ onNext }) {
               <FieldError message={errors.faculty} />
             </div>
 
+            {/* التخصص (تابع للكلية) */}
+            <div className="form-group">
+              <label className="form-label">التخصص</label>
+              <div className="input-wrapper">
+                <select
+                  name="major"
+                  className="form-select select-with-icon"
+                  value={formData.major}
+                  onChange={handleInputChange}
+                >
+                  <option value="none">لا يوجد</option>
+                  {(MAJORS[formData.faculty] || []).map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined input-icon">expand_more</span>
+              </div>
+            </div>
+
             {/* الرقم الجامعي */}
             <div className="form-group">
               <div className="label-row">
@@ -250,6 +322,50 @@ export default function GraduationFormStep1({ onNext }) {
                 <span className="material-symbols-outlined input-icon">pin</span>
               </div>
               <FieldError message={errors.studentId} />
+            </div>
+
+            {/* من الثلاثة الأوائل */}
+            <div className="form-group">
+              <label className="form-label">هل أنت من الثلاثة الأوائل؟</label>
+              <div className="input-wrapper">
+                <select
+                  name="topRank"
+                  className="form-select select-with-icon"
+                  value={formData.topRank}
+                  onChange={handleInputChange}
+                >
+                  {TOP_RANK_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined input-icon">expand_more</span>
+              </div>
+            </div>
+
+            {/* المعدل كنسبة مئوية */}
+            <div className="form-group">
+              <div className="label-row">
+                <label className="form-label" style={{ margin: 0 }}>
+                  المعدل (نسبة مئوية) <span className="required-star">*</span>
+                </label>
+                <span className="label-hint">من 0 إلى 100</span>
+              </div>
+              <div className="input-wrapper">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  name="gpa"
+                  className={`form-input input-with-icon ${errors.gpa ? 'error' : ''}`}
+                  placeholder="مثلاً: 82.5"
+                  value={formData.gpa}
+                  onChange={handleInputChange}
+                  aria-invalid={!!errors.gpa}
+                />
+                <span className="material-symbols-outlined input-icon">percent</span>
+              </div>
+              <FieldError message={errors.gpa} />
             </div>
 
             {/* اسم الأب والأم */}

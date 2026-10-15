@@ -20,8 +20,6 @@ const CEREMONIES = [
       "الهندسة المعمارية",
       "+2 كليات",
     ],
-    booked: 850,
-    total: 900,
     icon: "celebration",
   },
   {
@@ -33,8 +31,6 @@ const CEREMONIES = [
     period: "5 أيلول — 28 أيلول 2024",
     status: "open",
     faculties: ["الطب البشري", "طب الأسنان", "الصيدلة", "العلوم الصحية"],
-    booked: 720,
-    total: 800,
     icon: "medical_services",
   },
   {
@@ -46,8 +42,6 @@ const CEREMONIES = [
     period: "15 أيلول — 5 تشرين الأول 2024",
     status: "closed",
     faculties: ["الآداب والعلوم الإنسانية", "التربية", "العلوم الأولى"],
-    booked: 600,
-    total: 600,
     icon: "menu_book",
   },
   {
@@ -59,8 +53,6 @@ const CEREMONIES = [
     period: "1 تشرين الأول — 15 تشرين الأول 2024",
     status: "open",
     faculties: ["المعهد العالي للغات", "المعهد التقاني للحاسوب"],
-    booked: 210,
-    total: 350,
     icon: "terminal",
   },
 ];
@@ -72,7 +64,6 @@ const STATUS_LABELS = {
 };
 
 const fmt = (n) => n.toLocaleString("en-US");
-const pct = (part, total) => (total ? Math.round((part / total) * 100) : 0);
 
 export default function AdminCeremonies({
   adminName = "مسؤول الاتحاد",
@@ -193,7 +184,7 @@ export default function AdminCeremonies({
                 • {ceremonies.length} حفلات مسجلة
               </span>
             </div>
-            <h3>إدارة حفلات التخرج وفترات التسجيل والسعة</h3>
+            <h3>إدارة حفلات التخرج وفترات التسجيل</h3>
             <p>
               أضف حفلاً جديداً أو عدّل مواعيد التسجيل والكليات المشمولة، وتابع
               نسبة الحجز لكل حفل.
@@ -254,7 +245,6 @@ export default function AdminCeremonies({
                   <th style={{ width: "18%" }}>التاريخ والموعد</th>
                   <th style={{ width: "18%" }}>فترة التسجيل والدفع</th>
                   <th style={{ width: "18%" }}>الكليات المشمولة</th>
-                  <th style={{ width: "14%" }}>السعة والحجوزات</th>
                   <th style={{ width: "8%", textAlign: "center" }}>
                     الإجراءات
                   </th>
@@ -262,10 +252,6 @@ export default function AdminCeremonies({
               </thead>
               <tbody>
                 {filtered.map((item) => {
-                  const percentage = pct(item.booked, item.total);
-                  const remaining = Math.max(item.total - item.booked, 0);
-                  const full = remaining === 0;
-
                   return (
                     <tr key={item.id}>
                       <td className="cer-td-name">
@@ -322,41 +308,6 @@ export default function AdminCeremonies({
                               {fac}
                             </span>
                           ))}
-                        </div>
-                      </td>
-
-                      <td data-label="السعة والحجوزات">
-                        <div className="cer-capacity">
-                          <div className="cer-capacity-head">
-                            <span className="cer-capacity-booked">
-                              {fmt(item.booked)}
-                            </span>
-                            <span className="cer-capacity-total">
-                              / {fmt(item.total)} مقعد
-                            </span>
-                          </div>
-                          <div
-                            className="cer-capacity-bar"
-                            role="progressbar"
-                            aria-valuenow={percentage}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                          >
-                            <div
-                              className={`cer-capacity-fill ${full ? "full" : ""}`}
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                          <div className="cer-capacity-foot">
-                            <span>النسبة: {percentage}%</span>
-                            <span
-                              className={`cer-capacity-left ${full ? "done" : ""}`}
-                            >
-                              {full
-                                ? "مكتمل بالكامل"
-                                : `متبقي ${fmt(remaining)}`}
-                            </span>
-                          </div>
                         </div>
                       </td>
 
