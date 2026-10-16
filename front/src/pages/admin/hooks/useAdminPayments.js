@@ -41,3 +41,21 @@ export async function confirmTicket(ticketId) {
 export async function rejectTicket(ticketId, reason) {
   return await adminRequest(`/api/admin/tickets/${ticketId}/reject`, { method: "POST", body: { reason } });
 }
+
+export async function fetchAllEventPayments(eventId, status, pageSize = 200) {
+  if (!eventId) return { items: [], total: 0 };
+  const all = [];
+  let total = 0;
+  let offset = 0;
+  for (let guard = 0; guard < 100; guard += 1) {
+    const query = { limit: pageSize, offset };
+    if (status) query.status = status;
+    const res = await adminRequest(`/api/admin/events/${eventId}/payments`, { query });
+    const batch = (res && res.items) || [];
+    total = (res && res.total) != null ? res.total : batch.length;
+    all.push(...batch);
+    if (batch.length === 0 || all.length >= total) break;
+    offset += batch.length;
+  }
+  return { items: all, total };
+}
