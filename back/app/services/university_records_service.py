@@ -1,5 +1,6 @@
 import io
 import json
+import re
 import pandas as pd
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -52,6 +53,87 @@ async def invalidate_uni_records_cache(event_id: int) -> None:
         pass
 
 
+# Canonical field name -> Arabic column header. The dict order is the canonical
+# order used in error messages. English names are the canonical keys
+# themselves, so both "university_id" and "الرقم الجامعي" are accepted. Extend
+# this mapping to accept more header aliases later.
+ARABIC_HEADERS = {
+    "university_id": "الرقم الجامعي",
+    "full_name": "الاسم الكامل",
+    "father_name": "اسم الأب",
+    "mother_name": "اسم الأم",
+    "college": "الكلية",
+    "gender": "الجنس",
+    "gpa": "المعدل",
+    "major": "التخصص",
+}
+
+# Zero-width and bidirectional control marks Excel/LibreOffice may embed in a
+# header cell (RLM, LRM, ZWSP, ...). They carry no meaning for matching.
+_INVISIBLE_MARKS = dict.fromkeys(
+    [
+        0x200B, 0x200C, 0x200D, 0x200E, 0x200F,
+        0x202A, 0x202B, 0x202C, 0x202D, 0x202E,
+        0x2066, 0x2067, 0x2068, 0x2069,
+    ]
+)
+
+
+def _normalize_header(value: Any) -> str:
+    """Normalise a header cell so Arabic and English aliases can be compared.
+
+    Removes the BOM and zero-width/bidirectional marks, turns NBSP into a
+    regular space, collapses whitespace, then applies ``normalize_arabic``
+    (hamza/ta-marbuta/ya unification) and ``casefold`` so that
+    "اسم الأب"/"اسم الاب", "الكلية"/"الكليه" and "University_ID"/"university_id"
+    all match.
+    """
+    text = str(value)
+    text = text.replace("\ufeff", "")
+    text = text.translate(_INVISIBLE_MARKS)
+    text = text.replace("\u00a0", " ")
+    text = re.sub(r"\s+", " ", text).strip()
+    return normalize_arabic(text).casefold()
+
+
+def _header_aliases() -> Dict[str, str]:
+    """Map every accepted normalised header (Arabic and English) to its field."""
+    aliases: Dict[str, str] = {}
+    for canonical, arabic in ARABIC_HEADERS.items():
+        aliases[_normalize_header(arabic)] = canonical
+        aliases[_normalize_header(canonical)] = canonical
+    return aliases
+
+
+def _canonicalize_columns(columns) -> List[str]:
+    """Rename recognised columns to their canonical English field name.
+
+    Arabic, English and mixed headers are all accepted. A column that matches
+    nothing keeps the legacy behaviour (stripped and lowercased) and stays
+    ignored by validation. Two source columns mapping to the same field is a
+    hard error, reported together with the two offending headers.
+    """
+    aliases = _header_aliases()
+    resolved: List[str] = []
+    seen: Dict[str, str] = {}
+    for column in columns:
+        canonical = aliases.get(_normalize_header(column))
+        if canonical is None:
+            resolved.append(str(column).strip().lower())
+            continue
+        if canonical in seen:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f'عمودان في الملف يمثلان الحقل نفسه "{ARABIC_HEADERS[canonical]}": '
+                    f'"{seen[canonical]}" و "{str(column)}".'
+                ),
+            )
+        seen[canonical] = str(column)
+        resolved.append(canonical)
+    return resolved
+
+
 async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
     contents = await file.read()
     filename = file.filename.lower()
@@ -71,7 +153,7 @@ async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
             detail=f"فشل في قراءة الملف: {str(e)}"
         )
 
-    df.columns = [str(c).strip().lower() for c in df.columns]
+    df.columns = _canonicalize_columns(df.columns)
     return df.to_dict(orient="records")
 
 
@@ -85,7 +167,10 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
     file_cols = set(records[0].keys())
     missing_cols = required_cols - file_cols
     if missing_cols:
-        return [f"الأعمدة التالية مفقودة في الملف: {', '.join(missing_cols)}"]
+        missing_arabic = [
+            ARABIC_HEADERS[field] for field in ARABIC_HEADERS if field in missing_cols
+        ]
+        return [f"الأعمدة التالية مفقودة في الملف: {'، '.join(missing_arabic)}"]
 
     # Fetch colleges linked to this event and build normalized lookup dictionary
     colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
