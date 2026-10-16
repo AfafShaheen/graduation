@@ -10,7 +10,10 @@ from io import BytesIO
 
 from openpyxl import Workbook
 
-from app.services.university_records_service import _normalize_header
+from app.services.university_records_service import (
+    _detect_csv_delimiter,
+    _normalize_header,
+)
 
 _AT = "@"
 _PW_FIELD = "pass" + "word"
@@ -94,6 +97,13 @@ def test_normalize_header_equivalences():
     assert _normalize_header("\ufeffالاسم الكامل") == _normalize_header("الاسم الكامل")
     assert _normalize_header("\u200fالاسم الكامل") == _normalize_header("الاسم الكامل")
     assert _normalize_header("الاسم\u00a0الكامل") == _normalize_header("الاسم الكامل")
+
+
+def test_detect_csv_delimiter():
+    assert _detect_csv_delimiter("a;b;c\n1;2;3") == ";"
+    assert _detect_csv_delimiter("a,b,c\n1,2,3") == ","
+    assert _detect_csv_delimiter("a\tb\tc") == "\t"
+    assert _detect_csv_delimiter("single") == ","
 
 
 async def test_arabic_headers_csv_imports(client, make_event, make_college, make_admin):
@@ -285,4 +295,36 @@ async def test_extra_columns_are_ignored(client, make_event, make_college, make_
     body = response.json()
     assert body["errors"] == []
     assert body["added"] == 1
+
+
+async def test_csv_encodings_and_separators_import_identically(
+    client, make_event, make_college, make_admin
+):
+    headers = await _admin_headers(client, make_admin)
+    payloads = [
+        _csv_bytes(_AR_HEADERS, [_ROW], encoding="utf-8-sig", delimiter=","),
+        _csv_bytes(_AR_HEADERS, [_ROW], encoding="cp1256", delimiter=";"),
+        _csv_bytes(_AR_HEADERS, [_ROW], encoding="utf-8-sig", delimiter="\t"),
+    ]
+
+    bodies = []
+    for content in payloads:
+        event = await _event(make_event, make_college)
+        response = await _upload(client, headers, event.id, "records.csv", content, _CSV_CT)
+        assert response.status_code == 200, response.text
+        bodies.append(response.json())
+
+    assert all(body["errors"] == [] and body["added"] == 1 for body in bodies)
+    assert bodies[0] == bodies[1] == bodies[2]
+
+
+async def test_binary_csv_file_is_rejected(client, make_event, make_college, make_admin):
+    headers = await _admin_headers(client, make_admin)
+    event = await _event(make_event, make_college)
+
+    response = await _upload(
+        client, headers, event.id, "records.csv", b"\xff\xfe\x00\x00\x01\x02", _CSV_CT
+    )
+
+    assert response.status_code == 400, response.text
 
