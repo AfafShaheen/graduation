@@ -36,6 +36,9 @@ _HEADERS = [
     "التخصص",
     "المعدل",
     "الترتيب",
+    "مقعد الخريج",
+    "مقاعد المرافقين",
+    "وقت الحفل",
 ]
 
 _SENDER_COL = _HEADERS.index("اسم المرسل") + 1
@@ -142,6 +145,12 @@ async def test_export_single_event_headers_and_values(
     assert second[4] == "1002"
     assert second[9] == "لا"
     assert all(cell in (None, "") for cell in second[10:])
+
+    # No seat and no ceremony time on this event -> the three appended columns
+    # stay empty.
+    assert first[23] in (None, "")
+    assert first[24] in (None, "")
+    assert first[25] in (None, "")
 
 
 async def test_export_headers_only_when_no_data(
@@ -355,3 +364,33 @@ async def test_export_without_major_writes_empty_cells(
     assert ws.cell(row=row, column=21).value in (None, "")
     assert ws.cell(row=row, column=22).value in (None, "")
     assert ws.cell(row=row, column=23).value in (None, "")
+
+
+async def test_export_appends_seat_and_ceremony_columns(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_admin
+):
+    from datetime import time
+
+    event = await make_event(
+        name="حفل المقاعد", event_time=time(18, 30), seat_prefix="E"
+    )
+    college = await make_college(event.id, name="كلية المقاعد")
+    graduate = await make_graduate(college.id, university_id="7001", email_verified=True)
+    ticket = await make_ticket(
+        graduate.id, event.id, status=TicketStatusEnum.CONFIRMED, price=100000
+    )
+    ticket.seat_start = 4
+    await db.commit()
+
+    headers = await _admin_headers(client, make_admin)
+    response = await client.get(
+        f"/api/admin/export?event_id={event.id}", headers=headers
+    )
+    assert response.status_code == 200
+
+    _, rows = _read_rows(response)
+    assert rows[0] == _HEADERS
+    # Seat label is written next to the data, never inside any QR value.
+    assert rows[1][23] == "E-4"
+    assert rows[1][24] == "E-5, E-6"
+    assert rows[1][25] == "18:30:00"
