@@ -36,10 +36,10 @@ async def test_script_refuses_second_admin(make_admin):
     from scripts.create_admin import _run
 
     await make_admin(username="admin", pw=_ADMIN_PW)
-    assert await _run("admin2", reset=False) == 1
+    assert await _run("admin2", None, reset=False) == 1
 
 
-async def test_script_reset_password_updates_hash(monkeypatch, db, make_admin):
+async def test_script_reset_password_updates_hash(db, make_admin):
     import scripts.create_admin as create_admin
     from sqlalchemy import select
 
@@ -48,8 +48,7 @@ async def test_script_reset_password_updates_hash(monkeypatch, db, make_admin):
     admin = await make_admin(username="admin", pw=_ADMIN_PW)
     before = admin.password_hash
 
-    monkeypatch.setattr(create_admin, "_read_new_password", lambda: _ADMIN_PW + "Z")
-    assert await create_admin._run("admin", reset=True) == 0
+    assert await create_admin._run("admin", _ADMIN_PW + "Z", reset=True) == 0
 
     db.expire_all()
     fresh = (
