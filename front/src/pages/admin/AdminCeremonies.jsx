@@ -4,6 +4,7 @@ import AdminSidebar from '../../components/AdminSidebar';
 
 /* ==========================================================================
    بيانات تجريبية: لما يجهز الباك إند بدّلها ببيانات حقيقية (مثلاً عبر props)
+   form: القيم اللي بتتعبى بصفحة تعديل الحفل (نفس حقول صفحة الإضافة)
    ========================================================================== */
 const CEREMONIES = [
   {
@@ -21,6 +22,17 @@ const CEREMONIES = [
       "+2 كليات",
     ],
     icon: "celebration",
+    form: {
+      ceremonyName: "حفل كليات الهندسة — الدفعة 44",
+      ceremonyDate: "2024-10-15T10:00",
+      startDate: "2024-09-01",
+      endDate: "2024-09-25",
+      whatsappLink: "https://chat.whatsapp.com/eng44",
+      pricePkg2: "125,000",
+      pricePkg3: "160,000",
+      enablePkg3: true,
+      faculties: { civil: true, mech: true, it: true, arch: true },
+    },
   },
   {
     id: "MED-2024-D42",
@@ -32,6 +44,17 @@ const CEREMONIES = [
     status: "open",
     faculties: ["الطب البشري", "طب الأسنان", "الصيدلة", "العلوم الصحية"],
     icon: "medical_services",
+    form: {
+      ceremonyName: "حفل كليات العلوم الطبية والصيدلة",
+      ceremonyDate: "2024-10-18T11:30",
+      startDate: "2024-09-05",
+      endDate: "2024-09-28",
+      whatsappLink: "https://chat.whatsapp.com/med42",
+      pricePkg2: "150,000",
+      pricePkg3: "190,000",
+      enablePkg3: true,
+      faculties: { science: true },
+    },
   },
   {
     id: "ART-2024-D46",
@@ -43,6 +66,17 @@ const CEREMONIES = [
     status: "closed",
     faculties: ["الآداب والعلوم الإنسانية", "التربية", "العلوم الأولى"],
     icon: "menu_book",
+    form: {
+      ceremonyName: "حفل كليات الآداب والتربية والعلوم",
+      ceremonyDate: "2024-10-22T09:30",
+      startDate: "2024-09-15",
+      endDate: "2024-10-05",
+      whatsappLink: "",
+      pricePkg2: "110,000",
+      pricePkg3: "140,000",
+      enablePkg3: true,
+      faculties: { arts: true, science: true },
+    },
   },
   {
     id: "LAN-2024-D18",
@@ -54,6 +88,17 @@ const CEREMONIES = [
     status: "open",
     faculties: ["المعهد العالي للغات", "المعهد التقاني للحاسوب"],
     icon: "terminal",
+    form: {
+      ceremonyName: "حفل المعهد العالي للغات والحاسوب",
+      ceremonyDate: "2024-10-25T13:00",
+      startDate: "2024-10-01",
+      endDate: "2024-10-15",
+      whatsappLink: "",
+      pricePkg2: "90,000",
+      pricePkg3: "",
+      enablePkg3: false,
+      faculties: { it: true },
+    },
   },
 ];
 

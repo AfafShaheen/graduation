@@ -352,6 +352,11 @@ function App() {
               adminName={admin?.username}
               onNavigate={(section) => navigate(`/admin/${section}`)}
               onAddCeremony={() => navigate("/admin/ceremonies/new")}
+              onEditCeremony={(item) =>
+                navigate(`/admin/ceremonies/${item.id}/edit`, {
+                  state: { ceremony: item },
+                })
+              }
               onLogout={() => {
                 setAdmin(null);
                 navigate("/admin", { replace: true });
@@ -381,6 +386,40 @@ function App() {
                 navigate("/admin", { replace: true });
               }}
             />
+          ) : (
+            <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* ===== تعديل حفل (بتنفتح من زر التعديل بصفحة الحفلات) ===== */}
+      <Route
+        path="/admin/ceremonies/:id/edit"
+        element={
+          admin || PREVIEW ? (
+            // بيانات الحفل بتوصل من صفحة الحفلات، وبدونها (فتح مباشر) نرجع للقائمة
+            location.state?.ceremony ? (
+              <AdminAddCeremony
+                key={location.state.ceremony.id}
+                ceremony={{
+                  id: location.state.ceremony.id,
+                  ...location.state.ceremony.form,
+                }}
+                adminName={admin?.username}
+                onNavigate={(section) => navigate(`/admin/${section}`)}
+                onCancel={() => navigate("/admin/ceremonies")}
+                onSubmitSuccess={() => {
+                  // مؤقت: لما يجهز الباك إند، أرسل التعديلات (الوسيط) هناك قبل الرجوع
+                  navigate("/admin/ceremonies");
+                }}
+                onLogout={() => {
+                  setAdmin(null);
+                  navigate("/admin", { replace: true });
+                }}
+              />
+            ) : (
+              <Navigate to="/admin/ceremonies" replace />
+            )
           ) : (
             <Navigate to="/admin" replace />
           )
