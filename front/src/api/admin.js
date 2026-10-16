@@ -31,23 +31,24 @@ async function handleUnauthorized() {
   notifyAdminUnauthorized();
 }
 
-export async function adminRequest(path, { method = "GET", body = null, token = null, formData = null, query = null } = {}) {
+async function resolveAuth(override) {
+  if (override) return override;
+  const mod = await import("./adminSession.js");
+  return mod.getAdminToken();
+}
+
+function buildHeaders(auth, formData) {
+  const headers = {};
+  if (!formData) headers["Content-Type"] = "application/json";
+  if (auth) headers["Authorization"] = `Bearer ${auth}`;
+  return headers;
+}
+
+export async function adminRequest(path, { method = "GET", body = null, auth = null, formData = null, query = null } = {}) {
   const baseUrl = import.meta.env.VITE_API_URL || "";
   const url = `${baseUrl}${path}${buildQuery(query)}`;
-
-  let authToken = token;
-  if (!authToken) {
-    const { getAdminToken } = await import("./adminSession.js");
-    authToken = [REDACTED]
-  }
-
-  const headers = {};
-  if (!formData) {
-    headers["Content-Type"] = "application/json";
-  }
-  if (authToken) {
-    headers["Authorization"] = `Bearer ${authToken}`;
-  }
+  const resolved = await resolveAuth(auth);
+  const headers = buildHeaders(resolved, formData);
 
   const config = { method, headers };
   if (formData) {
@@ -91,12 +92,8 @@ export async function adminForm(path, formData, method = "POST", query = null) {
 export async function adminBlob(path, query = null) {
   const baseUrl = import.meta.env.VITE_API_URL || "";
   const url = `${baseUrl}${path}${buildQuery(query)}`;
-
-  const { getAdminToken } = await import("./adminSession.js");
-  const authToken = [REDACTED]
-
-  const headers = {};
-  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+  const resolved = await resolveAuth(null);
+  const headers = buildHeaders(resolved, null);
 
   let response;
   try {

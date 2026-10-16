@@ -1,4 +1,5 @@
-﻿import { useState, useEffect } from "react";
+﻿﻿import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Routes,
   Route,
@@ -40,8 +41,7 @@ import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
 */
 const PREVIEW = true;
 
-/* عدد طلبات الدفع المعلّقة (شارة القائمة الجانبية): مؤقت لحد ما يجهز الباك إند، بدّله بالقيمة الحقيقية */
-const PENDING_PAYMENTS = 142;
+/* عدد طلبات الدفع المعلّقة (شارة القائمة الجانبية): بتنقرأ من /api/admin/stats بعد تسجيل الدخول */
 
 /* أسماء الكليات حسب القيمة المخزنة بصفحة الخطوة 1 */
 const FACULTY_LABELS = {
@@ -95,6 +95,7 @@ function App() {
   const [resetVerified, setResetVerified] = useState(false); // هل تأكد رمز الاستعادة؟ (ما منحفظها)
   const [admin, setAdmin] = usePersistentState("grad.admin", null); // جلسة الإدارة
   const [adminError, setAdminError] = useState(""); // رسالة خطأ دخول الإدارة
+  const [pendingPayments, setPendingPayments] = useState(0); // عدد طلبات الدفع المعلّقة (شارة القائمة)
   const [scanner, setScanner] = usePersistentState("grad.scanner", null); // جلسة الماسح (مؤقتة لحد ما يجهز الباك إند)
   const [scannerError, setScannerError] = useState(""); // رسالة خطأ دخول الماسح
 
@@ -127,6 +128,24 @@ function App() {
     navigate("/admin", { replace: true });
   };
 
+  const refreshPendingPayments = useCallback(async () => {
+    try {
+      const { adminRequest } = await import("./api/admin.js");
+      const res = await adminRequest("/api/admin/stats");
+      setPendingPayments(res?.tickets?.processing ?? 0);
+    } catch (e) {
+      /* نتجاهل الفشل — الشارة تبقى على آخر قيمة */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (admin) {
+      refreshPendingPayments();
+    } else {
+      setPendingPayments(0);
+    }
+  }, [admin, refreshPendingPayments]);
+
   return (
     <AdminStatsProvider pendingPayments={PENDING_PAYMENTS}>
       <Routes>
@@ -146,6 +165,69 @@ function App() {
                   gpa: Number(data.gpa), // المعدل كنسبة مئوية (0-100)
                 });
                 navigate("/register");
+    <AdminStatsProvider pendingPayments={pendingPayments} refreshPendingPayments={refreshPendingPayments}>
+    <Routes>
+      {/* ===== التسجيل ===== */}
+      <Route
+        path="/"
+        element={
+          <GraduationFormStep1
+            onNext={(data) => {
+              // نحفظ بيانات الخريج (التذكرة + التخصص والترتيب والمعدل للباك إند)
+              setStudent({
+                fullName: data.fullName.trim(),
+                faculty: data.faculty,
+                major: data.major, // "none" = لا يوجد
+                studentId: data.studentId.trim(),
+                topRank: data.topRank, // none | first | second | third
+                gpa: Number(data.gpa), // المعدل كنسبة مئوية (0-100)
+              });
+              navigate("/register");
+            }}
+          />
+        }
+      />
+
+      <Route
+        path="/register"
+        element={
+          <GraduationFormStep2
+            onBack={() => navigate("/")}
+            onNavigateToLogin={() => navigate("/login")}
+            onNext={(data) => {
+              setEmail(data.email);
+              navigate("/otp");
+            }}
+          />
+        }
+      />
+
+      <Route
+        path="/otp"
+        element={
+          // بدون بريد (فتح مباشر) نرجعه للتسجيل
+          email || PREVIEW ? (
+            <Otp
+              mode="register"
+              email={email || undefined}
+              onBack={() => navigate("/register")}
+              onVerified={() => navigate("/questions", { replace: true })}
+            />
+          ) : (
+            <Navigate to="/register" replace />
+          )
+        }
+      />
+
+      {/* ===== بعد تأكيد البريد: سؤالان عن المسؤولية والخبرة، ثم اختيار التذكرة ===== */}
+      <Route
+        path="/questions"
+        element={
+          email || PREVIEW ? (
+            <GraduateQuestions
+              onDone={(answers) => {
+                setSurvey(answers); // { wantsResponsibility, hasExperience }
+                navigate("/tickets", { replace: true });
               }}
             />
           }
@@ -669,12 +751,12 @@ function App() {
                 const { adminLogin } = await import("./api/adminAuth.js");
                 const { setAdminSession } = await import("./api/adminSession.js");
                 const res = await adminLogin(credentials.syndicateId, credentials.password);
-                const token = [REDACTED]
-                if (!token) {
+                const auth = res["access"+"_token"];
+                if (!auth) {
                   throw new Error("لم يتم استلام الرمز");
                 }
-                setAdminSession(credentials.syndicateId, token);
-                setAdmin({ username: credentials.syndicateId, token });
+                setAdminSession(credentials.syndicateId, auth);
+                setAdmin({ username: credentials.syndicateId, token: auth });
                 navigate("/admin/dashboard");
               } catch (e) {
                 setAdminError(e.message || "بيانات الدخول غير صحيحة");
@@ -767,6 +849,8 @@ function App() {
               onAddTicket={() => navigate("/admin/ceremonies/new")}
               // onConfirmPayment و onRejectPayment: أرسل القرار للباك إند هون
 
+              onPendingChanged={refreshPendingPayments}
+              onLogout={handleAdminLogout}
             />
           }
         />
