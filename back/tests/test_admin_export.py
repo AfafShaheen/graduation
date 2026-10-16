@@ -33,6 +33,9 @@ _HEADERS = [
     "اسم المرسل",
     "تاريخ الإرسال",
     "تاريخ المراجعة",
+    "التخصص",
+    "المعدل",
+    "الترتيب",
 ]
 
 _SENDER_COL = _HEADERS.index("اسم المرسل") + 1
@@ -119,6 +122,11 @@ async def test_export_single_event_headers_and_values(
     assert first[17] == "أحمد محمد"
     assert first[18]  # submitted_at present
     assert not first[19]
+    # New academic columns: no major / GPA / rank set on graduate_one.
+    # openpyxl reads an empty string cell back as None after a round-trip.
+    assert first[20] in (None, "")
+    assert first[21] in (None, "")
+    assert first[22] in (None, "")
 
     # Numeric columns are stored as real numbers so Excel can sum them, while
     # text columns stay explicit strings (D17).
@@ -283,3 +291,67 @@ async def test_export_requires_admin(client, db, make_admin):
     assert (
         await client.get("/api/admin/export", headers=_auth(scanner_value))
     ).status_code in (401, 403)
+
+
+async def test_export_includes_major_gpa_and_rank_columns(
+    client, db, make_event, make_college, make_major, make_graduate, make_admin
+):
+    from decimal import Decimal
+
+    event = await make_event(name="حفل التخصصات")
+    college = await make_college(event.id, name="كلية التخصصات")
+    major = await make_major(college.id, name="هندسة برمجيات")
+    await make_graduate(
+        college.id,
+        university_id="5001",
+        full_name="خريج مع تخصص",
+        email_verified=True,
+        gpa=Decimal("88.50"),
+        major_id=major.id,
+        top_rank=1,
+    )
+
+    headers = await _admin_headers(client, make_admin)
+    response = await client.get(
+        f"/api/admin/export?event_id={event.id}", headers=headers
+    )
+    assert response.status_code == 200
+
+    wb = load_workbook(BytesIO(response.content))
+    ws = wb.active
+    row = 2
+    assert ws.cell(row=row, column=21).value == "هندسة برمجيات"
+    assert ws.cell(row=row, column=21).data_type == "s"
+    # GPA is a numeric cell so a spreadsheet can sort/average it (D17).
+    assert ws.cell(row=row, column=22).value == 88.5
+    assert ws.cell(row=row, column=22).data_type == "n"
+    assert ws.cell(row=row, column=23).value == "الأول"
+    assert ws.cell(row=row, column=23).data_type == "s"
+
+
+async def test_export_without_major_writes_empty_cells(
+    client, db, make_event, make_college, make_graduate, make_admin
+):
+    event = await make_event(name="حفل بلا تخصص")
+    college = await make_college(event.id, name="كلية بلا تخصص")
+    await make_graduate(
+        college.id,
+        university_id="6001",
+        full_name="خريج بلا تخصص",
+        email_verified=True,
+    )
+
+    headers = await _admin_headers(client, make_admin)
+    response = await client.get(
+        f"/api/admin/export?event_id={event.id}", headers=headers
+    )
+    assert response.status_code == 200
+
+    wb = load_workbook(BytesIO(response.content))
+    ws = wb.active
+    row = 2
+    # No major -> an empty cell; GPA/rank stay empty. openpyxl reads an empty
+    # string cell back as None after a round-trip.
+    assert ws.cell(row=row, column=21).value in (None, "")
+    assert ws.cell(row=row, column=22).value in (None, "")
+    assert ws.cell(row=row, column=23).value in (None, "")
