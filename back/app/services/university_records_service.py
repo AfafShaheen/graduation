@@ -78,6 +78,8 @@ _INVISIBLE_MARKS = dict.fromkeys(
     ]
 )
 
+_CSV_DELIMITERS = (",", ";", "\t")
+
 
 def _normalize_header(value: Any) -> str:
     """Normalise a header cell so Arabic and English aliases can be compared.
@@ -134,12 +136,38 @@ def _canonicalize_columns(columns) -> List[str]:
     return resolved
 
 
+def _detect_csv_delimiter(text: str) -> str:
+    """Pick the most frequent delimiter in the header line (, ; or tab)."""
+    lines = text.splitlines()
+    first_line = lines[0] if lines else ""
+    counts = {delimiter: first_line.count(delimiter) for delimiter in _CSV_DELIMITERS}
+    best = max(counts, key=lambda delimiter: counts[delimiter])
+    return best if counts[best] else ","
+
+
+def _read_csv(contents: bytes) -> "pd.DataFrame":
+    """Read a CSV file tolerant of Arabic Windows exports.
+
+    Decodes as ``utf-8-sig`` then falls back to ``cp1256`` (the encoding Excel
+    uses on Arabic Windows), and detects the delimiter (comma, semicolon or
+    tab) from the header line. A NUL byte means the payload is binary, not a
+    text CSV, so it is rejected like any other unreadable file.
+    """
+    try:
+        text = contents.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = contents.decode("cp1256")
+    if "\x00" in text:
+        raise ValueError("الملف يبدو ثنائياً وليس ملف CSV نصي صالح.")
+    return pd.read_csv(io.StringIO(text), sep=_detect_csv_delimiter(text))
+
+
 async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
     contents = await file.read()
     filename = file.filename.lower()
     try:
         if filename.endswith(".csv"):
-            df = pd.read_csv(io.BytesIO(contents))
+            df = _read_csv(contents)
         elif filename.endswith((".xlsx", ".xls")):
             df = pd.read_excel(io.BytesIO(contents))
         else:
