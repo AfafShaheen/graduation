@@ -21,6 +21,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCeremonies from "./pages/admin/AdminCeremonies";
 import AdminAddCeremony from "./pages/admin/AdminAddCeremony";
+import AdminEditCeremonyRoute from "./pages/admin/AdminEditCeremonyRoute";
 import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
 import AdminScannersSettings from "./pages/admin/AdminScannersSettings";
 import AdminExceptions from "./pages/admin/AdminExceptions";
@@ -707,6 +708,9 @@ function App() {
               adminName={admin?.username}
               onNavigate={(section) => navigate(`/admin/${section}`)}
               onAddCeremony={() => navigate("/admin/ceremonies/new")}
+              onEditCeremony={(item) =>
+                navigate(`/admin/ceremonies/${item.id}/edit`, { state: { eventItem: item } })
+              }
               onLogout={handleAdminLogout}
             />
           ) : (
@@ -728,6 +732,22 @@ function App() {
                 // مؤقت: لما يجهز الباك إند، أرسل بيانات الحفل (الوسيط) هناك قبل الرجوع
                 navigate("/admin/ceremonies");
               }}
+              onLogout={handleAdminLogout}
+            />
+          ) : (
+            <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* ===== تعديل حفل موجود (بتنفتح من زر التعديل بصفحة الحفلات) ===== */}
+      <Route
+        path="/admin/ceremonies/:id/edit"
+        element={
+          admin || PREVIEW ? (
+            <AdminEditCeremonyRoute
+              adminName={admin?.username}
+              onNavigate={(section) => navigate(`/admin/${section}`)}
               onLogout={handleAdminLogout}
             />
           ) : (
