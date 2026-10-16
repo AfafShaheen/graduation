@@ -334,6 +334,18 @@
             "title": "Event Date",
             "type": "string"
           },
+          "event_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -365,6 +377,18 @@
             "format": "date",
             "title": "Event Date",
             "type": "string"
+          },
+          "event_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time"
           },
           "is_3companions_enabled": {
             "default": true,
@@ -410,6 +434,17 @@
             "format": "date-time",
             "title": "Registration Start",
             "type": "string"
+          },
+          "seat_prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Prefix"
           },
           "whatsapp_group_link": {
             "title": "Whatsapp Group Link",
@@ -470,6 +505,18 @@
             "title": "Event Date",
             "type": "string"
           },
+          "event_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -499,6 +546,17 @@
             "format": "date-time",
             "title": "Registration Start",
             "type": "string"
+          },
+          "seat_prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Prefix"
           },
           "whatsapp_group_link": {
             "title": "Whatsapp Group Link",
@@ -533,6 +591,18 @@
               }
             ],
             "title": "Event Date"
+          },
+          "event_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time"
           },
           "is_3companions_enabled": {
             "anyOf": [
@@ -611,6 +681,17 @@
               }
             ],
             "title": "Registration Start"
+          },
+          "seat_prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat Prefix"
           },
           "whatsapp_group_link": {
             "anyOf": [
@@ -883,6 +964,16 @@
           },
           "registration": {
             "$ref": "#/components/schemas/RegistrationInfo"
+          },
+          "seat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeatInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ticket": {
             "anyOf": [
@@ -1350,6 +1441,32 @@
           "event"
         ],
         "title": "ScannerTokenResponse",
+        "type": "object"
+      },
+      "SeatInfo": {
+        "properties": {
+          "companions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Companions",
+            "type": "array"
+          },
+          "graduate": {
+            "title": "Graduate",
+            "type": "string"
+          },
+          "range": {
+            "title": "Range",
+            "type": "string"
+          }
+        },
+        "required": [
+          "graduate",
+          "companions",
+          "range"
+        ],
+        "title": "SeatInfo",
         "type": "object"
       },
       "TicketOption": {
