@@ -42,6 +42,12 @@ export async function rejectTicket(ticketId, reason) {
   return await adminRequest(`/api/admin/tickets/${ticketId}/reject`, { method: "POST", body: { reason } });
 }
 
+export async function fetchRecentPayments(eventId, limit = 50) {
+  if (!eventId) return { items: [], total: 0 };
+  const res = await adminRequest(`/api/admin/events/${eventId}/payments`, { query: { limit } });
+  return { items: (res && res.items) || [], total: (res && res.total) || 0 };
+}
+
 export async function fetchAllEventPayments(eventId, status, pageSize = 200) {
   if (!eventId) return { items: [], total: 0 };
   const all = [];
