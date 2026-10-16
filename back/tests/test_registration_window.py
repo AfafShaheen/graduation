@@ -38,6 +38,8 @@ def _payload(college_id, university_id):
         "gender": "male",
         "father_name": "أحمد",
         "mother_name": "سعاد",
+        "gpa": "85.00",
+        "top_rank": 1,
     }
 
 

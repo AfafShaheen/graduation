@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
@@ -6,9 +7,11 @@ from app.models.graduate import GraduateModel
 from app.models.university_record import UniversityRecordModel
 from app.models.college import CollegeModel
 from app.models.event import EventModel
+from app.models.major import MajorModel
 from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request
 from app.services.email_service import OtpPurpose
 from app.services.auth_service import issue_and_send_otp
+from app.services.ranking_service import compute_top_rank
 from sqlalchemy.exc import IntegrityError
 from app.core import messages
 from app.core.redis import redis_client
@@ -130,6 +133,37 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
             detail=await _generic_verify_fail(db)
         )
 
+    # 1. If major_id is given, it must belong to data.college_id.
+    if data.major_id is not None:
+        major = await db.get(MajorModel, data.major_id)
+        if not major or major.college_id != data.college_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=await _generic_verify_fail(db)
+            )
+
+    # 2. data.major_id == uni_record.major_id (None == None is a match).
+    if data.major_id != uni_record.major_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _generic_verify_fail(db)
+        )
+
+    # 3. data.gpa.quantize(Decimal("0.01")) == uni_record.gpa.quantize(Decimal("0.01")). If uni_record.gpa is NULL → fail.
+    if uni_record.gpa is None or data.gpa.quantize(Decimal("0.01")) != uni_record.gpa.quantize(Decimal("0.01")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _generic_verify_fail(db)
+        )
+
+    # 4. data.top_rank == await compute_top_rank(db, uni_record). Strict both ways.
+    computed_rank = await compute_top_rank(db, uni_record)
+    if data.top_rank != computed_rank:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _generic_verify_fail(db)
+        )
+
     token_payload = {
         "university_id": data.university_id,
         "college_id": data.college_id,
@@ -137,6 +171,9 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
         "gender": uni_record.gender,
         "father_name": uni_record.father_name,
         "mother_name": uni_record.mother_name,
+        "major_id": uni_record.major_id,
+        "gpa": str(uni_record.gpa) if uni_record.gpa is not None else None,
+        "top_rank": computed_rank,
     }
     registration_token = create_registration_token(token_payload)
 
@@ -154,6 +191,10 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
     gender = payload.get("gender")
     father_name = payload.get("father_name")
     mother_name = payload.get("mother_name")
+    major_id = payload.get("major_id")
+    gpa_str = payload.get("gpa")
+    top_rank = payload.get("top_rank")
+    gpa_val = Decimal(gpa_str) if gpa_str is not None else None
 
     if not university_id or not college_id:
         raise HTTPException(
@@ -190,7 +231,10 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
         father_name=father_name,
         mother_name=mother_name,
         password_hash=password_hash,
-        university_id=university_id
+        university_id=university_id,
+        major_id=major_id,
+        gpa=gpa_val,
+        top_rank=top_rank,
     )
     try:
         db.add(new_graduate)
@@ -230,9 +274,17 @@ async def fetch_graduate(db: AsyncSession, graduate_id: int) -> GraduateModel | 
 async def get_graduate_me_service(db: AsyncSession, graduate: GraduateModel) -> dict:
     college = await db.get(CollegeModel, graduate.college_id)
     college_name = college.name if college else ""
+    major_name = None
+    if graduate.major_id:
+        major = await db.get(MajorModel, graduate.major_id)
+        if major:
+            major_name = major.name
     return {
         "full_name": graduate.full_name,
         "university_id": graduate.university_id,
         "college_name": college_name,
+        "major_name": major_name,
+        "gpa": graduate.gpa,
+        "top_rank": graduate.top_rank,
         "unique_graduate_code": graduate.unique_graduate_code
     }

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, DateTime, Numeric, Index, CheckConstraint, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.models.base import Base
@@ -14,11 +14,16 @@ class UniversityRecordModel(Base):
     mother_name = Column(String(255), nullable=False)
     gender = Column(String(10), nullable=False)
     college_id = Column(Integer, ForeignKey("colleges.id", ondelete="RESTRICT"), nullable=False, index=True)
+    major_id = Column(Integer, ForeignKey("majors.id", ondelete="RESTRICT"), nullable=True, index=True)
+    gpa = Column(Numeric(precision=5, scale=2), nullable=True)
     imported_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     event = relationship("EventModel", backref="university_records")
     college = relationship("CollegeModel", backref="university_records")
+    major = relationship("MajorModel", backref="university_records")
 
     __table_args__ = (
         UniqueConstraint("event_id", "university_id", name="unique_event_university_id"),
+        CheckConstraint("gpa IS NULL OR (gpa >= 0 AND gpa <= 100)", name="chk_uni_record_gpa_range"),
+        Index("idx_uni_records_ranking", "event_id", "college_id", "major_id", text("gpa DESC")),
     )

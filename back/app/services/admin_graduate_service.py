@@ -2,6 +2,7 @@ import json
 from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from app.models.graduate import GraduateModel
 from app.models.ticket import TicketModel, TicketStatusEnum
@@ -39,7 +40,7 @@ async def search_graduates_service(
     except Exception:
         pass
 
-    stmt = select(GraduateModel)
+    stmt = select(GraduateModel).options(selectinload(GraduateModel.major))
     if search:
         search_pattern = f"%{search}%"
         stmt = stmt.where(
@@ -68,6 +69,10 @@ async def search_graduates_service(
             "university_id": g.university_id,
             "unique_graduate_code": str(g.unique_graduate_code),
             "created_at": g.created_at.isoformat() if g.created_at else None,
+            "major_id": g.major_id,
+            "major_name": g.major.name if g.major else None,
+            "gpa": str(g.gpa) if g.gpa is not None else None,
+            "top_rank": g.top_rank,
         }
         for g in graduates
     ]
@@ -89,7 +94,8 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
     except Exception:
         pass
 
-    grad = await db.get(GraduateModel, graduate_id)
+    stmt = select(GraduateModel).options(selectinload(GraduateModel.major)).where(GraduateModel.id == graduate_id)
+    grad = (await db.execute(stmt)).scalar_one_or_none()
     if not grad:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الخريج.")
 
@@ -120,6 +126,10 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
         "university_id": grad.university_id,
         "unique_graduate_code": str(grad.unique_graduate_code),
         "created_at": grad.created_at.isoformat() if grad.created_at else None,
+        "major_id": grad.major_id,
+        "major_name": grad.major.name if grad.major else None,
+        "gpa": str(grad.gpa) if grad.gpa is not None else None,
+        "top_rank": grad.top_rank,
         "tickets": [{"id": t.id, "event_id": t.event_id, "status": t.status, "price": str(t.price)} for t in tickets],
         "payments": [{"id": p.id, "ticket_id": p.ticket_id, "transaction_number": p.transaction_number, "amount": str(p.amount)} for p in payments],
         "qr_codes": [{"id": q.id, "ticket_id": q.ticket_id, "code_type": q.code_type, "code_value": str(q.code_value), "is_activated": q.is_activated} for q in qr_codes],

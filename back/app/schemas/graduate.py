@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
+from decimal import Decimal
 from uuid import UUID
 
 from app.core.security import validate_password_policy
@@ -15,6 +16,9 @@ class UserVerifyStep1(BaseModel):
     father_name: str = Field(..., pattern=NAME_REGEX, description="Father's name must contain letters only.")
     mother_name: str = Field(..., pattern=NAME_REGEX, description="Mother's name must contain letters only.")
     gender: str = Field(..., min_length=3, max_length=10)
+    major_id: Optional[int] = Field(None, gt=0)
+    gpa: Decimal = Field(..., ge=0, le=100, max_digits=5, decimal_places=2)
+    top_rank: Optional[Literal[1, 2, 3]] = None
 
 class RegisterStep2Request(BaseModel):
     registration_token: str
@@ -40,11 +44,18 @@ class GraduateResponse(BaseModel):
     university_id: str
     unique_graduate_code: UUID
     created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    major_id: Optional[int] = None
+    major_name: Optional[str] = None
+    gpa: Optional[Decimal] = None
+    top_rank: Optional[int] = None
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 class GraduateMeResponse(BaseModel):
     full_name: str
     university_id: str
     college_name: str
+    major_name: Optional[str] = None
+    gpa: Optional[Decimal] = None
+    top_rank: Optional[int] = None
     unique_graduate_code: UUID
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)

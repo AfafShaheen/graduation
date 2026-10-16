@@ -1,6 +1,7 @@
 from app.models.base import Base
 from app.models.event import EventModel
 from app.models.college import CollegeModel
+from app.models.major import MajorModel
 from app.models.admin import AdminModel
 from app.models.scanner import ScannerModel
 from app.models.setting import SettingModel

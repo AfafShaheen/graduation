@@ -1,5 +1,5 @@
 """Verify the QR constraint migration (item 2.2), the audit-log reference
-migration (item 3.5.1) and the volunteer-answers migration (item 3.5.3) apply
+migration (item 3.5.1), the volunteer-answers migration (item 3.5.3) and majors/gpa/rank migration (0005) apply
 and revert cleanly."""
 
 import os
@@ -231,3 +231,65 @@ def test_existing_rows_survive_volunteer_migration():
         conn.close()
 
     assert row == ("VOLUNTEER_MARKER",)
+
+
+def _majors_schema():
+    url = make_url(os.environ["DATABASE_URL"]).set(drivername="postgresql")
+    conn = psycopg2.connect(url.render_as_string(hide_password=False))
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT to_regclass('majors')")
+            if cur.fetchone()[0] is None:
+                return set(), set(), set(), set()
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'majors'"
+            )
+            majors_cols = {row[0] for row in cur.fetchall()}
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'graduates'"
+            )
+            grad_cols = {row[0] for row in cur.fetchall()}
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'university_records'"
+            )
+            uni_cols = {row[0] for row in cur.fetchall()}
+            cur.execute(
+                "SELECT conname FROM pg_constraint "
+                "WHERE conrelid = 'graduates'::regclass"
+            )
+            grad_constraints = {row[0] for row in cur.fetchall()}
+    finally:
+        conn.close()
+    return majors_cols, grad_cols, uni_cols, grad_constraints
+
+
+def test_majors_migration_applies_expected_schema():
+    majors_cols, grad_cols, uni_cols, grad_constraints = _majors_schema()
+    assert majors_cols == {"id", "name", "college_id"}
+    assert {"major_id", "gpa", "top_rank"} <= grad_cols
+    assert {"major_id", "gpa"} <= uni_cols
+    assert "chk_graduate_gpa_range" in grad_constraints
+    assert "chk_graduate_top_rank" in grad_constraints
+
+
+def test_majors_migration_round_trip():
+    _alembic("downgrade", "0004_volunteer_answers")
+    try:
+        majors_cols, grad_cols, uni_cols, _ = _majors_schema()
+        assert majors_cols == set()
+        assert "major_id" not in grad_cols
+        assert "major_id" not in uni_cols
+        assert "gpa" not in uni_cols
+    finally:
+        _alembic("upgrade", "head")
+
+    majors_cols, grad_cols, uni_cols, grad_constraints = _majors_schema()
+    assert "id" in majors_cols
+    assert "major_id" in grad_cols
+    assert "major_id" in uni_cols
+    assert "gpa" in uni_cols
+    assert "chk_graduate_gpa_range" in grad_constraints
+    assert "chk_graduate_top_rank" in grad_constraints

@@ -2,6 +2,7 @@ import io
 import json
 import pandas as pd
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import List, Dict, Any
 from fastapi import UploadFile, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,9 +11,33 @@ from app.models.university_record import UniversityRecordModel
 from app.models.college import CollegeModel
 from app.models.event import EventModel
 from app.models.graduate import GraduateModel
+from app.models.major import MajorModel
 from app.services.graduate_service import normalize_arabic
 from app.services.audit_log import ActorType, record_audit
 from app.core.redis import redis_client
+
+
+def parse_gpa(val: Any) -> Decimal | None:
+    if val is None or pd.isna(val) or str(val).strip() == "" or str(val).lower() == "nan":
+        return None
+    s = str(val).strip()
+    arabic_indic = "٠١٢٣٤٥٦٧٨٩"
+    ascii_digits = "0123456789"
+    trans = str.maketrans(arabic_indic, ascii_digits)
+    s = s.translate(trans)
+    s = s.replace("٫", ".").replace(",", ".")
+    parts = s.split(".")
+    if len(parts) > 2:
+        return None
+    if len(parts) == 2 and len(parts[1]) > 2:
+        return None
+    try:
+        d = Decimal(s)
+        if d < 0 or d > 100:
+            return None
+        return d.quantize(Decimal("0.01"))
+    except Exception:
+        return None
 
 
 async def invalidate_uni_records_cache(event_id: int) -> None:
@@ -52,7 +77,7 @@ async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
 
 async def validate_records(records: List[Dict[str, Any]], event_id: int, db: AsyncSession) -> List[str]:
     errors = []
-    required_cols = {"university_id", "full_name", "father_name", "mother_name", "college", "gender"}
+    required_cols = {"university_id", "full_name", "father_name", "mother_name", "college", "gender", "gpa"}
 
     if not records:
         return ["الملف فارغ أو لا يحتوي على بيانات."]
@@ -67,6 +92,11 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
     colleges = colleges_res.scalars().all()
     college_map = {normalize_arabic(c.name): c.id for c in colleges}
 
+    # Load all majors once into a dict keyed by (college_id, normalize_arabic(name))
+    majors_res = await db.execute(select(MajorModel))
+    all_majors = majors_res.scalars().all()
+    major_map = {(m.college_id, normalize_arabic(m.name)): m.id for m in all_majors}
+
     seen_uni_ids = set()
 
     for idx, row in enumerate(records, start=2): # Row 1 is header
@@ -76,6 +106,8 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
         mother_name = str(row.get("mother_name", "")).strip()
         college_name = str(row.get("college", "")).strip()
         gender = str(row.get("gender", "")).strip()
+        gpa_raw = row.get("gpa")
+        major_raw = str(row.get("major", "")).strip() if "major" in row and pd.notna(row.get("major")) else ""
 
         # Check empty required fields
         if not uni_id or uni_id.lower() == "nan":
@@ -91,6 +123,14 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
         if not gender or gender.lower() == "nan":
             errors.append(f"السطر {idx}: الجنس مطلوب.")
 
+        # Check GPA
+        if gpa_raw is None or str(gpa_raw).strip() == "" or str(gpa_raw).lower() == "nan":
+            errors.append(f"السطر {idx}: المعدل مطلوب.")
+        else:
+            parsed_gpa = parse_gpa(gpa_raw)
+            if parsed_gpa is None:
+                errors.append(f"السطر {idx}: المعدل غير صالح.")
+
         # Check duplicate university_id within file
         if uni_id in seen_uni_ids:
             errors.append(f"السطر {idx}: الرقم الجامعي '{uni_id}' مكرر داخل الملف.")
@@ -103,8 +143,15 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
 
         # Check non-existent college names using normalized lookup
         normalized_college_name = normalize_arabic(college_name)
-        if normalized_college_name not in college_map:
+        college_id = college_map.get(normalized_college_name)
+        if not college_id:
             errors.append(f'الكلية "{college_name}" المذكورة في الملف غير مربوطة بهذا الحفل')
+        else:
+            # Check major if provided and not empty / NaN / "لا يوجد"
+            if major_raw and major_raw.lower() not in ["nan", "none", "لا يوجد", ""]:
+                norm_major = normalize_arabic(major_raw)
+                if (college_id, norm_major) not in major_map:
+                    errors.append(f'السطر {idx}: التخصص "{major_raw}" غير موجود ضمن كلية "{college_name}". يرجى إضافته من إدارة التخصصات أولاً.')
 
     return errors
 
@@ -113,6 +160,10 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
     colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
     colleges = colleges_res.scalars().all()
     college_map = {normalize_arabic(c.name): c.id for c in colleges}
+
+    majors_res = await db.execute(select(MajorModel))
+    all_majors = majors_res.scalars().all()
+    major_map = {(m.college_id, normalize_arabic(m.name)): m.id for m in all_majors}
 
     added = 0
     updated = 0
@@ -126,6 +177,8 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
         mother_name = normalize_arabic(str(row.get("mother_name", "")))
         college_name = str(row.get("college", "")).strip()
         gender = str(row.get("gender", "")).strip()
+        gpa_val = parse_gpa(row.get("gpa"))
+        major_raw = str(row.get("major", "")).strip() if "major" in row and pd.notna(row.get("major")) else ""
         
         normalized_college_name = normalize_arabic(college_name)
         college_id = college_map.get(normalized_college_name)
@@ -133,6 +186,11 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
         if not college_id:
             skipped += 1
             continue
+
+        major_id = None
+        if major_raw and major_raw.lower() not in ["nan", "none", "لا يوجد", ""]:
+            norm_major = normalize_arabic(major_raw)
+            major_id = major_map.get((college_id, norm_major))
 
         existing_res = await db.execute(
             select(UniversityRecordModel).where(
@@ -148,6 +206,8 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
             existing.mother_name = mother_name
             existing.gender = gender
             existing.college_id = college_id
+            existing.major_id = major_id
+            existing.gpa = gpa_val
             existing.imported_at = now
             db.add(existing)
             updated += 1
@@ -160,6 +220,8 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
                 mother_name=mother_name,
                 gender=gender,
                 college_id=college_id,
+                major_id=major_id,
+                gpa=gpa_val,
                 imported_at=now
             )
             db.add(new_rec)
@@ -241,7 +303,11 @@ async def list_university_records(
     except Exception:
         pass
 
-    stmt = select(UniversityRecordModel).where(UniversityRecordModel.event_id == event_id)
+    stmt = (
+        select(UniversityRecordModel, MajorModel.name.label("major_name"))
+        .outerjoin(MajorModel, UniversityRecordModel.major_id == MajorModel.id)
+        .where(UniversityRecordModel.event_id == event_id)
+    )
     pattern = None
     if search:
         pattern = f"%{search}%"
@@ -266,7 +332,7 @@ async def list_university_records(
 
     stmt = stmt.offset(skip).limit(limit)
     res = await db.execute(stmt)
-    items = res.scalars().all()
+    items = res.all()
 
     items_data = [
         {
@@ -278,9 +344,12 @@ async def list_university_records(
             "mother_name": r.mother_name,
             "gender": r.gender,
             "college_id": r.college_id,
+            "major_id": r.major_id,
+            "major_name": major_name,
+            "gpa": str(r.gpa) if r.gpa is not None else None,
             "imported_at": r.imported_at.isoformat() if r.imported_at else None,
         }
-        for r in items
+        for r, major_name in items
     ]
 
     result = {"total": total, "items": items_data}

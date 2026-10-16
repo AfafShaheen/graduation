@@ -314,3 +314,32 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 - **مُبقي بقصد ولم يُلمس**: قيمة إجراء المسح المطبوعة `qr_scanned` (حرف صغير) كما هي في قاعدة البيانات، وبعض النصوص العربية المضمَّنة خارج `app/core/messages.py`، وتحذيرات `setex` المهملة (كلها في مرحلة تنظيف لاحقة).
 - **تصدير PDF**: يبقى من جهة الواجهة (الباك إند يوفّر `.xlsx` فقط).
 - **اختبار حمل حقيقي لمسار المسح/التصدير**: ما زال ضمن مرحلة النشر.
+
+---
+
+# المرحلة 4 (Major / GPA / Top-3 Rank)
+
+تُضيف هذه المرحلة دعم التخصصات الأكاديمية (Majors)، المعدل التراكمي (GPA)، وحساب الترتيب على التخصص (Top-3 Rank).
+
+## 10.1 النقاط الجديدة والمُعدّلة في عقد الـ API
+
+| المسار | المصادقة | المعاملات/الجسم | الاستجابة | الأخطاء |
+|---|---|---|---|---|
+| `GET /api/registration/colleges` | عام | — | قائمة الكليات مع التخصصات المرتبة (`id`, `name`, `event_id`, `majors:[{id,name}]`) للحفلات المفتوحة (مؤقتة في Redis لمدة 60 ثانية). | — |
+| `GET /api/admin/colleges/{college_id}/majors` | مدير | — | قائمة تخصصات الكلية (`[{id, name, college_id}]`) مرتبة بالاسم. | 404 الكلية غير موجودة |
+| `POST /api/admin/colleges/{college_id}/majors` | مدير | `{name}` | 201 `{id, name, college_id}` | 400 تخصص موجود مسبقاً، 404 الكلية غير موجودة |
+| `PUT /api/admin/majors/{major_id}` | مدير | `{name}` | `{id, name, college_id}` | 400 تخصص موجود مسبقاً، 404 التخصص غير موجود |
+| `DELETE /api/admin/majors/{major_id}` | مدير | — | `{status, message}` | 400 لا يمكن الحذف لارتباطه بخريجين أو سجلات جامعية، 404 |
+| `POST /api/graduates/verify-step1` | عام | `..., major_id?, gpa, top_rank?` | `{valid: true, registration_token}` | 400 فشل تحقق عام (عند أي عدم مطابقة للبيانات، المعدل، التخصص، أو الترتيب)، 403 (إغلاق التسجيل) |
+
+## 10.2 تغييرات قاعدة البيانات (Phase 4)
+- جدول `majors`: `id` (PK)، `name` (varchar 255)، `college_id` (FK إلى `colleges.id` على `ON DELETE CASCADE`)، مع قيد فريد مركب على `(college_id, name)` وفهرس على `college_id`.
+- جدول `graduates`: إضافة أعمدة `major_id` (FK إلى `majors.id`), `gpa` (Numeric 5,2), `top_rank` (SmallInt)، مع قيود `chk_graduate_gpa_range` (0–100) و`chk_graduate_top_rank` (NULL أو 1,2,3) وفهرس على `major_id`.
+- جدول `university_records`: إضافة أعمدة `major_id` (FK) و`gpa` (Numeric 5,2)، مع قيد `chk_uni_record_gpa_range` (0–100) وفهرس مركب `idx_uni_records_ranking` على `(event_id, college_id, major_id, gpa DESC)`.
+- ترقية Alembic: `0005_majors_gpa_rank`.
+
+## 10.3 السلوك وتغييرات التحقق (Phase 4)
+- **رفع السجلات الجامعية**: عمود `gpa` أصبح إجبارياً وصحيحاً (0–100، بحد أقصى منزلتين عشريتين، يقبل الأرقام العربية-الهندية والفاصلة `,` أو `٫`). عمود `major` اختياري يُطابق بالتطبيع العربي ضمن الكلية حصراً (لا يُنشئ أي تخصص جديد من الملف).
+- **التحقق (Step 1)**: يتحقق مطابقة `major_id` (يجب أن ينتمي لنفس الكلية ويتطابق مع السجل)، ومطابقة `gpa` (تقريب لمنزلتين عشريتين)، وحساب الترتيب بدقة عبر الترتيب الكثيف (`compute_top_rank`). أي اختلاف يعيد فشل التحقق العام دون كشف الحقل المخالف.
+- **تصدير Excel**: أُضيفَت أعمدة «التخصص»، «المعدل»، و«الترتيب» (الأول/الثاني/الثالث) في نهاية تقرير المتخرجين.
+

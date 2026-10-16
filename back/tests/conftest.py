@@ -16,6 +16,7 @@ import secrets
 import subprocess
 import sys
 from pathlib import Path
+from decimal import Decimal
 from urllib.parse import urlparse
 
 from sqlalchemy.engine import URL, make_url
@@ -51,7 +52,9 @@ def _build_test_database_url() -> str:
 
 def _build_test_redis_url() -> str:
     """Keep the configured Redis host but always use database 15."""
-    base = os.getenv("REDIS_URL") or ("re" + "dis://" + "redis:6379/0")
+    base = os.getenv("REDIS_URL") or "redis://localhost:6379/0"
+    if "redis:6379" in base:
+        base = base.replace("redis:6379", "localhost:6379")
     return urlparse(base)._replace(path="/15").geturl()
 
 
@@ -73,7 +76,7 @@ from httpx import ASGITransport, AsyncClient  # noqa: E402
 _SCHEMA_FILE = Path(__file__).resolve().parents[1] / "migrations" / "0001_init_schema.sql"
 
 _TABLES = (
-    "events, colleges, admins, scanners, settings, graduates, "
+    "events, colleges, majors, admins, scanners, settings, graduates, "
     "university_records, tickets, payments, qr_codes, otp_codes, audit_logs, "
     "volunteer_answers"
 )
@@ -232,6 +235,20 @@ def make_college(db):
 
 
 @pytest.fixture
+def make_major(db):
+    from app.models.major import MajorModel
+
+    async def _make(college_id, name="هندسة برمجيات"):
+        major = MajorModel(college_id=college_id, name=name)
+        db.add(major)
+        await db.commit()
+        await db.refresh(major)
+        return major
+
+    return _make
+
+
+@pytest.fixture
 def make_university_record(db):
     from app.models.university_record import UniversityRecordModel
 
@@ -243,6 +260,8 @@ def make_university_record(db):
         father_name="أحمد",
         mother_name="سعاد",
         gender="male",
+        gpa=Decimal("85.00"),
+        major_id=None,
     ):
         record = UniversityRecordModel(
             event_id=event_id,
@@ -252,6 +271,8 @@ def make_university_record(db):
             father_name=father_name,
             mother_name=mother_name,
             gender=gender,
+            gpa=gpa,
+            major_id=major_id,
         )
         db.add(record)
         await db.commit()
@@ -277,6 +298,9 @@ def make_graduate(db):
         mother_name="سعاد",
         pw=_GRAD_DEFAULT_PW,
         email_verified=False,
+        gpa=None,
+        major_id=None,
+        top_rank=None,
     ):
         graduate = GraduateModel(
             college_id=college_id,
@@ -289,6 +313,9 @@ def make_graduate(db):
             mother_name=mother_name,
             password_hash=get_password_hash(pw),
             email_verified=email_verified,
+            gpa=gpa,
+            major_id=major_id,
+            top_rank=top_rank,
         )
         db.add(graduate)
         await db.commit()

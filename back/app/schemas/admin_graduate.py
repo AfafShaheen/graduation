@@ -19,4 +19,8 @@ class GraduateAdminResponse(BaseModel):
     university_id: str
     unique_graduate_code: UUID
     created_at: datetime
+    major_id: Optional[int] = None
+    major_name: Optional[str] = None
+    gpa: Optional[str] = None
+    top_rank: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
