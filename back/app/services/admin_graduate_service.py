@@ -1,7 +1,7 @@
 import json
 from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, or_
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from app.models.graduate import GraduateModel
@@ -9,10 +9,14 @@ from app.models.ticket import TicketModel, TicketStatusEnum
 from app.models.payment import PaymentModel
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.college import CollegeModel
+from app.models.major import MajorModel
+from app.models.event import EventModel
+from app.models.volunteer_answer import VolunteerAnswerModel
 from app.services.qr_service import activate_companion_codes
 from app.services.audit_log import ActorType, record_audit
 from app.core import messages
 from app.core.redis import redis_client
+from app.core.sql_utils import escape_like
 
 
 async def invalidate_admin_cache() -> None:
@@ -29,10 +33,33 @@ async def search_graduates_service(
     db: AsyncSession,
     search: str | None = None,
     college_id: int | None = None,
+    top_rank: str | None = None,
+    wants_responsibility: str | None = None,
+    has_experience: str | None = None,
+    volunteer_answered: bool | None = None,
+    event_id: int | None = None,
+    major_id: int | None = None,
     skip: int = 0,
     limit: int = 50
 ) -> list[dict]:
-    cache_key = f"admin:graduates:list:{search}:{college_id}:{skip}:{limit}"
+    if event_id is not None:
+        ev = await db.get(EventModel, event_id)
+        if not ev:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.EVENT_NOT_FOUND)
+
+    params_dict = {
+        "search": search,
+        "college_id": college_id,
+        "top_rank": top_rank,
+        "wants_responsibility": wants_responsibility,
+        "has_experience": has_experience,
+        "volunteer_answered": volunteer_answered,
+        "event_id": event_id,
+        "major_id": major_id,
+        "skip": skip,
+        "limit": limit,
+    }
+    cache_key = f"admin:graduates:list:{json.dumps(params_dict, sort_keys=True)}"
     try:
         cached = await redis_client.get(cache_key)
         if cached:
@@ -40,19 +67,52 @@ async def search_graduates_service(
     except Exception:
         pass
 
-    stmt = select(GraduateModel).options(selectinload(GraduateModel.major))
-    if search:
-        search_pattern = f"%{search}%"
-        stmt = stmt.where(
-            (GraduateModel.full_name.ilike(search_pattern)) |
-            (GraduateModel.university_id.ilike(search_pattern))
-        )
-    if college_id:
-        stmt = stmt.where(GraduateModel.college_id == college_id)
+    stmt = (
+        select(GraduateModel, CollegeModel, MajorModel, VolunteerAnswerModel)
+        .join(CollegeModel, CollegeModel.id == GraduateModel.college_id)
+        .outerjoin(MajorModel, MajorModel.id == GraduateModel.major_id)
+        .outerjoin(VolunteerAnswerModel, VolunteerAnswerModel.graduate_id == GraduateModel.id)
+    )
 
-    stmt = stmt.offset(skip).limit(limit)
+    filters = []
+    if event_id is not None:
+        filters.append(CollegeModel.event_id == event_id)
+    if college_id is not None:
+        filters.append(GraduateModel.college_id == college_id)
+    if major_id is not None:
+        filters.append(GraduateModel.major_id == major_id)
+    if top_rank is not None:
+        if top_rank in ("1", "2", "3"):
+            filters.append(GraduateModel.top_rank == int(top_rank))
+        elif top_rank == "any":
+            filters.append(GraduateModel.top_rank.is_not(None))
+        elif top_rank == "none":
+            filters.append(GraduateModel.top_rank.is_(None))
+    if volunteer_answered is not None:
+        if volunteer_answered:
+            filters.append(VolunteerAnswerModel.id.is_not(None))
+        else:
+            filters.append(VolunteerAnswerModel.id.is_(None))
+    if wants_responsibility is not None:
+        # Semantics: matching "no" matches explicitly answered no, not un-answered graduates (who have NULL row)
+        filters.append(VolunteerAnswerModel.wants_responsibility.is_(wants_responsibility == "yes"))
+    if has_experience is not None:
+        filters.append(VolunteerAnswerModel.has_experience.is_(has_experience == "yes"))
+    if search:
+        pattern = f"%{escape_like(search)}%"
+        filters.append(
+            or_(
+                GraduateModel.full_name.ilike(pattern, escape="\\"),
+                GraduateModel.university_id.ilike(pattern, escape="\\"),
+            )
+        )
+
+    if filters:
+        stmt = stmt.where(*filters)
+
+    stmt = stmt.order_by(GraduateModel.id.asc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
-    graduates = result.scalars().all()
+    rows = result.all()
 
     # Convert to dict for serialization
     data = [
@@ -70,11 +130,14 @@ async def search_graduates_service(
             "unique_graduate_code": str(g.unique_graduate_code),
             "created_at": g.created_at.isoformat() if g.created_at else None,
             "major_id": g.major_id,
-            "major_name": g.major.name if g.major else None,
+            "major_name": major.name if major else None,
             "gpa": str(g.gpa) if g.gpa is not None else None,
             "top_rank": g.top_rank,
+            "wants_responsibility": ("yes" if va.wants_responsibility else "no") if va is not None else None,
+            "has_experience": ("yes" if va.has_experience else "no") if va is not None else None,
+            "volunteer_answered": va is not None,
         }
-        for g in graduates
+        for g, college, major, va in rows
     ]
 
     try:
@@ -94,10 +157,17 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
     except Exception:
         pass
 
-    stmt = select(GraduateModel).options(selectinload(GraduateModel.major)).where(GraduateModel.id == graduate_id)
-    grad = (await db.execute(stmt)).scalar_one_or_none()
-    if not grad:
+    stmt = (
+        select(GraduateModel, CollegeModel, MajorModel, VolunteerAnswerModel)
+        .join(CollegeModel, CollegeModel.id == GraduateModel.college_id)
+        .outerjoin(MajorModel, MajorModel.id == GraduateModel.major_id)
+        .outerjoin(VolunteerAnswerModel, VolunteerAnswerModel.graduate_id == GraduateModel.id)
+        .where(GraduateModel.id == graduate_id)
+    )
+    row = (await db.execute(stmt)).first()
+    if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الخريج.")
+    grad, college, major, va = row
 
     # Fetch related tickets, payments, qr_codes
     tickets_res = await db.execute(select(TicketModel).where(TicketModel.graduate_id == graduate_id))
@@ -127,9 +197,12 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
         "unique_graduate_code": str(grad.unique_graduate_code),
         "created_at": grad.created_at.isoformat() if grad.created_at else None,
         "major_id": grad.major_id,
-        "major_name": grad.major.name if grad.major else None,
+        "major_name": major.name if major else None,
         "gpa": str(grad.gpa) if grad.gpa is not None else None,
         "top_rank": grad.top_rank,
+        "wants_responsibility": ("yes" if va.wants_responsibility else "no") if va is not None else None,
+        "has_experience": ("yes" if va.has_experience else "no") if va is not None else None,
+        "volunteer_answered": va is not None,
         "tickets": [{"id": t.id, "event_id": t.event_id, "status": t.status, "price": str(t.price)} for t in tickets],
         "payments": [{"id": p.id, "ticket_id": p.ticket_id, "transaction_number": p.transaction_number, "amount": str(p.amount)} for p in payments],
         "qr_codes": [{"id": q.id, "ticket_id": q.ticket_id, "code_type": q.code_type, "code_value": str(q.code_value), "is_activated": q.is_activated} for q in qr_codes],

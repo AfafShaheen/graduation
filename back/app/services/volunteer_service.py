@@ -18,11 +18,14 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import messages
+from app.core.sql_utils import escape_like
 from app.models.college import CollegeModel
 from app.models.event import EventModel
 from app.models.graduate import GraduateModel
+from app.models.major import MajorModel
 from app.models.volunteer_answer import VolunteerAnswerModel
 from app.services.audit_log import ActorType, record_audit
+from app.services.admin_graduate_service import invalidate_admin_cache
 
 CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -36,6 +39,9 @@ _EXPORT_HEADERS = (
     "يرغب بتولي مسؤولية",
     "لديه خبرة",
     "تاريخ التسجيل",
+    "التخصص",
+    "المعدل",
+    "الترتيب",
 )
 
 
@@ -43,9 +49,14 @@ def _yn(value: bool) -> str:
     return "yes" if value else "no"
 
 
-def _escape_like(value: str) -> str:
-    """Escape LIKE wildcards so a literal ``%`` or ``_`` matches literally."""
-    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+def _format_rank(rank) -> str:
+    if rank == 1:
+        return "الأول"
+    if rank == 2:
+        return "الثاني"
+    if rank == 3:
+        return "الثالث"
+    return ""
 
 
 def _string_cell(ws, row: int, col: int, value) -> None:
@@ -105,6 +116,7 @@ async def upsert_volunteer_answer_service(
         row.updated_at = datetime.now(UTC)
 
     await db.commit()
+    await invalidate_admin_cache()
 
     return {
         "answered": True,
@@ -123,7 +135,7 @@ async def _ensure_event_exists(db: AsyncSession, event_id: int | None) -> None:
 
 
 def _scope_filters(
-    *, event_id, college_id, q, wants_responsibility, has_experience
+    *, event_id, college_id, q, wants_responsibility, has_experience, top_rank
 ) -> list:
     """Filters applied to the list (NOT to ``stats`` except ``event_id``)."""
     filters = []
@@ -141,8 +153,15 @@ def _scope_filters(
         filters.append(
             VolunteerAnswerModel.has_experience.is_(has_experience == "yes")
         )
+    if top_rank is not None:
+        if top_rank in ("1", "2", "3"):
+            filters.append(GraduateModel.top_rank == int(top_rank))
+        elif top_rank == "any":
+            filters.append(GraduateModel.top_rank.is_not(None))
+        elif top_rank == "none":
+            filters.append(GraduateModel.top_rank.is_(None))
     if q:
-        pattern = f"%{_escape_like(q)}%"
+        pattern = f"%{escape_like(q)}%"
         filters.append(
             or_(
                 GraduateModel.full_name.ilike(pattern, escape="\\"),
@@ -212,6 +231,7 @@ async def list_volunteers_service(
     q: str | None = None,
     wants_responsibility: str | None = None,
     has_experience: str | None = None,
+    top_rank: str | None = None,
     sort: str = "newest",
     limit: int = 10,
     offset: int = 0,
@@ -226,6 +246,7 @@ async def list_volunteers_service(
         q=q,
         wants_responsibility=wants_responsibility,
         has_experience=has_experience,
+        top_rank=top_rank,
     )
 
     total = (
@@ -237,18 +258,20 @@ async def list_volunteers_service(
                 GraduateModel.id == VolunteerAnswerModel.graduate_id,
             )
             .join(CollegeModel, CollegeModel.id == GraduateModel.college_id)
+            .outerjoin(MajorModel, MajorModel.id == GraduateModel.major_id)
             .where(*filters)
         )
     ).scalar_one()
 
     rows = (
         await db.execute(
-            select(VolunteerAnswerModel, GraduateModel, CollegeModel)
+            select(VolunteerAnswerModel, GraduateModel, CollegeModel, MajorModel)
             .join(
                 GraduateModel,
                 GraduateModel.id == VolunteerAnswerModel.graduate_id,
             )
             .join(CollegeModel, CollegeModel.id == GraduateModel.college_id)
+            .outerjoin(MajorModel, MajorModel.id == GraduateModel.major_id)
             .where(*filters)
             .order_by(*_order_by(sort))
             .limit(limit)
@@ -268,8 +291,12 @@ async def list_volunteers_service(
             "wants_responsibility": _yn(answer.wants_responsibility),
             "has_experience": _yn(answer.has_experience),
             "registered_at": answer.created_at,
+            "top_rank": graduate.top_rank,
+            "gpa": str(graduate.gpa) if graduate.gpa is not None else None,
+            "major_id": graduate.major_id,
+            "major_name": major.name if major else None,
         }
-        for answer, graduate, college in rows
+        for answer, graduate, college, major in rows
     ]
 
     return {"stats": stats, "total": total, "items": items}
@@ -283,6 +310,7 @@ async def export_volunteers_service(
     q: str | None = None,
     wants_responsibility: str | None = None,
     has_experience: str | None = None,
+    top_rank: str | None = None,
     sort: str = "newest",
     admin: dict,
 ):
@@ -295,16 +323,18 @@ async def export_volunteers_service(
         q=q,
         wants_responsibility=wants_responsibility,
         has_experience=has_experience,
+        top_rank=top_rank,
     )
 
     rows = (
         await db.execute(
-            select(VolunteerAnswerModel, GraduateModel, CollegeModel)
+            select(VolunteerAnswerModel, GraduateModel, CollegeModel, MajorModel)
             .join(
                 GraduateModel,
                 GraduateModel.id == VolunteerAnswerModel.graduate_id,
             )
             .join(CollegeModel, CollegeModel.id == GraduateModel.college_id)
+            .outerjoin(MajorModel, MajorModel.id == GraduateModel.major_id)
             .where(*filters)
             .order_by(*_order_by(sort))
         )
@@ -318,7 +348,7 @@ async def export_volunteers_service(
     for col, header in enumerate(_EXPORT_HEADERS, start=1):
         _string_cell(ws, 1, col, header)
 
-    for row_idx, (answer, graduate, college) in enumerate(rows, start=2):
+    for row_idx, (answer, graduate, college, major) in enumerate(rows, start=2):
         _string_cell(ws, row_idx, 1, graduate.full_name)
         _string_cell(ws, row_idx, 2, graduate.university_id)
         _string_cell(ws, row_idx, 3, college.name)
@@ -337,6 +367,9 @@ async def export_volunteers_service(
             ws, row_idx, 7,
             answer.created_at.isoformat() if answer.created_at else "",
         )
+        _string_cell(ws, row_idx, 8, major.name if major else "")
+        _string_cell(ws, row_idx, 9, str(graduate.gpa) if graduate.gpa is not None else "")
+        _string_cell(ws, row_idx, 10, _format_rank(graduate.top_rank))
 
     ws.freeze_panes = "A2"
     buffer = BytesIO()
@@ -350,6 +383,7 @@ async def export_volunteers_service(
         f"q={'yes' if q else 'no'}",
         f"wants_responsibility={wants_responsibility or 'all'}",
         f"has_experience={has_experience or 'all'}",
+        f"top_rank={top_rank or 'all'}",
         f"sort={sort}",
     ]
     await record_audit(

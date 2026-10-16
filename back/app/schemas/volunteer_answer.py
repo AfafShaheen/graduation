@@ -41,6 +41,11 @@ class VolunteerListItem(BaseModel):
     wants_responsibility: YesNo
     has_experience: YesNo
     registered_at: datetime
+    top_rank: Optional[int] = None
+    gpa: Optional[str] = None
+    major_id: Optional[int] = None
+    major_name: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VolunteerListResponse(BaseModel):

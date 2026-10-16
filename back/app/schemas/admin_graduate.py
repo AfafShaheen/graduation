@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 from uuid import UUID
 
 class AdminUpdateEmailRequest(BaseModel):
@@ -23,4 +23,7 @@ class GraduateAdminResponse(BaseModel):
     major_name: Optional[str] = None
     gpa: Optional[str] = None
     top_rank: Optional[int] = None
+    wants_responsibility: Optional[Literal["yes", "no"]] = None
+    has_experience: Optional[Literal["yes", "no"]] = None
+    volunteer_answered: bool = False
     model_config = ConfigDict(from_attributes=True)

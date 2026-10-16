@@ -317,6 +317,38 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 
 ---
 
+# المرحلة 4.1 (Admin Filters for Top-3 Graduates & Volunteers)
+
+## 11.1 معاملات التصفية الجديدة لـ الإداري (Admin Filters)
+
+### 1. المتطوعون (`GET /api/admin/volunteers` & `/export`)
+- `top_rank`: تصفية بحسب الترتيب (`1`, `2`, `3`, `any` للأول والثاني والثالث، أو `none` لغير الأوائل).
+
+### 2. الخريجون (`GET /api/admin/graduates`)
+- `top_rank`: نفس قيم المتطوعين (`1`, `2`, `3`, `any`, `none`).
+- `wants_responsibility`: `"yes"` أو `"no"`.
+- `has_experience`: `"yes"` أو `"no"`.
+- `volunteer_answered`: `true` (من أجاب) أو `false` (من لم يجب).
+- `event_id`: معرّف الحفل (يعيد 404 إن لم يوجد).
+- `major_id`: معرّف التخصص.
+
+> **قاعدة «لا صف مقابل لا» (No row vs. Answered No):**  
+> عند التصفية بـ `wants_responsibility=no` أو `has_experience=no`، يتم مطابقة الخريجين الذين أجابوا صراحةً بـ «لا» فقط، ولا يتم تضمين الخريجين الذين لم يسجلوا إجابة قط (أصحاب السجل الفارغ/Null). لمعرفة من لم يجب، تُستخدم `volunteer_answered=false`.
+
+### أمثلة على الروابط (Example URLs):
+1. `/api/admin/graduates?top_rank=any&event_id=3` (جميع الأوائل الثلاثة لحفل معيّن).
+2. `/api/admin/volunteers?wants_responsibility=yes&top_rank=1` (متطوعون راغبون بالمسؤولية من الحاصلين على المركز الأول).
+3. `/api/admin/graduates?volunteer_answered=false&event_id=3` (الخريجون الذين لم يسجلوا إجابات تطوع بعد لحفل معيّن).
+
+## 11.2 واجهة الإدارة الأمامية (Admin Frontend Query Strings)
+أمثلة على خيوط الاستعلام (Query Strings) للقوائم المنسدلة:
+- تصفية الأوائل: `?top_rank=1`, `?top_rank=any`, `?top_rank=none`
+- تصفية إجابات المتطوعين: `?volunteer_answered=true&wants_responsibility=yes`
+- تصفية بحفل وتخصص: `?event_id=1&major_id=101`
+
+
+---
+
 # المرحلة 4 (Major / GPA / Top-3 Rank)
 
 تُضيف هذه المرحلة دعم التخصصات الأكاديمية (Majors)، المعدل التراكمي (GPA)، وحساب الترتيب على التخصص (Top-3 Rank).

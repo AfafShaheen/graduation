@@ -1,3 +1,4 @@
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
@@ -18,12 +19,30 @@ router = APIRouter(prefix="/api/admin", tags=["Admin Graduate Management & Excep
 async def search_graduates(
     search: str | None = Query(None),
     college_id: int | None = Query(None),
+    top_rank: Literal["1", "2", "3", "any", "none"] | None = Query(None),
+    wants_responsibility: Literal["yes", "no"] | None = Query(None),
+    has_experience: Literal["yes", "no"] | None = Query(None),
+    volunteer_answered: bool | None = Query(None),
+    event_id: int | None = Query(None),
+    major_id: int | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     admin: dict = Depends(get_current_admin)
 ):
-    return await search_graduates_service(db, search, college_id, skip, limit)
+    return await search_graduates_service(
+        db,
+        search=search,
+        college_id=college_id,
+        top_rank=top_rank,
+        wants_responsibility=wants_responsibility,
+        has_experience=has_experience,
+        volunteer_answered=volunteer_answered,
+        event_id=event_id,
+        major_id=major_id,
+        skip=skip,
+        limit=limit,
+    )
 
 @router.get("/graduates/{graduate_id}", status_code=status.HTTP_200_OK)
 async def get_graduate_details(
