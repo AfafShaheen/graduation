@@ -270,7 +270,7 @@
       "Body_update_shamcash_qr_api_admin_settings_shamcash_qr_put": {
         "properties": {
           "file": {
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "type": "string"
           }
@@ -284,7 +284,7 @@
       "Body_upload_records_api_admin_events__event_id__university_records_post": {
         "properties": {
           "file": {
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "type": "string"
           }
@@ -659,6 +659,68 @@
           "password"
         ],
         "title": "GraduateLoginRequest",
+        "type": "object"
+      },
+      "GraduateMeResponse": {
+        "properties": {
+          "college_name": {
+            "title": "College Name",
+            "type": "string"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "gpa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpa"
+          },
+          "major_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Name"
+          },
+          "top_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Rank"
+          },
+          "unique_graduate_code": {
+            "format": "uuid",
+            "title": "Unique Graduate Code",
+            "type": "string"
+          },
+          "university_id": {
+            "title": "University Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "full_name",
+          "university_id",
+          "college_name",
+          "unique_graduate_code"
+        ],
+        "title": "GraduateMeResponse",
         "type": "object"
       },
       "GraduateTokenResponse": {
@@ -1674,6 +1736,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -4611,6 +4680,32 @@
         "summary": "List Public Colleges",
         "tags": [
           "Public"
+        ]
+      }
+    },
+    "/api/graduates/me": {
+      "get": {
+        "operationId": "get_graduate_me_api_graduates_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraduateMeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Graduate Me",
+        "tags": [
+          "Graduates & Registration"
         ]
       }
     },
