@@ -116,6 +116,7 @@ def _is_protected(item):
     return (
         path.startswith("/api/admin/")
         or path.startswith("/api/scanner/")
+        or path == "/api/graduates/me"
         or path.startswith("/api/graduates/me/")
     )
 
@@ -168,7 +169,7 @@ async def test_graduates_me_routes_require_graduate(client):
     admin_value = _admin_value()
     scanner_value = _scanner_value()
     for method, path in _iter_api_routes(app):
-        if not path.startswith("/api/graduates/me/"):
+        if not (path == "/api/graduates/me" or path.startswith("/api/graduates/me/")):
             continue
         for headers in ({}, _auth(admin_value), _auth(scanner_value)):
             resp = await _probe(client, method, path, headers)
