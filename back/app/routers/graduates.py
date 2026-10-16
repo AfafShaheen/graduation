@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_graduate
 from app.models.graduate import GraduateModel
-from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request
+from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request, GraduateMeResponse
 from app.schemas.ticket import (
     MyTicketResponse,
     PaymentInfoResponse,
@@ -20,6 +20,7 @@ from app.schemas.volunteer_answer import (
 from app.services.graduate_service import (
     verify_step1_service,
     register_step2_service,
+    get_graduate_me_service,
 )
 from app.services.ticket_service import (
     get_my_ticket_service,

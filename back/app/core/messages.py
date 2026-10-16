@@ -5,6 +5,7 @@ endpoint leaks which field mismatched (SRS FR-2, FR-6, NFR privacy).
 """
 
 GENERIC_VERIFY_FAIL = "ما قدرنا نتحقق من بياناتك، يرجى مراجعتها أو التواصل مع الاتحاد"
+UNIVERSITY_ID_ALREADY_REGISTERED = "رقمك الجامعي مسجل مسبقاً"
 REGISTER_FAIL = "تعذّر إكمال التسجيل، يرجى مراجعة بياناتك أو التواصل مع الاتحاد"
 OTP_INVALID_GENERIC = "رمز التحقق غير صحيح أو منتهي الصلاحية"
 EMAIL_SEND_FAIL = "تعذّر إرسال رمز التحقق حالياً، يرجى المحاولة بعد قليل"

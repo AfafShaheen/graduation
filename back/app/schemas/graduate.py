@@ -22,7 +22,6 @@ class RegisterStep2Request(BaseModel):
     phone: str = Field(..., pattern=PHONE_REGEX, description="Phone number must contain digits only.")
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters long.")
 
-
     @model_validator(mode="after")
     def _enforce_password_policy(self):
         validate_password_policy(self.password)
@@ -41,4 +40,11 @@ class GraduateResponse(BaseModel):
     university_id: str
     unique_graduate_code: UUID
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class GraduateMeResponse(BaseModel):
+    full_name: str
+    university_id: str
+    college_name: str
+    unique_graduate_code: UUID
     model_config = ConfigDict(from_attributes=True)

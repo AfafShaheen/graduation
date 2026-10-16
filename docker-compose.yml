@@ -73,10 +73,10 @@ services:
     container_name: graduation_front
     ports:
       - "5173:80"
+    depends_on:
+      - back
     volumes:
       - ./front:/app
-    environment:
-      - VITE_API_URL=http://localhost:8000
 
 volumes:
   postgres_data:

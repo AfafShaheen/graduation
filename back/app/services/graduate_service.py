@@ -102,7 +102,7 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     if existing_grad.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=await _generic_verify_fail(db)
+            detail=messages.UNIVERSITY_ID_ALREADY_REGISTERED
         )
 
     uni_record_result = await db.execute(
@@ -225,3 +225,14 @@ async def fetch_graduate(db: AsyncSession, graduate_id: int) -> GraduateModel | 
     stmt = select(GraduateModel).where(GraduateModel.id == graduate_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
+
+
+async def get_graduate_me_service(db: AsyncSession, graduate: GraduateModel) -> dict:
+    college = await db.get(CollegeModel, graduate.college_id)
+    college_name = college.name if college else ""
+    return {
+        "full_name": graduate.full_name,
+        "university_id": graduate.university_id,
+        "college_name": college_name,
+        "unique_graduate_code": graduate.unique_graduate_code
+    }
