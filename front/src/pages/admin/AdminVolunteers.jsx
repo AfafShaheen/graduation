@@ -2,43 +2,23 @@ import React, { useState, useEffect, useMemo } from 'react';
 import '../../style/AdminDashboard.css'; // الشريط الجانبي والتخطيط العام للإدارة
 import '../../style/AdminVolunteers.css';
 import AdminSidebar from '../../components/AdminSidebar';
-
-/* ==========================================================================
-   بيانات تجريبية: لما يجهز الباك إند مرّر القائمة الحقيقية عبر الخاصية volunteers
-   كل عنصر: { id, fullName, studentId, faculty, phone, wantsResponsibility, hasExperience, registeredAt }
-   wantsResponsibility و hasExperience: 'yes' أو 'no'
-   ========================================================================== */
-const FIRST = ['أحمد', 'محمد', 'علي', 'سارة', 'لينا', 'ريم', 'عمر', 'هبة', 'يوسف', 'دعاء', 'خالد', 'رنا', 'مجد', 'نور', 'سامر', 'ليث', 'هدى', 'طارق', 'ميس', 'باسل'];
-const LAST = ['العلي', 'الحسن', 'الخطيب', 'النجار', 'العمر', 'الحمصي', 'الشامي', 'ديب', 'سليمان', 'الأحمد', 'إبراهيم', 'خضر'];
-const FACULTY_KEYS = ['it', 'civil', 'med', 'pharm', 'dent', 'mech', 'science', 'arts'];
-
-const MOCK_VOLUNTEERS = Array.from({ length: 42 }, (_, i) => ({
-  id: i + 1,
-  fullName: `${FIRST[i % FIRST.length]} ${LAST[(i * 5 + 3) % LAST.length]}`,
-  studentId: String(418000 + i * 37),
-  faculty: FACULTY_KEYS[(i * 3) % FACULTY_KEYS.length],
-  phone: `09${String((31000000 + i * 1234567) % 100000000).padStart(8, '0')}`,
-  wantsResponsibility: i % 5 === 4 ? 'no' : 'yes',
-  hasExperience: i % 2 === 0 ? 'yes' : 'no',
-  registeredAt: new Date(Date.UTC(2026, 8, 1 + (i % 25), 8 + (i % 10), (i * 7) % 60)).toISOString(),
-}));
-
-const FACULTY_LABELS = {
-  it: 'الهندسة المعلوماتية',
-  civil: 'الهندسة المدنية',
-  med: 'الطب البشري',
-  pharm: 'الصيدلة',
-  dent: 'طب الأسنان',
-  mech: 'الهندسة الميكانيكية',
-  science: 'العلوم',
-  arts: 'الآداب والعلوم الإنسانية',
-};
+import { useAdminVolunteers, exportVolunteers } from './hooks/useAdminVolunteers.js';
+import { useAdminEvents } from './hooks/useAdminEvents.js';
+import { ApiError } from '../../api/admin.js';
 
 const PAGE_SIZE = 10;
 
-const fmt = (n) => n.toLocaleString('en-US');
+const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+
 const formatDate = (iso) =>
-  new Intl.DateTimeFormat('ar-SY-u-nu-latn', { dateStyle: 'medium' }).format(new Date(iso));
+  iso
+    ? new Date(iso).toLocaleDateString('ar-SY', {
+        timeZone: 'Asia/Damascus',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      })
+    : '—';
 
 function YesNoChip({ value }) {
   const yes = value === 'yes';
@@ -46,22 +26,23 @@ function YesNoChip({ value }) {
 }
 
 export default function AdminVolunteers({
-  volunteers = MOCK_VOLUNTEERS,
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
   onNavigate,
   onAddTicket,
   onLogout,
   onExportPdf,
-  onExportExcel,
 }) {
   const [navOpen, setNavOpen] = useState(false);
+  const [eventId, setEventId] = useState('');
   const [query, setQuery] = useState('');
-  const [faculty, setFaculty] = useState('all');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [collegeId, setCollegeId] = useState('all');
   const [responsibility, setResponsibility] = useState('yes'); // افتراضياً: الراغبون بتولّي مسؤولية
   const [experience, setExperience] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [page, setPage] = useState(1);
+  const [exportError, setExportError] = useState('');
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && setNavOpen(false);
@@ -69,41 +50,38 @@ export default function AdminVolunteers({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // إحصائيات عامة (من كل القائمة، بغض النظر عن التصفية)
-  const totals = useMemo(() => {
-    const wants = volunteers.filter((v) => v.wantsResponsibility === 'yes');
-    return {
-      all: volunteers.length,
-      wants: wants.length,
-      experienced: volunteers.filter((v) => v.hasExperience === 'yes').length,
-      both: wants.filter((v) => v.hasExperience === 'yes').length,
-    };
-  }, [volunteers]);
+  // تأخير بسيط على البحث لتقليل طلبات الخادم
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
 
-  // التصفية والترتيب
-  const filtered = useMemo(() => {
-    const q = query.trim();
-    const rows = volunteers.filter((v) => {
-      if (faculty !== 'all' && v.faculty !== faculty) return false;
-      if (responsibility !== 'all' && v.wantsResponsibility !== responsibility) return false;
-      if (experience !== 'all' && v.hasExperience !== experience) return false;
-      if (q && !v.fullName.includes(q) && !v.studentId.includes(q) && !v.phone.includes(q)) return false;
-      return true;
-    });
-    rows.sort((a, b) => {
-      if (sortBy === 'name') return a.fullName.localeCompare(b.fullName, 'ar');
-      if (sortBy === 'faculty') {
-        return (FACULTY_LABELS[a.faculty] || '').localeCompare(FACULTY_LABELS[b.faculty] || '', 'ar');
-      }
-      return new Date(b.registeredAt) - new Date(a.registeredAt); // الأحدث أولاً
-    });
-    return rows;
-  }, [volunteers, query, faculty, responsibility, experience, sortBy]);
+  const { events } = useAdminEvents({ limit: 100 });
+  const selectedEvent = useMemo(
+    () => events.find((e) => String(e.id) === String(eventId)) || null,
+    [events, eventId]
+  );
+  const colleges = selectedEvent?.colleges || [];
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const offset = (page - 1) * PAGE_SIZE;
+  const { data, loading, error } = useAdminVolunteers({
+    eventId: eventId || null,
+    collegeId: collegeId === 'all' ? '' : collegeId,
+    q: debouncedQuery.trim(),
+    wants: responsibility === 'all' ? '' : responsibility,
+    hasExp: experience === 'all' ? '' : experience,
+    sort: sortBy,
+    limit: PAGE_SIZE,
+    offset,
+  });
+
+  const stats = data?.stats || { all: 0, wants: 0, experienced: 0, both: 0 };
+  const total = data?.total || 0;
+  const rows = data?.items || [];
+
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const start = (currentPage - 1) * PAGE_SIZE;
-  const rows = filtered.slice(start, start + PAGE_SIZE);
 
   // أي تغيير بالتصفية يرجع للصفحة الأولى
   const withReset = (setter) => (e) => {
@@ -111,13 +89,36 @@ export default function AdminVolunteers({
     setPage(1);
   };
 
+  const onEventChange = (e) => {
+    setEventId(e.target.value);
+    setCollegeId('all');
+    setPage(1);
+  };
+
   const resetFilters = () => {
     setQuery('');
-    setFaculty('all');
+    setDebouncedQuery('');
+    setCollegeId('all');
     setResponsibility('yes');
     setExperience('all');
     setSortBy('newest');
     setPage(1);
+  };
+
+  const handleExportExcel = async () => {
+    setExportError('');
+    try {
+      await exportVolunteers({
+        eventId: eventId || null,
+        collegeId: collegeId === 'all' ? '' : collegeId,
+        q: debouncedQuery.trim(),
+        wants: responsibility === 'all' ? '' : responsibility,
+        hasExp: experience === 'all' ? '' : experience,
+        sort: sortBy,
+      });
+    } catch (e) {
+      setExportError(e instanceof ApiError ? e.message : 'تعذّر تصدير الملف، حاول لاحقاً.');
+    }
   };
 
   return (
@@ -159,24 +160,34 @@ export default function AdminVolunteers({
         <section className="vol-summary-grid" aria-label="ملخص">
           <div className="vol-stat">
             <span className="vol-stat-label">إجمالي المسجلين</span>
-            <span className="vol-stat-value">{fmt(totals.all)}</span>
+            <span className="vol-stat-value">{fmt(stats.all)}</span>
           </div>
           <div className="vol-stat">
             <span className="vol-stat-label">يرغبون بتولّي مسؤولية</span>
-            <span className="vol-stat-value green">{fmt(totals.wants)}</span>
+            <span className="vol-stat-value green">{fmt(stats.wants)}</span>
           </div>
           <div className="vol-stat">
             <span className="vol-stat-label">لديهم خبرة سابقة</span>
-            <span className="vol-stat-value">{fmt(totals.experienced)}</span>
+            <span className="vol-stat-value">{fmt(stats.experienced)}</span>
           </div>
           <div className="vol-stat highlight">
             <span className="vol-stat-label">راغبون ولديهم خبرة (الأنسب)</span>
-            <span className="vol-stat-value orange">{fmt(totals.both)}</span>
+            <span className="vol-stat-value orange">{fmt(stats.both)}</span>
           </div>
         </section>
 
         {/* التصفية */}
         <section className="vol-filters" aria-label="التصفية">
+          <div className="vol-field">
+            <label htmlFor="vol-ceremony">الحفل</label>
+            <select id="vol-ceremony" className="vol-input" value={eventId} onChange={onEventChange}>
+              <option value="">كل الحفلات</option>
+              {events.map((ev) => (
+                <option key={ev.id} value={ev.id}>{ev.name}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="vol-field vol-field-search">
             <label htmlFor="vol-search">بحث</label>
             <div className="vol-search-wrap">
@@ -195,10 +206,16 @@ export default function AdminVolunteers({
 
           <div className="vol-field">
             <label htmlFor="vol-faculty">الكلية</label>
-            <select id="vol-faculty" className="vol-input" value={faculty} onChange={withReset(setFaculty)}>
+            <select
+              id="vol-faculty"
+              className="vol-input"
+              value={collegeId}
+              onChange={withReset(setCollegeId)}
+              disabled={!eventId || colleges.length === 0}
+            >
               <option value="all">كل الكليات</option>
-              {Object.entries(FACULTY_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
+              {colleges.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
@@ -226,7 +243,7 @@ export default function AdminVolunteers({
             <select id="vol-sort" className="vol-input" value={sortBy} onChange={withReset(setSortBy)}>
               <option value="newest">الأحدث تسجيلاً</option>
               <option value="name">الاسم</option>
-              <option value="faculty">الكلية</option>
+              <option value="college">الكلية</option>
             </select>
           </div>
 
@@ -240,22 +257,38 @@ export default function AdminVolunteers({
         <section className="vol-list-card">
           <div className="vol-list-head">
             <p className="vol-count">
-              النتائج: <strong>{fmt(filtered.length)}</strong> خريج
+              النتائج: <strong>{fmt(total)}</strong> خريج
             </p>
             <div className="adm-export-cluster">
-              <button className="adm-export-btn" type="button" onClick={() => onExportPdf && onExportPdf(filtered)}>
+              <button className="adm-export-btn" type="button" onClick={() => onExportPdf && onExportPdf(rows)}>
                 <span className="adm-symbol" style={{ fontSize: '18px' }}>picture_as_pdf</span>
                 <span>PDF</span>
               </button>
               <span className="adm-export-sep"></span>
-              <button className="adm-export-btn" type="button" onClick={() => onExportExcel && onExportExcel(filtered)}>
+              <button className="adm-export-btn" type="button" onClick={handleExportExcel}>
                 <span className="adm-symbol" style={{ fontSize: '18px' }}>table_chart</span>
                 <span>Excel</span>
               </button>
             </div>
           </div>
 
-          {rows.length === 0 ? (
+          {exportError && (
+            <div className="vol-empty" role="alert" style={{ color: '#b3261e' }}>
+              <p>{exportError}</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="vol-empty" role="alert" style={{ color: '#b3261e' }}>
+              <p>{error}</p>
+            </div>
+          )}
+
+          {loading && !error ? (
+            <div className="vol-empty">
+              <p>جارٍ تحميل البيانات...</p>
+            </div>
+          ) : !error && rows.length === 0 ? (
             <div className="vol-empty">
               <span className="adm-symbol" style={{ fontSize: '40px', color: '#e2bfb2' }}>person_search</span>
               <p>لا توجد نتائج مطابقة للتصفية الحالية</p>
@@ -279,30 +312,30 @@ export default function AdminVolunteers({
                 {rows.map((v) => (
                   <tr key={v.id}>
                     <td data-label="الخريج">
-                      <span className="vol-name">{v.fullName}</span>
-                      <span className="vol-sub">{v.studentId}</span>
+                      <span className="vol-name">{v.full_name}</span>
+                      <span className="vol-sub">{v.university_id}</span>
                     </td>
-                    <td data-label="الكلية">{FACULTY_LABELS[v.faculty] || '—'}</td>
+                    <td data-label="الكلية">{v.college_name || '—'}</td>
                     <td data-label="الهاتف">
-                      <span className="vol-phone">{v.phone}</span>
+                      <span className="vol-phone">{v.phone || '—'}</span>
                     </td>
                     <td data-label="مسؤولية">
-                      <YesNoChip value={v.wantsResponsibility} />
+                      <YesNoChip value={v.wants_responsibility} />
                     </td>
                     <td data-label="خبرة">
-                      <YesNoChip value={v.hasExperience} />
+                      <YesNoChip value={v.has_experience} />
                     </td>
-                    <td data-label="تاريخ التسجيل">{formatDate(v.registeredAt)}</td>
+                    <td data-label="تاريخ التسجيل">{formatDate(v.registered_at)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
 
-          {filtered.length > 0 && (
+          {total > 0 && (
             <div className="vol-pagination">
               <span className="vol-page-info">
-                عرض {fmt(start + 1)}–{fmt(Math.min(start + PAGE_SIZE, filtered.length))} من {fmt(filtered.length)}
+                عرض {fmt(start + 1)}–{fmt(Math.min(start + PAGE_SIZE, total))} من {fmt(total)}
               </span>
               <div className="vol-page-buttons">
                 <button
