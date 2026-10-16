@@ -335,6 +335,10 @@ async def test_admin_list_basic_and_stats(
         "wants_responsibility",
         "has_experience",
         "registered_at",
+        "top_rank",
+        "gpa",
+        "major_id",
+        "major_name",
     }
     assert item["wants_responsibility"] in ("yes", "no")
 

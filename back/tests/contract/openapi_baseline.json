@@ -1805,6 +1805,17 @@
             "title": "Full Name",
             "type": "string"
           },
+          "gpa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpa"
+          },
           "graduate_id": {
             "title": "Graduate Id",
             "type": "integer"
@@ -1821,6 +1832,28 @@
             "title": "Id",
             "type": "integer"
           },
+          "major_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Id"
+          },
+          "major_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Name"
+          },
           "phone": {
             "title": "Phone",
             "type": "string"
@@ -1829,6 +1862,17 @@
             "format": "date-time",
             "title": "Registered At",
             "type": "string"
+          },
+          "top_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Rank"
           },
           "university_id": {
             "title": "University Id",
@@ -2924,6 +2968,117 @@
           },
           {
             "in": "query",
+            "name": "top_rank",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "1",
+                    "2",
+                    "3",
+                    "any",
+                    "none"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Top Rank"
+            }
+          },
+          {
+            "in": "query",
+            "name": "wants_responsibility",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "yes",
+                    "no"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Wants Responsibility"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_experience",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "yes",
+                    "no"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Has Experience"
+            }
+          },
+          {
+            "in": "query",
+            "name": "volunteer_answered",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Volunteer Answered"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "major_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Major Id"
+            }
+          },
+          {
+            "in": "query",
             "name": "skip",
             "required": false,
             "schema": {
@@ -3928,6 +4083,29 @@
           },
           {
             "in": "query",
+            "name": "top_rank",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "1",
+                    "2",
+                    "3",
+                    "any",
+                    "none"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Top Rank"
+            }
+          },
+          {
+            "in": "query",
             "name": "sort",
             "required": false,
             "schema": {
@@ -4089,6 +4267,29 @@
                 }
               ],
               "title": "Has Experience"
+            }
+          },
+          {
+            "in": "query",
+            "name": "top_rank",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "1",
+                    "2",
+                    "3",
+                    "any",
+                    "none"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Top Rank"
             }
           },
           {
