@@ -4,61 +4,6 @@ import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
 import { useAdminStats } from './hooks/useAdminStats.js';
 
-/* ==========================================================================
-   بيانات تجريبية: لما يجهز الباك إند بدّلها ببيانات حقيقية (مثلاً عبر props)
-   ========================================================================== */
-const CEREMONIES = [
-  {
-    id: "ENG-2024-D44",
-    title: "حفل كليات الهندسة — الدفعة 44",
-    date: "15 تشرين الأول 2024",
-    time: "10:00 صباحاً",
-    location: "مدرج الباسل الكبير",
-    period: "1 أيلول — 25 أيلول 2024",
-    status: "open",
-    faculties: [
-      "الهندسة المدنية",
-      "المعلوماتية",
-      "الهندسة المعمارية",
-      "+2 كليات",
-    ],
-    icon: "celebration",
-  },
-  {
-    id: "MED-2024-D42",
-    title: "حفل كليات العلوم الطبية والصيدلة",
-    date: "18 تشرين الأول 2024",
-    time: "11:30 صباحاً",
-    location: "مدرج الباسل الكبير",
-    period: "5 أيلول — 28 أيلول 2024",
-    status: "open",
-    faculties: ["الطب البشري", "طب الأسنان", "الصيدلة", "العلوم الصحية"],
-    icon: "medical_services",
-  },
-  {
-    id: "ART-2024-D46",
-    title: "حفل كليات الآداب والتربية والعلوم",
-    date: "22 تشرين الأول 2024",
-    time: "09:30 صباحاً",
-    location: "مدرج كلية الآداب الأول",
-    period: "15 أيلول — 5 تشرين الأول 2024",
-    status: "closed",
-    faculties: ["الآداب والعلوم الإنسانية", "التربية", "العلوم الأولى"],
-    icon: "menu_book",
-  },
-  {
-    id: "LAN-2024-D18",
-    title: "حفل المعهد العالي للغات والحاسوب",
-    date: "25 تشرين الأول 2024",
-    time: "01:00 ظهراً",
-    location: "مدرج رضا سعيد للمؤتمرات",
-    period: "1 تشرين الأول — 15 تشرين الأول 2024",
-    status: "open",
-    faculties: ["المعهد العالي للغات", "المعهد التقاني للحاسوب"],
-    icon: "terminal",
-  },
-];
-
 const STATUS_LABELS = {
   open: "مفتوح للتسجيل",
   closed: "مغلق للتسجيل",
@@ -94,7 +39,7 @@ export default function AdminCeremonies({
   const ceremonies = useMemo(() => {
     const base = Array.isArray(ceremoniesProp) ? ceremoniesProp : events;
     return base.map((e) => {
-      const pe = perEvent.find((p) => p.event_id === e.id);
+      const pe = perEvent.find((p) => (p.scope?.event_id ?? p.event_id) === e.id);
       const status = deriveStatus(e);
       const title = e.name || e.title || "-";
       const dateStr = e.event_date ? new Date(e.event_date + "T00:00:00").toLocaleDateString("ar-SA") : "-";
@@ -102,15 +47,16 @@ export default function AdminCeremonies({
       const end = e.registration_end ? new Date(e.registration_end) : null;
       const period = start && end ? `${start.toLocaleDateString("ar-SA")} - ${end.toLocaleDateString("ar-SA")}` : "-";
       const faculties = Array.isArray(e.colleges) ? e.colleges.map((c) => c.name) : (e.faculties || []);
-      const booked = pe?.tickets_confirmed ?? 0;
-      const totalGrad = pe?.graduates_expected ?? 0;
+      const booked = pe?.tickets?.confirmed ?? pe?.tickets_confirmed ?? 0;
+      const totalGrad = pe?.graduates?.expected ?? pe?.graduates_expected ?? 0;
       const location = e.location || "-";
       const form = e.form || null;
       const whatsappLink = e.whatsapp_group_link || e.whatsappLink || "";
       const pricePkg2 = e.price_2_companions ?? e.pricePkg2 ?? "";
       const pricePkg3 = e.price_3_companions ?? e.pricePkg3 ?? "";
       const enablePkg3 = e.is_3companions_enabled ?? e.enablePkg3 ?? true;
-      return { ...e, id: e.id, title, date: dateStr, period, status, faculties, location, form, booked, total: totalGrad, whatsappLink, pricePkg2, pricePkg3, enablePkg3 };
+      const icon = e.icon || "celebration";
+      return { ...e, id: e.id, title, date: dateStr, period, status, faculties, location, form, booked, total: totalGrad, whatsappLink, pricePkg2, pricePkg3, enablePkg3, icon };
     });
   }, [ceremoniesProp, events, perEvent]);
 
@@ -274,6 +220,12 @@ export default function AdminCeremonies({
         </section>
 
         {/* الحفلات */}
+        {loading && <div className="cer-empty">جارٍ تحميل الحفلات...</div>}
+        {error && !loading && (
+          <div className="cer-empty" role="alert">
+            {error.message || error}
+          </div>
+        )}
         <div className="cer-table-card">
           <div className="cer-table-wrapper">
             <table className="cer-table">
@@ -386,7 +338,7 @@ export default function AdminCeremonies({
             </table>
           </div>
 
-          {filtered.length === 0 && (
+          {filtered.length === 0 && !loading && !error && (
             <div className="cer-empty">ما في حفلات مطابقة للبحث</div>
           )}
         </div>
