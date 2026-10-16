@@ -1,4 +1,3 @@
-import json
 from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, or_
@@ -48,26 +47,6 @@ async def search_graduates_service(
         ev = await db.get(EventModel, event_id)
         if not ev:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=messages.EVENT_NOT_FOUND)
-
-    params_dict = {
-        "search": search,
-        "college_id": college_id,
-        "top_rank": top_rank,
-        "wants_responsibility": wants_responsibility,
-        "has_experience": has_experience,
-        "volunteer_answered": volunteer_answered,
-        "event_id": event_id,
-        "major_id": major_id,
-        "skip": skip,
-        "limit": limit,
-    }
-    cache_key = f"admin:graduates:list:{json.dumps(params_dict, sort_keys=True)}"
-    try:
-        cached = await redis_client.get(cache_key)
-        if cached:
-            return json.loads(cached)
-    except Exception:
-        pass
 
     stmt = (
         select(GraduateModel, CollegeModel, MajorModel, VolunteerAnswerModel)
@@ -142,23 +121,10 @@ async def search_graduates_service(
         for g, college, major, va in rows
     ]
 
-    try:
-        await redis_client.setex(cache_key, 300, json.dumps(data))
-    except Exception:
-        pass
-
     return data
 
 
 async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) -> dict:
-    cache_key = f"admin:graduates:detail:{graduate_id}"
-    try:
-        cached = await redis_client.get(cache_key)
-        if cached:
-            return json.loads(cached)
-    except Exception:
-        pass
-
     stmt = (
         select(GraduateModel, CollegeModel, MajorModel, VolunteerAnswerModel)
         .join(CollegeModel, CollegeModel.id == GraduateModel.college_id)
@@ -273,11 +239,6 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
             for q in ordered_qr_codes
         ],
     }
-
-    try:
-        await redis_client.setex(cache_key, 300, json.dumps(result))
-    except Exception:
-        pass
 
     return result
 
