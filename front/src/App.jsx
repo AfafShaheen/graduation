@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Routes,
   Route,
@@ -92,7 +92,7 @@ function App() {
   const [student, setStudent] = usePersistentState("grad.student", null); // بيانات الخريج: الاسم والكلية والتخصص والرقم الجامعي والترتيب والمعدل
   const [, setSurvey] = usePersistentState("grad.survey", null); // إجابات سؤالَي المسؤولية والخبرة
   const [resetVerified, setResetVerified] = useState(false); // هل تأكد رمز الاستعادة؟ (ما منحفظها)
-  const [admin, setAdmin] = usePersistentState("grad.admin", null); // جلسة الإدارة (مؤقتة لحد ما يجهز الباك إند)
+  const [admin, setAdmin] = usePersistentState("grad.admin", null); // جلسة الإدارة
   const [adminError, setAdminError] = useState(""); // رسالة خطأ دخول الإدارة
   const [scanner, setScanner] = usePersistentState("grad.scanner", null); // جلسة الماسح (مؤقتة لحد ما يجهز الباك إند)
   const [scannerError, setScannerError] = useState(""); // رسالة خطأ دخول الماسح
@@ -155,6 +155,7 @@ function App() {
             )
           }
         />
+
 
         {/* ===== بعد تأكيد البريد: سؤالان عن المسؤولية والخبرة، ثم اختيار التذكرة ===== */}
         <Route
@@ -550,6 +551,189 @@ function App() {
                 setScannerError("");
                 setScanner({ username: credentials.username });
                 navigate("/scanner/scan");
+
+      {/* ===== بعد الدخول: اختيار التذكرة ثم الدفع ===== */}
+      <Route
+        path="/tickets"
+        element={
+          <SelectTicket
+            onBack={() => navigate("/login")}
+            onContinue={(data) => {
+              setTicket(data);
+              navigate("/payment");
+            }}
+          />
+        }
+      />
+
+      <Route
+        path="/payment"
+        element={
+          // لا ندخل صفحة الدفع بدون باقة محددة
+          ticket || PREVIEW ? (
+            <ShamCashPayment
+              amount={ticket?.price}
+              onBack={() => navigate("/tickets")}
+              onSuccess={(data) => {
+                setPayment({ ...data, submittedAt: new Date().toISOString() });
+                // replace: حتى لا يرجع المستخدم لصفحة الدفع بزر الرجوع بالمتصفح
+                navigate("/payment-submitted", { replace: true });
+              }}
+            />
+          ) : (
+            <Navigate to="/tickets" replace />
+          )
+        }
+      />
+
+      <Route
+        path="/payment-submitted"
+        element={
+          // لا نعرض حالة الطلب إلا بعد إرسال بيانات الدفع
+          payment || PREVIEW ? (
+            <OrderStatus
+              transactionId={payment?.transactionId}
+              amountPaid={payment?.transferAmount}
+              orderDate={payment?.submittedAt}
+            />
+          ) : (
+            <Navigate to="/tickets" replace />
+          )
+        }
+      />
+
+      {/* صفحة الرفض ما بتحتاج بيانات، والزر بيرجع المستخدم للدفع (وهناك الشرط) */}
+      <Route
+        path="/payment-rejected"
+        element={
+          <OrderRejected
+            onResubmit={() => navigate("/payment", { replace: true })}
+          />
+        }
+      />
+
+      {/* ===== التذكرة بعد تأكيد الدفع ===== */}
+      <Route
+        path="/my-ticket"
+        element={
+          ticket || PREVIEW ? (
+            <MyTicket
+              studentName={student?.fullName}
+              faculty={FACULTY_LABELS[student?.faculty]}
+              universityId={student?.studentId}
+              companionsCount={ticket?.guestsCount}
+              // gateAndSeat و ticketCode و qrSrc تأتي من الباك إند بعد قبول الدفع
+            />
+          ) : (
+            <Navigate to="/tickets" replace />
+          )
+        }
+      />
+
+      {/* ===== الإدارة: بتنفتح من الرابط /admin فقط، وما في أي رابط إلها بصفحات الطلاب ===== */}
+      <Route
+        path="/admin"
+        element={
+          <AdminLogin
+            errorMessage={adminError}
+            onLoginSuccess={async (credentials) => {
+              // مؤقت: لما يجهز الباك إند، تحقق من البيانات هناك، وإذا فشل: setAdminError("بيانات الدخول غير صحيحة")
+              setAdminError("");
+              try {
+                const { adminLogin } = await import("./api/adminAuth.js");
+                const { setAdminSession } = await import("./api/adminSession.js");
+                const res = await adminLogin(credentials.syndicateId, credentials.password);
+                const token = [REDACTED]
+                if (!token) {
+                  throw new Error("لم يتم استلام الرمز");
+                }
+                setAdminSession(credentials.syndicateId, token);
+                setAdmin({ username: credentials.syndicateId, token });
+                navigate("/admin/dashboard");
+              } catch (e) {
+                setAdminError(e.message || "بيانات الدخول غير صحيحة");
+              }
+            }}
+          />
+        }
+      />
+
+      <Route
+        path="/admin/dashboard"
+        element={
+          admin || PREVIEW ? (
+            <AdminDashboard
+              adminName={admin?.username}
+              onNavigate={(section) => navigate(`/admin/${section}`)}
+              onLogout={() => {
+                setAdmin(null);
+                navigate("/admin", { replace: true });
+              }}
+            />
+          ) : (
+            <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* ===== الحفلات ===== */}
+      <Route
+        path="/admin/ceremonies"
+        element={
+          admin || PREVIEW ? (
+            <AdminCeremonies
+              adminName={admin?.username}
+              onNavigate={(section) => navigate(`/admin/${section}`)}
+              onAddCeremony={() => navigate("/admin/ceremonies/new")}
+              onLogout={() => {
+                setAdmin(null);
+                navigate("/admin", { replace: true });
+              }}
+            />
+          ) : (
+            <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* ===== إضافة حفل جديد (بتنفتح من زر "إضافة حفل جديد" بصفحة الحفلات) ===== */}
+      <Route
+        path="/admin/ceremonies/new"
+        element={
+          admin || PREVIEW ? (
+            <AdminAddCeremony
+              adminName={admin?.username}
+              onNavigate={(section) => navigate(`/admin/${section}`)}
+              onCancel={() => navigate("/admin/ceremonies")}
+              onSubmitSuccess={() => {
+                // مؤقت: لما يجهز الباك إند، أرسل بيانات الحفل (الوسيط) هناك قبل الرجوع
+                navigate("/admin/ceremonies");
+              }}
+              onLogout={() => {
+                setAdmin(null);
+                navigate("/admin", { replace: true });
+              }}
+            />
+          ) : (
+            <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* ===== طلبات الدفع ===== */}
+      <Route
+        path="/admin/payments"
+        element={
+          admin || PREVIEW ? (
+            <AdminPaymentRequests
+              adminName={admin?.username}
+              onNavigate={(section) => navigate(`/admin/${section}`)}
+              onAddTicket={() => navigate("/admin/ceremonies/new")}
+              // onConfirmPayment و onRejectPayment: أرسل القرار للباك إند هون
+              onLogout={() => {
+                setAdmin(null);
+                navigate("/admin", { replace: true });
+
               }}
             />
           }
@@ -652,3 +836,5 @@ function App() {
 }
 
 export default App;
+
+
