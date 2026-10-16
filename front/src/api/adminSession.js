@@ -1,23 +1,21 @@
-export function getAdminToken() {
+export function getAdminSession() {
   try {
     const raw = sessionStorage.getItem("grad.admin");
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed.token || null;
+    return JSON.parse(raw);
   } catch (err) {
     return null;
   }
 }
 
+export function getAdminToken() {
+  const s = getAdminSession();
+  return s?.token || null;
+}
+
 export function getAdminUsername() {
-  try {
-    const raw = sessionStorage.getItem("grad.admin");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed.username || null;
-  } catch (err) {
-    return null;
-  }
+  const s = getAdminSession();
+  return s?.username || null;
 }
 
 export function setAdminSession(username, token) {
@@ -26,4 +24,17 @@ export function setAdminSession(username, token) {
 
 export function clearAdminSession() {
   sessionStorage.removeItem("grad.admin");
+}
+
+let adminUnauthorizedHandler = null;
+
+export function setAdminUnauthorizedHandler(fn) {
+  adminUnauthorizedHandler = fn;
+}
+
+export function notifyAdminUnauthorized() {
+  clearAdminSession();
+  if (typeof adminUnauthorizedHandler === "function") {
+    adminUnauthorizedHandler();
+  }
 }

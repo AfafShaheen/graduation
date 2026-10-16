@@ -8,24 +8,48 @@ export class ApiError extends Error {
   }
 }
 
-export async function adminRequest(path, { method = "GET", body = null, token = null, formData = null } = {}) {
+function buildQuery(query) {
+  if (!query) return "";
+  const params = new URLSearchParams();
+  Object.entries(query).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+  });
+  const s = params.toString();
+  return s ? `?${s}` : "";
+}
+
+async function readErrorMessage(data) {
+  if (!data) return "حدث خطأ غير متوقع.";
+  if (typeof data.detail === "string") return data.detail;
+  if (Array.isArray(data.detail)) return "يرجى التحقق من البيانات المدخلة.";
+  if (typeof data.message === "string") return data.message;
+  return "حدث خطأ غير متوقع.";
+}
+
+async function handleUnauthorized() {
+  const { notifyAdminUnauthorized } = await import("./adminSession.js");
+  notifyAdminUnauthorized();
+}
+
+export async function adminRequest(path, { method = "GET", body = null, token = null, formData = null, query = null } = {}) {
   const baseUrl = import.meta.env.VITE_API_URL || "";
-  const url = `${baseUrl}${path}`;
+  const url = `${baseUrl}${path}${buildQuery(query)}`;
+
+  let authToken = token;
+  if (!authToken) {
+    const { getAdminToken } = await import("./adminSession.js");
+    authToken = [REDACTED]
+  }
 
   const headers = {};
   if (!formData) {
     headers["Content-Type"] = "application/json";
   }
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
   }
 
-  const config = {
-    method,
-    headers,
-  };
-
+  const config = { method, headers };
   if (formData) {
     config.body = formData;
   } else if (body) {
@@ -50,27 +74,72 @@ export async function adminRequest(path, { method = "GET", body = null, token = 
   }
 
   if (!response.ok) {
-    let errorMessage = "حدث خطأ غير متوقع.";
-    if (data) {
-      if (typeof data.detail === "string") {
-        errorMessage = data.detail;
-      } else if (Array.isArray(data.detail)) {
-        errorMessage = "يرجى التحقق من البيانات المدخلة.";
-      } else if (typeof data.message === "string") {
-        errorMessage = data.message;
-      }
-    }
-
+    const errorMessage = await readErrorMessage(data);
     if (response.status === 401) {
-      const { clearAdminSession } = await import("./adminSession.js");
-      clearAdminSession();
-      if (window.location.pathname.startsWith("/admin")) {
-        window.location.href = "/admin";
-      }
+      await handleUnauthorized();
     }
-
     throw new ApiError(response.status, errorMessage, data);
   }
 
   return data;
+}
+
+export async function adminForm(path, formData, method = "POST", query = null) {
+  return await adminRequest(path, { method, formData, query });
+}
+
+export async function adminBlob(path, query = null) {
+  const baseUrl = import.meta.env.VITE_API_URL || "";
+  const url = `${baseUrl}${path}${buildQuery(query)}`;
+
+  const { getAdminToken } = await import("./adminSession.js");
+  const authToken = [REDACTED]
+
+  const headers = {};
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+
+  let response;
+  try {
+    response = await fetch(url, { method: "GET", headers });
+  } catch (err) {
+    throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
+  }
+
+  if (!response.ok) {
+    let data = null;
+    try {
+      data = await response.json();
+    } catch (e) {
+      data = null;
+    }
+    const errorMessage = await readErrorMessage(data);
+    if (response.status === 401) {
+      await handleUnauthorized();
+    }
+    throw new ApiError(response.status, errorMessage, data);
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get("content-disposition") || "";
+  let filename = "export.xlsx";
+  const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  if (match) {
+    try {
+      filename = decodeURIComponent(match[1]);
+    } catch (e) {
+      filename = match[1];
+    }
+  }
+  return { blob, filename };
+}
+
+export function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
