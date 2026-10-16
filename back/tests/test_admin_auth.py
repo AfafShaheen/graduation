@@ -39,6 +39,37 @@ async def test_script_refuses_second_admin(make_admin):
     assert await _run("admin2", None, reset=False) == 1
 
 
+def test_min_admin_password_length_depends_on_app_env(monkeypatch):
+    from scripts import create_admin
+
+    monkeypatch.setenv("APP_ENV", "production")
+    assert create_admin._min_admin_password_length() == 12
+
+    monkeypatch.setenv("APP_ENV", "development")
+    assert create_admin._min_admin_password_length() == 4
+
+    monkeypatch.setenv("APP_ENV", "test")
+    assert create_admin._min_admin_password_length() == 4
+
+
+def test_production_rejects_short_provided_password(monkeypatch):
+    import pytest
+
+    from scripts import create_admin
+
+    monkeypatch.setenv("APP_ENV", "production")
+    with pytest.raises(SystemExit):
+        create_admin._read_new_password("0000")
+    assert create_admin._read_new_password("A" * 12) == "A" * 12
+
+
+def test_development_allows_short_provided_password(monkeypatch):
+    from scripts import create_admin
+
+    monkeypatch.setenv("APP_ENV", "development")
+    assert create_admin._read_new_password("0000") == "0000"
+
+
 async def test_script_reset_password_updates_hash(db, make_admin):
     import scripts.create_admin as create_admin
     from sqlalchemy import select
