@@ -1,6 +1,8 @@
 ﻿import React, { useState, useEffect, useMemo } from "react";
 import "../../style/AdminCeremonies.css";
 import AdminSidebar from '../../components/AdminSidebar';
+import { useAdminEvents } from './hooks/useAdminEvents.js';
+import { useAdminStats } from './hooks/useAdminStats.js';
 
 /* ==========================================================================
    بيانات تجريبية: لما يجهز الباك إند بدّلها ببيانات حقيقية (مثلاً عبر props)
@@ -75,7 +77,7 @@ export default function AdminCeremonies({
   onNavigate,
   onLogout,
 }) {
-  $searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const { events, loading, error, refetch } = useAdminEvents({ search: searchQuery });
   const { stats } = useAdminStats();
   const perEvent = stats?.per_event || [];
