@@ -118,6 +118,12 @@ class PaymentRejectRequest(BaseModel):
     reason: str = Field(..., min_length=1, max_length=255)
 
 
+class SeatInfo(BaseModel):
+    graduate: str
+    companions: List[str]
+    range: str
+
+
 class MyTicketResponse(BaseModel):
     has_ticket: bool
     registration: RegistrationInfo
@@ -127,3 +133,4 @@ class MyTicketResponse(BaseModel):
     payment_info: Optional[PaymentInfoResponse] = None
     qr_codes: Optional[List[QrCodeItem]] = None
     whatsapp_group_link: Optional[str] = None
+    seat: Optional[SeatInfo] = None

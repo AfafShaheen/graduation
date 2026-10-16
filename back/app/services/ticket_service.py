@@ -34,6 +34,7 @@ from app.services.registration_window import (
     ensure_registration_open,
     get_graduate_event,
 )
+from app.services.seat_service import seat_labels
 from app.services.settings_service import (
     SHAMCASH_ACCOUNT_NUMBER,
     SHAMCASH_QR_IMAGE,
@@ -315,6 +316,11 @@ async def get_my_ticket_service(db: AsyncSession, graduate: GraduateModel) -> di
         ]
         result["whatsapp_group_link"] = (
             event.whatsapp_group_link if event is not None else None
+        )
+        result["seat"] = seat_labels(
+            event.seat_prefix if event is not None else None,
+            ticket.seat_start,
+            ticket.companions_count,
         )
 
     return result
