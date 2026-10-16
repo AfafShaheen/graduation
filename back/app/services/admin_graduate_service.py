@@ -11,8 +11,10 @@ from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.college import CollegeModel
 from app.models.major import MajorModel
 from app.models.event import EventModel
+from app.models.scanner import ScannerModel
 from app.models.volunteer_answer import VolunteerAnswerModel
 from app.services.qr_service import activate_companion_codes
+from app.services.seat_service import seat_labels
 from app.services.audit_log import ActorType, record_audit
 from app.core import messages
 from app.core.redis import redis_client
@@ -183,6 +185,31 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
         qr_res = await db.execute(select(QrCodeModel).where(QrCodeModel.ticket_id.in_(ticket_ids)))
         qr_codes = qr_res.scalars().all()
 
+    # Event seat prefixes for this graduate's tickets (one batch query, no N+1).
+    event_ids = {t.event_id for t in tickets if t.event_id is not None}
+    seat_prefixes: dict[int, str | None] = {}
+    if event_ids:
+        event_res = await db.execute(
+            select(EventModel.id, EventModel.seat_prefix).where(EventModel.id.in_(event_ids))
+        )
+        seat_prefixes = {row[0]: row[1] for row in event_res.all()}
+
+    # Scanner usernames for the codes that were scanned (one batch query).
+    scanner_ids = {
+        q.scanned_by_scanner_id for q in qr_codes if q.scanned_by_scanner_id is not None
+    }
+    scanner_names: dict[int, str] = {}
+    if scanner_ids:
+        scanner_res = await db.execute(
+            select(ScannerModel.id, ScannerModel.username).where(ScannerModel.id.in_(scanner_ids))
+        )
+        scanner_names = {row[0]: row[1] for row in scanner_res.all()}
+
+    # The graduate code is always shown first, then companions by id (FR-12).
+    ordered_qr_codes = sorted(
+        qr_codes, key=lambda q: (q.code_type != QrCodeTypeEnum.GRADUATE, q.id)
+    )
+
     result = {
         "id": grad.id,
         "full_name": grad.full_name,
@@ -203,9 +230,48 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
         "wants_responsibility": ("yes" if va.wants_responsibility else "no") if va is not None else None,
         "has_experience": ("yes" if va.has_experience else "no") if va is not None else None,
         "volunteer_answered": va is not None,
-        "tickets": [{"id": t.id, "event_id": t.event_id, "status": t.status, "price": str(t.price)} for t in tickets],
-        "payments": [{"id": p.id, "ticket_id": p.ticket_id, "transaction_number": p.transaction_number, "amount": str(p.amount)} for p in payments],
-        "qr_codes": [{"id": q.id, "ticket_id": q.ticket_id, "code_type": q.code_type, "code_value": str(q.code_value), "is_activated": q.is_activated} for q in qr_codes],
+        "tickets": [
+            {
+                "id": t.id,
+                "event_id": t.event_id,
+                "status": t.status,
+                "price": str(t.price),
+                "ticket_type": t.ticket_type,
+                "companions_count": t.companions_count,
+                "rejection_reason": t.rejection_reason,
+                "confirmed_at": t.confirmed_at.isoformat() if t.confirmed_at else None,
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+                "seat": seat_labels(
+                    seat_prefixes.get(t.event_id), t.seat_start, t.companions_count
+                ),
+            }
+            for t in tickets
+        ],
+        "payments": [
+            {
+                "id": p.id,
+                "ticket_id": p.ticket_id,
+                "transaction_number": p.transaction_number,
+                "amount": str(p.amount),
+                "sender_name": p.sender_name,
+                "submitted_at": p.submitted_at.isoformat() if p.submitted_at else None,
+                "reviewed_at": p.reviewed_at.isoformat() if p.reviewed_at else None,
+            }
+            for p in payments
+        ],
+        "qr_codes": [
+            {
+                "id": q.id,
+                "ticket_id": q.ticket_id,
+                "code_type": q.code_type,
+                "code_value": str(q.code_value),
+                "is_activated": q.is_activated,
+                "scanned": q.scanned_at is not None,
+                "scanned_at": q.scanned_at.isoformat() if q.scanned_at else None,
+                "scanned_by_username": scanner_names.get(q.scanned_by_scanner_id),
+            }
+            for q in ordered_qr_codes
+        ],
     }
 
     try:
