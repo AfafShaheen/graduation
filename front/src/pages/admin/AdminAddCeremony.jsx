@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import '../../style/AdminAddCeremony.css';
 import AdminSidebar from '../../components/AdminSidebar';
-import { createAdminEvent, uploadUniversityRecords } from './hooks/useAdminEvents.js';
+import { createAdminEvent, updateAdminEvent, uploadUniversityRecords } from './hooks/useAdminEvents.js';
 import { ApiError } from '../../api/admin.js';
 
 const FACULTY_OPTIONS = [
@@ -16,19 +16,23 @@ const FACULTY_OPTIONS = [
 export default function AdminAddCeremony({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
+  ceremony = null,
+  eventId = null,
+  registrationStarted = false,
   onCancel,
   onSubmitSuccess,
   onNavigate,
   onLogout,
 }) {
-  const [ceremonyName, setCeremonyName] = useState('');
-  const [ceremonyDate, setCeremonyDate] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [whatsappLink, setWhatsappLink] = useState('');
-  const [pricePkg2, setPricePkg2] = useState('');
-  const [pricePkg3, setPricePkg3] = useState('');
-  const [enablePkg3, setEnablePkg3] = useState(true);
+  const isEdit = !!ceremony;
+  const [ceremonyName, setCeremonyName] = useState(ceremony?.ceremonyName || '');
+  const [ceremonyDate, setCeremonyDate] = useState(ceremony?.ceremonyDate || '');
+  const [startDate, setStartDate] = useState(ceremony?.startDate || '');
+  const [endDate, setEndDate] = useState(ceremony?.endDate || '');
+  const [whatsappLink, setWhatsappLink] = useState(ceremony?.whatsappLink || '');
+  const [pricePkg2, setPricePkg2] = useState(ceremony?.pricePkg2 || '');
+  const [pricePkg3, setPricePkg3] = useState(ceremony?.pricePkg3 || '');
+  const [enablePkg3, setEnablePkg3] = useState(ceremony?.enablePkg3 ?? true);
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
 
   // ملف بيانات الجامعة (اختياري عند الحفظ، لكن لازم يكون جاهز قبل فتح التسجيل)
@@ -86,13 +90,21 @@ export default function AdminAddCeremony({
     URL.revokeObjectURL(url);
   };
 
-  const [faculties, setFaculties] = useState({
-    civil: false,
-    mech: false,
-    it: false,
-    arch: false,
-    science: false,
-    arts: false,
+  const [faculties, setFaculties] = useState(() => {
+    const init = {
+      civil: false,
+      mech: false,
+      it: false,
+      arch: false,
+      science: false,
+      arts: false,
+    };
+    if (ceremony && Array.isArray(ceremony.faculties)) {
+      FACULTY_OPTIONS.forEach((f) => {
+        if (ceremony.faculties.includes(f.label)) init[f.key] = true;
+      });
+    }
+    return init;
   });
 
   // إغلاق القائمة بزر Escape
@@ -122,14 +134,12 @@ export default function AdminAddCeremony({
     e.preventDefault();
     setSubmitError('');
 
-    if (!Object.values(faculties).some(Boolean)) {
+    if (!isEdit && !Object.values(faculties).some(Boolean)) {
       setSubmitError('اختر كلية واحدة على الأقل لهذا الحفل');
       return;
     }
 
-    const collegeNames = FACULTY_OPTIONS.filter((f) => faculties[f.key]).map((f) => f.label);
-
-    const payload = {
+    const base = {
       name: ceremonyName,
       event_date: ceremonyDate ? ceremonyDate.slice(0, 10) : ceremonyDate,
       registration_start: startDate ? `${startDate}T00:00:00+03:00` : startDate,
@@ -137,30 +147,41 @@ export default function AdminAddCeremony({
       whatsapp_group_link: whatsappLink,
       price_2_companions: priceToNum(pricePkg2),
       price_3_companions: priceToNum(pricePkg3),
-      is_3companions_enabled: enablePkg3,
-      college_names: collegeNames,
     };
 
     try {
       setSubmitting(true);
-      const created = await createAdminEvent(payload);
-      const createdId = created?.id ?? created?.event_id;
-      if (dataFile && createdId) {
+      let result;
+      if (isEdit) {
+        const payload = { ...base };
+        if (!registrationStarted) payload.is_3companions_enabled = enablePkg3;
+        result = await updateAdminEvent(eventId, payload);
+      } else {
+        const collegeNames = FACULTY_OPTIONS.filter((f) => faculties[f.key]).map((f) => f.label);
+        result = await createAdminEvent({
+          ...base,
+          is_3companions_enabled: enablePkg3,
+          college_names: collegeNames,
+        });
+      }
+
+      const id = eventId ?? result?.id ?? result?.event_id;
+      if (dataFile && id) {
         try {
-          await uploadUniversityRecords(createdId, dataFile);
+          await uploadUniversityRecords(id, dataFile);
         } catch (upErr) {
           setSubmitError(
-            'تم إنشاء الحفل لكن لم يُستورد ملف بيانات الخريجين: ' +
+            'تم حفظ الحفل لكن لم يُستورد ملف بيانات الخريجين: ' +
               (upErr instanceof ApiError ? upErr.message : 'خطأ غير معروف')
           );
-          if (onSubmitSuccess) onSubmitSuccess(created);
+          if (onSubmitSuccess) onSubmitSuccess(result);
           return;
         }
       }
       if (onSubmitSuccess) {
-        onSubmitSuccess(created);
+        onSubmitSuccess(result);
       } else {
-        alert('تم حفظ ونشر الحفل الجديد بنجاح!');
+        alert(isEdit ? 'تم حفظ التعديلات بنجاح!' : 'تم حفظ ونشر الحفل الجديد بنجاح!');
       }
     } catch (e) {
       setSubmitError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
@@ -198,13 +219,13 @@ export default function AdminAddCeremony({
         </button>
 
         <div className="add-cer-topbar-title">
-          <h2>إضافة حفل جديد</h2>
+          <h2>{isEdit ? 'تعديل الحفل' : 'إضافة حفل جديد'}</h2>
           <div className="add-cer-breadcrumb">
             <button type="button" onClick={() => onNavigate && onNavigate('dashboard')}>لوحة الإدارة</button>
             <span className="add-cer-symbol" style={{ fontSize: '14px' }}>chevron_left</span>
             <button type="button" onClick={onCancel}>الحفلات</button>
             <span className="add-cer-symbol" style={{ fontSize: '14px' }}>chevron_left</span>
-            <span>إضافة حفل جديد</span>
+            <span>{isEdit ? 'تعديل الحفل' : 'إضافة حفل جديد'}</span>
           </div>
         </div>
 
@@ -234,8 +255,12 @@ export default function AdminAddCeremony({
                 <span className="add-cer-symbol fill" style={{ fontSize: '26px' }}>celebration</span>
               </div>
               <div>
-                <h3>بيانات حفل التخرج الجديد</h3>
-                <p>عبّي بيانات الفوج الجديد برواق، وبتنزل التذاكر فوراً عالمنظومة للطلاب.</p>
+                <h3>{isEdit ? 'بيانات حفل التخرج' : 'بيانات حفل التخرج الجديد'}</h3>
+                <p>
+                  {isEdit
+                    ? 'عدّل بيانات الحفل، والكليات المرتبطة غير قابلة للتغيير بعد الإنشاء.'
+                    : 'عبّي بيانات الفوج الجديد برواق، وبتنزل التذاكر فوراً عالمنظومة للطلاب.'}
+                </p>
               </div>
             </div>
 
@@ -338,9 +363,11 @@ export default function AdminAddCeremony({
               <div className="add-cer-section-head">
                 <h4 className="add-cer-section-title">
                   <span className="add-cer-symbol">account_balance</span>
-                  <span>الكليات التابعة لهذا الحفل <span className="add-cer-req">*</span></span>
+                  <span>الكليات التابعة لهذا الحفل {!isEdit && <span className="add-cer-req">*</span>}</span>
                 </h4>
-                <span className="add-cer-hint">حدد الكليات المشمولة بهذا الفوج للتوزيع على المدرج</span>
+                <span className="add-cer-hint">
+                  {isEdit ? 'الكليات مرتبطة منذ الإنشاء وغير قابلة للتعديل' : 'حدد الكليات المشمولة بهذا الفوج للتوزيع على المدرج'}
+                </span>
               </div>
 
               <div className="add-cer-chips-grid">
@@ -350,6 +377,7 @@ export default function AdminAddCeremony({
                       type="checkbox"
                       checked={faculties[item.key]}
                       onChange={() => handleFacultyToggle(item.key)}
+                      disabled={isEdit}
                     />
                     <div className="add-cer-chip-box">
                       <span className="add-cer-symbol">
@@ -359,17 +387,6 @@ export default function AdminAddCeremony({
                     </div>
                   </label>
                 ))}
-
-                {/* كليات مقفلة */}
-                <div className="add-cer-chip-disabled">
-                  <span className="add-cer-symbol" style={{ fontSize: '16px' }}>lock</span>
-                  <span>كلية الطب البشري</span>
-                  <span className="add-cer-chip-note">مرتبطة بحفل الكليات الطبية</span>
-                </div>
-                <div className="add-cer-chip-disabled">
-                  <span className="add-cer-symbol" style={{ fontSize: '16px' }}>block</span>
-                  <span>الصيدلة</span>
-                </div>
               </div>
             </div>
 
@@ -473,6 +490,7 @@ export default function AdminAddCeremony({
                       type="checkbox"
                       checked={enablePkg3}
                       onChange={() => setEnablePkg3(!enablePkg3)}
+                      disabled={isEdit && registrationStarted}
                       aria-label='تفعيل نوع "خريج + ٣ مرافقين"'
                     />
                     <span className="add-cer-slider"></span>
@@ -596,7 +614,7 @@ export default function AdminAddCeremony({
               </button>
 
               <button type="submit" className="add-cer-btn-submit" disabled={submitting}>
-                <span>{submitting ? 'جارٍ الحفظ...' : 'حفظ ونشر الحفل الجديد'}</span>
+                <span>{submitting ? 'جارٍ الحفظ...' : isEdit ? 'حفظ التعديلات' : 'حفظ ونشر الحفل الجديد'}</span>
                 <span className="add-cer-symbol" style={{ fontSize: '20px' }}>cloud_upload</span>
               </button>
             </div>
