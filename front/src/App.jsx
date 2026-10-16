@@ -101,6 +101,31 @@ function App() {
     window.scrollTo(0, 0);
   }, [pathname]);
 
+  useEffect(() => {
+    let cancel = false;
+    import("./api/adminSession.js").then(({ setAdminUnauthorizedHandler }) => {
+      if (cancel) return;
+      setAdminUnauthorizedHandler(() => {
+        setAdmin(null);
+        navigate("/admin", { replace: true });
+      });
+    });
+    return () => {
+      cancel = true;
+    };
+  }, [navigate, setAdmin]);
+
+  const handleAdminLogout = async () => {
+    try {
+      const { adminLogout } = await import("./api/adminAuth.js");
+      await adminLogout();
+    } catch (e) {
+      /* نتجاهل فشل الإلغاء على الخادم */
+    }
+    setAdmin(null);
+    navigate("/admin", { replace: true });
+  };
+
   return (
     <AdminStatsProvider pendingPayments={PENDING_PAYMENTS}>
       <Routes>
@@ -665,10 +690,7 @@ function App() {
             <AdminDashboard
               adminName={admin?.username}
               onNavigate={(section) => navigate(`/admin/${section}`)}
-              onLogout={() => {
-                setAdmin(null);
-                navigate("/admin", { replace: true });
-              }}
+              onLogout={handleAdminLogout}
             />
           ) : (
             <Navigate to="/admin" replace />
@@ -685,10 +707,7 @@ function App() {
               adminName={admin?.username}
               onNavigate={(section) => navigate(`/admin/${section}`)}
               onAddCeremony={() => navigate("/admin/ceremonies/new")}
-              onLogout={() => {
-                setAdmin(null);
-                navigate("/admin", { replace: true });
-              }}
+              onLogout={handleAdminLogout}
             />
           ) : (
             <Navigate to="/admin" replace />
@@ -709,10 +728,7 @@ function App() {
                 // مؤقت: لما يجهز الباك إند، أرسل بيانات الحفل (الوسيط) هناك قبل الرجوع
                 navigate("/admin/ceremonies");
               }}
-              onLogout={() => {
-                setAdmin(null);
-                navigate("/admin", { replace: true });
-              }}
+              onLogout={handleAdminLogout}
             />
           ) : (
             <Navigate to="/admin" replace />
@@ -730,14 +746,11 @@ function App() {
               onNavigate={(section) => navigate(`/admin/${section}`)}
               onAddTicket={() => navigate("/admin/ceremonies/new")}
               // onConfirmPayment و onRejectPayment: أرسل القرار للباك إند هون
-              onLogout={() => {
-                setAdmin(null);
-                navigate("/admin", { replace: true });
 
-              }}
             />
           }
         />
+
 
         {/* ===== شاشة المسح ===== */}
         <Route
@@ -746,6 +759,124 @@ function App() {
             scanner || PREVIEW ? (
               <ScannerCamera
                 onLogout={() => {
+
+      {/* ===== الماسحون وإعدادات الدفع ===== */}
+      <Route
+        path="/admin/scanners"
+        element={
+          admin || PREVIEW ? (
+            <AdminScannersSettings
+              adminName={admin?.username}
+              onNavigate={(section) => navigate(`/admin/${section}`)}
+              onAddTicket={() => navigate("/admin/ceremonies/new")}
+              // onAddScanner, onToggleScannerFreeze, onChangeScannerPassword, onSaveSettings, onUploadQr: اربطها بالباك إند
+              onLogout={handleAdminLogout}
+            />
+          ) : (
+            <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* ===== الإجراءات الاستثنائية ===== */}
+      <Route
+        path="/admin/actions"
+        element={
+          admin || PREVIEW ? (
+            <AdminExceptions
+              adminName={admin?.username}
+              onNavigate={(section) => navigate(`/admin/${section}`)}
+              onAddTicket={() => navigate("/admin/ceremonies/new")}
+              // onManualEntry, onCancelScan, onReturnToPending, onEditEmail: اربطها بالباك إند
+              onLogout={handleAdminLogout}
+            />
+          ) : (
+            <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* ===== المتطوعون ===== */}
+      <Route
+        path="/admin/volunteers"
+        element={
+          admin || PREVIEW ? (
+            <AdminVolunteers
+              adminName={admin?.username}
+              onNavigate={(section) => navigate(`/admin/${section}`)}
+              onAddTicket={() => navigate("/admin/ceremonies/new")}
+              onLogout={handleAdminLogout}
+            />
+          ) : (
+            <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* أي مسار إدارة غير معرّف: مؤقتاً لحد ما يجهز */}
+      <Route
+        path="/admin/*"
+        element={
+          admin || PREVIEW ? (
+            <div style={{ padding: 24, textAlign: "center", direction: "rtl" }}>
+              هذه الصفحة قيد الإنشاء
+              <br />
+              <button type="button" onClick={() => navigate("/admin/dashboard")}>
+                العودة إلى لوحة التحكم
+              </button>
+            </div>
+          ) : (
+            <Navigate to="/admin" replace />
+          )
+        }
+      />
+
+      {/* ===== الماسح: بتنفتح من الرابط /scanner فقط، وما في أي رابط إلها بصفحات الطلاب ===== */}
+      <Route
+        path="/scanner"
+        element={
+          <ScannerLogin
+            errorMessage={scannerError}
+            onLoginSuccess={(credentials) => {
+              // مؤقت: لما يجهز الباك إند، تحقق من البيانات هناك، وإذا فشل أو كان الحساب مجمّداً:
+              // setScannerError("بيانات الدخول غير صحيحة أو الحساب مجمّد")
+              setScannerError("");
+              setScanner({ username: credentials.username });
+              navigate("/scanner/scan");
+            }}
+          />
+        }
+      />
+
+      {/* ===== شاشة المسح ===== */}
+      <Route
+        path="/scanner/scan"
+        element={
+          scanner || PREVIEW ? (
+            <ScannerCamera
+              onLogout={() => {
+                setScanner(null);
+                navigate("/scanner", { replace: true });
+              }}
+            />
+          ) : (
+            <Navigate to="/scanner" replace />
+          )
+        }
+      />
+
+      {/* أي مسار ماسح غير معرّف: مؤقتاً لحد ما يجهز */}
+      <Route
+        path="/scanner/*"
+        element={
+          scanner || PREVIEW ? (
+            <div style={{ padding: 24, textAlign: "center", direction: "rtl" }}>
+              شاشة المسح قيد الإنشاء
+              <br />
+              <button
+                type="button"
+                onClick={() => {
+
                   setScanner(null);
                   navigate("/scanner", { replace: true });
                 }}
@@ -836,5 +967,6 @@ function App() {
 }
 
 export default App;
+
 
 
