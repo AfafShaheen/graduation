@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import '../../style/AdminAddCeremony.css';
 import AdminSidebar from '../../components/AdminSidebar';
+import { createAdminEvent, uploadUniversityRecords } from './hooks/useAdminEvents.js';
+import { ApiError } from '../../api/admin.js';
 
 const FACULTY_OPTIONS = [
   { key: 'civil', label: 'الهندسة المدنية' },
@@ -11,53 +13,78 @@ const FACULTY_OPTIONS = [
   { key: 'arts', label: 'الآداب' },
 ];
 
-/* ملف بيانات الجامعة الخاص بالحفل (Excel أو CSV): الأعمدة الدنيا المطلوبة */
-const REQUIRED_COLUMNS = ['الرقم الجامعي', 'الاسم الكامل', 'اسم الأب', 'اسم الأم', 'الكلية', 'الجنس'];
-const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
-const MAX_SIZE_MB = 25;
-
-const formatSize = (bytes) =>
-  bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-
-/* ملف CSV فارغ بالأعمدة المطلوبة (يفتح مباشرة في Excel) */
-function downloadTemplate() {
-  const blob = new Blob([`\uFEFF${REQUIRED_COLUMNS.join(',')}\n`], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'graduates-template.csv';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
 export default function AdminAddCeremony({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
-  ceremony = null, // بوضع التعديل: بيانات الحفل { id, ceremonyName, ceremonyDate, startDate, endDate, whatsappLink, pricePkg2, pricePkg3, enablePkg3, faculties }
   onCancel,
   onSubmitSuccess,
   onNavigate,
   onLogout,
 }) {
-  const isEdit = !!ceremony; // true = تعديل حفل موجود، false = إضافة حفل جديد
-
-  const [ceremonyName, setCeremonyName] = useState(ceremony?.ceremonyName ?? '');
-  const [ceremonyDate, setCeremonyDate] = useState(ceremony?.ceremonyDate ?? '');
-  const [startDate, setStartDate] = useState(ceremony?.startDate ?? '');
-  const [endDate, setEndDate] = useState(ceremony?.endDate ?? '');
-  const [whatsappLink, setWhatsappLink] = useState(ceremony?.whatsappLink ?? '');
-  const [pricePkg2, setPricePkg2] = useState(ceremony?.pricePkg2 ?? '');
-  const [pricePkg3, setPricePkg3] = useState(ceremony?.pricePkg3 ?? '');
-  const [enablePkg3, setEnablePkg3] = useState(ceremony?.enablePkg3 ?? true);
+  const [ceremonyName, setCeremonyName] = useState('');
+  const [ceremonyDate, setCeremonyDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [whatsappLink, setWhatsappLink] = useState('');
+  const [pricePkg2, setPricePkg2] = useState('');
+  const [pricePkg3, setPricePkg3] = useState('');
+  const [enablePkg3, setEnablePkg3] = useState(true);
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
 
   // ملف بيانات الجامعة (اختياري عند الحفظ، لكن لازم يكون جاهز قبل فتح التسجيل)
   const [dataFile, setDataFile] = useState(null);
   const [fileError, setFileError] = useState('');
   const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef(null);
+  const fileInputRef = React.useRef(null);
+
+  const REQUIRED_COLUMNS = ['الرقم الجامعي', 'الاسم الكامل', 'اسم الأب', 'اسم الأم', 'الكلية', 'الجنس'];
+  const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
+  const MAX_SIZE_MB = 25;
+
+  const formatSize = (bytes) =>
+    bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+  const validateFile = (file) => {
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
+      return 'الصيغ المدعومة فقط: xlsx وxls وcsv';
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      return `حجم الملف يتجاوز ${MAX_SIZE_MB} ميغابايت`;
+    }
+    return null;
+  };
+
+  const handleFiles = (files) => {
+    if (!files || !files.length) return;
+    const file = files[0];
+    const err = validateFile(file);
+    if (err) {
+      setFileError(err);
+      setDataFile(null);
+      return;
+    }
+    setFileError('');
+    setDataFile(file);
+  };
+
+  const removeFile = () => {
+    setDataFile(null);
+    setFileError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob([`\uFEFF${REQUIRED_COLUMNS.join(',')}\n`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'graduates-template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const [faculties, setFaculties] = useState({
     civil: false,
@@ -66,12 +93,7 @@ export default function AdminAddCeremony({
     arch: false,
     science: false,
     arts: false,
-    ...(ceremony?.faculties || {}),
   });
-
-  // نوع "خريج + ٣ مرافقين" ما بيتغيّر بعد بدء التسجيل (حسب تاريخ البداية المحفوظ للحفل)
-  const registrationStarted =
-    isEdit && !!ceremony.startDate && new Date(ceremony.startDate) <= new Date();
 
   // إغلاق القائمة بزر Escape
   useEffect(() => {
@@ -84,83 +106,66 @@ export default function AdminAddCeremony({
     setFaculties((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // تمديد فترة التسجيل أسبوع من تاريخ النهاية الحالي
-  const handleExtend = () => {
-    if (!endDate) return;
-    const d = new Date(endDate);
-    d.setDate(d.getDate() + 7);
-    setEndDate(d.toISOString().slice(0, 10));
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  const priceToNum = (v) => {
+    if (v == null) return 0;
+    const s = String(v)
+      .replace(/,/g, '')
+      .replace(/[\u0660-\u0669]/g, (d) => String.fromCharCode(48 + (d.charCodeAt(0) - 0x0660)));
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
   };
 
-  /* فحص الصيغة والحجم، وللـ CSV نتأكد كمان من وجود الأعمدة المطلوبة بالسطر الأول */
-  const handleFiles = async (fileList) => {
-    const f = fileList && fileList[0];
-    if (!f) return;
-
-    const name = f.name.toLowerCase();
-    let error = '';
-    if (!ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-      error = 'صيغة الملف غير مدعومة، المسموح: xlsx أو xls أو csv';
-    } else if (f.size === 0) {
-      error = 'الملف فارغ';
-    } else if (f.size > MAX_SIZE_MB * 1024 * 1024) {
-      error = `حجم الملف يتجاوز ${MAX_SIZE_MB} ميغابايت`;
-    } else if (name.endsWith('.csv')) {
-      try {
-        const text = await f.slice(0, 4096).text();
-        const header = text.replace(/^\uFEFF/, '').split(/\r?\n/)[0].split(/[,;\t]/).map((c) => c.trim().replace(/^"|"$/g, ''));
-        const missing = REQUIRED_COLUMNS.filter((c) => !header.includes(c));
-        if (missing.length) error = `أعمدة ناقصة في الملف: ${missing.join('، ')}`;
-      } catch (err) {
-        error = 'تعذّرت قراءة الملف';
-      }
-    }
-
-    if (error) {
-      setFileError(error);
-      setDataFile(null);
-      return;
-    }
-    setFileError('');
-    setDataFile(f);
-  };
-
-  const removeFile = () => {
-    setDataFile(null);
-    setFileError('');
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (startDate && endDate && endDate < startDate) {
-      alert('نهاية التسجيل لازم تكون بعد بدايته');
-      return;
-    }
+    setSubmitError('');
 
     if (!Object.values(faculties).some(Boolean)) {
-      alert('اختر كلية واحدة على الأقل لهذا الحفل');
+      setSubmitError('اختر كلية واحدة على الأقل لهذا الحفل');
       return;
     }
 
+    const collegeNames = FACULTY_OPTIONS.filter((f) => faculties[f.key]).map((f) => f.label);
+
     const payload = {
-      ...(isEdit ? { id: ceremony.id } : {}),
-      ceremonyName,
-      ceremonyDate,
-      startDate,
-      endDate,
-      whatsappLink,
-      pricePkg2,
-      pricePkg3,
-      enablePkg3,
-      faculties,
-      dataFile, // ملف بيانات الجامعة (File) أو null: ارفعه للباك إند مع الحفل
+      name: ceremonyName,
+      event_date: ceremonyDate ? ceremonyDate.slice(0, 10) : ceremonyDate,
+      registration_start: startDate ? `${startDate}T00:00:00+03:00` : startDate,
+      registration_end: endDate ? `${endDate}T23:59:59+03:00` : endDate,
+      whatsapp_group_link: whatsappLink,
+      price_2_companions: priceToNum(pricePkg2),
+      price_3_companions: priceToNum(pricePkg3),
+      is_3companions_enabled: enablePkg3,
+      college_names: collegeNames,
     };
 
-    if (onSubmitSuccess) {
-      onSubmitSuccess(payload);
-    } else {
-      alert(isEdit ? 'تم حفظ التعديلات بنجاح!' : 'تم حفظ ونشر الحفل الجديد بنجاح!');
+    try {
+      setSubmitting(true);
+      const created = await createAdminEvent(payload);
+      const createdId = created?.id ?? created?.event_id;
+      if (dataFile && createdId) {
+        try {
+          await uploadUniversityRecords(createdId, dataFile);
+        } catch (upErr) {
+          setSubmitError(
+            'تم إنشاء الحفل لكن لم يُستورد ملف بيانات الخريجين: ' +
+              (upErr instanceof ApiError ? upErr.message : 'خطأ غير معروف')
+          );
+          if (onSubmitSuccess) onSubmitSuccess(created);
+          return;
+        }
+      }
+      if (onSubmitSuccess) {
+        onSubmitSuccess(created);
+      } else {
+        alert('تم حفظ ونشر الحفل الجديد بنجاح!');
+      }
+    } catch (e) {
+      setSubmitError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -193,13 +198,13 @@ export default function AdminAddCeremony({
         </button>
 
         <div className="add-cer-topbar-title">
-          <h2>{isEdit ? 'تعديل الحفل' : 'إضافة حفل جديد'}</h2>
+          <h2>إضافة حفل جديد</h2>
           <div className="add-cer-breadcrumb">
             <button type="button" onClick={() => onNavigate && onNavigate('dashboard')}>لوحة الإدارة</button>
             <span className="add-cer-symbol" style={{ fontSize: '14px' }}>chevron_left</span>
             <button type="button" onClick={onCancel}>الحفلات</button>
             <span className="add-cer-symbol" style={{ fontSize: '14px' }}>chevron_left</span>
-            <span>{isEdit ? 'تعديل الحفل' : 'إضافة حفل جديد'}</span>
+            <span>إضافة حفل جديد</span>
           </div>
         </div>
 
@@ -229,18 +234,14 @@ export default function AdminAddCeremony({
                 <span className="add-cer-symbol fill" style={{ fontSize: '26px' }}>celebration</span>
               </div>
               <div>
-                <h3>{isEdit ? 'تعديل بيانات حفل التخرج' : 'بيانات حفل التخرج الجديد'}</h3>
-                <p>
-                  {isEdit
-                    ? 'عدّل بيانات الحفل، والتغييرات بتنعكس فوراً عالمنظومة وعلى شاشات الطلاب.'
-                    : 'عبّي بيانات الفوج الجديد برواق، وبتنزل التذاكر فوراً عالمنظومة للطلاب.'}
-                </p>
+                <h3>بيانات حفل التخرج الجديد</h3>
+                <p>عبّي بيانات الفوج الجديد برواق، وبتنزل التذاكر فوراً عالمنظومة للطلاب.</p>
               </div>
             </div>
 
-            <span className={`add-cer-tag-pill ${isEdit ? 'published' : ''}`}>
+            <span className="add-cer-tag-pill">
               <span className="add-cer-tag-dot"></span>
-              <span>{isEdit ? `حفل منشور • ${ceremony.id}` : 'مسودة غير منشورة'}</span>
+              <span>مسودة غير منشورة</span>
             </span>
           </div>
 
@@ -313,13 +314,7 @@ export default function AdminAddCeremony({
                     <label className="add-cer-label" htmlFor="end-date">
                       نهاية التسجيل <span className="add-cer-req">*</span>
                     </label>
-                    <button
-                      type="button"
-                      className="add-cer-extend-btn"
-                      title="يمدّد نهاية التسجيل أسبوعاً"
-                      disabled={!endDate}
-                      onClick={handleExtend}
-                    >
+                    <button type="button" className="add-cer-extend-btn">
                       <span className="add-cer-symbol" style={{ fontSize: '14px' }}>update</span>
                       <span>تمديد الفترة</span>
                     </button>
@@ -477,8 +472,6 @@ export default function AdminAddCeremony({
                     <input
                       type="checkbox"
                       checked={enablePkg3}
-                      disabled={registrationStarted}
-                      title={registrationStarted ? 'مقفل: التسجيل بدأ' : undefined}
                       onChange={() => setEnablePkg3(!enablePkg3)}
                       aria-label='تفعيل نوع "خريج + ٣ مرافقين"'
                     />
@@ -505,35 +498,24 @@ export default function AdminAddCeremony({
             <div className="add-cer-divider"></div>
 
             {/* ملف بيانات الجامعة */}
-            <div className="add-cer-field-group" style={{ gap: '16px' }}>
+            <div className="add-cer-field-group" style={{ gap: '14px' }}>
               <div className="add-cer-section-head">
-                <div>
-                  <h4 className="add-cer-section-title">
-                    <span className="add-cer-symbol">upload_file</span>
-                    <span>ملف بيانات الجامعة</span>
-                  </h4>
-                  <p className="add-cer-hint" style={{ marginTop: '2px' }}>
-                    {isEdit
-                      ? 'رفع نسخة محدّثة بيضيف السجلات الجديدة وبيحدّث الموجودة ولا بيحذف أي خريج سبق وسجّل'
-                      : 'يضم كل الخريجين المتوقعين بهذا الحفل، ولازم يكون جاهز قبل فتح التسجيل'}
-                  </p>
-                </div>
-                <button type="button" className="add-cer-btn-cancel add-cer-file-template" onClick={downloadTemplate}>
-                  <span className="add-cer-symbol" style={{ fontSize: '18px' }}>download</span>
-                  <span>تنزيل نموذج الملف</span>
+                <h4 className="add-cer-section-title">
+                  <span className="add-cer-symbol">upload_file</span>
+                  <span>ملف بيانات الخريجين (اختياري)</span>
+                </h4>
+                <button type="button" className="add-cer-extend-btn" onClick={downloadTemplate}>
+                  <span className="add-cer-symbol" style={{ fontSize: '14px' }}>download</span>
+                  <span>تحميل قالب فارغ</span>
                 </button>
               </div>
 
               <input
                 ref={fileInputRef}
                 type="file"
-                className="add-cer-file-input"
                 accept={ACCEPTED_EXTENSIONS.join(',')}
-                aria-label="اختيار ملف بيانات الجامعة"
-                onChange={(e) => {
-                  handleFiles(e.target.files);
-                  e.target.value = ''; // للسماح باختيار الملف نفسه مرة ثانية
-                }}
+                style={{ display: 'none' }}
+                onChange={(e) => handleFiles(e.target.files)}
               />
 
               <div
@@ -600,15 +582,22 @@ export default function AdminAddCeremony({
 
             <div className="add-cer-divider"></div>
 
+            {/* رسالة الخطأ العامة */}
+            {submitError && (
+              <div className="add-cer-file-error" role="alert" style={{ marginBottom: '12px' }}>
+                {submitError}
+              </div>
+            )}
+
             {/* الأزرار */}
             <div className="add-cer-form-footer">
               <button type="button" className="add-cer-btn-cancel" onClick={onCancel}>
                 إلغاء والعودة لقائمة الحفلات
               </button>
 
-              <button type="submit" className="add-cer-btn-submit">
-                <span>{isEdit ? 'حفظ التعديلات' : 'حفظ ونشر الحفل الجديد'}</span>
-                <span className="add-cer-symbol" style={{ fontSize: '20px' }}>{isEdit ? 'save' : 'cloud_upload'}</span>
+              <button type="submit" className="add-cer-btn-submit" disabled={submitting}>
+                <span>{submitting ? 'جارٍ الحفظ...' : 'حفظ ونشر الحفل الجديد'}</span>
+                <span className="add-cer-symbol" style={{ fontSize: '20px' }}>cloud_upload</span>
               </button>
             </div>
           </form>
@@ -622,3 +611,6 @@ export default function AdminAddCeremony({
     </div>
   );
 }
+
+
+
