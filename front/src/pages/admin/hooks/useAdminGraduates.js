@@ -45,6 +45,6 @@ export async function revertPayment(ticketId) {
   return await adminRequest(`/api/admin/tickets/${ticketId}/revert-payment`, { method: "POST" });
 }
 
-export async function updateGraduateEmail(id, email) {
-  return await adminRequest(`/api/admin/graduates/${id}/email`, { method: "PUT", body: { email } });
+export async function updateGraduateEmail(id, newEmail) {
+  return await adminRequest(`/api/admin/graduates/${id}/email`, { method: "PUT", body: { new_email: newEmail } });
 }
