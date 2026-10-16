@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from "react";
-import { adminRequest, adminBlob, downloadBlob, ApiError } from "../../api/admin.js";
+import { adminRequest, adminBlob, downloadBlob, ApiError } from "../../../api/admin.js";
 
 export function useAdminVolunteers({ eventId = null, collegeId = "", q = "", wants = "", hasExp = "", sort = "newest", limit = 10, offset = 0 } = {}) {
   const [data, setData] = useState(null);

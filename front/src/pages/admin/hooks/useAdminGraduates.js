@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from "react";
-import { adminRequest, ApiError } from "../../api/admin.js";
+import { adminRequest, ApiError } from "../../../api/admin.js";
 
 export function useAdminGraduates({ search = "", collegeId = "", skip = 0, limit = 50 } = {}) {
   const [items, setItems] = useState([]);

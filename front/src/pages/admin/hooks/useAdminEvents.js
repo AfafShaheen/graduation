@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { adminRequest, ApiError } from "../../api/admin.js";
+import { adminRequest, ApiError } from "../../../api/admin.js";
 
 export function useAdminEvents({ search = "", skip = 0, limit = 100, activeOnly = false } = {}) {
   const [events, setEvents] = useState([]);
@@ -41,4 +41,15 @@ export async function getAdminEvent(id) {
 
 export async function updateAdminEvent(id, payload) {
   return await adminRequest(`/api/admin/events/${id}`, { method: "PUT", body: payload });
+}
+
+export async function uploadUniversityRecords(eventId, file) {
+  const { adminForm, ApiError: Err } = await import("../../../api/admin.js");
+  const form = new FormData();
+  form.append("file", file);
+  const res = await adminForm(`/api/admin/events/${eventId}/university-records`, form, "POST");
+  if (res && Array.isArray(res.errors) && res.errors.length > 0) {
+    throw new Err(0, res.errors.join("\n"), res);
+  }
+  return res;
 }

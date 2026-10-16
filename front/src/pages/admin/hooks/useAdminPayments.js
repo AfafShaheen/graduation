@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from "react";
-import { adminRequest, ApiError } from "../../api/admin.js";
+import { adminRequest, ApiError } from "../../../api/admin.js";
 
 export function useAdminPayments({ eventId = null, status = "PROCESSING", limit = 50, offset = 0 } = {}) {
   const [items, setItems] = useState([]);

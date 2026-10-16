@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from "react";
-import { adminRequest, ApiError } from "../../api/admin.js";
+import { adminRequest, ApiError } from "../../../api/admin.js";
 
 export function useAdminAudit({ eventId = null, exceptionalOnly = true, limit = 50, offset = 0 } = {}) {
   const [data, setData] = useState(null);

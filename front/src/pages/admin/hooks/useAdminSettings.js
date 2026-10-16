@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from "react";
-import { adminRequest, ApiError } from "../../api/admin.js";
+import { adminRequest, ApiError } from "../../../api/admin.js";
 
 export function useAdminSettings() {
   const [settings, setSettings] = useState(null);
@@ -33,7 +33,7 @@ export async function updateAdminSettings(payload) {
 export async function uploadShamcashQr(file) {
   const formData = new FormData();
   formData.append("file", file);
-  const { adminForm } = await import("../../api/admin.js");
+  const { adminForm } = await import("../../../api/admin.js");
   return await adminForm("/api/admin/settings/shamcash-qr", formData, "PUT");
 }
 
