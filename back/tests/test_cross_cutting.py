@@ -92,6 +92,7 @@ def _iter_api_routes(application):
 
 _PUBLIC_ROUTES = {
     ("GET", "/api/colleges"),
+    ("GET", "/api/registration/colleges"),
     ("GET", "/api/settings/public"),
     ("GET", "/api/settings/shamcash-qr"),
     ("POST", "/api/graduates/verify-step1"),
@@ -180,7 +181,7 @@ def _records_xlsx(rows):
     workbook = Workbook()
     sheet = workbook.active
     sheet.append(
-        ["university_id", "full_name", "father_name", "mother_name", "college", "gender"]
+        ["university_id", "full_name", "father_name", "mother_name", "college", "gender", "gpa", "major"]
     )
     for row in rows:
         sheet.append(list(row))
@@ -229,13 +230,20 @@ async def test_end_to_end_flow(client, db, make_admin, sent_otps):
         c["id"] for c in colleges.json() if c["name"] == "كلية الهندسة"
     )
 
+    major_create = await client.post(
+        f"/api/admin/colleges/{college_id}/majors",
+        json={"name": "هندسة برمجيات"},
+        headers=admin_headers,
+    )
+    assert major_create.status_code == 201
+
     upload = await client.post(
         f"/api/admin/events/{event_id}/university-records",
         files={
             "file": (
                 "records.xlsx",
                 _records_xlsx(
-                    [("900001", "محمد أحمد علي", "أحمد", "سعاد", "كلية الهندسة", "ذكر")]
+                    [("900001", "محمد أحمد علي", "أحمد", "سعاد", "كلية الهندسة", "ذكر", "85.00", "هندسة برمجيات")]
                 ),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
@@ -279,6 +287,9 @@ async def test_end_to_end_flow(client, db, make_admin, sent_otps):
             "gender": "ذكر",
             "father_name": "أحمد",
             "mother_name": "سعاد",
+            "major_id": major_create.json()["id"],
+            "gpa": "85.00",
+            "top_rank": 1,
         },
     )
     assert step1.status_code == 200, step1.text

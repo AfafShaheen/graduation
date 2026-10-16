@@ -21,6 +21,8 @@ def _registration_payload(college_id, university_id="123456"):
         "gender": "male",
         "father_name": "أحمد",
         "mother_name": "سعاد",
+        "gpa": "85.00",
+        "top_rank": 1,
     }
 
 

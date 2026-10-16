@@ -26,6 +26,7 @@ from app.models.event import EventModel
 from app.models.graduate import GraduateModel
 from app.models.payment import PaymentModel
 from app.models.ticket import TicketModel
+from app.models.major import MajorModel
 from app.services.audit_log import ActorType, record_audit
 
 CONTENT_TYPE = (
@@ -53,6 +54,9 @@ _HEADERS = (
     "اسم المرسل",
     "تاريخ الإرسال",
     "تاريخ المراجعة",
+    "التخصص",
+    "المعدل",
+    "الترتيب",
 )
 
 
@@ -91,6 +95,16 @@ def _number_cell(ws, row: int, col: int, value) -> None:
     cell.data_type = "n"
 
 
+def _format_rank(rank) -> str:
+    if rank == 1:
+        return "الأول"
+    if rank == 2:
+        return "الثاني"
+    if rank == 3:
+        return "الثالث"
+    return ""
+
+
 async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
     """Build the .xlsx export and return ``(content_bytes, filename)``."""
     event_name = None
@@ -116,9 +130,11 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
             GraduateModel,
             TicketModel,
             PaymentModel,
+            MajorModel.name.label("major_name"),
         )
         .join(CollegeModel, CollegeModel.id == GraduateModel.college_id)
         .join(EventModel, EventModel.id == CollegeModel.event_id)
+        .outerjoin(MajorModel, MajorModel.id == GraduateModel.major_id)
         .outerjoin(
             TicketModel,
             and_(
@@ -155,6 +171,7 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
         graduate,
         ticket,
         payment,
+        major_name,
     ) in enumerate(rows, start=2):
         _string_cell(ws, row_idx, 1, ev_name)
         _string_cell(ws, row_idx, 2, college_name)
@@ -176,6 +193,9 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
         _string_cell(ws, row_idx, 18, payment.sender_name if payment else "")
         _string_cell(ws, row_idx, 19, payment.submitted_at if payment else "")
         _string_cell(ws, row_idx, 20, payment.reviewed_at if payment else "")
+        _string_cell(ws, row_idx, 21, major_name)
+        _string_cell(ws, row_idx, 22, str(graduate.gpa) if graduate.gpa is not None else "")
+        _string_cell(ws, row_idx, 23, _format_rank(graduate.top_rank))
 
     ws.freeze_panes = "A2"
 

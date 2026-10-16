@@ -270,7 +270,7 @@
       "Body_update_shamcash_qr_api_admin_settings_shamcash_qr_put": {
         "properties": {
           "file": {
-            "contentMediaType": "application/octet-stream",
+            "format": "binary",
             "title": "File",
             "type": "string"
           }
@@ -284,7 +284,7 @@
       "Body_upload_records_api_admin_events__event_id__university_records_post": {
         "properties": {
           "file": {
-            "contentMediaType": "application/octet-stream",
+            "format": "binary",
             "title": "File",
             "type": "string"
           }
@@ -697,6 +697,77 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "MajorAdminResponse": {
+        "properties": {
+          "college_id": {
+            "title": "College Id",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "college_id"
+        ],
+        "title": "MajorAdminResponse",
+        "type": "object"
+      },
+      "MajorCreate": {
+        "properties": {
+          "name": {
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "MajorCreate",
+        "type": "object"
+      },
+      "MajorPublicItem": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "MajorPublicItem",
+        "type": "object"
+      },
+      "MajorUpdate": {
+        "properties": {
+          "name": {
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "MajorUpdate",
+        "type": "object"
+      },
       "MyTicketResponse": {
         "properties": {
           "event": {
@@ -966,6 +1037,37 @@
           "password"
         ],
         "title": "RegisterStep2Request",
+        "type": "object"
+      },
+      "RegistrationCollegeItem": {
+        "properties": {
+          "event_id": {
+            "title": "Event Id",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "majors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MajorPublicItem"
+            },
+            "title": "Majors",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "event_id"
+        ],
+        "title": "RegistrationCollegeItem",
         "type": "object"
       },
       "RegistrationInfo": {
@@ -1362,6 +1464,17 @@
             "title": "Gender",
             "type": "string"
           },
+          "gpa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpa"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -1370,6 +1483,28 @@
             "format": "date-time",
             "title": "Imported At",
             "type": "string"
+          },
+          "major_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Id"
+          },
+          "major_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Name"
           },
           "mother_name": {
             "title": "Mother Name",
@@ -1471,11 +1606,52 @@
             "title": "Gender",
             "type": "string"
           },
+          "gpa": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Gpa"
+          },
+          "major_id": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Id"
+          },
           "mother_name": {
             "description": "Mother's name must contain letters only.",
             "pattern": "^[\\u0600-\\u06FFa-zA-Z\\s]{2,255}$",
             "title": "Mother Name",
             "type": "string"
+          },
+          "top_rank": {
+            "anyOf": [
+              {
+                "enum": [
+                  1,
+                  2,
+                  3
+                ],
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Rank"
           },
           "university_id": {
             "maxLength": 100,
@@ -1490,20 +1666,14 @@
           "full_name",
           "father_name",
           "mother_name",
-          "gender"
+          "gender",
+          "gpa"
         ],
         "title": "UserVerifyStep1",
         "type": "object"
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [
@@ -2049,6 +2219,112 @@
         "summary": "Logout",
         "tags": [
           "Admin Authentication"
+        ]
+      }
+    },
+    "/api/admin/colleges/{college_id}/majors": {
+      "get": {
+        "operationId": "list_college_majors_api_admin_colleges__college_id__majors_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "college_id",
+            "required": true,
+            "schema": {
+              "title": "College Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MajorAdminResponse"
+                  },
+                  "title": "Response List College Majors Api Admin Colleges  College Id  Majors Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List College Majors",
+        "tags": [
+          "Admin Majors Management"
+        ]
+      },
+      "post": {
+        "operationId": "create_major_api_admin_colleges__college_id__majors_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "college_id",
+            "required": true,
+            "schema": {
+              "title": "College Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MajorCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MajorAdminResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Major",
+        "tags": [
+          "Admin Majors Management"
         ]
       }
     },
@@ -2888,6 +3164,106 @@
         "summary": "Revert Scan",
         "tags": [
           "Admin Graduate Management & Exceptional Actions"
+        ]
+      }
+    },
+    "/api/admin/majors/{major_id}": {
+      "delete": {
+        "operationId": "delete_major_api_admin_majors__major_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "major_id",
+            "required": true,
+            "schema": {
+              "title": "Major Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Major",
+        "tags": [
+          "Admin Majors Management"
+        ]
+      },
+      "put": {
+        "operationId": "update_major_api_admin_majors__major_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "major_id",
+            "required": true,
+            "schema": {
+              "title": "Major Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MajorUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MajorAdminResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Major",
+        "tags": [
+          "Admin Majors Management"
         ]
       }
     },
@@ -4350,6 +4726,32 @@
         "summary": "Verify Step1 Endpoint",
         "tags": [
           "Graduates & Registration"
+        ]
+      }
+    },
+    "/api/registration/colleges": {
+      "get": {
+        "description": "Public registration colleges and majors list (Section 5.1).\n\nOnly returns colleges whose event registration has not ended.\nCached in Redis for 60 seconds with fail-open.",
+        "operationId": "list_registration_colleges_api_registration_colleges_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RegistrationCollegeItem"
+                  },
+                  "title": "Response List Registration Colleges Api Registration Colleges Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Registration Colleges",
+        "tags": [
+          "Public"
         ]
       }
     },

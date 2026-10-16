@@ -57,6 +57,7 @@ async def _ensure_college_names_available(
 
 async def invalidate_events_cache() -> None:
     try:
+        await redis_client.delete("public:registration:colleges")
         keys = await redis_client.keys("events:*")
         if keys:
             await redis_client.delete(*keys)
