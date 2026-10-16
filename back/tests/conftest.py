@@ -230,6 +230,8 @@ def make_event(db):
     async def _make(
         name="حفل التجريبي",
         event_date=date(2030, 6, 1),
+        event_time=None,
+        seat_prefix=None,
         registration_start=None,
         registration_end=None,
         whatsapp_group_link="https://chat.whatsapp.com/test",
@@ -240,6 +242,8 @@ def make_event(db):
         event = EventModel(
             name=name,
             event_date=event_date,
+            event_time=event_time,
+            seat_prefix=seat_prefix,
             registration_start=registration_start
             or datetime.combine(date(2020, 1, 1), time(0, 0), tzinfo=timezone.utc),
             registration_end=registration_end

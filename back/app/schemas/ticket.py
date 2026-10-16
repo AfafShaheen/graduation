@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import List, Optional
 
@@ -13,6 +13,7 @@ class EventBrief(BaseModel):
     id: int
     name: str
     event_date: date
+    event_time: Optional[time] = None
     model_config = ConfigDict(from_attributes=True)
 
 
