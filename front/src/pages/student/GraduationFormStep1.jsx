@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
@@ -13,18 +13,25 @@ const DIGITS_ONLY = /^[0-9]+$/;
 const TOP_RANK_MAP = { none: null, first: 1, second: 2, third: 3 };
 const GENDER_MAP = { male: "ذكر", female: "أنثى" };
 
+/* رموز خطأ الأوائل (D11) التي تُعرض تحت حقل الاختيار */
+const TOP_RANK_ERROR_CODES = ['TOP_RANK_NOT_HONOR', 'TOP_RANK_SHOULD_BE_HONOR', 'TOP_RANK_MISMATCH'];
+
 export function toVerifyStep1Payload(formData, colleges) {
   const college = colleges.find((c) => String(c.id) === String(formData.faculty));
   const major = college?.majors?.find((m) => String(m.id) === String(formData.major));
+  const gpaValue = String(formData.gpa ?? '').trim();
+
   return {
     college_id: college?.id || null,
     major_id: major?.id || null,
     university_id: formData.studentId.trim(),
-    full_name: formData.fullName.trim(),
+    first_name: formData.firstName.trim(),
+    last_name: formData.lastName.trim(),
     father_name: formData.fatherName.trim(),
     mother_name: formData.motherName.trim(),
     gender: GENDER_MAP[formData.gender],
-    gpa: Number(formData.gpa),
+    // المعدل اختياري (D2): يُرسل فقط عند إدخاله
+    gpa: gpaValue === '' ? null : Number(gpaValue),
     top_rank: TOP_RANK_MAP[formData.topRank] ?? null,
   };
 }
@@ -39,11 +46,18 @@ const TOP_RANK_OPTIONS = [
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
-  fullName: (v) => {
-    const t = v.trim().replace(/\s+/g, ' ');
-    if (!t) return 'الاسم والكنية مطلوبان';
+  firstName: (v) => {
+    const t = v.trim();
+    if (!t) return 'الاسم مطلوب';
     if (!ARABIC_ONLY.test(t)) return 'يرجى كتابة الاسم بحروف عربية فقط';
-    if (t.split(' ').length < 2) return 'يرجى كتابة الاسم والكنية (كلمتان على الأقل)';
+    if (t.length < 2) return 'الاسم قصير جداً';
+    return '';
+  },
+  lastName: (v) => {
+    const t = v.trim();
+    if (!t) return 'الكنية مطلوبة';
+    if (!ARABIC_ONLY.test(t)) return 'يرجى كتابة الكنية بحروف عربية فقط';
+    if (t.length < 2) return 'الكنية قصيرة جداً';
     return '';
   },
   faculty: (v) => (v ? '' : 'اختر الكلية'),
@@ -55,8 +69,8 @@ const validators = {
     return '';
   },
   gpa: (v) => {
-    const t = String(v).trim();
-    if (!t) return 'المعدل مطلوب';
+    const t = String(v ?? '').trim();
+    if (!t) return ''; // المعدل اختياري (D2)
     const n = Number(t);
     if (Number.isNaN(n)) return 'يرجى إدخال المعدل كرقم';
     if (n < 0 || n > 100) return 'المعدل يجب أن يكون بين 0 و 100';
@@ -89,7 +103,8 @@ function FieldError({ message }) {
 
 export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
   const [formData, setFormData] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     gender: '',
     faculty: '',
     major: 'none',
@@ -152,13 +167,6 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     }
   };
 
-  const handleGenderSelect = (gender) => {
-    setFormData((prev) => ({ ...prev, gender }));
-    if (submitted) {
-      setErrors((prev) => ({ ...prev, gender: validators.gender(gender) }));
-    }
-  };
-
   const handleNextStep = async (e) => {
     e.preventDefault();
     if (isLoading) return;
@@ -188,7 +196,13 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
         const firstField = Object.keys(err.fieldErrors)[0];
         document.getElementsByName(firstField)?.[0]?.focus();
       } else if (err.status === 400 || err.status === 403) {
-        setErrors({ general: err.message });
+        const detail = err.data?.detail;
+        const code = detail && typeof detail === 'object' ? detail.code : null;
+        if (code && TOP_RANK_ERROR_CODES.includes(code)) {
+          setErrors({ topRank: err.message });
+        } else {
+          setErrors({ general: err.message });
+        }
       } else if (err.status === 429) {
         setErrors({ general: 'تم تجاوز الحد المسموح من المحاولات، يرجى الانتظار' });
       } else {
@@ -255,23 +269,37 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               </div>
             )}
 
-            <div className="form-group">
-              <label className="form-label">
-                الاسم والكنية <span className="required-star">*</span>
-              </label>
-              <div className="input-wrapper">
+            <div className="form-group grid-two-cols">
+              <div>
+                <label className="form-label">
+                  الاسم <span className="required-star">*</span>
+                </label>
                 <input
                   type="text"
-                  name="fullName"
-                  className={`form-input input-with-icon ${errors.fullName ? 'error' : ''}`}
-                  placeholder="مثلاً: مجد العلي"
-                  value={formData.fullName}
+                  name="firstName"
+                  className={`form-input ${errors.firstName ? 'error' : ''}`}
+                  placeholder="مثلاً: مجد"
+                  value={formData.firstName}
                   onChange={handleInputChange}
-                  aria-invalid={!!errors.fullName}
+                  aria-invalid={!!errors.firstName}
                 />
-                <span className="material-symbols-outlined input-icon">badge</span>
+                <FieldError message={errors.firstName} />
               </div>
-              <FieldError message={errors.fullName} />
+              <div>
+                <label className="form-label">
+                  الكنية <span className="required-star">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  className={`form-input ${errors.lastName ? 'error' : ''}`}
+                  placeholder="مثلاً: العلي"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  aria-invalid={!!errors.lastName}
+                />
+                <FieldError message={errors.lastName} />
+              </div>
             </div>
 
             {/* الجنس */}
@@ -280,26 +308,18 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 الجنس <span className="required-star">*</span>
               </label>
               <div className="gender-grid">
-                <button
-                  type="button"
-                  className={`gender-btn ${formData.gender === 'male' ? 'active' : 'inactive'}`}
-                  onClick={() => handleGenderSelect('male')}
+                <select
+                  name="gender"
+                  className={`form-select select-with-icon ${errors.gender ? 'error' : ''}`}
+                  value={formData.gender}
+                  onChange={handleInputChange}
+                  aria-invalid={!!errors.gender}
                 >
-                  <span className="material-symbols-outlined">
-                    {formData.gender === 'male' ? 'check_circle' : 'radio_button_unchecked'}
-                  </span>
-                  <span>ذكر</span>
-                </button>
-                <button
-                  type="button"
-                  className={`gender-btn ${formData.gender === 'female' ? 'active' : 'inactive'}`}
-                  onClick={() => handleGenderSelect('female')}
-                >
-                  <span className="material-symbols-outlined">
-                    {formData.gender === 'female' ? 'check_circle' : 'radio_button_unchecked'}
-                  </span>
-                  <span>أنثى</span>
-                </button>
+                  <option value="" disabled>اختر الجنس...</option>
+                  <option value="male">ذكر</option>
+                  <option value="female">أنثى</option>
+                </select>
+                <span className="material-symbols-outlined input-icon">expand_more</span>
               </div>
               <FieldError message={errors.gender} />
             </div>
@@ -408,15 +428,16 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 </select>
                 <span className="material-symbols-outlined input-icon">expand_more</span>
               </div>
+              <FieldError message={errors.topRank} />
             </div>
 
             {/* المعدل كنسبة مئوية */}
             <div className="form-group">
               <div className="label-row">
                 <label className="form-label" style={{ margin: 0 }}>
-                  المعدل (نسبة مئوية) <span className="required-star">*</span>
+                  المعدل (نسبة مئوية)
                 </label>
-                <span className="label-hint">من 0 إلى 100</span>
+                <span className="label-hint">اختياري، من 0 إلى 100</span>
               </div>
               <div className="input-wrapper">
                 <input
