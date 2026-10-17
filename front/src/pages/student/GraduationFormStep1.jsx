@@ -86,7 +86,7 @@ function FieldError({ message }) {
   );
 }
 
-export default function GraduationFormStep1({ onNext }) {
+export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
   const [formData, setFormData] = useState({
     fullName: '',
     gender: 'male',
@@ -485,6 +485,19 @@ export default function GraduationFormStep1({ onNext }) {
               </>
             )}
           </button>
+
+          {/* لديك حساب؟ تسجيل دخول */}
+          <p className="login-prompt">
+            هل لديك حساب من قبل؟{' '}
+            <button
+              type="button"
+              className="login-link-btn"
+              onClick={onNavigateToLogin}
+            >
+              تسجيل دخول
+            </button>
+          </p>
+
           <p className="footer-copy">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
         </div>
       </main>

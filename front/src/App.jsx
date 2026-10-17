@@ -92,9 +92,19 @@ function App() {
           path="/"
           element={
             <GraduationFormStep1
-                onNext={() => {
-                  navigate("/register");
-                }}
+              onNavigateToLogin={() => navigate("/login")}
+              onNext={(data) => {
+                // نحفظ بيانات الخريج (التذكرة + التخصص والترتيب والمعدل للباك إند)
+                setStudent({
+                  fullName: data.fullName.trim(),
+                  faculty: data.faculty,
+                  major: data.major, // "none" = لا يوجد
+                  studentId: data.studentId.trim(),
+                  topRank: data.topRank, // none | first | second | third
+                  gpa: Number(data.gpa), // المعدل كنسبة مئوية (0-100)
+                });
+                navigate("/register");
+              }}
             />
           }
         />
