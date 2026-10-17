@@ -1746,6 +1746,16 @@
             "title": "Skipped",
             "type": "integer"
           },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UniversityRecordUploadSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "updated": {
             "title": "Updated",
             "type": "integer"
@@ -1758,6 +1768,39 @@
           "errors"
         ],
         "title": "UniversityRecordUploadResponse",
+        "type": "object"
+      },
+      "UniversityRecordUploadSummary": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "error_count": {
+            "title": "Error Count",
+            "type": "integer"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "added",
+          "updated",
+          "skipped",
+          "error_count"
+        ],
+        "title": "UniversityRecordUploadSummary",
         "type": "object"
       },
       "UserVerifyStep1": {
@@ -1773,8 +1816,21 @@
             "title": "Father Name",
             "type": "string"
           },
+          "first_name": {
+            "anyOf": [
+              {
+                "pattern": "^[\\u0600-\\u06FFa-zA-Z\\s]{2,255}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "First name (الاسم), letters only.",
+            "title": "First Name"
+          },
           "full_name": {
-            "description": "Full name must contain letters only.",
+            "description": "Legacy single name field; kept for backwards compatibility (D4).",
             "pattern": "^[\\u0600-\\u06FFa-zA-Z\\s]{2,255}$",
             "title": "Full Name",
             "type": "string"
@@ -1794,9 +1850,25 @@
               },
               {
                 "type": "string"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Gpa"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "pattern": "^[\\u0600-\\u06FFa-zA-Z\\s]{2,255}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Surname (الكنية), letters only.",
+            "title": "Last Name"
           },
           "major_id": {
             "anyOf": [
@@ -1842,11 +1914,9 @@
         "required": [
           "college_id",
           "university_id",
-          "full_name",
           "father_name",
           "mother_name",
-          "gender",
-          "gpa"
+          "gender"
         ],
         "title": "UserVerifyStep1",
         "type": "object"
