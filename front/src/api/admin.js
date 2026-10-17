@@ -244,8 +244,8 @@ export async function getVolunteers(params) {
   });
 }
 
-export async function exportVolunteers() {
-  return requestBlob("/api/admin/volunteers/export", {
+export async function exportVolunteers(params) {
+  return requestBlob(`/api/admin/volunteers/export${buildQuery(params)}`, {
     token: getAdminToken(),
   });
 }

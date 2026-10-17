@@ -151,7 +151,40 @@ export async function requestBlob(path, { token } = {}) {
   }
 
   if (!response.ok) {
-    throw new ApiError(response.status, "فشل تنزيل الملف.");
+    let errorMessage = "فشل تنزيل الملف.";
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      try {
+        const errData = await response.json();
+        if (typeof errData.detail === "string") {
+          errorMessage = errData.detail;
+        } else if (typeof errData.detail === "object" && errData.detail !== null && typeof errData.detail.message === "string") {
+          errorMessage = errData.detail.message;
+        }
+      } catch {}
+    }
+
+    if (response.status === 401 && token) {
+      const { clearGraduateSession, clearScannerSession, clearAdminSession } = await import("./session.js");
+      if (path.startsWith("/api/scanner")) {
+        clearScannerSession();
+        if (window.location.pathname !== "/scanner") {
+          window.location.href = "/scanner";
+        }
+      } else if (path.startsWith("/api/admin")) {
+        clearAdminSession();
+        if (!window.location.pathname.startsWith("/admin")) {
+          window.location.href = "/admin";
+        }
+      } else {
+        clearGraduateSession();
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+      }
+    }
+
+    throw new ApiError(response.status, errorMessage);
   }
 
   const blob = await response.blob();

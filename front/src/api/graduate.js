@@ -136,7 +136,7 @@ export async function saveVolunteerAnswers(data, token) {
 
 export async function getShamcashQr() {
   try {
-    const blob = await requestBlob("/api/settings/shamcash-qr");
+    const { blob } = await requestBlob("/api/settings/shamcash-qr");
     return URL.createObjectURL(blob);
   } catch (error) {
     if (error.status === 404) {

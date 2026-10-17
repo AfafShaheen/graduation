@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import '../../style/Login.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
+import { loginGraduate } from '../../api/graduate';
+import { setGraduateSession, setVerificationToken, setGraduateEmail } from '../../api/session';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -54,7 +56,10 @@ export default function Login({
     }
   };
 
-  const handleSubmit = (e) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newErrors = {};
@@ -64,16 +69,35 @@ export default function Login({
     setErrors(newErrors);
     setChecked({ email: true, password: true });
 
-    // إذا في أي خطأ: وقّف وروح لأول حقل فيه خطأ
     const firstInvalid = Object.keys(newErrors).find((k) => newErrors[k]);
     if (firstInvalid) {
       document.getElementById(fieldIds[firstInvalid])?.focus();
       return;
     }
 
-    const credentials = { email: formData.email.trim(), password: formData.password };
-    if (onLoginSuccess) onLoginSuccess(credentials);
-    else alert(`تم تسجيل الدخول بنجاح للبريد: ${credentials.email}`);
+    setIsLoading(true);
+    setServerError('');
+
+    try {
+      const credentials = { email: formData.email.trim(), password: formData.password };
+      const result = await loginGraduate(credentials);
+      setGraduateSession({ accessToken: result.access_token, expiresIn: result.expires_in });
+      if (onLoginSuccess) onLoginSuccess(credentials);
+    } catch (err) {
+      if (err.status === 403 && err.data?.verification_token) {
+        setVerificationToken(err.data.verification_token);
+        setGraduateEmail(formData.email.trim());
+        if (onLoginSuccess) onLoginSuccess({ email: formData.email.trim(), needsVerification: true });
+      } else if (err.status === 401) {
+        setServerError('البريد الإلكتروني أو كلمة السر غير صحيحة');
+      } else if (err.status === 429) {
+        setServerError(err.message);
+      } else {
+        setServerError(err.message || 'حدث خطأ غير متوقع');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // نسيت كلمة السر: نحتاج البريد أولاً لنرسل له رمز الاستعادة
@@ -145,6 +169,12 @@ export default function Login({
 
             {/* نموذج تسجيل الدخول */}
             <form className="lg-form" onSubmit={handleSubmit} noValidate>
+              {serverError && (
+                <div className="lg-notice" role="alert" style={{ background: '#fff5f5', borderColor: '#ba1a1a' }}>
+                  <span className="lg-symbol" style={{ color: '#ba1a1a' }}>error</span>
+                  <span>{serverError}</span>
+                </div>
+              )}
               {/* حقل البريد الإلكتروني */}
               <div className="lg-field-group">
                 <label className="lg-label" htmlFor="student-email">
@@ -217,9 +247,9 @@ export default function Login({
               </div>
 
               {/* زر التقديم */}
-              <button className="lg-submit-btn" type="submit">
-                <span>دخول</span>
-                <span className="lg-symbol">arrow_back</span>
+              <button className="lg-submit-btn" type="submit" disabled={isLoading}>
+                <span>{isLoading ? 'جارٍ تسجيل الدخول...' : 'دخول'}</span>
+                {!isLoading && <span className="lg-symbol">arrow_back</span>}
               </button>
             </form>
 
