@@ -109,6 +109,7 @@ function App() {
           path="/"
           element={
             <GraduationFormStep1
+              onNavigateToLogin={() => navigate("/login")}
               onNext={(data) => {
                 // نحفظ بيانات الخريج (التذكرة + التخصص والترتيب والمعدل للباك إند)
                 setStudent({
