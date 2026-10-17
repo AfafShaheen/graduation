@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
+import { getVolunteerAnswers, saveVolunteerAnswers } from '../../api/graduate';
+import { getGraduateToken } from '../../api/session';
 
 /* نص السؤالين: عدّلهما من هنا */
 const QUESTIONS = [
@@ -41,8 +43,29 @@ function FieldError({ message }) {
 export default function GraduateQuestions({ onDone }) {
   const [answers, setAnswers] = useState({ wantsResponsibility: '', hasExperience: '' });
   const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false); // الأخطاء ما بتبين إلا بعد أول ضغطة على الزر
+  const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [alreadyAnswered, setAlreadyAnswered] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    getVolunteerAnswers(getGraduateToken())
+      .then((data) => {
+        if (!mounted) return;
+        if (data.answered) {
+          setAlreadyAnswered(true);
+        }
+      })
+      .catch((err) => {
+        if (mounted) setLoadError(err.message || 'تعذّر تحميل البيانات');
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (alreadyAnswered && onDone) onDone(answers);
+  }, [alreadyAnswered, onDone]);
 
   const handleChoice = (name, value) => {
     setAnswers((prev) => ({ ...prev, [name]: value }));
@@ -51,7 +74,7 @@ export default function GraduateQuestions({ onDone }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
 
@@ -62,7 +85,6 @@ export default function GraduateQuestions({ onDone }) {
     setErrors(newErrors);
     setSubmitted(true);
 
-    // إذا في أي خطأ: وقّف وروح لأول سؤال ما انجاوب
     const firstInvalid = Object.keys(newErrors).find((k) => newErrors[k]);
     if (firstInvalid) {
       document.getElementsByName(firstInvalid)[0]?.focus();
@@ -70,11 +92,17 @@ export default function GraduateQuestions({ onDone }) {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await saveVolunteerAnswers({
+        wants_responsibility: answers.wantsResponsibility,
+        has_experience: answers.hasExperience,
+      }, getGraduateToken());
       if (onDone) onDone(answers);
-      else alert('تم حفظ إجاباتك، الانتقال إلى اختيار التذكرة.');
-    }, 500);
+    } catch (err) {
+      setErrors({ general: err.message || 'حدث خطأ غير متوقع' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -122,6 +150,16 @@ export default function GraduateQuestions({ onDone }) {
           </div>
 
           <form onSubmit={handleSubmit} noValidate style={{ marginTop: '4px' }}>
+            {loadError && (
+              <div className="info-box" style={{ borderColor: '#ba1a1a', background: '#fff5f5' }}>
+                <p className="info-text" style={{ color: '#ba1a1a' }}>{loadError}</p>
+              </div>
+            )}
+            {errors.general && (
+              <div className="info-box" style={{ borderColor: '#ba1a1a', background: '#fff5f5' }}>
+                <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
+              </div>
+            )}
             {QUESTIONS.map((q) => (
               <div className="form-group" key={q.name}>
                 <label className="form-label" id={`label-${q.name}`}>

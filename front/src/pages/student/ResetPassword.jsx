@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import '../../style/GraduationForm.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
+import { resetPassword } from '../../api/graduate';
+import { clearResetFlow, getResetEmail, getResetCode } from '../../api/session';
 
 /* نفس شروط كلمة السر عند إنشاء الحساب */
 const validators = {
@@ -23,16 +25,6 @@ const fieldIds = {
   password: 'new-password-input',
   confirmPassword: 'confirm-password-input',
 };
-
-/*
-  حفظ تجريبي إلى أن يجهز الباك إند.
-  بدّله بطلب حقيقي يرسل كلمة السر الجديدة مع رمز التحقق ويرجع true أو false،
-  أو مرّره من الخارج عبر الخاصية resetPassword.
-*/
-async function mockReset() {
-  await new Promise((resolve) => setTimeout(resolve, 800));
-  return true;
-}
 
 function FieldError({ message }) {
   if (!message) return null;
@@ -73,13 +65,15 @@ function EyeIcon({ off }) {
   );
 }
 
-export default function ResetPassword({ onBack, onDone, resetPassword = mockReset }) {
+export default function ResetPassword({ onBack, onDone }) {
   const [formData, setFormData] = useState({ password: '', confirmPassword: '' });
   const [show, setShow] = useState({ password: false, confirmPassword: false });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false); // الأخطاء ما بتبين إلا بعد أول ضغطة على الزر
   const [isLoading, setIsLoading] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const resetEmail = getResetEmail();
+  const resetCode = getResetCode();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -89,7 +83,6 @@ export default function ResetPassword({ onBack, onDone, resetPassword = mockRese
 
     if (submitted) {
       const updates = { [name]: validators[name](value, next) };
-      // تغيير كلمة السر لازم يعيد فحص التأكيد
       if (name === 'password') {
         updates.confirmPassword = validators.confirmPassword(next.confirmPassword, next);
       }
@@ -110,25 +103,39 @@ export default function ResetPassword({ onBack, onDone, resetPassword = mockRese
     setErrors(newErrors);
     setSubmitted(true);
 
-    // إذا في أي خطأ: وقّف وروح لأول حقل فيه خطأ
     const firstInvalid = Object.keys(newErrors).find((k) => newErrors[k]);
     if (firstInvalid) {
       document.getElementById(fieldIds[firstInvalid])?.focus();
       return;
     }
 
+    if (!resetEmail || !resetCode) {
+      setSaveError('انتهت الجلسة، يرجى إعادة طلب الرمز');
+      return;
+    }
+
     setIsLoading(true);
     setSaveError('');
     try {
-      const ok = await resetPassword(formData.password);
-      if (ok) {
-        if (onDone) onDone();
-        else alert('تم تغيير كلمة السر بنجاح');
-      } else {
-        setSaveError('تعذّر حفظ كلمة السر، يرجى المحاولة مرة أخرى');
-      }
+      await resetPassword({
+        email: resetEmail,
+        code: resetCode,
+        new_password: formData.password,
+      });
+      clearResetFlow();
+      if (onDone) onDone();
     } catch (err) {
-      setSaveError('تعذّر حفظ كلمة السر حالياً، يرجى المحاولة لاحقاً');
+      if (err.status === 400) {
+        clearResetFlow();
+        if (onBack) onBack();
+        else setSaveError(err.message || 'رمز التحقق غير صحيح');
+      } else if (err.fieldErrors) {
+        setErrors((prev) => ({ ...prev, ...err.fieldErrors }));
+      } else if (err.status === 429) {
+        setSaveError(err.message);
+      } else {
+        setSaveError(err.message || 'تعذّر حفظ كلمة السر حالياً');
+      }
     } finally {
       setIsLoading(false);
     }
