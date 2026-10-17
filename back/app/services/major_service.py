@@ -5,8 +5,8 @@ from app.models.major import MajorModel
 from app.models.college import CollegeModel
 from app.models.graduate import GraduateModel
 from app.models.university_record import UniversityRecordModel
-from app.models.audit_log import AuditLogModel
 from app.schemas.major import MajorCreate, MajorUpdate
+from app.services.audit_log import ActorType, record_audit
 from app.services.graduate_service import normalize_arabic
 from app.core.redis import redis_client
 
@@ -19,17 +19,6 @@ async def invalidate_majors_cache() -> None:
             await redis_client.delete(*keys)
     except Exception:
         pass
-
-
-async def write_audit_log(db: AsyncSession, admin_id: int, action: str, target: str, details: str) -> None:
-    log_entry = AuditLogModel(
-        actor_type="ADMIN",
-        actor_id=admin_id,
-        action=action,
-        target=target,
-        details=details
-    )
-    db.add(log_entry)
 
 
 async def list_college_majors_service(db: AsyncSession, college_id: int) -> list[MajorModel]:
@@ -63,12 +52,14 @@ async def create_major_service(db: AsyncSession, college_id: int, data: MajorCre
     await db.flush()
     await db.refresh(new_major)
 
-    await write_audit_log(
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="CREATE_MAJOR",
-        target=f"Major ID {new_major.id}",
-        details=f"Created major '{new_major.name}' for college ID {college_id}"
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "CREATE_MAJOR",
+        f"Major ID {new_major.id}",
+        f"Created major '{new_major.name}' for college ID {college_id}",
+        event_id=college.event_id,
     )
 
     await db.commit()
@@ -97,12 +88,16 @@ async def update_major_service(db: AsyncSession, major_id: int, data: MajorUpdat
     major.name = data.name.strip()
     db.add(major)
 
-    await write_audit_log(
+    college = await db.get(CollegeModel, major.college_id)
+
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="UPDATE_MAJOR",
-        target=f"Major ID {major_id}",
-        details=f"Renamed major from '{old_name}' to '{major.name}'"
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "UPDATE_MAJOR",
+        f"Major ID {major_id}",
+        f"Renamed major from '{old_name}' to '{major.name}'",
+        event_id=college.event_id if college else None,
     )
 
     await db.commit()
@@ -130,14 +125,18 @@ async def delete_major_service(db: AsyncSession, major_id: int, admin: dict) -> 
             detail="لا يمكن حذف التخصص لأنه مرتبط بسجلات جامعية."
         )
 
+    college = await db.get(CollegeModel, major.college_id)
+
     await db.delete(major)
 
-    await write_audit_log(
+    await record_audit(
         db,
-        admin_id=admin["admin_id"],
-        action="DELETE_MAJOR",
-        target=f"Major ID {major_id}",
-        details=f"Deleted major '{major.name}'"
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "DELETE_MAJOR",
+        f"Major ID {major_id}",
+        f"Deleted major '{major.name}'",
+        event_id=college.event_id if college else None,
     )
 
     await db.commit()

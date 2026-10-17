@@ -28,6 +28,7 @@ from app.models.payment import PaymentModel
 from app.models.ticket import TicketModel
 from app.models.major import MajorModel
 from app.services.audit_log import ActorType, record_audit
+from app.services.seat_service import seat_labels
 
 CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -57,6 +58,9 @@ _HEADERS = (
     "التخصص",
     "المعدل",
     "الترتيب",
+    "مقعد الخريج",
+    "مقاعد المرافقين",
+    "وقت الحفل",
 )
 
 
@@ -126,6 +130,8 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
     stmt = (
         select(
             EventModel.name,
+            EventModel.seat_prefix,
+            EventModel.event_time,
             CollegeModel.name,
             GraduateModel,
             TicketModel,
@@ -167,12 +173,19 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
 
     for row_idx, (
         ev_name,
+        seat_prefix,
+        ev_time,
         college_name,
         graduate,
         ticket,
         payment,
         major_name,
     ) in enumerate(rows, start=2):
+        seat = (
+            seat_labels(seat_prefix, ticket.seat_start, ticket.companions_count)
+            if ticket is not None and ticket.seat_start is not None
+            else None
+        )
         _string_cell(ws, row_idx, 1, ev_name)
         _string_cell(ws, row_idx, 2, college_name)
         _string_cell(ws, row_idx, 3, graduate.full_name)
@@ -194,8 +207,13 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
         _string_cell(ws, row_idx, 19, payment.submitted_at if payment else "")
         _string_cell(ws, row_idx, 20, payment.reviewed_at if payment else "")
         _string_cell(ws, row_idx, 21, major_name)
-        _string_cell(ws, row_idx, 22, str(graduate.gpa) if graduate.gpa is not None else "")
+        _number_cell(ws, row_idx, 22, graduate.gpa)
         _string_cell(ws, row_idx, 23, _format_rank(graduate.top_rank))
+        _string_cell(ws, row_idx, 24, seat["graduate"] if seat else "")
+        _string_cell(
+            ws, row_idx, 25, ", ".join(seat["companions"]) if seat else ""
+        )
+        _string_cell(ws, row_idx, 26, ev_time)
 
     ws.freeze_panes = "A2"
 

@@ -45,6 +45,14 @@ async def register_step2_endpoint(data: RegisterStep2Request, db: AsyncSession =
     return await register_step2_service(db, data)
 
 
+@router.get("/me", response_model=GraduateMeResponse, status_code=status.HTTP_200_OK)
+async def get_graduate_me(
+    db: AsyncSession = Depends(get_db),
+    graduate: GraduateModel = Depends(get_current_graduate),
+):
+    return await get_graduate_me_service(db, graduate)
+
+
 @router.get("/me/ticket-options", response_model=TicketOptionsResponse, status_code=status.HTTP_200_OK)
 async def get_ticket_options(
     db: AsyncSession = Depends(get_db),

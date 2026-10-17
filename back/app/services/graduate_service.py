@@ -99,15 +99,6 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
         )
     await ensure_registration_open(event)
 
-    existing_grad = await db.execute(
-        select(GraduateModel).where(GraduateModel.university_id == data.university_id)
-    )
-    if existing_grad.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=messages.UNIVERSITY_ID_ALREADY_REGISTERED
-        )
-
     uni_record_result = await db.execute(
         select(UniversityRecordModel).where(
             UniversityRecordModel.university_id == data.university_id,
@@ -162,6 +153,18 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=await _generic_verify_fail(db)
+        )
+
+    # Already-registered check runs LAST: the specific message is reachable
+    # only after the caller proved knowledge of the full university record,
+    # so it cannot be used to probe which university ids are registered.
+    existing_grad = await db.execute(
+        select(GraduateModel).where(GraduateModel.university_id == data.university_id)
+    )
+    if existing_grad.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=messages.UNIVERSITY_ID_ALREADY_REGISTERED
         )
 
     token_payload = {

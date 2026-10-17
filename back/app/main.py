@@ -53,13 +53,20 @@ def read_root():
 @app.get("/health")
 async def health_check(db: AsyncSession = Depends(get_db)):
     details = {"database": "ok", "redis": "ok"}
-    healthy = True
     try:
         await db.execute(text("SELECT 1"))
     except Exception:
-        pass
+        details["database"] = "error"
     try:
         await redis_client.ping()
     except Exception:
-        pass
-    return {"status": "healthy", "details": details}
+        details["redis"] = "error"
+
+    healthy = all(value == "ok" for value in details.values())
+    return JSONResponse(
+        status_code=200 if healthy else 503,
+        content={
+            "status": "healthy" if healthy else "unhealthy",
+            "details": details,
+        },
+    )

@@ -182,6 +182,43 @@ async def client():
         yield async_client
 
 
+def _bearer_token_headers(graduate) -> dict:
+    from app.core.security import create_access_token
+
+    access_value = create_access_token(
+        {
+            "sub": str(graduate.id),
+            "graduate_id": graduate.id,
+            "role": "graduate",
+            "email": graduate.email,
+            "university_id": graduate.university_id,
+        }
+    )
+    return {"Authorization": "Bearer " + access_value}
+
+
+@pytest.fixture
+async def graduate_headers(make_event, make_college, make_graduate):
+    """Authorization headers for a verified graduate (own event/college)."""
+    event = await make_event()
+    college = await make_college(event.id)
+    graduate = await make_graduate(
+        college.id, university_id="900001", email_verified=True
+    )
+    return _bearer_token_headers(graduate)
+
+
+@pytest.fixture
+async def unverified_graduate_headers(make_event, make_college, make_graduate):
+    """Authorization headers for a graduate whose e-mail is not verified yet."""
+    event = await make_event()
+    college = await make_college(event.id)
+    graduate = await make_graduate(
+        college.id, university_id="900002", email_verified=False
+    )
+    return _bearer_token_headers(graduate)
+
+
 # --- Factories ---------------------------------------------------------------
 
 @pytest.fixture
@@ -193,6 +230,8 @@ def make_event(db):
     async def _make(
         name="حفل التجريبي",
         event_date=date(2030, 6, 1),
+        event_time=None,
+        seat_prefix=None,
         registration_start=None,
         registration_end=None,
         whatsapp_group_link="https://chat.whatsapp.com/test",
@@ -203,6 +242,8 @@ def make_event(db):
         event = EventModel(
             name=name,
             event_date=event_date,
+            event_time=event_time,
+            seat_prefix=seat_prefix,
             registration_start=registration_start
             or datetime.combine(date(2020, 1, 1), time(0, 0), tzinfo=timezone.utc),
             registration_end=registration_end

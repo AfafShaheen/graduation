@@ -48,6 +48,7 @@ TICKET_INFO_TEXT = "التذكرة تمنحك أنت ومرافقيك دخول �
 SETTINGS_UPDATED = "تم تحديث الإعدادات بنجاح"
 SHAMCASH_QR_UPDATED = "تم تحديث رمز دفع الشام كاش بنجاح"
 SHAMCASH_QR_DELETED = "تم حذف رمز دفع الشام كاش"
+SEAT_PREFIX_LOCKED = "لا يمكن تعديل بادئة المقاعد بعد تخصيص مقاعد لتذاكر هذا الحفل"
 
 TICKET_STATUS_AWAITING_PAYMENT = "تذكرتك بانتظار إتمام الدفع"
 TICKET_STATUS_PROCESSING = "تم استلام بيانات دفعك والاتحاد يراجعها حالياً"
@@ -94,6 +95,9 @@ AUDIT_ACTION_LABELS = {
     "SHAMCASH_QR_DELETED": "حذف رمز دفع الشام كاش",
     "SCANNER_CREATED": "إنشاء حساب ماسح",
     "SCANNER_DELETED": "حذف حساب ماسح",
+    "CREATE_MAJOR": "إنشاء تخصص",
+    "UPDATE_MAJOR": "تعديل تخصص",
+    "DELETE_MAJOR": "حذف تخصص",
     "DATA_EXPORTED": "تصدير بيانات",
     "qr_scanned": "محاولة مسح",
 }

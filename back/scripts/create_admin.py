@@ -15,6 +15,7 @@ Usage (inside the back container):
 import argparse
 import asyncio
 import getpass
+import os
 import sys
 from typing import Optional
 
@@ -24,19 +25,34 @@ from app.core.database import AsyncSessionLocal
 from app.core.security import get_password_hash
 from app.models.admin import AdminModel
 
-# Allowed minimum password length (lowered to support short dev passwords like 0000)
+# Development/test allow short passwords (e.g. 0000); production enforces the
+# SRS FR-13 minimum of 12 characters.
 MIN_ADMIN_PASSWORD_LENGTH = 4
+PRODUCTION_MIN_ADMIN_PASSWORD_LENGTH = 12
 
 
-def _read_new_password(provided_password: Optional[str] = None) -> str:
-    # If password was provided via CLI flag --password, use it directly
-    if provided_password:
-        return provided_password
+def _min_admin_password_length() -> int:
+    app_env = os.environ.get("APP_ENV", "development").strip().lower()
+    if app_env == "production":
+        return PRODUCTION_MIN_ADMIN_PASSWORD_LENGTH
+    return MIN_ADMIN_PASSWORD_LENGTH
+
+
+def _read_new_password(provided=None) -> str:
+    min_length = _min_admin_password_length()
+
+    # If the value was provided via CLI flag --password, validate and use it.
+    if provided:
+        if len(provided) < min_length:
+            raise SystemExit(
+                f"Password must be at least {min_length} characters."
+            )
+        return provided
 
     first = getpass.getpass("New admin password: ")
-    if len(first) < MIN_ADMIN_PASSWORD_LENGTH:
+    if len(first) < min_length:
         raise SystemExit(
-            f"Password must be at least {MIN_ADMIN_PASSWORD_LENGTH} characters."
+            f"Password must be at least {min_length} characters."
         )
     second = getpass.getpass("Confirm admin password: ")
     if first != second:
