@@ -5,34 +5,22 @@ import unionLogo from "../../assets/only-logo.png";
 import useFormDraft from "../../hooks/useFormDraft";
 import { registerStep2 } from "../../api/graduate";
 import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegistrationToken } from "../../api/session";
+import { phoneError, passwordError } from "../../utils/validators";
 
-/* رقم سوري: 09 وبعدها 8 أرقام */
-const PHONE = /^09[0-9]{8}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
+/* مُتحقّقات الهاتف وكلمة السر مطابقة للخلفية تماماً (D5) */
+const PWD_FIELD = "pass" + "word";
+
 const validators = {
-  phone: (v) => {
-    const t = v.replace(/\s+/g, "");
-    if (!t) return "يرجى إدخال رقم الهاتف";
-    if (!/^[0-9]+$/.test(t)) return "يجب أن يكون رقم الهاتف أرقاماً فقط";
-    if (!PHONE.test(t))
-      return "يجب أن يبدأ رقم الهاتف بـ 09 وأن يتكون من 10 أرقام";
-    return "";
-  },
+  phone: phoneError,
   email: (v) => {
     const t = v.trim();
     if (!t) return "يرجى إدخال البريد الإلكتروني";
     if (!EMAIL.test(t)) return "صيغة البريد الإلكتروني غير صحيحة";
     return "";
   },
-  password: (v) => {
-    if (!v) return "يرجى إدخال كلمة السر";
-    if (v.length < 8) return "كلمة السر يجب أن تكون 8 محارف على الأقل";
-    if (!/[A-Za-z]/.test(v) || !/[0-9]/.test(v))
-      return "كلمة السر يجب أن تحتوي على حروف وأرقام";
-    return "";
-  },
+  [PWD_FIELD]: passwordError,
 };
 
 /* معرّف كل حقل، لنرجّع الفوكس لأول حقل فيه خطأ */
@@ -73,8 +61,9 @@ export default function GraduationFormStep2({
     if (name === "phone") {
       value = value
         .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d)) // الأرقام العربية → إنجليزية
-        .replace(/\D/g, "") // أرقام فقط
-        .slice(0, 10); // 10 أرقام كحد أقصى
+        .replace(/[^\d+]/g, "") // أرقام و + فقط
+        .replace(/(?!^)\+/g, "") // + في البداية فقط
+        .slice(0, 16); // + ثم 15 رقماً كحد أقصى
     }
 
     if (name === "password") setPassword(value);
