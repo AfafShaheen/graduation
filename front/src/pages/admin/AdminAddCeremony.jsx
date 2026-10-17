@@ -41,10 +41,23 @@ export default function AdminAddCeremony({
   // ملف بيانات الجامعة (اختياري عند الحفظ، لكن لازم يكون جاهز قبل فتح التسجيل)
   const [dataFile, setDataFile] = useState(null);
   const [fileError, setFileError] = useState('');
+  const [uploadSummary, setUploadSummary] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = React.useRef(null);
 
-  const REQUIRED_COLUMNS = ['الرقم الجامعي', 'الاسم الكامل', 'اسم الأب', 'اسم الأم', 'الكلية', 'الجنس'];
+  const REQUIRED_COLUMNS = [
+    'الاسم',
+    'الكنية',
+    'اسم الأب',
+    'اسم الأم',
+    'الجنس',
+    'الكلية',
+    'التخصص',
+    'الرقم الجامعي',
+    'حالة الطالب من الأوائل',
+    'المعدل',
+    'رقم التواصل',
+  ];
   const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
   const MAX_SIZE_MB = 25;
 
@@ -73,6 +86,7 @@ export default function AdminAddCeremony({
     }
     setFileError('');
     setDataFile(file);
+    setUploadSummary(null);
   };
 
   const removeFile = () => {
@@ -180,7 +194,8 @@ export default function AdminAddCeremony({
       const id = eventId ?? result?.id ?? result?.event_id;
       if (dataFile && id) {
         try {
-          await uploadUniversityRecords(id, dataFile);
+          const uploadResult = await uploadUniversityRecords(id, dataFile);
+          if (uploadResult?.summary) setUploadSummary(uploadResult.summary);
         } catch (upErr) {
           setSubmitError(
             'تم حفظ الحفل لكن لم يُستورد ملف بيانات الخريجين: ' +
@@ -659,8 +674,17 @@ export default function AdminAddCeremony({
                 </div>
               )}
 
+              {uploadSummary && (
+                <p className="add-cer-hint" role="status" style={{ color: '#124d44' }}>
+                  نتيجة الرفع: أُضيف {uploadSummary.added ?? 0}، حُدّث {uploadSummary.updated ?? 0}، تُخطّي{' '}
+                  {uploadSummary.skipped ?? 0}، أخطاء {uploadSummary.error_count ?? 0} (المجموع {uploadSummary.total ?? 0}).
+                </p>
+              )}
+
               <div className="add-cer-columns">
-                <span className="add-cer-hint">الأعمدة المطلوبة بالسطر الأول (بنفس التسمية تماماً):</span>
+                <span className="add-cer-hint">
+                  يُقبل ملف شؤون الطلبة بترتيبه الثابت، ويبقى عمود «الاسم الكامل» مدعوماً. الأعمدة المطلوبة بالسطر الأول (بنفس التسمية تماماً):
+                </span>
                 <div className="add-cer-col-chips">
                   {REQUIRED_COLUMNS.map((col) => (
                     <span key={col} className="add-cer-col-chip">{col}</span>
