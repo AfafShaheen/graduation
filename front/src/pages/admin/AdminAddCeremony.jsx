@@ -616,7 +616,7 @@ export default function AdminAddCeremony({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    fileInputRef.current && fileInputRef.current.click();
+                    fileInputRef.current?.click();
                   }
                 }}
                 onDragOver={(e) => {

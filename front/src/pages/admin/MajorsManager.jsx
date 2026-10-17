@@ -72,11 +72,6 @@ export default function MajorsManager({ colleges = [] }) {
     setConfirmId(null);
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditingName('');
-  };
-
   const handleUpdate = async (m) => {
     const name = editingName.trim();
     if (name.length < 2) {
