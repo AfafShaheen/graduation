@@ -31,7 +31,7 @@ import ScannerCamera from "./pages/scanner/ScannerCamera";
 import ScanSuccessResult from "./pages/scanner/ScanSuccessResult";
 import ScanErrorResult from "./pages/scanner/ScanErrorResult";
 import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
-import { getScannerToken, isScannerTokenExpired, clearScannerSession } from "./api/session";
+import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduateToken, isGraduateTokenExpired, getAdminToken, isAdminTokenExpired, getVerificationToken, getRegistrationToken, isRegistrationTokenExpired, getResetEmail, getGraduateEmail } from "./api/session";
 
 /*
   وضع المعاينة (للتصميم فقط):
@@ -40,20 +40,7 @@ import { getScannerToken, isScannerTokenExpired, clearScannerSession } from "./a
 */
 const PREVIEW = import.meta.env.VITE_PREVIEW === 'true';
 
-/* عدد طلبات الدفع المعلّقة (شارة القائمة الجانبية): مؤقت لحد ما يجهز الباك إند، بدّله بالقيمة الحقيقية */
-const PENDING_PAYMENTS = 142;
 
-/* أسماء الكليات حسب القيمة المخزنة بصفحة الخطوة 1 */
-const FACULTY_LABELS = {
-  it: "كلية الهندسة المعلوماتية",
-  civil: "كلية الهندسة المدنية",
-  med: "كلية الطب البشري",
-  pharm: "كلية الصيدلة",
-  dent: "كلية طب الأسنان",
-  mech: "كلية الهندسة الميكانيكية",
-  science: "كلية العلوم",
-  arts: "كلية الآداب والعلوم الإنسانية",
-};
 
 /* حالة بتنحفظ بـ sessionStorage، فبتضل موجودة بعد تحديث الصفحة (وبتنمسح بإغلاق التبويب) */
 function usePersistentState(key, initialValue) {
@@ -86,23 +73,24 @@ function App() {
   const location = useLocation();
   const { pathname } = location;
 
-  const [email, setEmail] = usePersistentState("grad.email", ""); // بريد التسجيل
-  const [resetEmail, setResetEmail] = usePersistentState("grad.resetEmail", ""); // بريد استعادة كلمة السر
-  const [ticket, setTicket] = usePersistentState("grad.ticket", null); // الباقة المختارة
-  const [payment, setPayment] = usePersistentState("grad.payment", null); // بيانات تحويل شام كاش
-  const [student, setStudent] = usePersistentState("grad.student", null); // بيانات الخريج: الاسم والكلية والتخصص والرقم الجامعي والترتيب والمعدل
-  const [, setSurvey] = usePersistentState("grad.survey", null); // إجابات سؤالَي المسؤولية والخبرة
-  const [resetVerified, setResetVerified] = useState(false); // هل تأكد رمز الاستعادة؟ (ما منحفظها)
-  const [admin, setAdmin] = usePersistentState("grad.admin", null); // جلسة الإدارة (مؤقتة لحد ما يجهز الباك إند)
-  const [adminError, setAdminError] = useState(""); // رسالة خطأ دخول الإدارة
+  const [email, setEmail] = usePersistentState("grad.email", "");
+  const [ticket, setTicket] = usePersistentState("grad.ticket", null);
+  const [payment, setPayment] = usePersistentState("grad.payment", null);
+  const [student, setStudent] = usePersistentState("grad.student", null);
+  const [, setSurvey] = usePersistentState("grad.survey", null);
 
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
+  const hasValidGraduate = getGraduateToken() && !isGraduateTokenExpired();
+  const hasValidAdmin = getAdminToken() && !isAdminTokenExpired();
+  const hasVerificationToken = !!getVerificationToken();
+  const hasValidRegistration = getRegistrationToken() && !isRegistrationTokenExpired();
+
   return (
-    <AdminStatsProvider pendingPayments={PENDING_PAYMENTS}>
+    <AdminStatsProvider>
       <Routes>
         {/* ===== التسجيل ===== */}
         <Route
@@ -110,15 +98,6 @@ function App() {
           element={
             <GraduationFormStep1
               onNext={(data) => {
-                // نحفظ بيانات الخريج (التذكرة + التخصص والترتيب والمعدل للباك إند)
-                setStudent({
-                  fullName: data.fullName.trim(),
-                  faculty: data.faculty,
-                  major: data.major, // "none" = لا يوجد
-                  studentId: data.studentId.trim(),
-                  topRank: data.topRank, // none | first | second | third
-                  gpa: Number(data.gpa), // المعدل كنسبة مئوية (0-100)
-                });
                 navigate("/register");
               }}
             />
@@ -128,22 +107,25 @@ function App() {
         <Route
           path="/register"
           element={
-            <GraduationFormStep2
-              onBack={() => navigate("/")}
-              onNavigateToLogin={() => navigate("/login")}
-              onNext={(data) => {
-                setEmail(data.email);
-                navigate("/otp");
-              }}
-            />
+            hasValidRegistration || PREVIEW ? (
+              <GraduationFormStep2
+                onBack={() => navigate("/")}
+                onNavigateToLogin={() => navigate("/login")}
+                onNext={(data) => {
+                  setEmail(data.email);
+                  navigate("/otp");
+                }}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
           }
         />
 
         <Route
           path="/otp"
           element={
-            // بدون بريد (فتح مباشر) نرجعه للتسجيل
-            email || PREVIEW ? (
+            hasVerificationToken || PREVIEW ? (
               <Otp
                 mode="register"
                 email={email || undefined}
@@ -160,15 +142,14 @@ function App() {
         <Route
           path="/questions"
           element={
-            email || PREVIEW ? (
+            hasValidGraduate || PREVIEW ? (
               <GraduateQuestions
-                onDone={(answers) => {
-                  setSurvey(answers); // { wantsResponsibility, hasExperience }
+                onDone={() => {
                   navigate("/tickets", { replace: true });
                 }}
               />
             ) : (
-              <Navigate to="/register" replace />
+              <Navigate to="/login" replace />
             )
           }
         />
