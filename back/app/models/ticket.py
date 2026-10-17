@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, SmallInteger, Text, ForeignKey, Numeric, DateTime, CheckConstraint, UniqueConstraint, Enum
+from sqlalchemy import Column, Integer, SmallInteger, Text, ForeignKey, Numeric, DateTime, CheckConstraint, UniqueConstraint, Index, Enum, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.models.base import Base
@@ -27,6 +27,7 @@ class TicketModel(Base):
     rejection_reason = Column(Text)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     confirmed_at = Column(DateTime(timezone=True))
+    seat_start = Column(Integer, nullable=True)
 
     graduate = relationship("GraduateModel", backref="tickets")
     event = relationship("EventModel", backref="tickets")
@@ -40,5 +41,16 @@ class TicketModel(Base):
             "(status = 'CONFIRMED' AND confirmed_at IS NOT NULL) OR (status != 'CONFIRMED' AND confirmed_at IS NULL)",
             name="chk_ticket_confirmed_time"
         ),
+        CheckConstraint(
+            "seat_start IS NULL OR seat_start >= 1",
+            name="chk_ticket_seat_start_positive"
+        ),
         UniqueConstraint("graduate_id", "event_id", name="unique_ticket_graduate_event"),
+        Index(
+            "uq_tickets_event_seat_start",
+            "event_id",
+            "seat_start",
+            unique=True,
+            postgresql_where=text("seat_start IS NOT NULL"),
+        ),
     )

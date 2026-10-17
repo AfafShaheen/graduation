@@ -27,6 +27,7 @@ from app.models.ticket import TicketModel, TicketStatusEnum
 from app.services.admin_graduate_service import invalidate_admin_cache
 from app.services.audit_log import ActorType, record_audit
 from app.services.qr_service import issue_qr_codes_for_ticket
+from app.services.seat_service import assign_seat_block, seat_labels
 
 
 async def _current_payment(db: AsyncSession, ticket_id: int) -> PaymentModel | None:
@@ -135,6 +136,15 @@ async def get_admin_ticket_service(db: AsyncSession, ticket_id: int) -> dict:
         college = await db.get(CollegeModel, graduate.college_id)
         college_name = college.name if college is not None else None
 
+    event = await db.get(EventModel, ticket.event_id)
+    seat = None
+    if ticket.seat_start is not None:
+        seat = seat_labels(
+            event.seat_prefix if event is not None else None,
+            ticket.seat_start,
+            ticket.companions_count,
+        )
+
     payments = (
         await db.execute(
             select(PaymentModel)
@@ -152,6 +162,7 @@ async def get_admin_ticket_service(db: AsyncSession, ticket_id: int) -> dict:
         "created_at": ticket.created_at,
         "confirmed_at": ticket.confirmed_at,
         "rejection_reason": ticket.rejection_reason,
+        "seat": seat,
         "graduate": (
             {
                 "id": graduate.id,
@@ -215,6 +226,9 @@ async def confirm_payment_service(
     # Issued in the SAME transaction: a failure rolls back the whole
     # confirmation so a ticket is never left half-confirmed.
     await issue_qr_codes_for_ticket(db, ticket_id)
+
+    # Reserve the ticket's seat block in the same transaction (FR-24 extension).
+    await assign_seat_block(db, ticket)
 
     await record_audit(
         db,

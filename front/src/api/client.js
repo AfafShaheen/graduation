@@ -12,6 +12,18 @@ export async function request(path, { method = "GET", body = null, token = null 
   const baseUrl = import.meta.env.VITE_API_URL || "";
   const url = `${baseUrl}${path}`;
 
+  // Proactive expiration check for scanner requests (excluding login)
+  if (token && path.startsWith("/api/scanner") && path !== "/api/scanner/auth/login") {
+    const { isScannerTokenExpired, clearScannerSession } = await import("./session.js");
+    if (isScannerTokenExpired()) {
+      clearScannerSession();
+      if (window.location.pathname !== "/scanner") {
+        window.location.href = "/scanner";
+      }
+      throw new ApiError(401, "انتهت جلسة الماسح، يرجى إعادة تسجيل الدخول.");
+    }
+  }
+
   const headers = {
     "Content-Type": "application/json",
   };
@@ -32,7 +44,7 @@ export async function request(path, { method = "GET", body = null, token = null 
   let response;
   try {
     response = await fetch(url, config);
-  } catch (err) {
+  } catch {
     throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
   }
 
@@ -41,7 +53,7 @@ export async function request(path, { method = "GET", body = null, token = null 
   if (contentType && contentType.includes("application/json")) {
     try {
       data = await response.json();
-    } catch (e) {
+    } catch {
       data = null;
     }
   }
@@ -59,11 +71,28 @@ export async function request(path, { method = "GET", body = null, token = null 
     }
 
     if (response.status === 401) {
-      // Handle session expiration in session.js / client
-      const { clearSession } = await import("./session.js");
-      clearSession();
-      if (window.location.pathname !== "/login" && !window.location.pathname.startsWith("/admin")) {
-        window.location.href = "/login";
+      if (path === "/api/scanner/auth/login") {
+        throw new ApiError(response.status, errorMessage, data);
+      }
+      if (!token) {
+        throw new ApiError(response.status, errorMessage, data);
+      }
+      const { clearGraduateSession, clearScannerSession } = await import("./session.js");
+      if (path.startsWith("/api/scanner")) {
+        clearScannerSession();
+        if (window.location.pathname !== "/scanner") {
+          window.location.href = "/scanner";
+        }
+      } else if (path.startsWith("/api/admin")) {
+        sessionStorage.removeItem("grad.admin");
+        if (!window.location.pathname.startsWith("/admin")) {
+          window.location.href = "/admin";
+        }
+      } else {
+        clearGraduateSession();
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
       }
     }
 

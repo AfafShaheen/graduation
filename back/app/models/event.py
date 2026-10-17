@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, Numeric, CheckConstraint
+from sqlalchemy import Column, Integer, String, Date, DateTime, Time, Boolean, Numeric, CheckConstraint
 from sqlalchemy.sql import func
 from app.models.base import Base
 
@@ -8,6 +8,8 @@ class EventModel(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String(255), nullable=False, index=True)
     event_date = Column(Date, nullable=False, index=True)
+    event_time = Column(Time, nullable=True)
+    seat_prefix = Column(String(3), nullable=True)
     registration_start = Column(DateTime(timezone=True), nullable=False)
     registration_end = Column(DateTime(timezone=True), nullable=False)
     whatsapp_group_link = Column(String, nullable=False)

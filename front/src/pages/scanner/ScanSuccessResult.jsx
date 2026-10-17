@@ -1,54 +1,37 @@
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../../style/ScanSuccessResult.css';
 import unionLogo from '../../assets/only-logo.png';
 
-/*
-  بيانات تجريبية: لما يجهز الباك إند مرّر نتيجة المسح الحقيقية عبر الخاصية result:
-  {
-    ticketType: 'graduate' | 'companion',
-    holderName, faculty, venue, seat, gate, ticketCode,
-    companionsRemaining,   // للخريج فقط: عدد المرافقين المتبقين
-    companionOf,           // للمرافق فقط: اسم الخريج
-    scannedAt              // تاريخ ISO لوقت المسح
-  }
-*/
-const MOCK_RESULT = {
-  ticketType: 'graduate',
-  holderName: 'كنان محمد العلي',
-  faculty: 'كلية الهندسة الميكانيكية والكهربائية — هندسة الحواسيب',
-  venue: 'مدرج الباسل',
-  seat: 'A-14',
-  gate: 'البوابة الغربية (B)',
-  ticketCode: 'HOMS-2026-8849',
-  companionsRemaining: 2,
-  companionOf: '',
-  scannedAt: new Date().toISOString(),
+const PREVIEW_RESULT = {
+  message: "معاينة ناجحة",
+  code_type: "GRADUATE",
 };
 
-/* ٠ لا يوجد، ١ مرافق واحد، ٢ مرافقان، غير ذلك: n مرافقين */
-const companionsText = (n) => {
-  if (!n) return 'لا يوجد';
-  if (n === 1) return 'مرافق واحد';
-  if (n === 2) return 'مرافقان';
-  return `${n} مرافقين`;
-};
-
-const formatTime = (iso) =>
+const formatTime = (date) =>
   new Intl.DateTimeFormat('ar-SY-u-nu-latn', { hour: '2-digit', minute: '2-digit', hour12: false }).format(
-    new Date(iso)
+    date
   );
 
 export default function ScanSuccessResult({
-  result = MOCK_RESULT,
+  result,
   onNextScan,
   onToggleFlash,
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [flashOn, setFlashOn] = useState(false);
-  const data = { ...MOCK_RESULT, ...result };
-  const isGraduate = data.ticketType === 'graduate';
+  const [scanTime] = useState(() => new Date());
+
+  const data = result || location.state?.result || PREVIEW_RESULT;
+  const isGraduate = data.code_type !== 'COMPANION';
 
   const handleNext = () => {
-    if (onNextScan) onNextScan();
+    if (onNextScan) {
+      onNextScan();
+    } else {
+      navigate('/scanner/scan');
+    }
   };
 
   const handleFlash = () => {
@@ -60,7 +43,7 @@ export default function ScanSuccessResult({
   return (
     <div className="scan-res-app-container">
       <div className="scan-res-mobile-frame">
-        {/* الهيدر العلوي (نفس بقية الصفحات) */}
+        {/* الهيدر العلوي */}
         <header className="scan-res-header">
           <div className="scan-res-header-top">
             <button
@@ -116,7 +99,7 @@ export default function ScanSuccessResult({
               >
                 verified
               </span>
-              <span>تمت المصادقة الرقمية الرسمية بنجاح</span>
+              <span>{data.message || 'تمت المصادقة الرقمية الرسمية بنجاح'}</span>
             </div>
           </section>
 
@@ -131,47 +114,8 @@ export default function ScanSuccessResult({
               </span>
               <span className="scan-res-time">
                 <span className="scan-res-symbol" style={{ fontSize: '16px', color: '#ca4b00' }}>schedule</span>
-                <span>الآن — {formatTime(data.scannedAt)}</span>
+                <span>الآن — {formatTime(scanTime)}</span>
               </span>
-            </div>
-
-            <div>
-              <span className="scan-res-label">اسم حامل البطاقة</span>
-              <h3 className="scan-res-name">{data.holderName}</h3>
-              {data.faculty && <p className="scan-res-faculty">{data.faculty}</p>}
-            </div>
-
-            <div className="scan-res-grid">
-              <div className="scan-res-cell">
-                <span className="scan-res-label">الموقع والمقعد</span>
-                <span className="scan-res-value">{data.venue}</span>
-                <span className="scan-res-accent">مقعد: {data.seat}</span>
-              </div>
-
-              <div className="scan-res-cell">
-                {isGraduate ? (
-                  <>
-                    <span className="scan-res-label">المرافقون المتبقون</span>
-                    <span className="scan-res-value">متبقٍ معه</span>
-                    <span className="scan-res-accent with-icon">
-                      <span className="scan-res-symbol" style={{ fontSize: '18px' }}>group</span>
-                      <span>{companionsText(data.companionsRemaining)}</span>
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="scan-res-label">مرافق للخريج</span>
-                    <span className="scan-res-value">{data.companionOf || '—'}</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="scan-res-card-footer">
-              <span>
-                بوابة الدخول: <strong>{data.gate}</strong>
-              </span>
-              <span className="scan-res-code">#{data.ticketCode}</span>
             </div>
           </section>
 

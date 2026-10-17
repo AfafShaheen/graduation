@@ -8,6 +8,7 @@ from sqlalchemy import select, delete
 from app.models.event import EventModel
 from app.models.college import CollegeModel
 from app.models.graduate import GraduateModel
+from app.models.ticket import TicketModel
 from app.models.university_record import UniversityRecordModel
 from app.schemas.event_admin import EventCreate, EventUpdate
 from app.core.redis import redis_client
@@ -73,6 +74,8 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
     new_event = EventModel(
         name=data.name,
         event_date=data.event_date,
+        event_time=data.event_time,
+        seat_prefix=data.seat_prefix,
         registration_start=data.registration_start,
         registration_end=data.registration_end,
         whatsapp_group_link=data.whatsapp_group_link,
@@ -156,6 +159,8 @@ async def list_events_service(
             "id": ev.id,
             "name": ev.name,
             "event_date": ev.event_date.isoformat(),
+            "event_time": ev.event_time.isoformat() if ev.event_time else None,
+            "seat_prefix": ev.seat_prefix,
             "registration_start": ev.registration_start.isoformat(),
             "registration_end": ev.registration_end.isoformat(),
             "whatsapp_group_link": ev.whatsapp_group_link,
@@ -196,6 +201,8 @@ async def get_event_details_service(db: AsyncSession, event_id: int) -> dict:
         "id": ev.id,
         "name": ev.name,
         "event_date": ev.event_date.isoformat(),
+        "event_time": ev.event_time.isoformat() if ev.event_time else None,
+        "seat_prefix": ev.seat_prefix,
         "registration_start": ev.registration_start.isoformat(),
         "registration_end": ev.registration_end.isoformat(),
         "whatsapp_group_link": ev.whatsapp_group_link,
@@ -233,6 +240,19 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="لا يمكن تفعيل/تعطيل نوع التذكرة بعد بدء التسجيل."
+            )
+
+    # Seat prefix is locked once the event has any allocated seat (FR-24 extension).
+    if "seat_prefix" in update_data and update_data["seat_prefix"] != ev.seat_prefix:
+        existing_seat = await db.execute(
+            select(TicketModel.id)
+            .where(TicketModel.event_id == event_id, TicketModel.seat_start.is_not(None))
+            .limit(1)
+        )
+        if existing_seat.scalars().first() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=messages.SEAT_PREFIX_LOCKED,
             )
 
     for key, value in update_data.items():

@@ -1,13 +1,12 @@
 /* ==========================================================================
    شاشة المسح الميدانية (.scan-cam-*)
-   بنفس ألوان وخط وأشكال باقي الواجهات (GraduationForm.css)
    ========================================================================== */
 
 .scan-cam-app-container {
   --sc-green: #124d44;
   --sc-green-deep: #0d3a33;
   --sc-orange: #ca4b00;
-  --sc-accent: #ff7a2f; /* برتقالي أفتح للعناصر فوق الخلفية الغامقة */
+  --sc-accent: #ff7a2f;
   --sc-cream: #fcf6ed;
   --sc-sand: #f8edd9;
   --sc-line: #eedebd;
@@ -39,7 +38,7 @@
   user-select: none;
 }
 
-/* ===== الهيدر (نفس .header-main) ===== */
+/* ===== الهيدر ===== */
 .scan-cam-header {
   position: relative;
   z-index: 30;
@@ -115,7 +114,7 @@
   background-color: var(--sc-orange);
 }
 
-/* ===== شريط الحالة (نفس .header-subband) ===== */
+/* ===== شريط الحالة ===== */
 .scan-cam-status-bar {
   position: relative;
   z-index: 20;
@@ -195,7 +194,7 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-  background-color: var(--sc-green-deep);
+  background-color: #000000;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -203,7 +202,33 @@
   justify-content: center;
 }
 
-/* نقشة الصفحات الأخرى بشكل خفيف جداً خلف الكاميرا */
+#qr-reader {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+#qr-reader video,
+#qr-reader canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  position: absolute !important;
+  inset: 0 !important;
+}
+
+#qr-reader__dashboard_section,
+#qr-reader__header_message,
+#qr-reader__status_span {
+  display: none !important;
+}
+
+/* نقشة خلفية */
 .scan-cam-viewfinder-zone::before {
   content: '';
   position: absolute;
@@ -220,12 +245,10 @@
   mask-size: 420px auto;
 }
 
-.scan-cam-viewfinder-zone > * {
-  position: relative;
-  z-index: 1;
-}
-
 .scan-cam-prompt-card {
+  position: relative;
+  z-index: 5;
+  pointer-events: none;
   margin-bottom: 16px;
   padding: 0 16px;
   width: 100%;
@@ -267,6 +290,8 @@
 /* مربع التوجيه والليزر */
 .scan-cam-reticle-box {
   position: relative;
+  z-index: 5;
+  pointer-events: none;
   width: min(240px, 64vw);
   aspect-ratio: 1;
   display: flex;
@@ -358,6 +383,9 @@
 }
 
 .scan-cam-distance {
+  position: relative;
+  z-index: 5;
+  pointer-events: none;
   margin-top: 16px;
   display: flex;
   align-items: center;
@@ -370,7 +398,7 @@
   font-weight: 700;
 }
 
-/* ===== الشريط السفلي (نفس شكل البطاقات) ===== */
+/* ===== الشريط السفلي ===== */
 .scan-cam-footer {
   position: relative;
   z-index: 30;
@@ -586,7 +614,6 @@
   color: #594138;
 }
 
-/* نفس شكل .form-input */
 .scan-cam-input {
   width: 100%;
   height: 48px;
@@ -658,57 +685,6 @@
   transform: scale(0.98);
 }
 
-/* ===== إشعار القبول ===== */
-.scan-cam-toast {
-  pointer-events: none;
-  position: absolute;
-  top: 76px;
-  left: 16px;
-  right: 16px;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background-color: var(--sc-green);
-  color: #ffffff;
-  padding: 12px;
-  border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--sc-orange);
-  opacity: 0;
-  transform: translateY(-24px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.scan-cam-toast.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.scan-cam-toast-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: var(--sc-orange);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.scan-cam-toast h4 {
-  font-size: 16px;
-  font-weight: 800;
-  margin: 0 0 2px 0;
-}
-
-.scan-cam-toast p {
-  font-size: 12px;
-  color: #b5d6cf;
-  margin: 0;
-}
-
 /* ===== أيقونات Material Symbols ===== */
 .scan-cam-symbol {
   font-family: 'Material Symbols Outlined';
@@ -729,7 +705,6 @@
   font-variation-settings: 'FILL' 1;
 }
 
-/* للي مفعّل "تقليل الحركة" بجهازه: بدون حركة */
 @media (prefers-reduced-motion: reduce) {
   .scan-cam-pulse-ring,
   .scan-cam-reticle-glow,
@@ -739,7 +714,6 @@
   .scan-cam-laser { top: 50%; opacity: 1; }
 }
 
-/* ===== Responsive: نفس نقاط باقي الصفحات ===== */
 @media (max-width: 359px) {
   .scan-cam-header-title { font-size: 14px; }
   .scan-cam-prompt-pill p { font-size: 13px; }

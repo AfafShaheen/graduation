@@ -31,13 +31,14 @@ import ScannerCamera from "./pages/scanner/ScannerCamera";
 import ScanSuccessResult from "./pages/scanner/ScanSuccessResult";
 import ScanErrorResult from "./pages/scanner/ScanErrorResult";
 import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
+import { getScannerToken, isScannerTokenExpired, clearScannerSession } from "./api/session";
 
 /*
   وضع المعاينة (للتصميم فقط):
   true  = أي صفحة بتفتح مباشرة من شريط العنوان بدون شروط، بقيم تجريبية.
   false = الشروط شغالة (مثلاً الدفع لا يُفتح بدون باقة)، وهذا هو الوضع الصحيح عند الإطلاق.
 */
-const PREVIEW = true;
+const PREVIEW = import.meta.env.VITE_PREVIEW === 'true';
 
 /* عدد طلبات الدفع المعلّقة (شارة القائمة الجانبية): مؤقت لحد ما يجهز الباك إند، بدّله بالقيمة الحقيقية */
 const PENDING_PAYMENTS = 142;
@@ -94,8 +95,7 @@ function App() {
   const [resetVerified, setResetVerified] = useState(false); // هل تأكد رمز الاستعادة؟ (ما منحفظها)
   const [admin, setAdmin] = usePersistentState("grad.admin", null); // جلسة الإدارة (مؤقتة لحد ما يجهز الباك إند)
   const [adminError, setAdminError] = useState(""); // رسالة خطأ دخول الإدارة
-  const [scanner, setScanner] = usePersistentState("grad.scanner", null); // جلسة الماسح (مؤقتة لحد ما يجهز الباك إند)
-  const [scannerError, setScannerError] = useState(""); // رسالة خطأ دخول الماسح
+
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -544,12 +544,7 @@ function App() {
           path="/scanner"
           element={
             <ScannerLogin
-              errorMessage={scannerError}
-              onLoginSuccess={(credentials) => {
-                // مؤقت: لما يجهز الباك إند، تحقق من البيانات هناك، وإذا فشل أو كان الحساب مجمّداً:
-                // setScannerError("بيانات الدخول غير صحيحة أو الحساب مجمّد")
-                setScannerError("");
-                setScanner({ username: credentials.username });
+              onLoginSuccess={() => {
                 navigate("/scanner/scan");
               }}
             />
@@ -560,10 +555,10 @@ function App() {
         <Route
           path="/scanner/scan"
           element={
-            scanner || PREVIEW ? (
+            getScannerToken() && !isScannerTokenExpired() ? (
               <ScannerCamera
                 onLogout={() => {
-                  setScanner(null);
+                  clearScannerSession();
                   navigate("/scanner", { replace: true });
                 }}
               />
@@ -575,7 +570,7 @@ function App() {
         <Route
           path="/scanner/result"
           element={
-            scanner || PREVIEW ? (
+            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
               <ScanSuccessResult onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
@@ -583,19 +578,11 @@ function App() {
           }
         />
         {/* ===== رفض الدخول: تذكرة مستخدمة مسبقاً أو مرافق قبل الخريج ===== */}
-        {/* للمعاينة: /scanner/error?type=companion_error (الافتراضي: already_used) */}
         <Route
           path="/scanner/error"
           element={
-            scanner || PREVIEW ? (
-              <ScanErrorResult
-                errorType={
-                  new URLSearchParams(location.search).get("type") ||
-                  location.state?.errorType ||
-                  "already_used"
-                }
-                onNextScan={() => navigate("/scanner/scan")}
-              />
+            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
+              <ScanErrorResult preview={PREVIEW} onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
             )
@@ -606,7 +593,7 @@ function App() {
         <Route
           path="/scanner/wrong-ceremony"
           element={
-            scanner || PREVIEW ? (
+            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
               <WrongCeremoniesWarning onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
@@ -614,30 +601,10 @@ function App() {
           }
         />
 
-        {/* أي مسار ماسح غير معرّف: مؤقتاً لحد ما يجهز */}
+        {/* أي مسار ماسح غير معرّف: ارجع لشاشة المسح */}
         <Route
           path="/scanner/*"
-          element={
-            scanner || PREVIEW ? (
-              <div
-                style={{ padding: 24, textAlign: "center", direction: "rtl" }}
-              >
-                شاشة المسح قيد الإنشاء
-                <br />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setScanner(null);
-                    navigate("/scanner", { replace: true });
-                  }}
-                >
-                  تسجيل الخروج
-                </button>
-              </div>
-            ) : (
-              <Navigate to="/scanner" replace />
-            )
-          }
+          element={<Navigate to="/scanner/scan" replace />}
         />
 
         {/* اختصار: /dashboard يودّي للوحة الإدارة */}

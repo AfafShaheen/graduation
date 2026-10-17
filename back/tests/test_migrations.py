@@ -293,3 +293,151 @@ def test_majors_migration_round_trip():
     assert "gpa" in uni_cols
     assert "chk_graduate_gpa_range" in grad_constraints
     assert "chk_graduate_top_rank" in grad_constraints
+
+
+def _seats_schema():
+    url = make_url(os.environ["DATABASE_URL"]).set(drivername="postgresql")
+    conn = psycopg2.connect(url.render_as_string(hide_password=False))
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'events'"
+            )
+            event_cols = {row[0] for row in cur.fetchall()}
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'tickets'"
+            )
+            ticket_cols = {row[0] for row in cur.fetchall()}
+            cur.execute(
+                "SELECT conname FROM pg_constraint "
+                "WHERE conrelid = 'tickets'::regclass"
+            )
+            constraints = {row[0] for row in cur.fetchall()}
+            cur.execute(
+                "SELECT indexname FROM pg_indexes WHERE tablename = 'tickets'"
+            )
+            indexes = {row[0] for row in cur.fetchall()}
+    finally:
+        conn.close()
+    return event_cols, ticket_cols, constraints, indexes
+
+
+def test_seats_migration_applies_expected_schema():
+    event_cols, ticket_cols, constraints, indexes = _seats_schema()
+    assert {"event_time", "seat_prefix"} <= event_cols
+    assert "seat_start" in ticket_cols
+    assert "chk_ticket_seat_start_positive" in constraints
+    assert "uq_tickets_event_seat_start" in indexes
+
+
+def test_seats_migration_round_trip():
+    _alembic("downgrade", "0005_majors_gpa_rank")
+    try:
+        event_cols, ticket_cols, constraints, indexes = _seats_schema()
+        assert "event_time" not in event_cols
+        assert "seat_prefix" not in event_cols
+        assert "seat_start" not in ticket_cols
+        assert "chk_ticket_seat_start_positive" not in constraints
+        assert "uq_tickets_event_seat_start" not in indexes
+    finally:
+        _alembic("upgrade", "head")
+
+    event_cols, ticket_cols, constraints, indexes = _seats_schema()
+    assert {"event_time", "seat_prefix"} <= event_cols
+    assert "seat_start" in ticket_cols
+
+
+async def _seat_rows():
+    from sqlalchemy import text
+
+    from app.core.database import engine
+
+    async with engine.connect() as conn:
+        result = await conn.execute(
+            text("SELECT id, seat_start FROM tickets ORDER BY id")
+        )
+        return [(row[0], row[1]) for row in result.all()]
+
+
+async def test_seat_backfill_assigns_consecutive_blocks(
+    db, make_event, make_college, make_graduate, make_ticket
+):
+    from app.models.ticket import TicketTypeEnum
+
+    event = await make_event()
+    college = await make_college(event.id)
+    first = await make_graduate(college.id, university_id="920001")
+    second = await make_graduate(college.id, university_id="920002")
+    third = await make_graduate(college.id, university_id="920003")
+
+    await make_ticket(first.id, event.id, TicketTypeEnum.TWO_COMPANIONS)
+    await make_ticket(second.id, event.id, TicketTypeEnum.THREE_COMPANIONS)
+    await make_ticket(third.id, event.id, TicketTypeEnum.TWO_COMPANIONS)
+    # Release the transaction so the schema DDL below is not blocked by locks.
+    await db.commit()
+
+    # Downgrading drops the column (and its values); upgrading re-adds it and
+    # re-runs the backfill over the surviving confirmed rows.
+    _alembic("downgrade", "0005_majors_gpa_rank")
+    try:
+        _, ticket_cols, _, _ = _seats_schema()
+        assert "seat_start" not in ticket_cols
+    finally:
+        _alembic("upgrade", "head")
+
+    rows = await _seat_rows()
+    # Block sizes are 1+companions: 3, 4, 3 -> starts 1, 4, 8.
+    assert [seat for _, seat in rows] == [1, 4, 8]
+
+
+async def test_seat_partial_unique_index_enforced(
+    make_event, make_college, make_graduate, make_ticket, db
+):
+    import pytest
+    from sqlalchemy import update
+    from sqlalchemy.exc import IntegrityError
+
+    from app.models.ticket import TicketModel
+
+    event = await make_event()
+    college = await make_college(event.id)
+    first = await make_graduate(college.id, university_id="920011")
+    second = await make_graduate(college.id, university_id="920012")
+    first_ticket = await make_ticket(first.id, event.id)
+    second_ticket = await make_ticket(second.id, event.id)
+
+    with pytest.raises(IntegrityError):
+        await db.execute(
+            update(TicketModel)
+            .where(TicketModel.id == first_ticket.id)
+            .values(seat_start=1)
+        )
+        await db.execute(
+            update(TicketModel).where(TicketModel.id == second_ticket.id).values(seat_start=1)
+        )
+        await db.commit()
+    await db.rollback()
+
+
+async def test_seat_positive_check_enforced(
+    make_event, make_college, make_graduate, make_ticket, db
+):
+    import pytest
+    from sqlalchemy import update
+    from sqlalchemy.exc import IntegrityError
+
+    from app.models.ticket import TicketModel
+
+    event = await make_event()
+    college = await make_college(event.id)
+    graduate = await make_graduate(college.id, university_id="920021")
+    ticket = await make_ticket(graduate.id, event.id)
+
+    with pytest.raises(IntegrityError):
+        await db.execute(
+            update(TicketModel).where(TicketModel.id == ticket.id).values(seat_start=0)
+        )
+        await db.commit()
+    await db.rollback()
