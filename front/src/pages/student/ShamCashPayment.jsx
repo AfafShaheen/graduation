@@ -4,6 +4,7 @@ import '../../style/ShamCashPayment.css';
 import unionLogo from '../../assets/only-logo.png';
 import { getPaymentInfo, submitPayment, getShamcashQr } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
+import { parseAmount, formatAmount } from '../../utils/amount.js';
 
 const LETTERS = /^[\p{L}\s]+$/u; // حروف (عربية أو لاتينية) ومسافات فقط
 const TX_ID = /^[A-Za-z0-9-]+$/; // أرقام وحروف وشرطة، بدون مسافات
@@ -52,9 +53,6 @@ function FieldError({ message }) {
   );
 }
 
-const toDigitsOnly = (value) =>
-  String(value).replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, '');
-
 export default function ShamCashPayment({ onBack }) {
   const navigate = useNavigate();
 
@@ -79,7 +77,7 @@ export default function ShamCashPayment({ onBack }) {
     };
   }, []);
 
-  const amountValue = info ? Number(info.amount) || 0 : 0;
+  const amountValue = info ? parseAmount(info.amount) : 0;
   const validators = makeValidators(amountValue);
   const apiBase = import.meta.env.VITE_API_URL || '';
 
@@ -99,7 +97,7 @@ export default function ShamCashPayment({ onBack }) {
         setInfo(result);
         setFormData((prev) => ({
           ...prev,
-          transferAmount: prev.transferAmount || toDigitsOnly(result.amount || ''),
+          transferAmount: prev.transferAmount || formatAmount(result.amount),
         }));
         if (result.qr_image_url) {
           const url = String(result.qr_image_url);
@@ -164,7 +162,7 @@ export default function ShamCashPayment({ onBack }) {
   };
 
   const amountMismatch =
-    submitted && !errors.transferAmount && Number(toDigits(formData.transferAmount)) !== amountValue;
+    submitted && !errors.transferAmount && parseAmount(formData.transferAmount) !== amountValue;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -195,7 +193,7 @@ export default function ShamCashPayment({ onBack }) {
       await submitPayment(
         {
           transaction_number: formData.transactionId.trim(),
-          amount: Number(toDigitsOnly(formData.transferAmount)),
+          amount: parseAmount(formData.transferAmount),
           sender_name: formData.senderName.trim().replace(/\s+/g, ' '),
         },
         accessValue,
