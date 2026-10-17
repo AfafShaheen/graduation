@@ -9,6 +9,8 @@ class GraduateModel(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     full_name = Column(String(255), nullable=False)
+    first_name = Column(String(120), nullable=True)
+    last_name = Column(String(120), nullable=True)
     gender = Column(String(10), nullable=False)
     college_id = Column(Integer, ForeignKey("colleges.id", ondelete="RESTRICT"), nullable=False, index=True)
     major_id = Column(Integer, ForeignKey("majors.id", ondelete="RESTRICT"), nullable=True, index=True)
