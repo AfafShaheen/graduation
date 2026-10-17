@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { getMyTicket } from "../api/graduate";
+import { createTicketRequest } from "../utils/ticketRequest";
 import { getGraduateToken, isGraduateTokenExpired } from "../api/session";
+
+const ticketRequest = createTicketRequest(getMyTicket);
 
 /*
  * المصدر الوحيد لحالة تذكرة الخريج.
@@ -12,7 +15,7 @@ export default function useMyTicket() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const reload = useCallback(async () => {
+  const load = useCallback(async ({ force = false } = {}) => {
     const accessValue = getGraduateToken();
     if (!accessValue || isGraduateTokenExpired()) {
       setData(null);
@@ -22,7 +25,7 @@ export default function useMyTicket() {
     }
     setLoading(true);
     try {
-      const result = await getMyTicket(accessValue);
+      const result = await ticketRequest.fetch(accessValue, { force });
       setData(result);
       setError(null);
       return result;
@@ -34,9 +37,11 @@ export default function useMyTicket() {
     }
   }, []);
 
+  const reload = useCallback(() => load({ force: true }), [load]);
+
   useEffect(() => {
-    reload();
-  }, [reload]);
+    load();
+  }, [load]);
 
   return { data, loading, error, reload };
 }
