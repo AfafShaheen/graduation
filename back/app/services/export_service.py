@@ -61,6 +61,8 @@ _HEADERS = (
     "مقعد الخريج",
     "مقاعد المرافقين",
     "وقت الحفل",
+    "الاسم",
+    "الكنية",
 )
 
 
@@ -214,6 +216,8 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
             ws, row_idx, 25, ", ".join(seat["companions"]) if seat else ""
         )
         _string_cell(ws, row_idx, 26, ev_time)
+        _string_cell(ws, row_idx, 27, graduate.first_name)
+        _string_cell(ws, row_idx, 28, graduate.last_name)
 
     ws.freeze_panes = "A2"
 

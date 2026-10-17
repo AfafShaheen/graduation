@@ -51,6 +51,34 @@ def normalize_arabic(text: str) -> str:
     return text
 
 
+_TOP_ANY = "ANY"
+
+
+def _names_match(record: UniversityRecordModel, data: UserVerifyStep1) -> bool:
+    """Compare the graduate names, supporting both the split and legacy layouts."""
+    if data.first_name is not None and data.last_name is not None:
+        if record.first_name is not None and record.last_name is not None:
+            return (
+                normalize_arabic(record.first_name) == normalize_arabic(data.first_name)
+                and normalize_arabic(record.last_name) == normalize_arabic(data.last_name)
+            )
+        composed = f"{data.first_name} {data.last_name}"
+        return normalize_arabic(composed) == normalize_arabic(record.full_name)
+
+    # Legacy payload: a single full name.
+    if record.first_name is not None and record.last_name is not None:
+        composed = f"{record.first_name} {record.last_name}"
+        return normalize_arabic(data.full_name or "") == normalize_arabic(composed)
+    return normalize_arabic(data.full_name or "") == normalize_arabic(record.full_name)
+
+
+def _top_rank_error(code: str, message: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail={"message": message, "code": code},
+    )
+
+
 def create_registration_token(data: dict) -> str:
     expire = datetime.now(UTC) + timedelta(minutes=TOKEN_EXPIRE_MINUTES)
     to_encode = data.copy()
@@ -113,8 +141,13 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
             detail=await _generic_verify_fail(db)
         )
 
+    if not _names_match(uni_record, data):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=await _generic_verify_fail(db)
+        )
+
     if (
-        normalize_arabic(uni_record.full_name) != normalize_arabic(data.full_name) or
         normalize_arabic(uni_record.father_name) != normalize_arabic(data.father_name) or
         normalize_arabic(uni_record.mother_name) != normalize_arabic(data.mother_name) or
         normalize_arabic(uni_record.gender) != normalize_arabic(data.gender)
@@ -140,20 +173,45 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
             detail=await _generic_verify_fail(db)
         )
 
-    # 3. data.gpa.quantize(Decimal("0.01")) == uni_record.gpa.quantize(Decimal("0.01")). If uni_record.gpa is NULL → fail.
-    if uni_record.gpa is None or data.gpa.quantize(Decimal("0.01")) != uni_record.gpa.quantize(Decimal("0.01")):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=await _generic_verify_fail(db)
-        )
+    # The file GPA and phone are never matched (D2). They are stored only.
 
-    # 4. data.top_rank == await compute_top_rank(db, uni_record). Strict both ways.
-    computed_rank = await compute_top_rank(db, uni_record)
-    if data.top_rank != computed_rank:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=await _generic_verify_fail(db)
-        )
+    # 3. Top-student status (D3/D11). The file column is authoritative when
+    #    present; otherwise the dense ranking by GPA is the fallback.
+    if uni_record.top_rank_from_file is None:
+        expected_top: int | str | None = await compute_top_rank(db, uni_record)
+    elif uni_record.top_rank_from_file == -1:
+        expected_top = _TOP_ANY
+    elif uni_record.top_rank_from_file == 0:
+        expected_top = None
+    else:
+        expected_top = uni_record.top_rank_from_file
+
+    if expected_top == _TOP_ANY:
+        if data.top_rank is None:
+            raise _top_rank_error(
+                "TOP_RANK_SHOULD_BE_HONOR", messages.TOP_RANK_SHOULD_BE_HONOR
+            )
+    elif expected_top is None:
+        if data.top_rank is not None:
+            raise _top_rank_error(
+                "TOP_RANK_NOT_HONOR", messages.TOP_RANK_NOT_HONOR
+            )
+    else:
+        if data.top_rank is None:
+            raise _top_rank_error(
+                "TOP_RANK_SHOULD_BE_HONOR", messages.TOP_RANK_SHOULD_BE_HONOR
+            )
+        if data.top_rank != expected_top:
+            raise _top_rank_error(
+                "TOP_RANK_MISMATCH", messages.TOP_RANK_MISMATCH
+            )
+
+    # The graduate's GPA is optional; when absent the authoritative record GPA
+    # is carried forward (D2).
+    if data.gpa is not None:
+        gpa_to_store = data.gpa
+    else:
+        gpa_to_store = uni_record.gpa
 
     # Already-registered check runs LAST: the specific message is reachable
     # only after the caller proved knowledge of the full university record,
@@ -171,12 +229,14 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
         "university_id": data.university_id,
         "college_id": data.college_id,
         "full_name": uni_record.full_name,
+        "first_name": uni_record.first_name,
+        "last_name": uni_record.last_name,
         "gender": uni_record.gender,
         "father_name": uni_record.father_name,
         "mother_name": uni_record.mother_name,
         "major_id": uni_record.major_id,
-        "gpa": str(uni_record.gpa) if uni_record.gpa is not None else None,
-        "top_rank": computed_rank,
+        "gpa": str(gpa_to_store) if gpa_to_store is not None else None,
+        "top_rank": data.top_rank,
     }
     registration_token = create_registration_token(token_payload)
 
@@ -191,6 +251,8 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
     university_id = payload.get("university_id")
     college_id = payload.get("college_id")
     full_name = payload.get("full_name")
+    first_name = payload.get("first_name")
+    last_name = payload.get("last_name")
     gender = payload.get("gender")
     father_name = payload.get("father_name")
     mother_name = payload.get("mother_name")
@@ -226,6 +288,8 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
 
     new_graduate = GraduateModel(
         full_name=full_name,
+        first_name=first_name,
+        last_name=last_name,
         gender=gender,
         college_id=college_id,
         email=data.email,

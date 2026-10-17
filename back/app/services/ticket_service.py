@@ -279,7 +279,11 @@ async def get_my_ticket_service(db: AsyncSession, graduate: GraduateModel) -> di
 
     ticket = await _get_graduate_ticket(db, graduate.id)
     if ticket is None:
-        return {"has_ticket": False, "registration": registration}
+        return {
+            "has_ticket": False,
+            "registration": registration,
+            "top_rank": graduate.top_rank,
+        }
 
     result = {
         "has_ticket": True,
@@ -287,6 +291,7 @@ async def get_my_ticket_service(db: AsyncSession, graduate: GraduateModel) -> di
         "ticket": ticket,
         "event": event,
         "message": _STATUS_MESSAGES.get(ticket.status),
+        "top_rank": graduate.top_rank,
     }
 
     if ticket.status in _PAYABLE_STATUSES:

@@ -12,13 +12,23 @@ PHONE_REGEX = r"^\+?[0-9]{7,15}$"
 class UserVerifyStep1(BaseModel):
     college_id: int = Field(..., gt=0)
     university_id: str = Field(..., min_length=1, max_length=100)
-    full_name: str = Field(..., pattern=NAME_REGEX, description="Full name must contain letters only.")
+    first_name: Optional[str] = Field(None, pattern=NAME_REGEX, description="First name (الاسم), letters only.")
+    last_name: Optional[str] = Field(None, pattern=NAME_REGEX, description="Surname (الكنية), letters only.")
+    full_name: str = Field(None, pattern=NAME_REGEX, description="Legacy single name field; kept for backwards compatibility (D4).")
     father_name: str = Field(..., pattern=NAME_REGEX, description="Father's name must contain letters only.")
     mother_name: str = Field(..., pattern=NAME_REGEX, description="Mother's name must contain letters only.")
     gender: str = Field(..., min_length=3, max_length=10)
     major_id: Optional[int] = Field(None, gt=0)
-    gpa: Decimal = Field(..., ge=0, le=100, max_digits=5, decimal_places=2)
+    gpa: Optional[Decimal] = Field(None, ge=0, le=100, max_digits=5, decimal_places=2)
     top_rank: Optional[Literal[1, 2, 3]] = None
+
+    @model_validator(mode="after")
+    def _require_a_name(self):
+        # Either the split names (first + last) or the legacy full name (D4).
+        has_split = bool(self.first_name) and bool(self.last_name)
+        if not has_split and not self.full_name:
+            raise ValueError("يجب إدخال الاسم والكنية أو الاسم الكامل.")
+        return self
 
 class RegisterStep2Request(BaseModel):
     registration_token: str
