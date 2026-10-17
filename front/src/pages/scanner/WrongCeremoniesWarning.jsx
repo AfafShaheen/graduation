@@ -1,36 +1,37 @@
 import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../../style/WrongCeremoniesWarning.css';
 import unionLogo from '../../assets/only-logo.png';
-
-/* ==========================================================================
-   شاشة تنبيه: التذكرة تابعة لحفل ثاني (.wrong-cer-*)
-   ========================================================================== */
+import { getScannerEvent } from '../../api/session';
 
 export default function WrongCeremoniesWarning({
-  currentCeremony = 'حفل الكليات الطبية', // الحفل الجاري عليه المسح الآن
-  ticketData = {
-    // مؤقت: يجي من الباك إند بعد المسح
-    name: 'م. كنان باسل المحمود',
-    faculty: 'الهندسة المدنية - الإنشائية',
-    ceremonyName: 'حفل كليات الهندسة',
-    ceremonyDate: 'الأربعاء القادم (10:00 ص)',
-  },
+  result,
   onNextScan,
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([120, 80, 120]);
     }
   }, []);
 
+  const scanResult = result || location.state?.result;
+  const currentCeremony = location.state?.event?.name ?? getScannerEvent()?.name ?? 'حفل التخرج';
+
   const handleScanNext = () => {
-    if (onNextScan) onNextScan();
+    if (onNextScan) {
+      onNextScan();
+    } else {
+      navigate('/scanner/scan');
+    }
   };
 
   return (
     <div className="wrong-cer-app-container">
       <div className="wrong-cer-mobile-frame">
-        {/* الهيدر (نفس هيدر شاشة المسح) */}
+        {/* الهيدر */}
         <header className="wrong-cer-header">
           <div className="wrong-cer-header-info">
             <img className="wrong-cer-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -58,7 +59,7 @@ export default function WrongCeremoniesWarning({
             <span className="wrong-cer-pill">تنبيه: اختلاف الحفل</span>
             <h2 className="wrong-cer-title">هالرمز تابع لحفل ثاني!</h2>
             <p className="wrong-cer-desc">
-              تذكرة الخريج سارية وصحيحة نظامياً، ولكنها مخصصة لحفل أكاديمي مجدول في موعد آخر.
+              {scanResult?.message || 'تذكرة الخريج سارية وصحيحة نظامياً، ولكنها مخصصة لحفل أكاديمي مجدول في موعد آخر.'}
             </p>
 
             <div className="wrong-cer-info-panel">
@@ -69,8 +70,9 @@ export default function WrongCeremoniesWarning({
                     <span>الحفل المخصص:</span>
                   </div>
                   <div className="wrong-cer-compare-value orange">
-                    {ticketData.ceremonyName}
-                    <small>{ticketData.ceremonyDate}</small>
+                    {/* D13: backend does not return personal data */}
+                    —
+                    <small>—</small>
                   </div>
                 </div>
 
@@ -86,11 +88,13 @@ export default function WrongCeremoniesWarning({
               <div className="wrong-cer-grad">
                 <div className="wrong-cer-grad-row">
                   <span className="wrong-cer-muted">اسم الخريج المسجل:</span>
-                  <span className="wrong-cer-grad-name">{ticketData.name}</span>
+                  {/* D13: backend does not return personal data */}
+                  <span className="wrong-cer-grad-name">—</span>
                 </div>
                 <div className="wrong-cer-grad-row">
                   <span className="wrong-cer-muted">الكلية والقسم:</span>
-                  <span className="wrong-cer-grad-faculty">{ticketData.faculty}</span>
+                  {/* D13: backend does not return personal data */}
+                  <span className="wrong-cer-grad-faculty">—</span>
                 </div>
               </div>
             </div>
