@@ -2,11 +2,19 @@ from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import List, Optional
 
+class UniversityRecordUploadSummary(BaseModel):
+    total: int
+    added: int
+    updated: int
+    skipped: int
+    error_count: int
+
 class UniversityRecordUploadResponse(BaseModel):
     added: int
     updated: int
     skipped: int
     errors: List[str]
+    summary: Optional[UniversityRecordUploadSummary] = None
 
 class UniversityRecordItem(BaseModel):
     id: int

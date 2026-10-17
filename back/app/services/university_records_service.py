@@ -26,7 +26,8 @@ def parse_gpa(val: Any) -> Decimal | None:
     ascii_digits = "0123456789"
     trans = str.maketrans(arabic_indic, ascii_digits)
     s = s.translate(trans)
-    s = s.replace("٫", ".").replace(",", ".")
+    s = s.replace("٪", "").replace("%", "").strip()
+    s = s.replace("٫", ".").replace(",", ".").replace("،", ".")
     parts = s.split(".")
     if len(parts) > 2:
         return None
@@ -39,6 +40,109 @@ def parse_gpa(val: Any) -> Decimal | None:
         return d.quantize(Decimal("0.01"))
     except Exception:
         return None
+
+
+_GENDER_MAP = {
+    "ذكر": "ذكر",
+    "male": "ذكر",
+    "m": "ذكر",
+    "ذكور": "ذكر",
+    "انثي": "أنثى",
+    "انثى": "أنثى",
+    "اناث": "أنثى",
+    "female": "أنثى",
+    "f": "أنثى",
+}
+
+_TOP_NOT_HONOR = {"لا", "ليس", "غير", "no", "false", "0"}
+_TOP_YES = {"نعم", "yes", "true", "y"}
+
+
+def normalize_gender(value: Any) -> str | None:
+    """Return the canonical gender (``ذكر``/``أنثى``) or ``None`` when unknown.
+
+    Accepts the Arabic spellings the Affairs office may use (أنثى/انثى/انثي) as
+    well as the English values older clients sent (D8).
+    """
+    if value is None:
+        return None
+    text = normalize_arabic(str(value)).casefold()
+    return _GENDER_MAP.get(text)
+
+
+def normalize_phone(value: Any) -> str | None:
+    """Normalise a contact number to digits with an optional leading ``+``.
+
+    The contact number from the file is stored for reference only and is never
+    matched against the graduate's input (D1, item A2.4).
+    """
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return None
+    arabic_indic = "٠١٢٣٤٥٦٧٨٩"
+    ascii_digits = "[REDACTED]"
+    text = text.translate(str.maketrans(arabic_indic, ascii_digits))
+    leading_plus = text.startswith("+")
+    digits = re.sub(r"[^0-9]", "", text)
+    if not digits:
+        return None
+    return ("+" if leading_plus else "") + digits
+
+
+def parse_top_status_from_file(value: Any) -> int | None:
+    """Parse the ``حالة الطالب من الأوائل`` cell into a stored code (A2.3).
+
+    Returns one of:
+    - ``None``: no usable information (column absent/empty) -> fall back to the
+      dense rank computed from the GPA.
+    - ``0``: the file says the student is *not* among the top students.
+    - ``-1``: the file says the student *is* among the top students but does not
+      name the rank.
+    - ``1``/``2``/``3``: the file names the student's rank.
+    """
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return None
+    normalized = normalize_arabic(text).casefold()
+    if normalized in _TOP_NOT_HONOR:
+        return 0
+    if normalized in {"1", "١"}:
+        return 1
+    if normalized in {"2", "٢"}:
+        return 2
+    if normalized in {"3", "٣"}:
+        return 3
+    if "ثالث" in normalized:
+        return 3
+    if "ثاني" in normalized:
+        return 2
+    if "اول" in normalized:
+        return 1
+    if normalized in _TOP_YES or "اوائل" in normalized:
+        return -1
+    return None
+
+
+def split_full_name(full_name: str | None) -> tuple[str, str]:
+    """Split a legacy full name into ``(first_name, last_name)`` (D4)."""
+    normalized = normalize_arabic(full_name or "")
+    first, _, last = normalized.partition(" ")
+    return first, last
+
+
+def _cell_text(row: Dict[str, Any], key: str) -> str:
+    """Return a clean string cell from a parsed row (empty for NaN/None)."""
+    if key not in row:
+        return ""
+    value = row.get(key)
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return ""
+    text = str(value).strip()
+    return "" if text.lower() == "nan" else text
 
 
 async def invalidate_uni_records_cache(event_id: int) -> None:
@@ -66,6 +170,20 @@ ARABIC_HEADERS = {
     "gender": "الجنس",
     "gpa": "المعدل",
     "major": "التخصص",
+    "first_name": "الاسم",
+    "last_name": "الكنية",
+    "top_status": "حالة الطالب من الأوائل",
+    "phone": "رقم التواصل",
+}
+
+# Extra accepted headers per field, beyond the primary Arabic label and the
+# canonical English name (both added automatically). All are normalised before
+# comparison so orthography variants (ة/ه, أ/ا) match (A1.2).
+_EXTRA_HEADER_ALIASES = {
+    "first_name": ["الاسم الأول", "اسم الطالب", "first name", "firstname"],
+    "last_name": ["الكنيه", "الشهرة", "اسم العائلة", "last name", "lastname", "surname"],
+    "top_status": ["حالة الطالب", "من الأوائل", "الأوائل", "الترتيب", "top status"],
+    "phone": ["رقم الاتصال", "رقم الهاتف", "الهاتف", "الجوال", "الموبايل", "phone", "mobile"],
 }
 
 # Zero-width and bidirectional control marks Excel/LibreOffice may embed in a
@@ -104,6 +222,9 @@ def _header_aliases() -> Dict[str, str]:
     for canonical, arabic in ARABIC_HEADERS.items():
         aliases[_normalize_header(arabic)] = canonical
         aliases[_normalize_header(canonical)] = canonical
+    for canonical, variants in _EXTRA_HEADER_ALIASES.items():
+        for variant in variants:
+            aliases.setdefault(_normalize_header(variant), canonical)
     return aliases
 
 
@@ -187,17 +308,24 @@ async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
 
 async def validate_records(records: List[Dict[str, Any]], event_id: int, db: AsyncSession) -> List[str]:
     errors = []
-    required_cols = {"university_id", "full_name", "father_name", "mother_name", "college", "gender", "gpa"}
+    required_cols = {"university_id", "father_name", "mother_name", "college", "gender", "gpa"}
 
     if not records:
         return ["الملف فارغ أو لا يحتوي على بيانات."]
 
     file_cols = set(records[0].keys())
     missing_cols = required_cols - file_cols
-    if missing_cols:
+    # Names may come either as two columns (first_name/last_name, D4) or as the
+    # legacy single "الاسم الكامل" column.
+    has_split_names = {"first_name", "last_name"}.issubset(file_cols)
+    has_full_name = "full_name" in file_cols
+    name_missing = not has_split_names and not has_full_name
+    if missing_cols or name_missing:
         missing_arabic = [
             ARABIC_HEADERS[field] for field in ARABIC_HEADERS if field in missing_cols
         ]
+        if name_missing:
+            missing_arabic.extend([ARABIC_HEADERS["first_name"], ARABIC_HEADERS["last_name"]])
         return [f"الأعمدة التالية مفقودة في الملف: {'، '.join(missing_arabic)}"]
 
     # Fetch colleges linked to this event and build normalized lookup dictionary
@@ -213,27 +341,34 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
     seen_uni_ids = set()
 
     for idx, row in enumerate(records, start=2): # Row 1 is header
-        uni_id = str(row.get("university_id", "")).strip()
-        full_name = str(row.get("full_name", "")).strip()
-        father_name = str(row.get("father_name", "")).strip()
-        mother_name = str(row.get("mother_name", "")).strip()
-        college_name = str(row.get("college", "")).strip()
-        gender = str(row.get("gender", "")).strip()
+        uni_id = _cell_text(row, "university_id")
+        first_name = _cell_text(row, "first_name")
+        last_name = _cell_text(row, "last_name")
+        full_name = _cell_text(row, "full_name")
+        father_name = _cell_text(row, "father_name")
+        mother_name = _cell_text(row, "mother_name")
+        college_name = _cell_text(row, "college")
+        gender = _cell_text(row, "gender")
         gpa_raw = row.get("gpa")
-        major_raw = str(row.get("major", "")).strip() if "major" in row and pd.notna(row.get("major")) else ""
+        major_raw = _cell_text(row, "major")
 
         # Check empty required fields
-        if not uni_id or uni_id.lower() == "nan":
+        if not uni_id:
             errors.append(f"السطر {idx}: الرقم الجامعي مطلوب.")
-        if not full_name or full_name.lower() == "nan":
+        if has_split_names and not has_full_name:
+            if not first_name:
+                errors.append(f"السطر {idx}: الاسم مطلوب.")
+            if not last_name:
+                errors.append(f"السطر {idx}: الكنية مطلوبة.")
+        elif not full_name and not (first_name and last_name):
             errors.append(f"السطر {idx}: الاسم الكامل مطلوب.")
-        if not father_name or father_name.lower() == "nan":
+        if not father_name:
             errors.append(f"السطر {idx}: اسم الأب مطلوب.")
-        if not mother_name or mother_name.lower() == "nan":
+        if not mother_name:
             errors.append(f"السطر {idx}: اسم الأم مطلوب.")
-        if not college_name or college_name.lower() == "nan":
+        if not college_name:
             errors.append(f"السطر {idx}: الكلية مطلوبة.")
-        if not gender or gender.lower() == "nan":
+        if not gender:
             errors.append(f"السطر {idx}: الجنس مطلوب.")
 
         # Check GPA
@@ -250,8 +385,8 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
         else:
             seen_uni_ids.add(uni_id)
 
-        # Check valid gender
-        if gender not in ["ذكر", "أنثى"]:
+        # Check valid gender (accepts the Affairs spellings, item A2.1)
+        if gender and normalize_gender(gender) is None:
             errors.append(f"السطر {idx}: قيمة الجنس غير صحيحة '{gender}' (يجب أن تكون 'ذكر' أو 'أنثى').")
 
         # Check non-existent college names using normalized lookup
@@ -284,14 +419,28 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
     now = datetime.now(UTC)
 
     for row in records:
-        uni_id = str(row.get("university_id", "")).strip()
-        full_name = normalize_arabic(str(row.get("full_name", "")))
-        father_name = normalize_arabic(str(row.get("father_name", "")))
-        mother_name = normalize_arabic(str(row.get("mother_name", "")))
-        college_name = str(row.get("college", "")).strip()
-        gender = str(row.get("gender", "")).strip()
+        uni_id = _cell_text(row, "university_id")
+        first_name_raw = _cell_text(row, "first_name")
+        last_name_raw = _cell_text(row, "last_name")
+        legacy_full = _cell_text(row, "full_name")
+        if first_name_raw or last_name_raw:
+            first_name = normalize_arabic(first_name_raw) or None
+            last_name = normalize_arabic(last_name_raw) or None
+            full_name = normalize_arabic(" ".join(p for p in (first_name, last_name) if p))
+        else:
+            first_name = None
+            last_name = None
+            full_name = normalize_arabic(legacy_full)
+        father_name = normalize_arabic(_cell_text(row, "father_name"))
+        mother_name = normalize_arabic(_cell_text(row, "mother_name"))
+        college_name = _cell_text(row, "college")
+        gender = normalize_gender(_cell_text(row, "gender")) or _cell_text(row, "gender")
         gpa_val = parse_gpa(row.get("gpa"))
-        major_raw = str(row.get("major", "")).strip() if "major" in row and pd.notna(row.get("major")) else ""
+        major_raw = _cell_text(row, "major")
+        top_rank_from_file = (
+            parse_top_status_from_file(row.get("top_status")) if "top_status" in row else None
+        )
+        phone = normalize_phone(row.get("phone")) if "phone" in row else None
         
         normalized_college_name = normalize_arabic(college_name)
         college_id = college_map.get(normalized_college_name)
@@ -315,12 +464,16 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
 
         if existing:
             existing.full_name = full_name
+            existing.first_name = first_name
+            existing.last_name = last_name
             existing.father_name = father_name
             existing.mother_name = mother_name
             existing.gender = gender
             existing.college_id = college_id
             existing.major_id = major_id
             existing.gpa = gpa_val
+            existing.top_rank_from_file = top_rank_from_file
+            existing.phone = phone
             existing.imported_at = now
             db.add(existing)
             updated += 1
@@ -329,12 +482,16 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
                 event_id=event_id,
                 university_id=uni_id,
                 full_name=full_name,
+                first_name=first_name,
+                last_name=last_name,
                 father_name=father_name,
                 mother_name=mother_name,
                 gender=gender,
                 college_id=college_id,
                 major_id=major_id,
                 gpa=gpa_val,
+                top_rank_from_file=top_rank_from_file,
+                phone=phone,
                 imported_at=now
             )
             db.add(new_rec)
@@ -358,6 +515,7 @@ async def upload_university_records(
         )
 
     records = await parse_file(file)
+    total = len(records)
     errors = await validate_records(records, event_id, db)
 
     if errors:
@@ -366,7 +524,14 @@ async def upload_university_records(
             "added": 0,
             "updated": 0,
             "skipped": 0,
-            "errors": errors
+            "errors": errors,
+            "summary": {
+                "total": total,
+                "added": 0,
+                "updated": 0,
+                "skipped": 0,
+                "error_count": len(errors),
+            },
         }
 
     counts = await upsert_records(records, event_id, db)
@@ -388,7 +553,14 @@ async def upload_university_records(
         "added": counts["added"],
         "updated": counts["updated"],
         "skipped": counts["skipped"],
-        "errors": []
+        "errors": [],
+        "summary": {
+            "total": total,
+            "added": counts["added"],
+            "updated": counts["updated"],
+            "skipped": counts["skipped"],
+            "error_count": 0,
+        },
     }
 
 
