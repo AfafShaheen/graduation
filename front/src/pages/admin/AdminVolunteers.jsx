@@ -4,7 +4,7 @@ import '../../style/AdminVolunteers.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminVolunteers, exportVolunteers } from './hooks/useAdminVolunteers.js';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
-import { ApiError } from '../../api/admin.js';
+import { adminRequest, ApiError } from '../../api/admin.js';
 
 const PAGE_SIZE = 10;
 
@@ -19,6 +19,68 @@ const formatDate = (iso) =>
         day: '2-digit',
       })
     : '—';
+
+const PAGE_EXPORT_SIZE = 200; // same upper bound the API allows (limit <= 200)
+
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+const buildVolunteersPrintHtml = (volunteers) => {
+  const rows = volunteers
+    .map(
+      (v) => `
+      <tr>
+        <td>${escapeHtml(v.full_name)}</td>
+        <td>${escapeHtml(v.university_id)}</td>
+        <td>${escapeHtml(v.college_name || '—')}</td>
+        <td>${escapeHtml(v.phone || '—')}</td>
+        <td>${v.wants_responsibility === 'yes' ? 'نعم' : 'لا'}</td>
+        <td>${v.has_experience === 'yes' ? 'نعم' : 'لا'}</td>
+        <td>${escapeHtml(formatDate(v.registered_at))}</td>
+      </tr>`,
+    )
+    .join('');
+
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>قائمة المتطوعين</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Tahoma, sans-serif; color: #1f2937; margin: 0; padding: 24px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .meta { font-size: 12px; color: #6b7280; margin: 0 0 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: right; }
+  thead th { background: #f3f4f6; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+</style>
+</head>
+<body>
+  <h1>قائمة المتطوعين</h1>
+  <p class="meta">عدد النتائج: ${volunteers.length}</p>
+  <table>
+    <thead>
+      <tr>
+        <th>الاسم الكامل</th>
+        <th>الرقم الجامعي</th>
+        <th>الكلية</th>
+        <th>الهاتف</th>
+        <th>يرغب بمسؤولية</th>
+        <th>الخبرة السابقة</th>
+        <th>تاريخ التسجيل</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+</body>
+</html>`;
+};
 
 function YesNoChip({ value }) {
   const yes = value === 'yes';
@@ -43,6 +105,7 @@ export default function AdminVolunteers({
   const [sortBy, setSortBy] = useState('newest');
   const [page, setPage] = useState(1);
   const [exportError, setExportError] = useState('');
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && setNavOpen(false);
@@ -103,6 +166,62 @@ export default function AdminVolunteers({
     setExperience('all');
     setSortBy('newest');
     setPage(1);
+  };
+
+  const buildVolunteerFilters = () => {
+    const filters = { sort: sortBy };
+    if (eventId) filters.event_id = eventId;
+    const college = collegeId === 'all' ? '' : collegeId;
+    if (college) filters.college_id = college;
+    if (debouncedQuery.trim()) filters.q = debouncedQuery.trim();
+    if (responsibility !== 'all') filters.wants_responsibility = responsibility;
+    if (experience !== 'all') filters.has_experience = experience;
+    return filters;
+  };
+
+  // PDF export must cover every row matching the current filters, not just the
+  // visible page, so we page through the API (limit is capped at 200 per request).
+  const fetchAllFilteredVolunteers = async () => {
+    const base = buildVolunteerFilters();
+    const collected = [];
+    let offset = 0;
+    for (;;) {
+      const res = await adminRequest('/api/admin/volunteers', {
+        query: { ...base, limit: PAGE_EXPORT_SIZE, offset },
+      });
+      const items = res?.items || [];
+      collected.push(...items);
+      const total = res?.total || collected.length;
+      offset += PAGE_EXPORT_SIZE;
+      if (items.length === 0 || collected.length >= total) break;
+    }
+    return collected;
+  };
+
+  const handleExportPdf = async () => {
+    if (pdfBusy) return;
+    setExportError('');
+    setPdfBusy(true);
+    try {
+      const all = await fetchAllFilteredVolunteers();
+      if (onExportPdf) {
+        onExportPdf(all);
+        return;
+      }
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        setExportError('تعذّر فتح نافذة الطباعة، يرجى السماح بالنوافذ المنبثقة.');
+        return;
+      }
+      printWindow.document.write(buildVolunteersPrintHtml(all));
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    } catch (e) {
+      setExportError(e instanceof ApiError ? e.message : 'تعذّر تصدير الملف، حاول لاحقاً.');
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   const handleExportExcel = async () => {
@@ -260,7 +379,7 @@ export default function AdminVolunteers({
               النتائج: <strong>{fmt(total)}</strong> خريج
             </p>
             <div className="adm-export-cluster">
-              <button className="adm-export-btn" type="button" onClick={() => onExportPdf && onExportPdf(rows)}>
+              <button className="adm-export-btn" type="button" onClick={handleExportPdf} disabled={pdfBusy}>
                 <span className="adm-symbol" style={{ fontSize: '18px' }}>picture_as_pdf</span>
                 <span>PDF</span>
               </button>
