@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { logoutAdmin } from "./api/admin";
 import { forgotPassword } from "./api/graduate";
+import TicketGuard from "./components/TicketGuard";
 import GraduationFormStep1 from "./pages/student/GraduationFormStep1";
 import GraduationFormStep2 from "./pages/student/GraduationFormStep2";
 import Otp from "./pages/student/Otp";
@@ -198,42 +199,48 @@ function App() {
         <Route
           path="/tickets"
           element={
-            <SelectTicket
-              onBack={() => navigate("/login")}
-              onContinue={() => navigate("/payment")}
-            />
+            <TicketGuard>
+              <SelectTicket onBack={() => navigate("/login")} />
+            </TicketGuard>
           }
         />
 
         <Route
           path="/payment"
           element={
-            <ShamCashPayment
-              onBack={() => navigate("/tickets")}
-              onSuccess={() => navigate("/payment-submitted", { replace: true })}
-            />
+            <TicketGuard>
+              <ShamCashPayment onBack={() => navigate("/tickets")} />
+            </TicketGuard>
           }
         />
 
         <Route
           path="/payment-submitted"
-          element={<OrderStatus />}
+          element={
+            <TicketGuard>
+              <OrderStatus />
+            </TicketGuard>
+          }
         />
 
-        {/* صفحة الرفض ما بتحتاج بيانات، والزر بيرجع المستخدم للدفع (وهناك الشرط) */}
+        {/* صفحة الرفض جنب الدفع: الحارس يتحقق من حالة التذكرة ويعيد التوجيه حسب الحاجة */}
         <Route
           path="/payment-rejected"
           element={
-            <OrderRejected
-              onResubmit={() => navigate("/payment", { replace: true })}
-            />
+            <TicketGuard>
+              <OrderRejected />
+            </TicketGuard>
           }
         />
 
         {/* ===== التذكرة بعد تأكيد الدفع ===== */}
         <Route
           path="/my-ticket"
-          element={<MyTicket />}
+          element={
+            <TicketGuard>
+              <MyTicket />
+            </TicketGuard>
+          }
         />
 
         {/* ===== الإدارة: بتنفتح من الرابط /admin فقط، وما في أي رابط إلها بصفحات الطلاب ===== */}
