@@ -4,6 +4,7 @@ import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { loginGraduate } from '../../api/graduate';
 import { setGraduateSession, setVerificationToken, setGraduateEmail } from '../../api/session';
+import { extractVerificationToken } from '../../utils/extractVerificationToken.js';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -85,8 +86,9 @@ export default function Login({
       setGraduateSession({ accessToken: result.access_token, expiresIn: result.expires_in });
       if (onLoginSuccess) onLoginSuccess(credentials);
     } catch (err) {
-      if (err.status === 403 && err.data?.verification_token) {
-        setVerificationToken(err.data.verification_token);
+      const verificationValue = extractVerificationToken(err.data);
+      if (err.status === 403 && verificationValue) {
+        setVerificationToken(verificationValue);
         setGraduateEmail(formData.email.trim());
         if (onLoginSuccess) onLoginSuccess({ email: formData.email.trim(), needsVerification: true });
       } else if (err.status === 401) {
