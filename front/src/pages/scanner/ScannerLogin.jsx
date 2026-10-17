@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import '../../style/ScannerLogin.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
+import { request } from '../../api/client';
+import { setScannerSession } from '../../api/session';
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
@@ -33,6 +35,8 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false); // الأخطاء ما بتبين إلا بعد أول ضغطة على الزر
+  const [serverError, setServerError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,7 +47,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newErrors = {};
@@ -60,10 +64,33 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
       return;
     }
 
-    const credentials = { username: formData.username.trim(), password: formData.password };
-    if (onLoginSuccess) onLoginSuccess(credentials);
-    else alert(`تم تسجيل دخول الماسح بنجاح: ${credentials.username}`);
+    const credentials = { syndicateId: formData.username.trim(), password: formData.password };
+    
+    setLoading(true);
+    setServerError('');
+    try {
+      const data = await request('/api/scanner/auth/login', {
+        method: 'POST',
+        body: { username: credentials.syndicateId, password: credentials.password },
+      });
+      setScannerSession({
+        accessToken: data.access_token,
+        expiresIn: data.expires_in,
+        event: data.event,
+      });
+      if (onLoginSuccess) onLoginSuccess({ username: credentials.syndicateId, event: data.event });
+    } catch (err) {
+      setServerError(
+        err.status === 401
+          ? 'بيانات الدخول غير صحيحة أو الحساب غير مفعّل'
+          : err.message
+      );
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const displayError = errorMessage || serverError;
 
   return (
     <div className="scan-login-app-container">
@@ -115,12 +142,12 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
             </div>
 
             <form className="scan-login-form" onSubmit={handleSubmit} noValidate autoComplete="off">
-              {errorMessage && (
+              {displayError && (
                 <div className="scan-login-form-alert" role="alert">
                   <span className="scan-login-symbol" style={{ fontSize: '18px' }}>
                     error
                   </span>
-                  <span>{errorMessage}</span>
+                  <span>{displayError}</span>
                 </div>
               )}
 
@@ -191,8 +218,8 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
               </div>
 
               {/* زر الدخول */}
-              <button type="submit" className="scan-login-submit-btn">
-                <span>تسجيل الدخول وبدء المسح</span>
+              <button type="submit" className="scan-login-submit-btn" disabled={loading}>
+                <span>{loading ? 'جاري الدخول...' : 'تسجيل الدخول وبدء المسح'}</span>
                 <span className="scan-login-symbol">arrow_back</span>
               </button>
             </form>

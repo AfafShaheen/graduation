@@ -195,12 +195,38 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-  background-color: var(--sc-green-deep);
+  background-color: #000000;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+#qr-reader {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+#qr-reader video,
+#qr-reader canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  position: absolute !important;
+  inset: 0 !important;
+}
+
+#qr-reader__dashboard_section,
+#qr-reader__header_message,
+#qr-reader__status_span {
+  display: none !important;
 }
 
 /* نقشة الصفحات الأخرى بشكل خفيف جداً خلف الكاميرا */
@@ -220,12 +246,10 @@
   mask-size: 420px auto;
 }
 
-.scan-cam-viewfinder-zone > * {
-  position: relative;
-  z-index: 1;
-}
-
 .scan-cam-prompt-card {
+  position: relative;
+  z-index: 5;
+  pointer-events: none;
   margin-bottom: 16px;
   padding: 0 16px;
   width: 100%;
@@ -234,44 +258,31 @@
   box-sizing: border-box;
 }
 
-.scan-cam-prompt-pill {
-  background-color: rgba(18, 77, 68, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
-  padding: 10px 16px;
-  border-radius: 9999px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 340px;
-}
-
-.scan-cam-prompt-pill p {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: #ffffff;
-  text-align: center;
-  line-height: 1.5;
-}
-
-.scan-cam-accent {
-  color: var(--sc-accent);
-}
-
-.scan-cam-orange {
-  color: var(--sc-orange);
-}
-
-/* مربع التوجيه والليزر */
 .scan-cam-reticle-box {
   position: relative;
+  z-index: 5;
+  pointer-events: none;
   width: min(240px, 64vw);
   aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.scan-cam-distance {
+  position: relative;
+  z-index: 5;
+  pointer-events: none;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #b5d6cf;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .scan-cam-reticle-glow {

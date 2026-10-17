@@ -31,6 +31,7 @@ import ScannerCamera from "./pages/scanner/ScannerCamera";
 import ScanSuccessResult from "./pages/scanner/ScanSuccessResult";
 import ScanErrorResult from "./pages/scanner/ScanErrorResult";
 import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
+import { getScannerToken, isScannerTokenExpired, clearScannerSession } from "./api/session";
 
 /*
   وضع المعاينة (للتصميم فقط):
@@ -94,7 +95,7 @@ function App() {
   const [resetVerified, setResetVerified] = useState(false); // هل تأكد رمز الاستعادة؟ (ما منحفظها)
   const [admin, setAdmin] = usePersistentState("grad.admin", null); // جلسة الإدارة (مؤقتة لحد ما يجهز الباك إند)
   const [adminError, setAdminError] = useState(""); // رسالة خطأ دخول الإدارة
-  const [scanner, setScanner] = usePersistentState("grad.scanner", null); // جلسة الماسح (مؤقتة لحد ما يجهز الباك إند)
+  const [_scanner, setScanner] = usePersistentState("grad.scanner", null); // جلسة الماسح (مؤقتة لحد ما يجهز الباك إند)
   const [scannerError, setScannerError] = useState(""); // رسالة خطأ دخول الماسح
 
   useEffect(() => {
@@ -559,9 +560,10 @@ function App() {
         <Route
           path="/scanner/scan"
           element={
-            scanner || PREVIEW ? (
+            getScannerToken() && !isScannerTokenExpired() ? (
               <ScannerCamera
                 onLogout={() => {
+                  clearScannerSession();
                   setScanner(null);
                   navigate("/scanner", { replace: true });
                 }}
@@ -574,7 +576,7 @@ function App() {
         <Route
           path="/scanner/result"
           element={
-            scanner || PREVIEW ? (
+            (_scanner || (getScannerToken() && !isScannerTokenExpired())) || PREVIEW ? (
               <ScanSuccessResult onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
@@ -586,15 +588,8 @@ function App() {
         <Route
           path="/scanner/error"
           element={
-            scanner || PREVIEW ? (
-              <ScanErrorResult
-                errorType={
-                  new URLSearchParams(location.search).get("type") ||
-                  location.state?.errorType ||
-                  "already_used"
-                }
-                onNextScan={() => navigate("/scanner/scan")}
-              />
+            (_scanner || (getScannerToken() && !isScannerTokenExpired())) || PREVIEW ? (
+              <ScanErrorResult onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
             )
@@ -605,7 +600,7 @@ function App() {
         <Route
           path="/scanner/wrong-ceremony"
           element={
-            scanner || PREVIEW ? (
+            (_scanner || (getScannerToken() && !isScannerTokenExpired())) || PREVIEW ? (
               <WrongCeremoniesWarning onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
@@ -617,7 +612,7 @@ function App() {
         <Route
           path="/scanner/*"
           element={
-            scanner || PREVIEW ? (
+            getScannerToken() && !isScannerTokenExpired() ? (
               <div
                 style={{ padding: 24, textAlign: "center", direction: "rtl" }}
               >
@@ -626,6 +621,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
+                    clearScannerSession();
                     setScanner(null);
                     navigate("/scanner", { replace: true });
                   }}
