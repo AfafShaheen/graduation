@@ -23,7 +23,7 @@ export function toVerifyStep1Payload(formData, colleges) {
     full_name: formData.fullName.trim(),
     father_name: formData.fatherName.trim(),
     mother_name: formData.motherName.trim(),
-    gender: GENDER_MAP[formData.gender] || "ذكر",
+    gender: GENDER_MAP[formData.gender],
     gpa: Number(formData.gpa),
     top_rank: TOP_RANK_MAP[formData.topRank] ?? null,
   };
@@ -47,6 +47,7 @@ const validators = {
     return '';
   },
   faculty: (v) => (v ? '' : 'اختر الكلية'),
+  gender: (v) => (v ? '' : 'اختر الجنس'),
   studentId: (v) => {
     const t = v.trim();
     if (!t) return 'الرقم الجامعي مطلوب';
@@ -89,7 +90,7 @@ function FieldError({ message }) {
 export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
   const [formData, setFormData] = useState({
     fullName: '',
-    gender: 'male',
+    gender: '',
     faculty: '',
     major: 'none',
     studentId: '',
@@ -153,6 +154,9 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
   const handleGenderSelect = (gender) => {
     setFormData((prev) => ({ ...prev, gender }));
+    if (submitted) {
+      setErrors((prev) => ({ ...prev, gender: validators.gender(gender) }));
+    }
   };
 
   const handleNextStep = async (e) => {
@@ -297,6 +301,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   <span>أنثى</span>
                 </button>
               </div>
+              <FieldError message={errors.gender} />
             </div>
 
             {/* الكلية */}

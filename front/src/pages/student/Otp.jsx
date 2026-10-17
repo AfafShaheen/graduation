@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../../style/Otp.css';
 import unionLogo from '../../assets/only-logo.png';
-import { verifyOtp, resendOtp, changeEmail } from '../../api/graduate';
+import { verifyOtp, resendOtp, changeEmail, forgotPassword } from '../../api/graduate';
 import { setGraduateSession, clearVerificationToken, setVerificationToken, setGraduateEmail, getVerificationToken, getGraduateEmail, setResetCode, clearResetFlow } from '../../api/session';
 
 const CODE_LENGTH = 6;
@@ -40,7 +40,6 @@ export default function Otp({
   email: emailProp,
   onBack,
   onVerified,
-  onResend,
 }) {
   const flow = FLOWS[mode] || FLOWS.register;
   const [otp, setOtp] = useState(emptyOtp());
@@ -227,10 +226,14 @@ export default function Otp({
     if (resendCooldown > 0 || status === 'success' || status === 'verifying') return;
 
     if (isResetMode) {
-      if (onResend) onResend();
-      resetOtpState();
-      setNotice('تم إرسال رمز جديد إلى بريدك الإلكتروني');
-      inputRefs.current[0]?.focus();
+      try {
+        await forgotPassword(email);
+        resetOtpState();
+        setNotice('تم إرسال رمز جديد إلى بريدك الإلكتروني');
+        inputRefs.current[0]?.focus();
+      } catch (err) {
+        setServerError(err.status === 429 ? err.message : 'تعذّر إعادة إرسال الرمز، حاول لاحقاً');
+      }
       return;
     }
 

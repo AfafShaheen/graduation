@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   Routes,
   Route,
@@ -6,6 +6,8 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
+import { logoutAdmin } from "./api/admin";
+import { forgotPassword } from "./api/graduate";
 import GraduationFormStep1 from "./pages/student/GraduationFormStep1";
 import GraduationFormStep2 from "./pages/student/GraduationFormStep2";
 import Otp from "./pages/student/Otp";
@@ -31,7 +33,7 @@ import ScannerCamera from "./pages/scanner/ScannerCamera";
 import ScanSuccessResult from "./pages/scanner/ScanSuccessResult";
 import ScanErrorResult from "./pages/scanner/ScanErrorResult";
 import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
-import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduateToken, isGraduateTokenExpired, getAdminToken, isAdminTokenExpired, getVerificationToken, getRegistrationToken, isRegistrationTokenExpired, getResetEmail, setResetEmail, getResetCode, getGraduateEmail } from "./api/session";
+import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduateToken, isGraduateTokenExpired, getAdminToken, isAdminTokenExpired, clearAdminSession, getVerificationToken, getRegistrationToken, isRegistrationTokenExpired, getResetEmail, setResetEmail, getResetCode, getGraduateEmail } from "./api/session";
 
 /*
   وضع المعاينة (للتصميم فقط):
@@ -41,31 +43,6 @@ import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduat
 const PREVIEW = import.meta.env.VITE_PREVIEW === 'true';
 
 
-
-/* حالة بتنحفظ بـ sessionStorage، فبتضل موجودة بعد تحديث الصفحة (وبتنمسح بإغلاق التبويب) */function usePersistentState(key, initialValue) {
-  const [value, setValue] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(key);
-      return raw ? JSON.parse(raw) : initialValue;
-    } catch (err) {
-      return initialValue;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      if (value === null || value === undefined || value === "") {
-        sessionStorage.removeItem(key);
-      } else {
-        sessionStorage.setItem(key, JSON.stringify(value));
-      }
-    } catch (err) {
-      /* التخزين غير متاح: نكمل بدونه */
-    }
-  }, [key, value]);
-
-  return [value, setValue];
-}
 
 function App() {
   const navigate = useNavigate();
@@ -78,6 +55,16 @@ function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  const handleAdminLogout = async () => {
+    try {
+      await logoutAdmin();
+    } catch {
+      /* نتجاهل أخطاء الخادم وننظف الجلسة محلياً */
+    }
+    clearAdminSession();
+    navigate("/admin", { replace: true });
+  };
 
   const hasValidGraduate = getGraduateToken() && !isGraduateTokenExpired();
   const hasValidAdmin = getAdminToken() && !isAdminTokenExpired();
@@ -93,18 +80,7 @@ function App() {
           element={
             <GraduationFormStep1
               onNavigateToLogin={() => navigate("/login")}
-              onNext={(data) => {
-                // نحفظ بيانات الخريج (التذكرة + التخصص والترتيب والمعدل للباك إند)
-                setStudent({
-                  fullName: data.fullName.trim(),
-                  faculty: data.faculty,
-                  major: data.major, // "none" = لا يوجد
-                  studentId: data.studentId.trim(),
-                  topRank: data.topRank, // none | first | second | third
-                  gpa: Number(data.gpa), // المعدل كنسبة مئوية (0-100)
-                });
-                navigate("/register");
-              }}
+              onNext={() => navigate("/register")}
             />
           }
         />
@@ -171,8 +147,15 @@ function App() {
               }
               onBack={() => navigate("/")}
               onNavigateToRegister={() => navigate("/")}
-              onLoginSuccess={() => navigate("/tickets")}
-              onForgotPassword={(em) => {
+              onLoginSuccess={(payload) => {
+                if (payload?.needsVerification) {
+                  navigate("/otp");
+                } else {
+                  navigate("/tickets");
+                }
+              }}
+              onForgotPassword={async (em) => {
+                await forgotPassword(em);
                 setResetEmail(em);
                 navigate("/reset-otp");
               }}
@@ -265,7 +248,7 @@ function App() {
             hasValidAdmin || PREVIEW ? (
               <AdminDashboard
                 onNavigate={(section) => navigate(`/admin/${section}`)}
-                onLogout={() => navigate("/admin", { replace: true })}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -286,7 +269,7 @@ function App() {
                     state: { ceremony: item },
                   })
                 }
-                onLogout={() => navigate("/admin", { replace: true })}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -303,7 +286,7 @@ function App() {
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onCancel={() => navigate("/admin/ceremonies")}
                 onSubmitSuccess={() => navigate("/admin/ceremonies")}
-                onLogout={() => navigate("/admin", { replace: true })}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -326,7 +309,7 @@ function App() {
                   onNavigate={(section) => navigate(`/admin/${section}`)}
                   onCancel={() => navigate("/admin/ceremonies")}
                   onSubmitSuccess={() => navigate("/admin/ceremonies")}
-                  onLogout={() => navigate("/admin", { replace: true })}
+                  onLogout={handleAdminLogout}
                 />
               ) : (
                 <Navigate to="/admin/ceremonies" replace />
@@ -345,7 +328,7 @@ function App() {
               <AdminPaymentRequests
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
-                onLogout={() => navigate("/admin", { replace: true })}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -361,7 +344,7 @@ function App() {
               <AdminScannersSettings
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
-                onLogout={() => navigate("/admin", { replace: true })}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -377,7 +360,7 @@ function App() {
               <AdminExceptions
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
-                onLogout={() => navigate("/admin", { replace: true })}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -393,7 +376,7 @@ function App() {
               <AdminVolunteers
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
-                onLogout={() => navigate("/admin", { replace: true })}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />

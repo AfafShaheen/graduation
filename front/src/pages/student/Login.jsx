@@ -57,6 +57,7 @@ export default function Login({
   };
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
   const [serverError, setServerError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -101,8 +102,9 @@ export default function Login({
   };
 
   // نسيت كلمة السر: نحتاج البريد أولاً لنرسل له رمز الاستعادة
-  const handleForgot = (e) => {
+  const handleForgot = async (e) => {
     e.preventDefault();
+    if (isForgotLoading) return;
     const t = formData.email.trim();
     const emailError = !t
       ? 'يرجى إدخال بريدك الإلكتروني أولاً لإرسال رمز الاستعادة'
@@ -115,7 +117,16 @@ export default function Login({
       document.getElementById(fieldIds.email)?.focus();
       return;
     }
-    if (onForgotPassword) onForgotPassword(t);
+
+    setIsForgotLoading(true);
+    setServerError('');
+    try {
+      if (onForgotPassword) await onForgotPassword(t);
+    } catch (err) {
+      setServerError(err?.message || 'تعذّر إرسال رمز الاستعادة، حاول لاحقاً');
+    } finally {
+      setIsForgotLoading(false);
+    }
   };
 
   return (
@@ -209,8 +220,14 @@ export default function Login({
                   <label className="lg-label" htmlFor="student-password">
                     كلمة السر
                   </label>
-                  <a href="#forgot" className="lg-forgot-link" onClick={handleForgot}>
-                    نسيت كلمة السر؟
+                  <a
+                    href="#forgot"
+                    className="lg-forgot-link"
+                    onClick={handleForgot}
+                    aria-disabled={isForgotLoading}
+                    style={isForgotLoading ? { pointerEvents: 'none', opacity: 0.6 } : undefined}
+                  >
+                    {isForgotLoading ? 'جارٍ إرسال الرمز...' : 'نسيت كلمة السر؟'}
                   </a>
                 </div>
                 <div className={`lg-input-wrapper ${errors.password ? 'error' : ''}`}>
