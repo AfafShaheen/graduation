@@ -35,7 +35,9 @@ async def test_academic_correct_data_returns_200(client, make_event, make_colleg
     assert resp.json()["valid"] is True
 
 
-async def test_academic_wrong_gpa_returns_generic_fail(client, make_event, make_college, make_major, make_university_record):
+async def test_academic_mismatched_gpa_is_ignored_returns_200(client, make_event, make_college, make_major, make_university_record):
+    # D2: the GPA typed in the form is optional and is never matched against the
+    # file; it is only stored. So a differing GPA must still succeed.
     event = await make_event()
     college = await make_college(event.id)
     major = await make_major(college.id)
@@ -55,12 +57,12 @@ async def test_academic_wrong_gpa_returns_generic_fail(client, make_event, make_
             "mother_name": "سعاد",
             "gender": "male",
             "major_id": major.id,
-            "gpa": "80.00", # Wrong GPA
+            "gpa": "80.00", # Differs from the record; intentionally ignored (D2)
             "top_rank": 1,
         }
     )
-    assert resp.status_code == 400
-    assert resp.json()["detail"] == messages.GENERIC_VERIFY_FAIL
+    assert resp.status_code == 200
+    assert resp.json()["valid"] is True
 
 
 async def test_academic_gpa_formatting_equivalence(client, make_event, make_college, make_major, make_university_record):
