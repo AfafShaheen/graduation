@@ -1,0 +1,150 @@
+.maj-card {
+  background: #ffffff;
+  border: 1px solid #eedebd;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-top: 24px;
+}
+
+.maj-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.maj-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #201b0f;
+  margin: 0 0 4px;
+}
+
+.maj-sub {
+  font-size: 13px;
+  line-height: 20px;
+  color: #8d7166;
+  margin: 0;
+}
+
+.maj-select {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid #eedebd;
+  background: #f8edd9;
+  color: #201b0f;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.maj-add {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.maj-input {
+  flex: 1 1 220px;
+  min-width: 160px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #eedebd;
+  background: #fffdf7;
+  color: #201b0f;
+  font-size: 14px;
+}
+
+.maj-input:focus {
+  outline: none;
+  border-color: #124d44;
+}
+
+.maj-btn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.maj-btn.primary {
+  background: #124d44;
+  color: #ffffff;
+}
+
+.maj-btn.ghost {
+  background: #f8edd9;
+  color: #201b0f;
+  border-color: #eedebd;
+}
+
+.maj-btn.danger {
+  background: #fdecea;
+  color: #ba1a1a;
+  border-color: #f5c2c0;
+}
+
+.maj-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.maj-error {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ba1a1a;
+  margin: 0 0 12px;
+}
+
+.maj-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.maj-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid #f2e7d3;
+  border-radius: 10px;
+  background: #fffdf7;
+  flex-wrap: wrap;
+}
+
+.maj-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #201b0f;
+}
+
+.maj-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.maj-confirm-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ba1a1a;
+}
+
+.maj-empty {
+  font-size: 14px;
+  color: #8d7166;
+  font-weight: 600;
+  padding: 8px 0;
+  margin: 0;
+}

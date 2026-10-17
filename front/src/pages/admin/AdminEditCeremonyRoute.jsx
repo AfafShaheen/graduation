@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AdminAddCeremony from './AdminAddCeremony';
+import MajorsManager from './MajorsManager';
 import { getAdminEvent } from './hooks/useAdminEvents.js';
 import { ApiError } from '../../api/admin.js';
 
@@ -86,13 +87,16 @@ export default function AdminEditCeremonyRoute({
   const ceremony = {
     id: event.id,
     ceremonyName: event.name || '',
-    ceremonyDate: event.event_date ? `${event.event_date.slice(0, 10)}T00:00` : '',
+    ceremonyDate: event.event_date
+      ? `${event.event_date.slice(0, 10)}T${event.event_time ? event.event_time.slice(0, 5) : '00:00'}`
+      : '',
     startDate: toDamascusDate(event.registration_start),
     endDate: toDamascusDate(event.registration_end),
     whatsappLink: event.whatsapp_group_link || '',
     pricePkg2: fmtPrice(event.price_2_companions),
     pricePkg3: fmtPrice(event.price_3_companions),
     enablePkg3: event.is_3companions_enabled ?? true,
+    seatPrefix: event.seat_prefix || '',
     faculties: Array.isArray(event.colleges)
       ? FACULTY_OPTIONS.filter((f) => event.colleges.some((c) => c.name === f.label)).map((f) => f.label)
       : [],
@@ -115,6 +119,8 @@ export default function AdminEditCeremonyRoute({
       onCancel={() => navigate('/admin/ceremonies')}
       onSubmitSuccess={() => navigate('/admin/ceremonies')}
       onLogout={onLogout}
-    />
+    >
+      <MajorsManager colleges={Array.isArray(event.colleges) ? event.colleges : []} />
+    </AdminAddCeremony>
   );
 }

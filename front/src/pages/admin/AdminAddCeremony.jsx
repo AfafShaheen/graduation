@@ -23,6 +23,7 @@ export default function AdminAddCeremony({
   onSubmitSuccess,
   onNavigate,
   onLogout,
+  children,
 }) {
   const isEdit = !!ceremony;
   const [ceremonyName, setCeremonyName] = useState(ceremony?.ceremonyName || '');
@@ -33,6 +34,8 @@ export default function AdminAddCeremony({
   const [pricePkg2, setPricePkg2] = useState(ceremony?.pricePkg2 || '');
   const [pricePkg3, setPricePkg3] = useState(ceremony?.pricePkg3 || '');
   const [enablePkg3, setEnablePkg3] = useState(ceremony?.enablePkg3 ?? true);
+  const [seatPrefix, setSeatPrefix] = useState(ceremony?.seatPrefix || '');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
 
   // ملف بيانات الجامعة (اختياري عند الحفظ، لكن لازم يكون جاهز قبل فتح التسجيل)
@@ -130,18 +133,27 @@ export default function AdminAddCeremony({
     return isNaN(n) ? 0 : n;
   };
 
+  const errFor = (key) => fieldErrors[key];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
+    setFieldErrors({});
 
     if (!isEdit && !Object.values(faculties).some(Boolean)) {
       setSubmitError('اختر كلية واحدة على الأقل لهذا الحفل');
       return;
     }
 
+    const eventTime = ceremonyDate && ceremonyDate.length >= 16
+      ? `${ceremonyDate.slice(11, 16)}:00`
+      : null;
+
     const base = {
       name: ceremonyName,
       event_date: ceremonyDate ? ceremonyDate.slice(0, 10) : ceremonyDate,
+      event_time: eventTime,
+      seat_prefix: seatPrefix.trim() || null,
       registration_start: startDate ? `${startDate}T00:00:00+03:00` : startDate,
       registration_end: endDate ? `${endDate}T23:59:59+03:00` : endDate,
       whatsapp_group_link: whatsappLink,
@@ -183,8 +195,13 @@ export default function AdminAddCeremony({
       } else {
         alert(isEdit ? 'تم حفظ التعديلات بنجاح!' : 'تم حفظ ونشر الحفل الجديد بنجاح!');
       }
-    } catch (e) {
-      setSubmitError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 422 && err.fieldErrors) {
+        setFieldErrors(err.fieldErrors);
+        setSubmitError('يرجى تصحيح الحقول المميّزة بالأحمر ثم إعادة المحاولة.');
+      } else {
+        setSubmitError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -288,6 +305,9 @@ export default function AdminAddCeremony({
                 />
                 <span className="add-cer-symbol add-cer-input-icon left">edit_note</span>
               </div>
+              {errFor('name') && (
+                <p className="add-cer-file-error" role="alert">{errFor('name')}</p>
+              )}
               <p className="add-cer-hint">
                 هذا الاسم رح يظهر بمنتصف التذكرة الإلكترونية وعلى شاشات التحقق عند بوابات المدرج.
               </p>
@@ -318,6 +338,12 @@ export default function AdminAddCeremony({
                     onChange={(e) => setCeremonyDate(e.target.value)}
                     required
                   />
+                  {errFor('event_date') && (
+                    <p className="add-cer-file-error" role="alert">{errFor('event_date')}</p>
+                  )}
+                  {errFor('event_time') && (
+                    <p className="add-cer-file-error" role="alert">{errFor('event_time')}</p>
+                  )}
                 </div>
 
                 <div className="add-cer-field-group">
@@ -332,6 +358,9 @@ export default function AdminAddCeremony({
                     onChange={(e) => setStartDate(e.target.value)}
                     required
                   />
+                  {errFor('registration_start') && (
+                    <p className="add-cer-file-error" role="alert">{errFor('registration_start')}</p>
+                  )}
                 </div>
 
                 <div className="add-cer-field-group">
@@ -352,8 +381,38 @@ export default function AdminAddCeremony({
                     onChange={(e) => setEndDate(e.target.value)}
                     required
                   />
+                  {errFor('registration_end') && (
+                    <p className="add-cer-file-error" role="alert">{errFor('registration_end')}</p>
+                  )}
                 </div>
               </div>
+            </div>
+
+            <div className="add-cer-divider"></div>
+
+            {/* بادئة أرقام المقاعد */}
+            <div className="add-cer-field-group">
+              <label className="add-cer-label" htmlFor="seat-prefix">
+                بادئة أرقام المقاعد (اختياري)
+              </label>
+              <div className="add-cer-input-wrap">
+                <input
+                  id="seat-prefix"
+                  type="text"
+                  maxLength={3}
+                  className="add-cer-input with-icon-left"
+                  value={seatPrefix}
+                  onChange={(e) => setSeatPrefix(e.target.value)}
+                  placeholder="مثال: E أو أ"
+                />
+                <span className="add-cer-symbol add-cer-input-icon left">event_seat</span>
+              </div>
+              <p className="add-cer-hint">
+                من 1 إلى 3 محارف تُسبَق بها أرقام مقاعد الخريجين والمرافقين على التذاكر. لا يمكن تغييرها بعد تخصيص أي مقعد.
+              </p>
+              {errFor('seat_prefix') && (
+                <p className="add-cer-file-error" role="alert">{errFor('seat_prefix')}</p>
+              )}
             </div>
 
             <div className="add-cer-divider"></div>
@@ -388,6 +447,9 @@ export default function AdminAddCeremony({
                   </label>
                 ))}
               </div>
+              {errFor('college_names') && (
+                <p className="add-cer-file-error" role="alert">{errFor('college_names')}</p>
+              )}
             </div>
 
             <div className="add-cer-divider"></div>
@@ -407,6 +469,9 @@ export default function AdminAddCeremony({
                 onChange={(e) => setWhatsappLink(e.target.value)}
                 placeholder="https://chat.whatsapp.com/..."
               />
+              {errFor('whatsapp_group_link') && (
+                <p className="add-cer-file-error" role="alert">{errFor('whatsapp_group_link')}</p>
+              )}
               <p className="add-cer-hint with-icon">
                 <span className="add-cer-symbol">info</span>
                 <span>
@@ -454,6 +519,9 @@ export default function AdminAddCeremony({
                     />
                     <span className="add-cer-price-unit">ل.س</span>
                   </div>
+                  {errFor('price_2_companions') && (
+                    <p className="add-cer-file-error" role="alert">{errFor('price_2_companions')}</p>
+                  )}
                   <p className="add-cer-hint">تشمل روب التخرج + شهادة الحفل + مقعدين للمرافقين بالمدرج.</p>
                 </div>
 
@@ -479,6 +547,9 @@ export default function AdminAddCeremony({
                     />
                     <span className="add-cer-price-unit">ل.س</span>
                   </div>
+                  {errFor('price_3_companions') && (
+                    <p className="add-cer-file-error" role="alert">{errFor('price_3_companions')}</p>
+                  )}
                   <p className="add-cer-hint">حسب الطاقة الاستيعابية لمدرج الباسل الكبير.</p>
                 </div>
               </div>
@@ -620,6 +691,8 @@ export default function AdminAddCeremony({
             </div>
           </form>
         </div>
+
+        {children}
 
         <p className="add-cer-footer-note">
           <span className="add-cer-symbol">verified_user</span>

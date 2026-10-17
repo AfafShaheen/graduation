@@ -24,6 +24,11 @@ const QR_TYPE_LABELS = {
   COMPANION: 'رمز مرافق',
 };
 
+const TICKET_TYPE_LABELS = {
+  TWO_COMPANIONS: 'خريج + ٢ مرافقان',
+  THREE_COMPANIONS: 'خريج + ٣ مرافقين',
+};
+
 const nowLabel = () =>
   new Intl.DateTimeFormat('ar', {
     dateStyle: 'medium',
@@ -377,6 +382,24 @@ export default function AdminExceptions({
                 </div>
 
                 <div>
+                  <span className="exc-info-label">فئة التذكرة</span>
+                  <div className="exc-info-value">
+                    {ticket ? (TICKET_TYPE_LABELS[ticket.ticket_type] || '—') : '—'}
+                  </div>
+                  <span className="exc-info-sub">عدد المرافقين: {ticket?.companions_count ?? '—'}</span>
+                </div>
+
+                <div>
+                  <span className="exc-info-label">المقاعد</span>
+                  <div className="exc-info-value">{ticket?.seat?.range || '—'}</div>
+                  <span className="exc-info-sub ltr">
+                    {Array.isArray(ticket?.seat?.companions) && ticket.seat.companions.length
+                      ? ticket.seat.companions.join('، ')
+                      : 'لا توجد مقاعد بعد'}
+                  </span>
+                </div>
+
+                <div>
                   <span className="exc-info-label">رموز QR</span>
                   {(detail.qr_codes || []).length === 0 ? (
                     <span className="exc-info-sub">لا توجد رموز بعد</span>
@@ -384,13 +407,45 @@ export default function AdminExceptions({
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
                       {(detail.qr_codes || []).map((qr) => (
                         <span key={qr.id} className={`exc-pay-chip ${qr.is_activated ? 'confirmed' : 'pending'}`}>
-                          {QR_TYPE_LABELS[qr.code_type] || qr.code_type}: {qr.is_activated ? 'مُفعّل' : 'غير مُفعّل'}
+                          {QR_TYPE_LABELS[qr.code_type] || qr.code_type}: {qr.scanned ? 'تم مسحه' : qr.is_activated ? 'مُفعّل' : 'غير مُفعّل'}
+                          {qr.scanned_by_username ? ` (${qr.scanned_by_username})` : ''}
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
+
+              {(ticket?.rejection_reason || ticket?.confirmed_at) && (
+                <div className="exc-info-grid" style={{ marginTop: '12px' }}>
+                  {ticket?.rejection_reason && (
+                    <div>
+                      <span className="exc-info-label">سبب الرفض</span>
+                      <div className="exc-info-value">{ticket.rejection_reason}</div>
+                    </div>
+                  )}
+                  {ticket?.confirmed_at && (
+                    <div>
+                      <span className="exc-info-label">تاريخ التثبيت</span>
+                      <div className="exc-info-value">{formatDateTime(ticket.confirmed_at)}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {(detail.payments || []).length > 0 && (
+                <div style={{ marginTop: '12px' }}>
+                  <span className="exc-info-label">سجل الدفعات</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                    {(detail.payments || []).map((p) => (
+                      <span key={p.id} className="exc-info-sub">
+                        {p.sender_name || '—'} — {p.amount ?? '—'} — {formatDateTime(p.submitted_at)}
+                        {p.reviewed_at ? ` (روجعت ${formatDateTime(p.reviewed_at)})` : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {actionError && (
                 <div className="exc-alert" role="alert">
