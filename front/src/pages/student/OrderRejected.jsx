@@ -25,6 +25,7 @@ export default function OrderRejected() {
   const rejectionReason =
     data?.ticket?.rejection_reason || 'لم يُرفق سبب الرفض. يرجى التواصل مع الدعم للاستفسار.';
   const supportHref = contactPhone ? `tel:${contactPhone}` : undefined;
+  const registrationOpen = Boolean(data?.registration?.is_open);
 
   return (
     <div className="or-app-container">
@@ -100,7 +101,9 @@ export default function OrderRejected() {
                     info
                   </span>
                   <p className="or-reason-desc">
-                    يرجى التأكد من كتابة رقم العملية المكتوب في إشعار شام كاش بدقة، ثم إعادة إرسال بيانات الدفع.
+                    {registrationOpen
+                      ? 'يرجى التأكد من كتابة رقم العملية المكتوب في إشعار شام كاش بدقة، ثم إعادة إرسال بيانات الدفع.'
+                      : 'انتهت فترة التسجيل، لم يعد إرسال بيانات الدفع متاحاً.'}
                   </p>
                 </div>
               </div>
@@ -109,16 +112,18 @@ export default function OrderRejected() {
         </div>
 
         <div className="or-bottom-dock">
-          <button
-            className="or-resubmit-btn"
-            type="button"
-            onClick={() => navigate('/payment', { replace: true })}
-          >
-            <span className="or-symbol" style={{ fontSize: '20px' }}>
-              refresh
-            </span>
-            <span>إعادة إرسال بيانات الدفع</span>
-          </button>
+          {registrationOpen && (
+            <button
+              className="or-resubmit-btn"
+              type="button"
+              onClick={() => navigate('/payment', { replace: true })}
+            >
+              <span className="or-symbol" style={{ fontSize: '20px' }}>
+                refresh
+              </span>
+              <span>إعادة إرسال بيانات الدفع</span>
+            </button>
+          )}
 
           <a
             href={supportHref || undefined}
