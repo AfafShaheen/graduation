@@ -1,106 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import '../../style/AdminDashboard.css';
 import AdminSidebar from '../../components/AdminSidebar';
-
-/* ==========================================================================
-   بيانات تجريبية: لما يجهز الباك إند بدّلها ببيانات حقيقية (مثلاً عبر props)
-   ========================================================================== */
-const STATS = {
-  confirmedSeats: 4210, // حضور مؤكد (خريجون + مرافقون)
-  pendingSeats: 680, // حضور قيد التدقيق
-  registeredGrads: 1840,
-  totalGrads: 2100,
-  confirmedBookings: 1580,
-  processing: 142,
-  unpaid: 90,
-  rejected: 28,
-  // إجابات الخريجين عن أسئلة المشاركة في التنظيم
-  volunteers: 312, // يرغبون بتولّي مسؤولية في تقديم الحفل
-  withExperience: 548, // لديهم خبرة سابقة
-  volunteersWithExperience: 187, // يرغبون ولديهم خبرة (الأنسب للتكليف)
-  ticketTypes: [
-    { label: 'خريج + مرافقان', count: 1120, tone: 'green' },
-    { label: 'خريج + ثلاثة مرافقين', count: 460, tone: 'orange' },
-  ],
-};
-
-const FACULTIES = [
-  { name: 'كلية الهندسة الميكانيكية والكهربائية', grads: 480, confirmed: 82, pending: 14 },
-  { name: 'كلية الهندسة المدنية', grads: 360, confirmed: 78, pending: 13 },
-  { name: 'كلية الطب البشري', grads: 290, confirmed: 90, pending: 8 },
-  { name: 'كلية العلوم', grads: 240, confirmed: 68, pending: 14 },
-  { name: 'كلية الصيدلة', grads: 210, confirmed: 74, pending: 15 },
-];
-
-const RECENT_REVIEWS = [
-  { name: 'همام طراد الحصيني', desc: 'هندسة معمارية • مرافقان', status: 'confirmed' },
-  { name: 'سدرة أحمد الساعي', desc: 'طب بشري • ثلاثة مرافقين', status: 'review' },
-  { name: 'قتيبة مروان العمار', desc: 'تكنولوجيا • ثلاثة مرافقين', status: 'confirmed' },
-  { name: 'مهند سامي الإبراهيم', desc: 'صيدلة • رقم العملية مكرر', status: 'rejected' },
-];
+import { useAdminStats } from './hooks/useAdminStats.js';
+import { useAdminEvents } from './hooks/useAdminEvents.js';
+import { useAdminVolunteers } from './hooks/useAdminVolunteers.js';
+import { fetchRecentPayments } from './hooks/useAdminPayments.js';
+import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
 
 const STATUS_LABELS = { confirmed: 'مؤكد', review: 'قيد التدقيق', rejected: 'مرفوض' };
 
-
-/* سجل التدقيق والتوزيع المكاني (عينة): بدّلها لاحقاً ببيانات الصفحة الحالية من الباك إند */
-const STUDENTS = [
-  {
-    id: '2019-108422',
-    name: 'وسيم حسام الدين الدرويي',
-    faculty: 'الهندسة المدنية',
-    major: 'إدارة التشييد',
-    companions: 2,
-    status: 'confirmed',
-  },
-  {
-    id: '2019-114389',
-    name: 'ليان طارق خزام',
-    faculty: 'الهندسة المعمارية',
-    major: 'التصميم الداخلي',
-    companions: 3,
-    status: 'review',
-  },
-  {
-    id: '2018-095521',
-    name: 'حمزة غسان الأتاسي',
-    faculty: 'الهندسة المدنية',
-    major: 'هندسة المياه والبيئة',
-    companions: 2,
-    status: 'confirmed',
-  },
-  {
-    id: '2019-122904',
-    name: 'نور عبد الوهاب الجندلي',
-    faculty: 'الهندسة المعمارية',
-    major: 'تخطيط مدن',
-    companions: 2,
-    status: 'rejected',
-    rejectReason: 'رقم العملية مكرر',
-  },
-  {
-    id: '2018-087114',
-    name: 'عمرو بشير العلي',
-    faculty: 'الهندسة المدنية',
-    major: 'الهندسة الإنشائية',
-    companions: 3,
-    status: 'confirmed',
-  },
-];
-
-const PAGE_SIZE = 5;
+const PAY_STATUS_UI = {
+  CONFIRMED: 'confirmed',
+  PROCESSING: 'review',
+  AWAITING_PAYMENT: 'review',
+  REJECTED: 'rejected',
+};
 
 const PAY_LABELS = { confirmed: 'مؤكدة', review: 'قيد التدقيق', rejected: 'مرفوضة' };
 const PAY_ICONS = { confirmed: 'check', review: 'schedule', rejected: 'close' };
 
+const COMPANIONS_LABEL = { TWO_COMPANIONS: 'خريج + ٢ مرافقان', THREE_COMPANIONS: 'خريج + ٣ مرافقين' };
+
 /* الأعمدة القابلة للإخفاء (اسم الخريج وعمود الإجراءات ثابتان) */
 const OPTIONAL_COLUMNS = [
-  { id: 'faculty', label: 'الكلية والتخصص' },
+  { id: 'faculty', label: 'الكلية' },
   { id: 'ticket', label: 'فئة التذكرة' },
   { id: 'status', label: 'حالة الدفع' },
-  { id: 'reason', label: 'سبب الرفض' },
 ];
-
-const COMPANIONS_LABEL = { 2: 'خريج + ٢ مرافقان', 3: 'خريج + ٣ مرافقين' };
 
 /* أرقام الصفحات: 1 2 3 … الأخيرة */
 const pageItems = (current, total) => {
@@ -115,8 +41,10 @@ const pageItems = (current, total) => {
   return out;
 };
 
-const fmt = (n) => n.toLocaleString('en-US');
-const pct = (part, total) => Math.round((part / total) * 100);
+const PAGE_SIZE = 5;
+
+const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+const pct = (part, total) => (total > 0 ? Math.round((part / total) * 100) : 0);
 
 export default function AdminDashboard({
   adminName = 'مسؤول الاتحاد',
@@ -124,23 +52,19 @@ export default function AdminDashboard({
   onLogout,
   onAddTicket,
   onNavigate,
-  onSearch,
-  onApplyFilter,
   onExportPdf,
-  onExportExcel,
-  onPageChange,
-  onReviewReceipt,
-  onReopenOrder,
-  onDownloadTicket,
 }) {
-  const [selectedFaculty, setSelectedFaculty] = useState('all');
+  const [eventId, setEventId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
+  const [navOpen, setNavOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const [hiddenCols, setHiddenCols] = useState([]); // الأعمدة المخفية بالجدول
+  const [hiddenCols, setHiddenCols] = useState([]);
   const [colsOpen, setColsOpen] = useState(false);
+  const [payments, setPayments] = useState([]);
+  const [payLoading, setPayLoading] = useState(false);
+  const [payError, setPayError] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  // إغلاق القائمة بزر Escape
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') {
@@ -152,22 +76,106 @@ export default function AdminDashboard({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const expectedTotal = STATS.confirmedSeats + STATS.pendingSeats;
-  const responseRate = ((STATS.registeredGrads / STATS.totalGrads) * 100).toFixed(1);
+  const { events } = useAdminEvents({ limit: 100 });
 
-  const totalPages = Math.ceil(STATS.registeredGrads / PAGE_SIZE);
+  // اختيار أول حفل تلقائياً لعرض بيانات الدفع وآخر التدقيقات
+  useEffect(() => {
+    if (!eventId && events.length > 0) {
+      setEventId(String(events[0].id));
+    }
+  }, [events, eventId]);
+
+  const selectedEvent = useMemo(
+    () => events.find((e) => String(e.id) === String(eventId)) || null,
+    [events, eventId]
+  );
+
+  const { stats, loading, error } = useAdminStats(eventId || null);
+  const { data: volData } = useAdminVolunteers({ eventId: eventId || null, limit: 1 });
+
+  useEffect(() => {
+    let active = true;
+    if (!eventId) {
+      setPayments([]);
+      return undefined;
+    }
+    setPayLoading(true);
+    setPayError('');
+    fetchRecentPayments(eventId, 50)
+      .then((res) => {
+        if (active) setPayments(res.items || []);
+      })
+      .catch((e) => {
+        if (active) setPayError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
+      })
+      .finally(() => {
+        if (active) setPayLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [eventId]);
+
+  const t = stats?.tickets || {};
+  const g = stats?.graduates || {};
+  const attendance = stats?.expected_attendance || {};
+  const ticketTypes = stats?.ticket_types || {};
+  const byCollege = stats?.by_college || [];
+  const vol = volData?.stats || { all: 0, wants: 0, experienced: 0, both: 0 };
+
+  const expectedTotal = (attendance.confirmed || 0) + (attendance.processing || 0);
+  const responseRate = g.expected > 0 ? ((g.registered / g.expected) * 100).toFixed(1) : '0.0';
+
+  // صفوف سجل التدقيق: آخر عمليات الدفع للحفل المحدد
+  const reviewRows = useMemo(() => {
+    const q = searchQuery.trim();
+    return payments
+      .map((p) => ({
+        ticketId: p.ticket_id,
+        name: p.graduate?.full_name || '—',
+        uniId: p.graduate?.university_id || '—',
+        college: p.graduate?.college_name || '—',
+        ticketType: COMPANIONS_LABEL[p.ticket_type] || '—',
+        status: PAY_STATUS_UI[p.status] || 'review',
+      }))
+      .filter((r) => !q || r.name.includes(q) || String(r.uniId).includes(q));
+  }, [payments, searchQuery]);
+
+  const recentReviews = reviewRows.slice(0, 4);
+
+  const totalPages = Math.max(1, Math.ceil(reviewRows.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = reviewRows.slice(pageStart, pageStart + PAGE_SIZE);
+
   const showCol = (id) => !hiddenCols.includes(id);
   const toggleCol = (id) =>
     setHiddenCols((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+
   const goToPage = (n) => {
-    if (n < 1 || n > totalPages || n === page) return;
+    if (n < 1 || n > totalPages || n === currentPage) return;
     setPage(n);
-    if (onPageChange) onPageChange(n);
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (onSearch) onSearch(searchQuery.trim());
+    setPage(1);
+  };
+
+  const handleExportExcel = async () => {
+    setActionError('');
+    try {
+      const query = eventId ? { event_id: eventId } : {};
+      const { blob, filename } = await adminBlob('/api/admin/export', query);
+      downloadBlob(blob, filename);
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : 'تعذّر تصدير الملف، حاول لاحقاً.');
+    }
+  };
+
+  const handleExportPdf = () => {
+    if (onExportPdf) onExportPdf();
+    else window.print();
   };
 
   return (
@@ -230,7 +238,10 @@ export default function AdminDashboard({
             className="adm-search-input"
             placeholder="بحث عن اسم أو رقم جامعي..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
           />
           <span className="adm-symbol adm-search-icon" style={{ fontSize: '18px' }}>
             search
@@ -240,17 +251,32 @@ export default function AdminDashboard({
 
       {/* محتوى اللوحة */}
       <main className="adm-main-canvas">
+        {loading && (
+          <div className="adm-bento-card" role="status">
+            <p className="adm-bento-sub">جارٍ تحميل الإحصائيات...</p>
+          </div>
+        )}
+        {error && (
+          <div className="adm-bento-card" role="alert">
+            <p className="adm-bento-sub" style={{ color: '#b3261e' }}>{error}</p>
+          </div>
+        )}
+        {actionError && (
+          <div className="adm-bento-card" role="alert">
+            <p className="adm-bento-sub" style={{ color: '#b3261e' }}>{actionError}</p>
+          </div>
+        )}
+
         {/* الترحيب والفلتر */}
         <section className="adm-hero-row">
           <div className="adm-hero-titles">
             <div className="adm-pulse-tag">
               <span className="adm-mini-dot"></span>
-              <span className="adm-pulse-label">حفل دورة 2026</span>
-              <span className="adm-pulse-venue">• مدرج الباسل المركزي</span>
+              <span className="adm-pulse-label">{selectedEvent ? selectedEvent.name : 'كل الحفلات'}</span>
             </div>
             <h3>مرحباً زميلنا، إليك ملخص حجوزات الحفل وإحصائياته</h3>
             <p>
-              تحديث مباشر لبيانات الدفع، وتدقيق بطاقات الخريجين والمرافقين المعتمدين للدفعة الرابعة والأربعين.
+              تحديث مباشر لبيانات الدفع، وتدقيق بطاقات الخريجين والمرافقين المعتمدين.
             </p>
           </div>
 
@@ -261,33 +287,28 @@ export default function AdminDashboard({
               </span>
               <select
                 aria-label="تصفية حسب الحفل"
-                value={selectedFaculty}
-                onChange={(e) => setSelectedFaculty(e.target.value)}
+                value={eventId}
+                onChange={(e) => {
+                  setEventId(e.target.value);
+                  setPage(1);
+                }}
               >
-                <option value="all">كل الحفلات</option>
-                <option value="arch">حفل كلية الهندسة المعمارية والمدنية</option>
-                <option value="med">حفل كلية الطب البشري وطب الأسنان</option>
-                <option value="lit">حفل كلية الآداب والعلوم الإنسانية</option>
+                <option value="">كل الحفلات</option>
+                {events.map((ev) => (
+                  <option key={ev.id} value={ev.id}>{ev.name}</option>
+                ))}
               </select>
             </div>
 
-            <button
-              className="adm-btn-primary"
-              type="button"
-              onClick={() => onApplyFilter && onApplyFilter(selectedFaculty)}
-            >
-              تطبيق التصفية
-            </button>
-
             <div className="adm-export-cluster">
-              <button className="adm-export-btn" type="button" onClick={onExportPdf}>
+              <button className="adm-export-btn" type="button" onClick={handleExportPdf}>
                 <span className="adm-symbol" style={{ fontSize: '18px' }}>
                   picture_as_pdf
                 </span>
                 <span>تقرير PDF</span>
               </button>
               <span className="adm-export-sep"></span>
-              <button className="adm-export-btn" type="button" onClick={onExportExcel}>
+              <button className="adm-export-btn" type="button" onClick={handleExportExcel}>
                 <span className="adm-symbol" style={{ fontSize: '18px' }}>
                   table_chart
                 </span>
@@ -307,7 +328,7 @@ export default function AdminDashboard({
                 </span>
                 <span>القيد الرقمي للحضور</span>
               </div>
-              <h4 className="adm-highlight-title">إجمالي الحضور المتوقع في مدرج الباسل</h4>
+              <h4 className="adm-highlight-title">إجمالي الحضور المتوقع</h4>
               <p className="adm-highlight-desc">
                 يشمل جميع الخريجين المسجلين حضورياً، إضافة إلى ذويهم والمرافقين المعتمدين وفق بطاقات الدخول الصادرة رسمياً.
               </p>
@@ -327,7 +348,7 @@ export default function AdminDashboard({
                     </span>
                   </span>
                 </div>
-                <div className="adm-pill-value">{fmt(STATS.confirmedSeats)}</div>
+                <div className="adm-pill-value">{fmt(attendance.confirmed)}</div>
                 <div className="adm-pill-note">
                   <span className="adm-symbol" style={{ fontSize: '14px' }}>
                     check_circle
@@ -345,7 +366,7 @@ export default function AdminDashboard({
                     </span>
                   </span>
                 </div>
-                <div className="adm-pill-value orange">{fmt(STATS.pendingSeats)}</div>
+                <div className="adm-pill-value orange">{fmt(attendance.processing)}</div>
                 <div className="adm-pill-note muted">
                   <span className="adm-symbol" style={{ fontSize: '14px' }}>
                     hourglass_top
@@ -367,7 +388,7 @@ export default function AdminDashboard({
               </p>
             </div>
             <button className="adm-btn-primary orange" type="button" onClick={() => onNavigate && onNavigate('payments')}>
-              تدقيق الطلبات المعلقة ({STATS.processing})
+              تدقيق الطلبات المعلقة ({fmt(t.processing)})
             </button>
           </div>
 
@@ -381,8 +402,8 @@ export default function AdminDashboard({
                 </span>
               </div>
               <div className="adm-stat-value-row">
-                <span className="adm-stat-value">{fmt(STATS.registeredGrads)}</span>
-                <span className="adm-stat-unit">/ {fmt(STATS.totalGrads)}</span>
+                <span className="adm-stat-value">{fmt(g.registered)}</span>
+                <span className="adm-stat-unit">/ {fmt(g.expected)}</span>
               </div>
               <div className="adm-stat-meta between">
                 <span>نسبة الاستجابة</span>
@@ -400,10 +421,10 @@ export default function AdminDashboard({
                 <span className="adm-tiny-badge solid">معتمدة</span>
               </div>
               <div className="adm-stat-value-row">
-                <span className="adm-stat-value">{fmt(STATS.confirmedBookings)}</span>
+                <span className="adm-stat-value">{fmt(t.confirmed)}</span>
                 <span className="adm-stat-unit">تذكرة</span>
               </div>
-              <p className="adm-stat-meta">رموز QR جاهزة للطباعة والتسليم بنسبة نجاح 98.2%</p>
+              <p className="adm-stat-meta">رموز QR جاهزة للطباعة والتسليم</p>
             </div>
 
             {/* قيد المعالجة */}
@@ -413,10 +434,10 @@ export default function AdminDashboard({
                 <span className="adm-tiny-badge outline">معلقة</span>
               </div>
               <div className="adm-stat-value-row">
-                <span className="adm-stat-value orange">{fmt(STATS.processing)}</span>
+                <span className="adm-stat-value orange">{fmt(t.processing)}</span>
                 <span className="adm-stat-unit">طلباً</span>
               </div>
-              <p className="adm-stat-meta">إشعارات شام كاش (متوسط المعالجة: 18 دقيقة)</p>
+              <p className="adm-stat-meta">إشعارات شام كاش بانتظار المراجعة</p>
             </div>
 
             {/* لم يسددوا / مرفوض */}
@@ -429,12 +450,12 @@ export default function AdminDashboard({
               </div>
               <div className="adm-split-stats">
                 <div>
-                  <span className="adm-split-number">{fmt(STATS.unpaid)}</span>
+                  <span className="adm-split-number">{fmt(t.not_paid_yet)}</span>
                   <span className="adm-split-label">لم يسددوا</span>
                 </div>
                 <span className="adm-split-sep"></span>
                 <div>
-                  <span className="adm-split-number red">{fmt(STATS.rejected)}</span>
+                  <span className="adm-split-number red">{fmt(t.rejected)}</span>
                   <span className="adm-split-label">مرفوض</span>
                 </div>
               </div>
@@ -450,12 +471,14 @@ export default function AdminDashboard({
                 </span>
               </div>
               <div className="adm-ticket-types">
-                {STATS.ticketTypes.map((t) => (
-                  <div className="adm-ticket-type-row" key={t.label}>
-                    <span>{t.label}</span>
-                    <strong className={t.tone}>{fmt(t.count)}</strong>
-                  </div>
-                ))}
+                <div className="adm-ticket-type-row">
+                  <span>خريج + مرافقان</span>
+                  <strong className="green">{fmt(ticketTypes.TWO_COMPANIONS?.total)}</strong>
+                </div>
+                <div className="adm-ticket-type-row">
+                  <span>خريج + ثلاثة مرافقين</span>
+                  <strong className="orange">{fmt(ticketTypes.THREE_COMPANIONS?.total)}</strong>
+                </div>
               </div>
             </div>
           </div>
@@ -484,15 +507,15 @@ export default function AdminDashboard({
                 </span>
               </div>
               <div className="adm-stat-value-row">
-                <span className="adm-stat-value">{fmt(STATS.volunteers)}</span>
+                <span className="adm-stat-value">{fmt(vol.wants)}</span>
                 <span className="adm-stat-unit">خريجاً</span>
               </div>
               <div className="adm-stat-meta between">
                 <span>من المسجلين</span>
-                <span className="adm-stat-rate">{pct(STATS.volunteers, STATS.registeredGrads)}%</span>
+                <span className="adm-stat-rate">{pct(vol.wants, vol.all)}%</span>
               </div>
               <div className="adm-progress-mini">
-                <div style={{ width: `${pct(STATS.volunteers, STATS.registeredGrads)}%` }}></div>
+                <div style={{ width: `${pct(vol.wants, vol.all)}%` }}></div>
               </div>
             </div>
 
@@ -504,15 +527,15 @@ export default function AdminDashboard({
                 </span>
               </div>
               <div className="adm-stat-value-row">
-                <span className="adm-stat-value">{fmt(STATS.withExperience)}</span>
+                <span className="adm-stat-value">{fmt(vol.experienced)}</span>
                 <span className="adm-stat-unit">خريجاً</span>
               </div>
               <div className="adm-stat-meta between">
                 <span>من المسجلين</span>
-                <span className="adm-stat-rate">{pct(STATS.withExperience, STATS.registeredGrads)}%</span>
+                <span className="adm-stat-rate">{pct(vol.experienced, vol.all)}%</span>
               </div>
               <div className="adm-progress-mini">
-                <div style={{ width: `${pct(STATS.withExperience, STATS.registeredGrads)}%` }}></div>
+                <div style={{ width: `${pct(vol.experienced, vol.all)}%` }}></div>
               </div>
             </div>
 
@@ -522,11 +545,11 @@ export default function AdminDashboard({
                 <span className="adm-tiny-badge solid">الأنسب</span>
               </div>
               <div className="adm-stat-value-row">
-                <span className="adm-stat-value orange">{fmt(STATS.volunteersWithExperience)}</span>
+                <span className="adm-stat-value orange">{fmt(vol.both)}</span>
                 <span className="adm-stat-unit">خريجاً</span>
               </div>
               <p className="adm-stat-meta">
-                {pct(STATS.volunteersWithExperience, STATS.volunteers)}% من الراغبين بتولّي مسؤولية لديهم خبرة سابقة
+                {pct(vol.both, vol.wants)}% من الراغبين بتولّي مسؤولية لديهم خبرة سابقة
               </p>
             </div>
           </div>
@@ -537,9 +560,9 @@ export default function AdminDashboard({
           <div className="adm-chart-col adm-bento-card">
             <div className="adm-bento-head bordered">
               <div>
-                <h4 className="adm-bento-title">التوزيع حسب الكلية ونسبة الحجز</h4>
+                <h4 className="adm-bento-title">التوزيع حسب الكلية ونسبة التأكيد</h4>
                 <p className="adm-bento-sub">
-                  مقارنة الحجوزات المؤكدة وقيد التدقيق لكل كلية
+                  نسبة الحجوزات المؤكدة من إجمالي الخريجين المتوقعين لكل كلية
                 </p>
               </div>
               <div className="adm-legend">
@@ -547,28 +570,29 @@ export default function AdminDashboard({
                   <span className="adm-legend-dot green"></span>
                   مؤكد مسدد
                 </span>
-                <span className="adm-legend-item">
-                  <span className="adm-legend-dot orange"></span>
-                  قيد التدقيق
-                </span>
               </div>
             </div>
 
             <div className="adm-faculty-list">
-              {FACULTIES.map((fac) => (
-                <div className="adm-faculty-row" key={fac.name}>
-                  <div className="adm-faculty-row-head">
-                    <span>{fac.name}</span>
-                    <span className="adm-faculty-ratio">
-                      {fac.confirmed + fac.pending}% ({fmt(fac.grads)} خريج)
-                    </span>
+              {byCollege.length === 0 && (
+                <p className="adm-bento-sub">لا توجد بيانات كليات لعرضها.</p>
+              )}
+              {byCollege.map((fac) => {
+                const cpct = pct(fac.tickets_confirmed, fac.expected);
+                return (
+                  <div className="adm-faculty-row" key={fac.college_id}>
+                    <div className="adm-faculty-row-head">
+                      <span>{fac.college_name}</span>
+                      <span className="adm-faculty-ratio">
+                        {cpct}% ({fmt(fac.registered)} / {fmt(fac.expected)})
+                      </span>
+                    </div>
+                    <div className="adm-faculty-bar">
+                      <div className="adm-seg green" style={{ width: `${cpct}%` }}></div>
+                    </div>
                   </div>
-                  <div className="adm-faculty-bar">
-                    <div className="adm-seg green" style={{ width: `${fac.confirmed}%` }}></div>
-                    <div className="adm-seg orange" style={{ width: `${fac.pending}%` }}></div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -584,11 +608,16 @@ export default function AdminDashboard({
             </div>
 
             <div className="adm-verif-list">
-              {RECENT_REVIEWS.map((item) => (
-                <div className="adm-verif-item" key={item.name}>
+              {recentReviews.length === 0 && (
+                <p className="adm-bento-sub small">
+                  {payLoading ? 'جارٍ التحميل...' : payError || 'لا توجد عمليات حديثة.'}
+                </p>
+              )}
+              {recentReviews.map((item) => (
+                <div className="adm-verif-item" key={item.ticketId}>
                   <div>
                     <span className="adm-verif-name">{item.name}</span>
-                    <span className="adm-verif-desc">{item.desc}</span>
+                    <span className="adm-verif-desc">{item.college} • {item.ticketType}</span>
                   </div>
                   <span className={`adm-chip ${item.status}`}>{STATUS_LABELS[item.status]}</span>
                 </div>
@@ -609,7 +638,7 @@ export default function AdminDashboard({
         <section className="adm-bento-card adm-table-card">
           <div className="adm-table-head">
             <div>
-              <h4 className="adm-bento-title">سجل التدقيق والتوزيع المكاني للطلبة</h4>
+              <h4 className="adm-bento-title">سجل التدقيق للخريجين</h4>
               <p className="adm-bento-sub">
                 مراجعة بطاقات الدخول الصادرة وحالة الدفع لكل خريج
               </p>
@@ -617,7 +646,7 @@ export default function AdminDashboard({
 
             <div className="adm-table-tools">
               <span className="adm-table-count">
-                عرض {STUDENTS.length} من أصل {fmt(STATS.registeredGrads)} خريج
+                عرض {fmt(pageRows.length)} من أصل {fmt(reviewRows.length)} خريج
               </span>
               <div className="adm-cols-wrap">
                 <button
@@ -654,39 +683,45 @@ export default function AdminDashboard({
               <thead>
                 <tr>
                   <th>اسم الخريج والرقم الجامعي</th>
-                  {showCol('faculty') && <th>الكلية والتخصص</th>}
+                  {showCol('faculty') && <th>الكلية</th>}
                   {showCol('ticket') && <th>فئة التذكرة</th>}
                   {showCol('status') && <th>حالة الدفع</th>}
-                  {showCol('reason') && <th>سبب الرفض</th>}
                   <th>إجراءات</th>
                 </tr>
               </thead>
               <tbody>
-                {STUDENTS.map((st) => (
-                  <tr key={st.id}>
+                {pageRows.length === 0 && (
+                  <tr>
+                    <td colSpan={5}>
+                      <span className="adm-reason-empty">
+                        {payLoading ? 'جارٍ تحميل البيانات...' : payError || 'لا توجد بيانات لعرضها.'}
+                      </span>
+                    </td>
+                  </tr>
+                )}
+                {pageRows.map((st) => (
+                  <tr key={st.ticketId}>
                     <td>
                       <div className="adm-student-cell">
                         <span className="adm-avatar">{st.name.slice(0, 2)}</span>
                         <div>
                           <span className="adm-student-name">{st.name}</span>
-                          <span className="adm-student-id">ID: {st.id}</span>
+                          <span className="adm-student-id">ID: {st.uniId}</span>
                         </div>
                       </div>
                     </td>
 
                     {showCol('faculty') && (
                       <td>
-                        <span className="adm-faculty-cell">{st.faculty}</span>
-                        <span className="adm-faculty-major">— {st.major}</span>
+                        <span className="adm-faculty-cell">{st.college}</span>
                       </td>
                     )}
 
                     {showCol('ticket') && (
                       <td>
-                        <span className="adm-ticket-pill">{COMPANIONS_LABEL[st.companions]}</span>
+                        <span className="adm-ticket-pill">{st.ticketType}</span>
                       </td>
                     )}
-
 
                     {showCol('status') && (
                       <td>
@@ -699,61 +734,15 @@ export default function AdminDashboard({
                       </td>
                     )}
 
-                    {showCol('reason') && (
-                      <td>
-                        {st.status === 'rejected' && st.rejectReason ? (
-                          <span className="adm-reject-reason">{st.rejectReason}</span>
-                        ) : (
-                          <span className="adm-reason-empty">—</span>
-                        )}
-                      </td>
-                    )}
-
                     <td>
                       <div className="adm-row-actions">
-                        {st.status === 'review' && (
-                          <button
-                            type="button"
-                            className="adm-row-btn solid"
-                            onClick={() => onReviewReceipt && onReviewReceipt(st)}
-                          >
-                            مراجعة الإيصال
-                          </button>
-                        )}
-                        {st.status === 'rejected' && (
-                          <button
-                            type="button"
-                            className="adm-row-btn danger"
-                            onClick={() => onReopenOrder && onReopenOrder(st)}
-                          >
-                            إعادة فتح الطلب
-                          </button>
-                        )}
-                        {st.status === 'confirmed' && (
-                          <>
-                            <button
-                              type="button"
-                              className="adm-row-icon"
-                              aria-label="تنزيل التذكرة"
-                              title="تنزيل التذكرة"
-                              onClick={() => onDownloadTicket && onDownloadTicket(st)}
-                            >
-                              <span className="adm-symbol" style={{ fontSize: '18px' }}>
-                                download
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              className="adm-row-icon"
-                              aria-label="المزيد"
-                              title="المزيد"
-                            >
-                              <span className="adm-symbol" style={{ fontSize: '18px' }}>
-                                more_vert
-                              </span>
-                            </button>
-                          </>
-                        )}
+                        <button
+                          type="button"
+                          className="adm-row-btn solid"
+                          onClick={() => onNavigate && onNavigate('payments')}
+                        >
+                          عرض الطلب
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -765,24 +754,24 @@ export default function AdminDashboard({
           {/* التنقل بين الصفحات */}
           <div className="adm-pagination">
             <span className="adm-page-info">
-              الصفحة {page} من {fmt(totalPages)} صفحة
+              الصفحة {currentPage} من {fmt(totalPages)} صفحة
             </span>
             <div className="adm-page-btns">
               <button
                 type="button"
                 className="adm-page-btn wide"
-                disabled={page === 1}
-                onClick={() => goToPage(page - 1)}
+                disabled={currentPage === 1}
+                onClick={() => goToPage(currentPage - 1)}
               >
                 السابق
               </button>
-              {pageItems(page, totalPages).map((n) =>
+              {pageItems(currentPage, totalPages).map((n) =>
                 typeof n === 'number' ? (
                   <button
                     key={n}
                     type="button"
-                    className={`adm-page-btn ${n === page ? 'active' : ''}`}
-                    aria-current={n === page ? 'page' : undefined}
+                    className={`adm-page-btn ${n === currentPage ? 'active' : ''}`}
+                    aria-current={n === currentPage ? 'page' : undefined}
                     onClick={() => goToPage(n)}
                   >
                     {n}
@@ -796,8 +785,8 @@ export default function AdminDashboard({
               <button
                 type="button"
                 className="adm-page-btn wide"
-                disabled={page === totalPages}
-                onClick={() => goToPage(page + 1)}
+                disabled={currentPage === totalPages}
+                onClick={() => goToPage(currentPage + 1)}
               >
                 التالي
               </button>

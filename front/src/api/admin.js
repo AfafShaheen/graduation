@@ -1,5 +1,7 @@
 import { request, requestBlob } from "./client.js";
-import { getAdminToken } from "./session.js";
+import { getAdminToken, setAdminUsername } from "./session.js";
+
+export { ApiError, downloadBlob } from "./client.js";
 
 function buildQuery(params) {
   const searchParams = new URLSearchParams();
@@ -12,10 +14,12 @@ function buildQuery(params) {
 }
 
 export async function loginAdmin(data) {
-  return request("/api/admin/auth/login", {
+  const res = await request("/api/admin/auth/login", {
     method: "POST",
     body: data,
   });
+  setAdminUsername(data?.username);
+  return res;
 }
 
 export async function logoutAdmin() {
@@ -254,6 +258,21 @@ export async function exportData(params) {
   return requestBlob(`/api/admin/export${buildQuery(params)}`, {
     token: getAdminToken(),
   });
+}
+
+export async function adminRequest(path, { method = "GET", body = null, query = null } = {}) {
+  const auth = getAdminToken();
+  return request(`${path}${buildQuery(query)}`, { method, body, token: auth });
+}
+
+export async function adminForm(path, formData, method = "POST", query = null) {
+  const auth = getAdminToken();
+  return request(`${path}${buildQuery(query)}`, { method, body: formData, token: auth });
+}
+
+export async function adminBlob(path, query = null) {
+  const auth = getAdminToken();
+  return requestBlob(`${path}${buildQuery(query)}`, { token: auth });
 }
 
 export async function getAuditLogs(params) {

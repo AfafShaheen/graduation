@@ -1,106 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import "../../style/AdminCeremonies.css";
 import AdminSidebar from '../../components/AdminSidebar';
-
-/* ==========================================================================
-   بيانات تجريبية: لما يجهز الباك إند بدّلها ببيانات حقيقية (مثلاً عبر props)
-   form: القيم اللي بتتعبى بصفحة تعديل الحفل (نفس حقول صفحة الإضافة)
-   ========================================================================== */
-const CEREMONIES = [
-  {
-    id: "ENG-2024-D44",
-    title: "حفل كليات الهندسة — الدفعة 44",
-    date: "15 تشرين الأول 2024",
-    time: "10:00 صباحاً",
-    location: "مدرج الباسل الكبير",
-    period: "1 أيلول — 25 أيلول 2024",
-    status: "open",
-    faculties: [
-      "الهندسة المدنية",
-      "المعلوماتية",
-      "الهندسة المعمارية",
-      "+2 كليات",
-    ],
-    icon: "celebration",
-    form: {
-      ceremonyName: "حفل كليات الهندسة — الدفعة 44",
-      ceremonyDate: "2024-10-15T10:00",
-      startDate: "2024-09-01",
-      endDate: "2024-09-25",
-      whatsappLink: "https://chat.whatsapp.com/eng44",
-      pricePkg2: "125,000",
-      pricePkg3: "160,000",
-      enablePkg3: true,
-      faculties: { civil: true, mech: true, it: true, arch: true },
-    },
-  },
-  {
-    id: "MED-2024-D42",
-    title: "حفل كليات العلوم الطبية والصيدلة",
-    date: "18 تشرين الأول 2024",
-    time: "11:30 صباحاً",
-    location: "مدرج الباسل الكبير",
-    period: "5 أيلول — 28 أيلول 2024",
-    status: "open",
-    faculties: ["الطب البشري", "طب الأسنان", "الصيدلة", "العلوم الصحية"],
-    icon: "medical_services",
-    form: {
-      ceremonyName: "حفل كليات العلوم الطبية والصيدلة",
-      ceremonyDate: "2024-10-18T11:30",
-      startDate: "2024-09-05",
-      endDate: "2024-09-28",
-      whatsappLink: "https://chat.whatsapp.com/med42",
-      pricePkg2: "150,000",
-      pricePkg3: "190,000",
-      enablePkg3: true,
-      faculties: { science: true },
-    },
-  },
-  {
-    id: "ART-2024-D46",
-    title: "حفل كليات الآداب والتربية والعلوم",
-    date: "22 تشرين الأول 2024",
-    time: "09:30 صباحاً",
-    location: "مدرج كلية الآداب الأول",
-    period: "15 أيلول — 5 تشرين الأول 2024",
-    status: "closed",
-    faculties: ["الآداب والعلوم الإنسانية", "التربية", "العلوم الأولى"],
-    icon: "menu_book",
-    form: {
-      ceremonyName: "حفل كليات الآداب والتربية والعلوم",
-      ceremonyDate: "2024-10-22T09:30",
-      startDate: "2024-09-15",
-      endDate: "2024-10-05",
-      whatsappLink: "",
-      pricePkg2: "110,000",
-      pricePkg3: "140,000",
-      enablePkg3: true,
-      faculties: { arts: true, science: true },
-    },
-  },
-  {
-    id: "LAN-2024-D18",
-    title: "حفل المعهد العالي للغات والحاسوب",
-    date: "25 تشرين الأول 2024",
-    time: "01:00 ظهراً",
-    location: "مدرج رضا سعيد للمؤتمرات",
-    period: "1 تشرين الأول — 15 تشرين الأول 2024",
-    status: "open",
-    faculties: ["المعهد العالي للغات", "المعهد التقاني للحاسوب"],
-    icon: "terminal",
-    form: {
-      ceremonyName: "حفل المعهد العالي للغات والحاسوب",
-      ceremonyDate: "2024-10-25T13:00",
-      startDate: "2024-10-01",
-      endDate: "2024-10-15",
-      whatsappLink: "",
-      pricePkg2: "90,000",
-      pricePkg3: "",
-      enablePkg3: false,
-      faculties: { it: true },
-    },
-  },
-];
+import { useAdminEvents } from './hooks/useAdminEvents.js';
+import { useAdminStats } from './hooks/useAdminStats.js';
 
 const STATUS_LABELS = {
   open: "مفتوح للتسجيل",
@@ -113,7 +15,7 @@ const fmt = (n) => n.toLocaleString("en-US");
 export default function AdminCeremonies({
   adminName = "مسؤول الاتحاد",
   adminRole = "الاتحاد الوطني لطلبة سورية",
-  ceremonies = CEREMONIES,
+  ceremonies: ceremoniesProp,
   onAddCeremony,
   onEditCeremony,
   onViewCeremony,
@@ -121,6 +23,43 @@ export default function AdminCeremonies({
   onLogout,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const { events, loading, error, refetch } = useAdminEvents({ search: searchQuery });
+  const { stats } = useAdminStats();
+  const perEvent = stats?.per_event || [];
+
+  const deriveStatus = (item) => {
+    const now = new Date();
+    const start = item.registration_start ? new Date(item.registration_start) : null;
+    const end = item.registration_end ? new Date(item.registration_end) : null;
+    if (start && now < start) return "upcoming";
+    if (end && now > end) return "closed";
+    return "open";
+  };
+
+  const ceremonies = useMemo(() => {
+    const base = Array.isArray(ceremoniesProp) ? ceremoniesProp : events;
+    return base.map((e) => {
+      const pe = perEvent.find((p) => (p.scope?.event_id ?? p.event_id) === e.id);
+      const status = deriveStatus(e);
+      const title = e.name || e.title || "-";
+      const dateStr = e.event_date ? new Date(e.event_date + "T00:00:00").toLocaleDateString("ar-SA") : "-";
+      const start = e.registration_start ? new Date(e.registration_start) : null;
+      const end = e.registration_end ? new Date(e.registration_end) : null;
+      const period = start && end ? `${start.toLocaleDateString("ar-SA")} - ${end.toLocaleDateString("ar-SA")}` : "-";
+      const faculties = Array.isArray(e.colleges) ? e.colleges.map((c) => c.name) : (e.faculties || []);
+      const booked = pe?.tickets?.confirmed ?? pe?.tickets_confirmed ?? 0;
+      const totalGrad = pe?.graduates?.expected ?? pe?.graduates_expected ?? 0;
+      const location = e.location || "-";
+      const form = e.form || null;
+      const whatsappLink = e.whatsapp_group_link || e.whatsappLink || "";
+      const pricePkg2 = e.price_2_companions ?? e.pricePkg2 ?? "";
+      const pricePkg3 = e.price_3_companions ?? e.pricePkg3 ?? "";
+      const enablePkg3 = e.is_3companions_enabled ?? e.enablePkg3 ?? true;
+      const icon = e.icon || "celebration";
+      return { ...e, id: e.id, title, date: dateStr, period, status, faculties, location, form, booked, total: totalGrad, whatsappLink, pricePkg2, pricePkg3, enablePkg3, icon };
+    });
+  }, [ceremoniesProp, events, perEvent]);
+
   const [statusFilter, setStatusFilter] = useState("");
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
 
@@ -136,7 +75,7 @@ export default function AdminCeremonies({
     return ceremonies.filter((c) => {
       if (statusFilter && c.status !== statusFilter) return false;
       if (!q) return true;
-      return [c.title, c.id, c.location, ...c.faculties]
+      return [c.title, c.id, "", ...c.faculties]
         .join(" ")
         .toLowerCase()
         .includes(q);
@@ -281,6 +220,12 @@ export default function AdminCeremonies({
         </section>
 
         {/* الحفلات */}
+        {loading && <div className="cer-empty">جارٍ تحميل الحفلات...</div>}
+        {error && !loading && (
+          <div className="cer-empty" role="alert">
+            {error.message || error}
+          </div>
+        )}
         <div className="cer-table-card">
           <div className="cer-table-wrapper">
             <table className="cer-table">
@@ -325,14 +270,8 @@ export default function AdminCeremonies({
                             <span className="cer-symbol">event</span>
                             <span>{item.date}</span>
                           </div>
-                          <div className="cer-info-line">
-                            <span className="cer-symbol">schedule</span>
-                            <span>{item.time}</span>
-                          </div>
-                          <div className="cer-info-line venue">
-                            <span className="cer-symbol">location_on</span>
-                            <span>{item.location}</span>
-                          </div>
+                          
+                          
                         </div>
                       </td>
 
@@ -399,7 +338,7 @@ export default function AdminCeremonies({
             </table>
           </div>
 
-          {filtered.length === 0 && (
+          {filtered.length === 0 && !loading && !error && (
             <div className="cer-empty">ما في حفلات مطابقة للبحث</div>
           )}
         </div>
@@ -407,3 +346,18 @@ export default function AdminCeremonies({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

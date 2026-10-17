@@ -13,6 +13,7 @@ const GRADUATE_EXPIRES_AT_KEY = "access_expires_at";
 
 const ADMIN_ACCESS_TOKEN_KEY = "admin_access_token";
 const ADMIN_EXPIRES_AT_KEY = "admin_expires_at";
+const ADMIN_USERNAME_KEY = "admin_username";
 
 const RESET_EMAIL_KEY = "reset.email";
 const RESET_CODE_KEY = "reset.code";
@@ -135,6 +136,18 @@ export function isAdminTokenExpired() {
   return Date.now() >= Number(expiresAt);
 }
 
+export function setAdminUsername(username) {
+  if (username) {
+    sessionStorage.setItem(ADMIN_USERNAME_KEY, username);
+  } else {
+    sessionStorage.removeItem(ADMIN_USERNAME_KEY);
+  }
+}
+
+export function getAdminUsername() {
+  return sessionStorage.getItem(ADMIN_USERNAME_KEY);
+}
+
 export function getResetEmail() {
   return sessionStorage.getItem(RESET_EMAIL_KEY);
 }
@@ -171,6 +184,7 @@ export function clearGraduateSession() {
 export function clearAdminSession() {
   sessionStorage.removeItem(ADMIN_ACCESS_TOKEN_KEY);
   sessionStorage.removeItem(ADMIN_EXPIRES_AT_KEY);
+  sessionStorage.removeItem(ADMIN_USERNAME_KEY);
   sessionStorage.removeItem("grad.admin");
 }
 

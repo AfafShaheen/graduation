@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Routes,
   Route,
@@ -24,6 +24,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCeremonies from "./pages/admin/AdminCeremonies";
 import AdminAddCeremony from "./pages/admin/AdminAddCeremony";
+import AdminEditCeremonyRoute from "./pages/admin/AdminEditCeremonyRoute";
 import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
 import AdminScannersSettings from "./pages/admin/AdminScannersSettings";
 import AdminExceptions from "./pages/admin/AdminExceptions";
@@ -34,7 +35,7 @@ import ScannerCamera from "./pages/scanner/ScannerCamera";
 import ScanSuccessResult from "./pages/scanner/ScanSuccessResult";
 import ScanErrorResult from "./pages/scanner/ScanErrorResult";
 import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
-import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduateToken, isGraduateTokenExpired, getAdminToken, isAdminTokenExpired, clearAdminSession, getVerificationToken, getRegistrationToken, isRegistrationTokenExpired, getResetEmail, setResetEmail, getResetCode, getGraduateEmail } from "./api/session";
+import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduateToken, isGraduateTokenExpired, getAdminToken, isAdminTokenExpired, clearAdminSession, getAdminUsername, getVerificationToken, getRegistrationToken, isRegistrationTokenExpired, getResetEmail, setResetEmail, getResetCode, getGraduateEmail } from "./api/session";
 
 /*
   وضع المعاينة (للتصميم فقط):
@@ -43,19 +44,26 @@ import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduat
 */
 const PREVIEW = import.meta.env.VITE_PREVIEW === 'true';
 
-
-
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const { pathname } = location;
 
-
-
+  const [pendingPayments, setPendingPayments] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  const refreshPendingPayments = useCallback(async () => {
+    try {
+      const { adminRequest } = await import("./api/admin.js");
+      const res = await adminRequest("/api/admin/stats");
+      setPendingPayments(res?.tickets?.processing ?? 0);
+    } catch {
+      /* نتجاهل الفشل — تبقى الشارة على آخر قيمة */
+    }
+  }, []);
 
   const handleAdminLogout = async () => {
     try {
@@ -69,11 +77,18 @@ function App() {
 
   const hasValidGraduate = getGraduateToken() && !isGraduateTokenExpired();
   const hasValidAdmin = getAdminToken() && !isAdminTokenExpired();
-  const hasVerificationToken = !!getVerificationToken();
+  const hasVerifySession = getVerificationToken();
   const hasValidRegistration = getRegistrationToken() && !isRegistrationTokenExpired();
+  const adminName = getAdminUsername();
+
+  useEffect(() => {
+    if (hasValidAdmin) {
+      refreshPendingPayments();
+    }
+  }, [pathname, hasValidAdmin, refreshPendingPayments]);
 
   return (
-    <AdminStatsProvider>
+    <AdminStatsProvider pendingPayments={pendingPayments} refreshPendingPayments={refreshPendingPayments}>
       <Routes>
         {/* ===== التسجيل ===== */}
         <Route
@@ -106,7 +121,7 @@ function App() {
         <Route
           path="/otp"
           element={
-            hasVerificationToken || PREVIEW ? (
+            hasVerifySession || PREVIEW ? (
               <Otp
                 mode="register"
                 email={getGraduateEmail() || undefined}
@@ -184,7 +199,12 @@ function App() {
         <Route
           path="/reset-password"
           element={
-            (getResetEmail() && getResetCode()) || PREVIEW ? (
+            getResetEmail() && getResetCode() ? (
+              <ResetPassword
+                onBack={() => navigate("/login")}
+                onDone={() => navigate("/login", { state: { passwordReset: true } })}
+              />
+            ) : PREVIEW ? (
               <ResetPassword
                 onBack={() => navigate("/login")}
                 onDone={() => navigate("/login", { state: { passwordReset: true } })}
@@ -254,6 +274,7 @@ function App() {
           element={
             hasValidAdmin || PREVIEW ? (
               <AdminDashboard
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onLogout={handleAdminLogout}
               />
@@ -269,11 +290,12 @@ function App() {
           element={
             hasValidAdmin || PREVIEW ? (
               <AdminCeremonies
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddCeremony={() => navigate("/admin/ceremonies/new")}
                 onEditCeremony={(item) =>
                   navigate(`/admin/ceremonies/${item.id}/edit`, {
-                    state: { ceremony: item },
+                    state: { eventItem: item },
                   })
                 }
                 onLogout={handleAdminLogout}
@@ -290,6 +312,7 @@ function App() {
           element={
             hasValidAdmin || PREVIEW ? (
               <AdminAddCeremony
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onCancel={() => navigate("/admin/ceremonies")}
                 onSubmitSuccess={() => navigate("/admin/ceremonies")}
@@ -306,21 +329,12 @@ function App() {
           path="/admin/ceremonies/:id/edit"
           element={
             hasValidAdmin || PREVIEW ? (
-              location.state?.ceremony ? (
-                <AdminAddCeremony
-                  key={location.state.ceremony.id}
-                  ceremony={{
-                    id: location.state.ceremony.id,
-                    ...location.state.ceremony.form,
-                  }}
-                  onNavigate={(section) => navigate(`/admin/${section}`)}
-                  onCancel={() => navigate("/admin/ceremonies")}
-                  onSubmitSuccess={() => navigate("/admin/ceremonies")}
-                  onLogout={handleAdminLogout}
-                />
-              ) : (
-                <Navigate to="/admin/ceremonies" replace />
-              )
+              <AdminEditCeremonyRoute
+                key={location.state?.eventItem?.id}
+                adminName={adminName}
+                onNavigate={(section) => navigate(`/admin/${section}`)}
+                onLogout={handleAdminLogout}
+              />
             ) : (
               <Navigate to="/admin" replace />
             )
@@ -333,8 +347,10 @@ function App() {
           element={
             hasValidAdmin || PREVIEW ? (
               <AdminPaymentRequests
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
+                onPendingChanged={refreshPendingPayments}
                 onLogout={handleAdminLogout}
               />
             ) : (
@@ -349,6 +365,7 @@ function App() {
           element={
             hasValidAdmin || PREVIEW ? (
               <AdminScannersSettings
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onLogout={handleAdminLogout}
@@ -365,6 +382,7 @@ function App() {
           element={
             hasValidAdmin || PREVIEW ? (
               <AdminExceptions
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onLogout={handleAdminLogout}
@@ -381,6 +399,7 @@ function App() {
           element={
             hasValidAdmin || PREVIEW ? (
               <AdminVolunteers
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onLogout={handleAdminLogout}
@@ -408,8 +427,6 @@ function App() {
             />
           }
         />
-
-        {/* ===== شاشة المسح ===== */}
         <Route
           path="/scanner/scan"
           element={
@@ -466,10 +483,7 @@ function App() {
         />
 
         {/* اختصار: /dashboard يودّي للوحة الإدارة */}
-        <Route
-          path="/dashboard"
-          element={<Navigate to="/admin/dashboard" replace />}
-        />
+        <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
