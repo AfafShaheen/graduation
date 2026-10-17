@@ -15,6 +15,14 @@ const ERROR_MESSAGES = {
   failed: 'تعذّر التحقق حالياً، يرجى المحاولة لاحقاً',
 };
 
+/* أول خطأ حقلي من رسالة 422، لعرض السبب الفعلي بدل الرسالة العامة */
+const firstFieldError = (err) => {
+  const fieldErrors = err?.fieldErrors;
+  if (!fieldErrors) return '';
+  const keys = Object.keys(fieldErrors);
+  return keys.length ? fieldErrors[keys[0]] : '';
+};
+
 const emptyOtp = () => Array(CODE_LENGTH).fill('');
 
 /* نصوص الهيدر وشريط التقدم حسب نوع المسار */
@@ -144,7 +152,7 @@ export default function Otp({
 
       setStatus('error');
       setErrorKind('wrong');
-      setServerError(err.message || 'رمز التحقق غير صحيح');
+      setServerError(firstFieldError(err) || err.message || 'رمز التحقق غير صحيح');
 
       if (err.status === 429) {
         setErrorKind('failed');
@@ -232,7 +240,7 @@ export default function Otp({
         setNotice('تم إرسال رمز جديد إلى بريدك الإلكتروني');
         inputRefs.current[0]?.focus();
       } catch (err) {
-        setServerError(err.status === 429 ? err.message : 'تعذّر إعادة إرسال الرمز، حاول لاحقاً');
+        setServerError(err.status === 429 ? err.message : (firstFieldError(err) || 'تعذّر إعادة إرسال الرمز، حاول لاحقاً'));
       }
       return;
     }
@@ -271,7 +279,7 @@ export default function Otp({
       resetOtpState();
       inputRefs.current[0]?.focus();
     } catch (err) {
-      setServerError(err.message || 'تعذّر تغيير البريد');
+      setServerError(firstFieldError(err) || err.message || 'تعذّر تغيير البريد');
     }
   };
 

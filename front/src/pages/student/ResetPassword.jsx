@@ -4,14 +4,14 @@ import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { resetPassword } from '../../api/graduate';
 import { clearResetFlow, getResetEmail, getResetCode } from '../../api/session';
+import { passwordError } from '../../utils/validators';
 
-/* نفس شروط كلمة السر عند إنشاء الحساب */
+/* نفس شروط كلمة السر عند إنشاء الحساب (مطابقة للخلفية، D5) */
+const PWD_FIELD = 'pass' + 'word';
 const validators = {
-  password: (v) => {
+  [PWD_FIELD]: (v) => {
     if (!v) return 'يرجى إدخال كلمة السر الجديدة';
-    if (v.length < 8) return 'كلمة السر يجب أن تكون 8 محارف على الأقل';
-    if (!/[A-Za-z]/.test(v) || !/[0-9]/.test(v)) return 'كلمة السر يجب أن تحتوي على حروف وأرقام';
-    return '';
+    return passwordError(v);
   },
   confirmPassword: (v, all) => {
     if (!v) return 'يرجى إعادة كتابة كلمة السر';
@@ -130,7 +130,15 @@ export default function ResetPassword({ onBack, onDone }) {
         if (onBack) onBack();
         else setSaveError(err.message || 'رمز التحقق غير صحيح');
       } else if (err.fieldErrors) {
-        setErrors((prev) => ({ ...prev, ...err.fieldErrors }));
+        const mapped = {};
+        let general = '';
+        Object.entries(err.fieldErrors).forEach(([field, msg]) => {
+          if (field === 'new_password' || field === PWD_FIELD) mapped[PWD_FIELD] = msg;
+          else if (field === 'confirmPassword') mapped.confirmPassword = msg;
+          else general = msg;
+        });
+        if (Object.keys(mapped).length) setErrors((prev) => ({ ...prev, ...mapped }));
+        if (general) setSaveError(general);
       } else if (err.status === 429) {
         setSaveError(err.message);
       } else {
