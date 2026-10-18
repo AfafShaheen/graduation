@@ -240,17 +240,6 @@ export default function MajorsManager({ colleges = [] }) {
               إضافة
             </button>
           </form>
-            <input
-              className="maj-input"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="اسم تخصص جديد"
-              aria-label="اسم تخصص جديد"
-            />
-            <button className="maj-btn primary" type="submit" disabled={busy}>
-              إضافة
-            </button>
-          </form>
 
           {error && <p className="maj-error" role="alert">{error}</p>}
 
