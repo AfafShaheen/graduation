@@ -7,6 +7,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { logoutAdmin } from "./api/admin";
+import usePageMeta from "./hooks/usePageMeta";
 import { forgotPassword } from "./api/graduate";
 import TicketGuard from "./components/TicketGuard";
 import GraduationFormStep1 from "./pages/student/GraduationFormStep1";
@@ -54,6 +55,10 @@ function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  usePageMeta({
+    robots: pathname === "/" ? "index, follow" : "noindex, nofollow",
+  });
 
   const refreshPendingPayments = useCallback(async () => {
     try {

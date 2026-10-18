@@ -15,6 +15,8 @@ npm-debug.log*
 
 # --- Build output ---
 dist/
+public/sitemap.xml
+public/robots.txt
 build/
 .next/
 out/
