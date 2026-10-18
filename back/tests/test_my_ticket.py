@@ -206,3 +206,21 @@ async def test_graduate_never_sees_another_ticket(
     body = await _my_ticket(client, access_b)
 
     assert body["has_ticket"] is False
+
+
+async def test_my_ticket_exposes_top_rank(
+    client, make_event, make_college, make_graduate
+):
+    event = await make_event()
+    college = await make_college(event.id)
+    graduate = await make_graduate(college.id, email_verified=True, top_rank=2)
+    access_value = await _login(client, graduate)
+
+    without_ticket = await _my_ticket(client, access_value)
+    assert without_ticket["top_rank"] == 2
+
+    await client.post(
+        "/api/graduates/me/ticket", headers=_auth(access_value), json=_SELECT_BODY
+    )
+    with_ticket = await _my_ticket(client, access_value)
+    assert with_ticket["top_rank"] == 2

@@ -127,6 +127,7 @@ class SeatInfo(BaseModel):
 class MyTicketResponse(BaseModel):
     has_ticket: bool
     registration: RegistrationInfo
+    top_rank: Optional[int] = None
     ticket: Optional[TicketSummary] = None
     event: Optional[EventBrief] = None
     message: Optional[str] = None

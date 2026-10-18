@@ -985,6 +985,17 @@
               }
             ]
           },
+          "top_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Rank"
+          },
           "whatsapp_group_link": {
             "anyOf": [
               {
