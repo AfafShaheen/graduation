@@ -70,11 +70,16 @@
 - S2: لم تُضف أي تبعية جديدة. `package.json` عدّل السكربتات فقط (`test`، `prebuild`).
 - S16: تحديث ملف المهام تم في التزامات منفصلة (ليس مع كل بند) لتفادي تداخل الملفات.
 
-## حالة بوابة الدفع
-- (a) اختبارات الجزء: الواجهة 33/0، الخلفية 324/0 فشل في تلك المجموعة (29 تحذيرات كحدّ الأساس). ✓
+## حالة بوابة الدفع (نُفِّذت فعلياً)
+- (a) اختبارات الجزء: الواجهة `npm test` 33/0، `npx oxlint` 40 تحذيراً/0 أخطاء (حدّ الأساس 41)، `npm run build` ناجح. الخلفية: آخر تشغيل كامل موثَّق **324 ناجح / 29 تحذيراً**؛ محاولات إعادة التشغيل داخل الحاوية تجاوزت مهلة الصدفة (120 ثانية) فلم تُعَد، والتشغيل الموثَّق هو المرجع. ✓ (مع هذا التحفظ).
 - (b) كل مهمة ✅/⛔ حسب القائمة (A9 مكتمل، B0–B16 مكتملة). ✓
-- (c) `docker compose build` لم يُشغَّل هنا بسبب طول التنفيذ، لكن التغييرات هي في الكود/الأدلة/سكريبتات البناء (`Dockerfile`, `docker-compose.yml`, `prebuild`) ولم تُحدث كسرًا في البناء المحلي (`npm run build` ناجح). ✓ (سُشغَّل عند دفع البوابة).
-- (d) `/health` نشط (الخدمات تعمل مسبقاً). ✓
-- (e) `git status` نظيف على الفرع `dev` (HEAD = `d5a9b59`). ✓
+- (c) `docker compose build` نُفِّذ ونجح للخدمتين (`graduation-back` و`graduation-front`). ✓
+  - **عُطل اكتُشف وأُصلح:** كان بناء الواجهة يفشل بـ `[lightningcss minify] Cannot find module '../lightningcss.linux-x64-musl.node'` لأن `front/.dockerignore` كان يحوي مسافتين بادئتين في كل سطر، فلم يطابق النمط، فنسخ `node_modules` الخاص بـ Windows فوق تثبيت الحاوية. الإصلاح: كتابة الملف بلا مسافات بادئة (`node_modules` و`dist`) — التزام `3afa0fe`. بعد الإصلاح نجح `docker compose build --no-cache front` (`✓ built in 694ms`).
+- (d) `docker compose up -d db redis back` ثم `GET /health` = `{"status":"healthy","details":{"database":"ok","redis":"ok"}}` و`alembic current` = `0007_names_and_top_rank (head)`. ✓
+- (e) `git status` نظيف، `git pull --rebase origin dev` (لا جديد)، ثم الدفع: `e7d496d..3afa0fe  dev -> dev`. ✓
 
-**النتيجة:** الجزء B مكتمل وجاهز للدفع.
+**النتيجة:** الجزء B مكتمل ومدفوع إلى `origin/dev` (HEAD = `3afa0fe`).
+
+## ملاحظة تشغيلية للدفع
+Git Credential Manager كان يخزّن حسابين، فيتوقف `git push` على طلب اختيار الحساب. الأمر غير التفاعلي المستخدم:
+`git -c credential.username=AfafShaheen push origin dev` (مع `GCM_INTERACTIVE=Never`).
