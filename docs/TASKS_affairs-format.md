@@ -1,6 +1,6 @@
 # قائمة مهام تحديث صيغة ملف شؤون الطلبة
 
-آخر تحديث: اكتمال B0–B9 في الجزء B (الواجهة)، والانتقال إلى B10 (SEO).
+آخر تحديث: اكتمال B0–B10 في الجزء B (الواجهة)، والانتقال إلى B11.
 
 صيغة ملف شؤون الطلبة الثابتة (بالترتيب): الاسم، الكنية، اسم الأب، اسم الأم، الجنس، الكلية، التخصص، الرقم الجامعي، حالة الطالب من الأوائل، المعدل، رقم التواصل.
 
@@ -85,11 +85,11 @@
 | B8.1 | طلب تذكرة مشترك (in-flight) | ✅ | f720b17 | `utils/ticketRequest.js` |
 | B8.2 | استخدامه في useMyTicket/TicketGuard | ✅ | f720b17 | guard+page = طلب واحد |
 | B9.1 | قالب/رقائق/مساعدة + summary الرفع | ✅ | dd3f1e2 | ترتيب شؤون الطلبة + نتيجة الرفع |
-| B10.1 | `front/seo.config.json` | ⬜ | | |
-| B10.2 | `generate-seo.mjs` + prebuild | ⬜ | | |
-| B10.3 | وسوم index.html + Vite transformIndexHtml | ⬜ | | |
-| B10.4 | `usePageMeta` | ⬜ | | |
-| B10.5 | nginx noindex + docs/SEO.md | ⬜ | | |
+| B10.1 | `front/seo.config.json` | ✅ | f2e831f | إعداد مركزي + publicRoutes |
+| B10.2 | `generate-seo.mjs` + prebuild | ✅ | f2e831f | يولّد sitemap.xml وrobots.txt |
+| B10.3 | وسوم index.html + Vite transformIndexHtml | ✅ | f2e831f | حقن og/canonical/robots |
+| B10.4 | `usePageMeta` | ✅ | f2e831f | index فقط للمسار / |
+| B10.5 | nginx noindex + docs/SEO.md | ✅ | f2e831f | X-Robots-Tag للمسارات الخاصة |
 | B11.1 | مكوّن CollegeNamesField | ⬜ | | |
 | B11.2 | `src/pages/admin/facultyOptions.js` | ⬜ | | |
 | B11.3 | استخدامه للقراءة فقط في التعديل | ⬜ | | |
