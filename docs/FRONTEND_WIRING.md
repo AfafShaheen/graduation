@@ -1,6 +1,6 @@
 # توصيل الواجهة بالباك إند (FRONTEND_WIRING)
 
-يصف هذا الملف كيف صارت واجهة `front/` موصولة فعلياً بنقاط الـ API، والصفحة التي تستدعي أي نقطة، ونوع الرمز (token) المستخدم. آخر تحديث: ختام **Step 3** (دمج الإدارة + إكمال صفحات الإدارة).
+يصف هذا الملف كيف صارت واجهة `front/` موصولة فعلياً بنقاط الـ API، والصفحة التي تستدعي أي نقطة، ونوع الرمز (token) المستخدم. آخر تحديث: **الجزء B** (B0–B15: صيغة شؤون الطلبة، الأوائل، SEO، إصلاحات الواجهة).
 
 ---
 
@@ -93,7 +93,7 @@
 ## 6. ملاحظات وثغرات الباك إند (Backend gaps / notes)
 
 - لا توجد نقطة `refresh` لأي رمز؛ الواجهة تفحص الانتهاء استباقياً (`proactiveCheck`) وتعيد التوجيه لتسجيل الدخول عند الانتهاء.
-- `GET /api/admin/volunteers` لا يوفّر فلترة بـ`top_rank`؛ لذلك لا يوجد فلتر «الأولوية» في صفحة المتطوعين (غير مطلوب أصلاً).
+- `GET /api/admin/volunteers` يدعم فلترة `top_rank` (`1`/`2`/`3`/`any`/`none`)؛ وفلتر «الأولوية» غير معروض في الصفحة (غير مطلوب أصلاً). الحد الأقصى للصفحة `limit ≤ 200`.
 - لا توجد نقاط «تجميد ماسح» أو «تغيير كلمة سر ماسح»؛ خصائصها محذوفة عمداً من صفحة الإعدادات.
 - `seat` و`confirmed_at` وحقول الماسح في الـ QR تكون غالباً `null` لغير التذاكر المؤكَّدة/غير الممسوحة؛ الواجهة تعرض «—» في هذه الحالة.
 - حقل `seat_prefix` يُقفل (422) بعد إسناد أي مقعد، و`event_time` يبقى قابلاً للتعديل.
@@ -107,3 +107,38 @@
 3. الإدارة: `/admin` دخول → `/admin/ceremonies` (بحث، حذف بتأكيد، إنشاء/تعديل مع `event_time`/`seat_prefix` وتخصصات) → `/admin/payments` (تأكيد/رفض) → `/admin/scanners` (ماسح + إعدادات + QR) → `/admin/actions` (تفاصيل غنية) → `/admin/volunteers` (فلترة + تصدير).
 4. الماسح: `/scanner` دخول → مسح تذكرة صحيحة/مستخدمة/مرافق قبل الخريج.
 5. لا أخطاء حمراء في الكونسول ولا شاشة بيضاء في أي مسار أعلاه.
+
+---
+
+## 8. تحديثات الجزء B (توصيل صيغة شؤون الطلبة، الأوائل، SEO، إصلاحات)
+
+### 8.1 أدوات جديدة (`front/src/utils/`)
+| الملف | الدور |
+|---|---|
+| `extractVerificationToken.js` | يستخرج `verification_token` من جسم خطأ 403 للدخول (يقبل `detail.verification_token` وأشكالاً متداخلة) — يُستخدم في `Login.jsx`. |
+| `amount.js` | `parseAmount`/`formatAmount`/`normalizeDigits`: تُصلح تضاعف مبلغ شام كاش ×100 (الخلفية ترسل السعر كنص `"100000.00"`). |
+| `validators.js` | يطابق متحقّقات الخلفية بالضبط (D5): `NAME_REGEX`، `PHONE_REGEX = /^\+?[0-9]{7,15}$/`، سياسة كلمة السر (≥8 محارف، حرف ورقم، ≤72 بايت UTF-8) + دوال `nameError/phoneError/passwordError`. |
+| `ticketRequest.js` | `createTicketRequest(fetchTicket)` يمنع الطلب المكرّر `GET /api/graduates/me/ticket` بين الحارس والصفحة (طلب واحد أثناء الطيران لكل رمز، مع `force`). |
+| `topRank.js` | `TOP_STUDENT_TITLE` و`topRankLabel(1/2/3)` لعرض شارة الأوائل. |
+
+### 8.2 تغييرات الاتصال بالباك إند
+- `Login.jsx`: يقرأ رمز التحقق عبر `extractVerificationToken(err.data)` عند 403 (إصلاح ضياع الرمز للبريد غير المُتحقَّق).
+- `GraduationFormStep1.jsx`: يقبل حقلَي `first_name`/`last_name` (بدل `full_name`)، الجنس قائمة منسدلة (ذكر/أنثى)، المعدل اختياري، ويعرض خطأ الأوائل الخاص تحت حقل الاختيار عند `detail.code` من أوامر D11؛ الحمولة ترسل `top_rank` رقمياً.
+- `GraduationFormStep2.jsx` و`ResetPassword.jsx`: مُتحقّقات الهاتف/كلمة السر من `utils/validators.js`؛ `Otp.jsx`/`ResetPassword.jsx` يعرضان أول خطأ حقل من 422 (`err.fieldErrors`).
+- `ShamCashPayment.jsx`: يستخدم `parseAmount`/`formatAmount` للمبلغ بدل تجريد الأرقام (كان يضاعف ×100).
+- `OrderRejected.jsx`: يخفي زر إعادة إرسال الدفع ويغيّر النص عند إغلاق التسجيل (`registration.is_open`).
+- `MyTicket.jsx`: يعرض شارة «من الأوائل» + الترتيب فوق رمز QR عند وجود `top_rank` (D12).
+- `useMyTicket.js`: تشارك طلب التذكرة عبر `createTicketRequest` (طلب واحد فقط مع `TicketGuard`).
+- `AdminVolunteers.jsx`: زر PDF يجلب كل الصفوف المطابقة (تقسيم صفحات `limit=200`) بدل الصفحة الحالية فقط.
+- `AdminAddCeremony.jsx`: يعرض ترتيب أعمدة شؤون الطلبة الثابت (11 عموداً) في الرقائق وقالب CSV، ويعرض `summary` الرفع بعد الرفع.
+- `CollegeNamesField.jsx` + `facultyOptions.js`: الكليات ليست قائمة ثابتة (D10) — رقائق مقترحة + إضافة أسماء حرّة، وقراءة فقط في شاشة التعديل (`AdminEditCeremonyRoute.jsx` يمرّر `collegeNames` من `event.colleges`).
+
+### 8.3 SEO (D7: صفحة الهبوط `/` وحدها قابلة للفهرسة)
+- `front/seo.config.json` (المصدر)، `front/scripts/generate-seo.mjs` يُنفَّذ عبر `prebuild` فيولّد `public/sitemap.xml` و`public/robots.txt` وقت البناء.
+- `front/vite.config.js`: إضافة `seoPlugin` تحقن وسم description/keywords/robots/og/twitter/canonical في `index.html`.
+- `front/src/hooks/usePageMeta.js` يُستخدم في `App.jsx`: `robots = pathname === '/' ? 'index, follow' : 'noindex, nofollow'`.
+- `front/nginx.conf`: ترويسة `X-Robots-Tag: noindex, nofollow` لمسارات التطبيق الخاصة و`/api/`، مع تخزين `robots.txt`/`sitemap.xml`.
+- عنوان الموقع يُضبط وقت البناء عبر `VITE_SITE_URL` (وسيطة build في Docker + `.env.example`).
+
+### 8.4 اختبارات الواجهة
+اختبارات `node --test` في `front/tests/*.test.mjs` تُشغَّل بـ`npm test` (استُحدث سكربت `test` و`prebuild` في `package.json`).
