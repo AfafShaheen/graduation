@@ -1,4 +1,4 @@
-import { request } from "./client.js";
+import { request, requestBlob } from "./client.js";
 
 export async function getColleges() {
   return request("/api/colleges");
@@ -103,4 +103,45 @@ export async function getMyProfile(token) {
   return request("/api/graduates/me", {
     token,
   });
+}
+
+export async function getRegistrationColleges() {
+  return request("/api/registration/colleges");
+}
+
+export async function changeEmail(newEmail, verificationToken) {
+  return request("/api/auth/change-email", {
+    method: "POST",
+    body: { new_email: newEmail },
+    token: verificationToken,
+  });
+}
+
+export async function getVolunteerAnswers(token) {
+  return request("/api/graduates/me/volunteer-answers", {
+    token,
+  });
+}
+
+export async function saveVolunteerAnswers(data, token) {
+  return request("/api/graduates/me/volunteer-answers", {
+    method: "PUT",
+    body: {
+      wants_responsibility: data.wants_responsibility,
+      has_experience: data.has_experience,
+    },
+    token,
+  });
+}
+
+export async function getShamcashQr() {
+  try {
+    const { blob } = await requestBlob("/api/settings/shamcash-qr");
+    return URL.createObjectURL(blob);
+  } catch (error) {
+    if (error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }

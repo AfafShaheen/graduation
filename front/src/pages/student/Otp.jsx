@@ -1,27 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../../style/Otp.css';
 import unionLogo from '../../assets/only-logo.png';
+import { verifyOtp, resendOtp, changeEmail, forgotPassword } from '../../api/graduate';
+import { setGraduateSession, clearVerificationToken, setVerificationToken, setGraduateEmail, getVerificationToken, getGraduateEmail, setResetCode, clearResetFlow } from '../../api/session';
 
 const CODE_LENGTH = 6;
-const CODE_LIFETIME = 600; // صلاحية الرمز بالثواني (10 دقائق)
-const RESEND_COOLDOWN = 60; // الانتظار قبل إعادة الإرسال بالثواني
-
-/*
-  تحقق تجريبي إلى أن يجهز الباك إند.
-  بدّله بطلب حقيقي مثل: fetch('/api/verify-otp', ...) يرجع true أو false،
-  أو مرّره من الخارج عبر الخاصية verifyCode.
-*/
-const DEMO_CODE = '123456';
-async function mockVerify(code) {
-  await new Promise((resolve) => setTimeout(resolve, 600));
-  return code === DEMO_CODE;
-}
+const CODE_LIFETIME = 600;
+const RESEND_COOLDOWN = 60;
 
 const ERROR_MESSAGES = {
   wrong: 'رمز التحقق غير صحيح، يرجى المحاولة مرة أخرى',
   incomplete: `يرجى إدخال رمز التحقق كاملاً المكوّن من ${CODE_LENGTH} أرقام`,
   expired: 'انتهت صلاحية الرمز، يرجى طلب رمز جديد',
   failed: 'تعذّر التحقق حالياً، يرجى المحاولة لاحقاً',
+};
+
+/* أول خطأ حقلي من رسالة 422، لعرض السبب الفعلي بدل الرسالة العامة */
+const firstFieldError = (err) => {
+  const fieldErrors = err?.fieldErrors;
+  if (!fieldErrors) return '';
+  const keys = Object.keys(fieldErrors);
+  return keys.length ? fieldErrors[keys[0]] : '';
 };
 
 const emptyOtp = () => Array(CODE_LENGTH).fill('');
@@ -45,20 +44,25 @@ const FLOWS = {
 };
 
 export default function Otp({
-  mode = 'register', // register | reset
-  email = 'student@gmail.com',
+  mode = 'register',
+  email: emailProp,
   onBack,
   onVerified,
-  onResend,
-  verifyCode = mockVerify,
 }) {
   const flow = FLOWS[mode] || FLOWS.register;
   const [otp, setOtp] = useState(emptyOtp());
   const [timer, setTimer] = useState(CODE_LIFETIME);
   const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN);
-  const [status, setStatus] = useState('idle'); // idle | verifying | success | error
+  const [status, setStatus] = useState('idle');
   const [errorKind, setErrorKind] = useState('');
   const [notice, setNotice] = useState('');
+  const [serverError, setServerError] = useState('');
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [email, setEmail] = useState(emailProp || getGraduateEmail() || '');
+
+  const verificationToken = getVerificationToken();
+  const isResetMode = mode === 'reset';
 
   const inputRefs = useRef([]);
   const mounted = useRef(true);
@@ -104,32 +108,62 @@ export default function Otp({
     setStatus('verifying');
     setErrorKind('');
     setNotice('');
-    try {
-      const ok = await verifyCode(code);
-      if (!mounted.current) return;
+    setServerError('');
 
-      if (ok) {
-        setStatus('success');
-        // نترك المربعات خضراء لحظة قبل الانتقال للواجهة التالية
-        setTimeout(() => {
-          if (!mounted.current) return;
-          if (onVerified) onVerified(code);
-          else alert('تم تأكيد الحساب بنجاح');
-        }, 900);
-      } else {
-        setStatus('error');
-        setErrorKind('wrong');
-        // نفرّغ الخانات بعد لحظة ليعيد المستخدم الإدخال
-        clearTimeoutRef.current = setTimeout(() => {
-          if (!mounted.current) return;
-          setOtp(emptyOtp());
-          inputRefs.current[0]?.focus();
-        }, 700);
-      }
-    } catch (err) {
-      if (!mounted.current) return;
+    if (isResetMode) {
+      setResetCode(code);
+      setStatus('success');
+      setTimeout(() => {
+        if (!mounted.current) return;
+        if (onVerified) onVerified(code);
+      }, 500);
+      return;
+    }
+
+    if (!verificationToken) {
       setStatus('error');
       setErrorKind('failed');
+      setServerError('انتهت الجلسة، يرجى تسجيل الدخول لإكمال تأكيد البريد');
+      return;
+    }
+
+    try {
+      const result = await verifyOtp(code, verificationToken);
+      if (!mounted.current) return;
+
+      setGraduateSession({ accessToken: result.access_token, expiresIn: result.expires_in });
+      clearVerificationToken();
+
+      setStatus('success');
+      setTimeout(() => {
+        if (!mounted.current) return;
+        if (onVerified) onVerified(code);
+      }, 900);
+    } catch (err) {
+      if (!mounted.current) return;
+
+      if (err.status === 401) {
+        clearVerificationToken();
+        setStatus('error');
+        setErrorKind('failed');
+        setServerError('انتهت الجلسة، يرجى تسجيل الدخول لإكمال تأكيد البريد');
+        return;
+      }
+
+      setStatus('error');
+      setErrorKind('wrong');
+      setServerError(firstFieldError(err) || err.message || 'رمز التحقق غير صحيح');
+
+      if (err.status === 429) {
+        setErrorKind('failed');
+        setServerError(err.message);
+      }
+
+      clearTimeoutRef.current = setTimeout(() => {
+        if (!mounted.current) return;
+        setOtp(emptyOtp());
+        inputRefs.current[0]?.focus();
+      }, 700);
     }
   };
 
@@ -196,17 +230,57 @@ export default function Otp({
     fillFrom(0, digits);
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (resendCooldown > 0 || status === 'success' || status === 'verifying') return;
-    if (onResend) onResend();
+
+    if (isResetMode) {
+      try {
+        await forgotPassword(email);
+        resetOtpState();
+        setNotice('تم إرسال رمز جديد إلى بريدك الإلكتروني');
+        inputRefs.current[0]?.focus();
+      } catch (err) {
+        setServerError(err.status === 429 ? err.message : (firstFieldError(err) || 'تعذّر إعادة إرسال الرمز، حاول لاحقاً'));
+      }
+      return;
+    }
+
+    try {
+      await resendOtp(verificationToken);
+      resetOtpState();
+      setNotice('تم إرسال رمز جديد إلى بريدك الإلكتروني');
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      setServerError(err.status === 429 ? err.message : 'تعذّر إعادة إرسال الرمز، حاول لاحقاً');
+    }
+  };
+
+  const resetOtpState = () => {
     clearTimeout(clearTimeoutRef.current);
     setOtp(emptyOtp());
     setStatus('idle');
     setErrorKind('');
     setTimer(CODE_LIFETIME);
     setResendCooldown(RESEND_COOLDOWN);
-    setNotice('تم إرسال رمز جديد إلى بريدك الإلكتروني');
-    inputRefs.current[0]?.focus();
+  };
+
+  const handleChangeEmail = async (e) => {
+    e.preventDefault();
+    const trimmed = newEmail.trim();
+    if (!trimmed || !verificationToken) return;
+
+    try {
+      await changeEmail(trimmed, verificationToken);
+      setEmail(trimmed);
+      setGraduateEmail(trimmed);
+      setShowChangeEmail(false);
+      setNewEmail('');
+      setNotice('تم إرسال رمز جديد');
+      resetOtpState();
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      setServerError(firstFieldError(err) || err.message || 'تعذّر تغيير البريد');
+    }
   };
 
   const handleSubmit = (e) => {
@@ -306,11 +380,36 @@ export default function Otp({
             <div className="ev-email-pill">
               <span className="ev-email-address" dir="ltr">{email}</span>
               <span className="ev-pill-dot">•</span>
-              <button className="ev-edit-btn" type="button" onClick={onBack}>
-                <span>تعديل البريد</span>
-                <span className="ev-symbol" style={{ fontSize: '13px' }}>edit</span>
-              </button>
+              {!isResetMode && (
+                <button className="ev-edit-btn" type="button" onClick={() => setShowChangeEmail(!showChangeEmail)}>
+                  <span>تعديل البريد</span>
+                  <span className="ev-symbol" style={{ fontSize: '13px' }}>edit</span>
+                </button>
+              )}
+              {isResetMode && (
+                <button className="ev-edit-btn" type="button" onClick={onBack}>
+                  <span>تعديل البريد</span>
+                  <span className="ev-symbol" style={{ fontSize: '13px' }}>edit</span>
+                </button>
+              )}
             </div>
+
+            {showChangeEmail && !isResetMode && (
+              <form onSubmit={handleChangeEmail} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <input
+                  type="email"
+                  className="ev-otp-field"
+                  style={{ flex: 1, textAlign: 'left', direction: 'ltr' }}
+                  placeholder="البريد الجديد"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  dir="ltr"
+                />
+                <button type="submit" className="ev-resend-btn active" style={{ padding: '8px 16px' }}>
+                  حفظ
+                </button>
+              </form>
+            )}
 
             <form className="ev-otp-form" onSubmit={handleSubmit} noValidate>
               {/* حقول إدخال الـ OTP */}
@@ -341,7 +440,10 @@ export default function Otp({
                 </div>
 
                 <div className="ev-otp-message" aria-live="polite">
-                  {status === 'error' && errorKind && (
+                  {serverError && (
+                    <p className="ev-error-text" role="alert">{serverError}</p>
+                  )}
+                  {status === 'error' && errorKind && !serverError && (
                     <p className="ev-error-text" role="alert">{ERROR_MESSAGES[errorKind]}</p>
                   )}
                   {status === 'success' && (

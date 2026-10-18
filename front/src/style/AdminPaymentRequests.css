@@ -772,3 +772,80 @@
 @media (min-width: 1440px) {
   .pay-req-main-canvas { margin-left: auto; margin-right: 288px; }
 }
+/* ===== نافذة رفض طلب الدفع ===== */
+.pay-req-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 32, 29, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+.pay-req-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 460px;
+  padding: 24px;
+  box-shadow: 0 18px 48px rgba(15, 32, 29, 0.28);
+  direction: rtl;
+  text-align: right;
+}
+.pay-req-modal-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  color: #124d44;
+}
+.pay-req-modal-sub {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #6b7a76;
+}
+.pay-req-modal-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #124d44;
+}
+.pay-req-modal-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d7e0dd;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  color: #1f2a28;
+}
+.pay-req-modal-textarea:focus {
+  outline: none;
+  border-color: #124d44;
+}
+.pay-req-modal-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #ca4b00;
+}
+.pay-req-modal-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+}
+.pay-req-modal-cancel {
+  border: 1px solid #d7e0dd;
+  background: #f5f7f6;
+  color: #124d44;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.pay-req-modal-cancel:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

@@ -1,95 +1,33 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../../style/AdminExceptions.css';
 import AdminSidebar from '../../components/AdminSidebar';
+import {
+  useAdminGraduates,
+  getGraduateDetail,
+  manualCheckIn,
+  revertScan,
+  revertPayment,
+  updateGraduateEmail,
+} from './hooks/useAdminGraduates.js';
+import { useAdminAudit } from './hooks/useAdminAudit.js';
+import { ApiError } from '../../api/admin.js';
 
-/* ==========================================================================
-   بيانات تجريبية: لما يجهز الباك إند بدّلها ببيانات حقيقية (عبر props)
-   ========================================================================== */
-const TICKETS = [
-  {
-    id: 'ENG-88291',
-    name: 'كنان محمد العلي',
-    email: 'k.alali@baath-edu.sy',
-    college: 'الهندسة الميكانيكية والكهربائية',
-    department: 'قسم هندسة الحواسيب والتحكم',
-    year: 'سنة خامسة تخرج',
-    ticketType: 'خريج + 2 مرافقين',
-    seats: 'المدرج A — صف 4 (كراسي 12، 13، 14)',
-    form: '#HOMS-2024-88291',
-    payment: 'confirmed',
-    scanned: true,
-    scanTime: '16:35',
-  },
-  {
-    id: 'MED-11024',
-    name: 'سارة أحمد المحمود',
-    email: 's.mahmoud@baath-edu.sy',
-    college: 'الطب البشري',
-    department: 'قسم الطب السريري',
-    year: 'سنة سادسة تخرج',
-    ticketType: 'خريج + 3 مرافقين',
-    seats: 'المدرج B — صف 2 (كراسي 5، 6، 7، 8)',
-    form: '#HOMS-2024-11024',
-    payment: 'confirmed',
-    scanned: false,
-    scanTime: '',
-  },
-  {
-    id: 'CIV-40912',
-    name: 'مجد وسيم طه',
-    email: 'm.taha@baath-edu.sy',
-    college: 'الهندسة المدنية',
-    department: 'قسم هندسة الإنشاءات',
-    year: 'سنة خامسة تخرج',
-    ticketType: 'خريج + 2 مرافقين',
-    seats: 'المدرج A — صف 7 (كراسي 1، 2، 3)',
-    form: '#HOMS-2024-40912',
-    payment: 'confirmed',
-    scanned: true,
-    scanTime: '16:15',
-  },
-];
+const TICKET_STATUS_LABELS = {
+  CONFIRMED: 'مؤكد',
+  PROCESSING: 'قيد المعالجة',
+  AWAITING_PAYMENT: 'بانتظار الدفع',
+  REJECTED: 'مرفوض',
+};
 
-const INITIAL_LOGS = [
-  {
-    executorName: 'م. حسام العلي',
-    executorRole: 'مشرف البوابة الرئيسية',
-    actionName: 'تسجيل دخول يدوي',
-    actionDesc: 'عطل في كاميرا ماسح البوابة B',
-    beneficiaryName: 'كنان محمد العلي',
-    ticketId: 'ENG-88291',
-    time: '28 أيلول 2024 — 16:40:12',
-  },
-  {
-    executorName: 'رنا السليمان',
-    executorRole: 'لجنة تدقيق البطاقات',
-    actionName: 'تعديل بريد إلكتروني',
-    actionDesc: 'إعادة إرسال QR للبريد الجامعي البديل',
-    beneficiaryName: 'سارة أحمد المحمود',
-    ticketId: 'MED-11024',
-    time: '28 أيلول 2024 — 16:32:05',
-  },
-  {
-    executorName: 'علي الجاسم',
-    executorRole: 'مسؤول التقنيات والربط',
-    actionName: 'فك قفل المسح (إلغاء مسح مكرر)',
-    actionDesc: 'تزامن خاطئ عند جهاز البوابة A',
-    beneficiaryName: 'مجد وسيم طه',
-    ticketId: 'CIV-40912',
-    time: '28 أيلول 2024 — 16:15:48',
-  },
-  {
-    executorName: 'م. حسام العلي',
-    executorRole: 'مشرف البوابة الرئيسية',
-    actionName: 'إرجاع الدفع لقيد المعالجة',
-    actionDesc: 'طلب تدقيق إيصال بنكي باليد',
-    beneficiaryName: 'لين باسل حيدر',
-    ticketId: 'ARCH-3309',
-    time: '28 أيلول 2024 — 15:58:20',
-  },
-];
+const QR_TYPE_LABELS = {
+  GRADUATE: 'رمز الخريج',
+  COMPANION: 'رمز مرافق',
+};
 
-const QUICK_FILTERS = ['الهندسة الميكانيكية', 'ممسوحة', 'الطب البشري'];
+const TICKET_TYPE_LABELS = {
+  TWO_COMPANIONS: 'خريج + ٢ مرافقان',
+  THREE_COMPANIONS: 'خريج + ٣ مرافقين',
+};
 
 const nowLabel = () =>
   new Intl.DateTimeFormat('ar', {
@@ -98,38 +36,66 @@ const nowLabel = () =>
     timeZone: 'Asia/Damascus',
   }).format(new Date());
 
-const initialsOf = (name) =>
-  name
+const formatDateTime = (value) => {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return new Intl.DateTimeFormat('ar', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Damascus',
+  }).format(d);
+};
+
+const initialsOf = (name) => {
+  if (!name) return '؟';
+  return name
     .replace(/^(م\.|د\.|أ\.)\s*/, '')
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0])
     .join('.');
+};
 
 export default function AdminExceptions({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
-  tickets = TICKETS,
-  onManualEntry,
-  onCancelScan,
-  onReturnToPending,
-  onEditEmail,
   onAddTicket,
   onNavigate,
   onLogout,
 }) {
-  const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
+  const [navOpen, setNavOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [list, setList] = useState(tickets);
-  const [logs, setLogs] = useState(INITIAL_LOGS);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [selectedId, setSelectedId] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [busy, setBusy] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [emailDraft, setEmailDraft] = useState('');
 
+  const detailRequest = useRef(0);
+
+  const { items: results, loading: searchLoading, error: searchError } = useAdminGraduates({
+    search: debouncedQuery.trim(),
+    limit: 20,
+  });
+
+  const { data: auditData, loading: auditLoading, error: auditError } = useAdminAudit({
+    exceptionalOnly: true,
+    limit: 50,
+  });
+  const logs = auditData?.items || [];
+
+  // تأخير البحث حتى يتوقف المستخدم عن الكتابة
   useEffect(() => {
-    setList(tickets);
-  }, [tickets]);
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   // إغلاق القائمة بزر Escape
   useEffect(() => {
@@ -141,82 +107,74 @@ export default function AdminExceptions({
   // إخفاء الإشعار تلقائياً
   useEffect(() => {
     if (!notice) return undefined;
-    const t = setTimeout(() => setNotice(''), 3500);
+    const t = setTimeout(() => setNotice(''), 4000);
     return () => clearTimeout(t);
   }, [notice]);
 
-  const query = searchQuery.trim().toLowerCase();
+  const loadDetail = async (id) => {
+    if (!id) return;
+    const reqId = ++detailRequest.current;
+    setDetailLoading(true);
+    setDetailError('');
+    setActionError('');
+    try {
+      const res = await getGraduateDetail(id);
+      if (detailRequest.current === reqId) setDetail(res);
+    } catch (e) {
+      if (detailRequest.current === reqId) {
+        setDetail(null);
+        setDetailError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
+      }
+    } finally {
+      if (detailRequest.current === reqId) setDetailLoading(false);
+    }
+  };
 
-  const ticket = useMemo(() => {
-    if (!query) return null;
-    return (
-      list.find((t) => {
-        const haystack = [
-          t.id,
-          t.name,
-          t.college,
-          t.scanned ? 'ممسوحة' : 'غير ممسوحة',
-        ]
-          .join(' ')
-          .toLowerCase();
-        return haystack.includes(query);
-      }) || null
-    );
-  }, [list, query]);
+  useEffect(() => {
+    if (selectedId) loadDetail(selectedId);
+    else setDetail(null);
+  }, [selectedId]);
 
-  // إغلاق نموذج البريد عند تغيير التذكرة المعروضة
   useEffect(() => {
     setEditingEmail(false);
-  }, [ticket?.id]);
+  }, [selectedId]);
 
-  const addLog = (t, actionName, actionDesc) => {
-    setLogs((prev) => [
-      {
-        executorName: adminName,
-        executorRole: adminRole,
-        actionName,
-        actionDesc,
-        beneficiaryName: t.name,
-        ticketId: t.id,
-        time: nowLabel(),
-      },
-      ...prev,
-    ]);
+  const ticket = detail?.tickets?.[0] || null;
+  const ticketStatus = ticket?.status || '';
+  const isConfirmed = ticketStatus === 'CONFIRMED';
+
+  const runAction = async (fn, successFallback) => {
+    if (!detail) return;
+    setBusy(true);
+    setActionError('');
+    try {
+      const res = await fn();
+      setNotice(res?.message || successFallback);
+      await loadDetail(detail.id);
+    } catch (e) {
+      setActionError(e instanceof ApiError ? e.message : 'تعذّر تنفيذ الإجراء، حاول مجدداً.');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const updateTicket = (id, patch) =>
-    setList((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  const handleManualEntry = () =>
+    runAction(() => manualCheckIn(detail.id), 'تم تسجيل الدخول اليدوي.');
 
-  const handleManualEntry = () => {
-    updateTicket(ticket.id, { scanned: true, scanTime: nowLabel() });
-    addLog(ticket, 'تسجيل دخول يدوي', 'تسجيل الدخول يدوياً بقرار المشرف');
-    if (onManualEntry) onManualEntry(ticket);
-    setNotice(`تم تسجيل دخول ${ticket.name} يدوياً`);
-  };
-
-  const handleCancelScan = () => {
-    updateTicket(ticket.id, { scanned: false, scanTime: '' });
-    addLog(ticket, 'إلغاء مسح خاطئ', 'فك قفل المسح لإعادة المسح من جديد');
-    if (onCancelScan) onCancelScan(ticket);
-    setNotice(`تم إلغاء المسح السابق لتذكرة ${ticket.id}`);
-  };
+  const handleCancelScan = () =>
+    runAction(() => revertScan(detail.id), 'تم إلغاء المسح السابق.');
 
   const handleReturnPending = () => {
-    updateTicket(ticket.id, { payment: 'pending' });
-    addLog(ticket, 'إرجاع الدفع لقيد المعالجة', 'طلب إعادة تدقيق الدفع');
-    if (onReturnToPending) onReturnToPending(ticket);
-    setNotice(`تم إرجاع دفع ${ticket.name} لقيد المعالجة`);
+    if (!ticket) return;
+    runAction(() => revertPayment(ticket.id), 'تم إرجاع الدفع لقيد المعالجة.');
   };
 
   const handleSaveEmail = (e) => {
     e.preventDefault();
     const email = emailDraft.trim();
-    if (!email) return;
-    updateTicket(ticket.id, { email });
-    addLog(ticket, 'تعديل بريد إلكتروني', `تغيير البريد إلى ${email}`);
-    if (onEditEmail) onEditEmail(ticket, email);
-    setEditingEmail(false);
-    setNotice('تم تحديث البريد الإلكتروني');
+    if (!email || !detail) return;
+    runAction(() => updateGraduateEmail(detail.id, email), 'تم تحديث البريد الإلكتروني.')
+      .then(() => setEditingEmail(false));
   };
 
   return (
@@ -248,7 +206,7 @@ export default function AdminExceptions({
 
         <div className="exc-topbar-title">
           <h2>إجراءات استثنائية</h2>
-          <span>جامعة حمص • بوابة الإشراف المباشر</span>
+          <span>بوابة الإشراف المباشر</span>
         </div>
 
         <div className="exc-topbar-actions">
@@ -275,7 +233,6 @@ export default function AdminExceptions({
           <div className="exc-pulse-tag">
             <span className="exc-mini-dot"></span>
             <span className="exc-pulse-label">إجراءات استثنائية</span>
-            <span className="exc-pulse-venue">• مدرج الباسل — حمص</span>
           </div>
           <h3>طوارئ الدخول وتصحيح حالات التذاكر</h3>
           <p>ابحث عن تذكرة خريج للتعامل مع أعطال الماسحات أو المسح المكرر، وكل إجراء بيتسجل تلقائياً باسمك بالسجل الرقابي.</p>
@@ -291,7 +248,7 @@ export default function AdminExceptions({
         {/* البحث */}
         <section className="exc-card">
           <h4 className="exc-card-title">البحث الفوري عن تذكرة خريج</h4>
-          <p className="exc-card-sub">دوّر بالاسم أو الرقم الجامعي أو الكلية، وبتظهر التذكرة مباشرة.</p>
+          <p className="exc-card-sub">دوّر بالاسم أو الرقم الجامعي، وبتظهر النتائج مباشرة.</p>
 
           <div className="exc-search-row">
             <div className="exc-search-box">
@@ -299,31 +256,45 @@ export default function AdminExceptions({
                 type="text"
                 autoComplete="off"
                 className="exc-input"
-                placeholder="مثال: ENG-88291 أو كنان..."
+                placeholder="مثال: كنان أو 88291..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <span className="exc-symbol exc-input-icon" style={{ fontSize: '22px' }}>search</span>
             </div>
-
-            <button type="button" className="exc-btn-primary" onClick={() => setSearchQuery((q) => q.trim())}>
-              <span className="exc-symbol" style={{ fontSize: '20px' }}>qr_code_scanner</span>
-              <span>فحص مباشر</span>
-            </button>
           </div>
 
-          <div className="exc-quick">
-            <span className="exc-quick-label">عمليات بحث سريعة:</span>
-            {QUICK_FILTERS.map((f) => (
-              <button key={f} type="button" className="exc-quick-btn" onClick={() => setSearchQuery(f)}>
-                {f}
-              </button>
-            ))}
-          </div>
+          {searchError && (
+            <div className="exc-empty" role="alert">
+              <span className="exc-symbol">error</span>
+              <span>{searchError}</span>
+            </div>
+          )}
+
+          {!searchError && debouncedQuery.trim() && (
+            <div className="exc-quick" style={{ flexWrap: 'wrap' }}>
+              {searchLoading ? (
+                <span className="exc-quick-label">جارٍ البحث...</span>
+              ) : results.length === 0 ? (
+                <span className="exc-quick-label">ما في نتائج مطابقة لـ &quot;{debouncedQuery.trim()}&quot;</span>
+              ) : (
+                results.map((g) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    className="exc-quick-btn"
+                    onClick={() => setSelectedId(g.id)}
+                  >
+                    {g.full_name} — <span className="num">{g.university_id}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </section>
 
-        {/* التذكرة */}
-        {!query && (
+        {/* الحالة الفارغة */}
+        {!debouncedQuery.trim() && (
           <section className="exc-card">
             <div className="exc-empty">
               <span className="exc-symbol">manage_search</span>
@@ -332,16 +303,34 @@ export default function AdminExceptions({
           </section>
         )}
 
-        {query && !ticket && (
+        {debouncedQuery.trim() && !selectedId && (
           <section className="exc-card">
             <div className="exc-empty">
-              <span className="exc-symbol">search_off</span>
-              <span>ما في تذكرة مطابقة لـ "{searchQuery.trim()}"</span>
+              <span className="exc-symbol">arrow_upward</span>
+              <span>اختر خريجاً من نتائج البحث لعرض تفاصيل التذكرة والإجراءات المتاحة</span>
             </div>
           </section>
         )}
 
-        {ticket && (
+        {selectedId && detailLoading && (
+          <section className="exc-card">
+            <div className="exc-empty">
+              <span className="exc-symbol">hourglass_top</span>
+              <span>جارٍ تحميل بيانات الخريج...</span>
+            </div>
+          </section>
+        )}
+
+        {selectedId && !detailLoading && detailError && (
+          <section className="exc-card">
+            <div className="exc-empty" role="alert">
+              <span className="exc-symbol">error</span>
+              <span>{detailError}</span>
+            </div>
+          </section>
+        )}
+
+        {selectedId && !detailLoading && detail && (
           <section className="exc-card flush">
             <div className="exc-ticket-head">
               <div className="exc-ticket-head-main">
@@ -350,18 +339,22 @@ export default function AdminExceptions({
                 </div>
                 <div>
                   <h4>
-                    <span>بطاقة تذكرة الخريج المعتمدة</span>
-                    <span className="exc-batch-pill">دفعة 2024</span>
+                    <span>بطاقة تذكرة الخريج</span>
+                    {ticket && (
+                      <span className="exc-batch-pill">
+                        {TICKET_STATUS_LABELS[ticketStatus] || ticketStatus || '—'}
+                      </span>
+                    )}
                   </h4>
-                  <p>رقم الاستمارة الإلكترونية: {ticket.form}</p>
+                  <p>رقم التذكرة: {ticket ? ticket.id : '—'}</p>
                 </div>
               </div>
 
               <span className="exc-scan-pill">
                 <span className="exc-symbol" style={{ fontSize: '18px' }}>
-                  {ticket.scanned ? 'check_circle' : 'radio_button_unchecked'}
+                  {ticket ? 'confirmation_number' : 'radio_button_unchecked'}
                 </span>
-                <span>{ticket.scanned ? 'ممسوحة (مؤكدة)' : 'غير ممسوحة بعد'}</span>
+                <span>{ticket ? (TICKET_STATUS_LABELS[ticketStatus] || ticketStatus) : 'لا توجد تذكرة'}</span>
               </span>
             </div>
 
@@ -370,50 +363,94 @@ export default function AdminExceptions({
                 <div>
                   <span className="exc-info-label">اسم الخريج</span>
                   <div className="exc-info-value">
-                    <span>{ticket.name}</span>
+                    <span>{detail.full_name}</span>
                     <span className="exc-symbol" style={{ color: '#ca4b00', fontSize: '18px' }}>verified</span>
                   </div>
-                  <span className="exc-info-sub">البريد: {ticket.email}</span>
+                  <span className="exc-info-sub">البريد: {detail.email || '—'}</span>
                 </div>
 
                 <div>
                   <span className="exc-info-label">الرقم الجامعي</span>
-                  <div className="exc-info-value ltr">{ticket.id}</div>
-                  <span className="exc-info-sub">{ticket.year}</span>
+                  <div className="exc-info-value ltr">{detail.university_id}</div>
+                  <span className="exc-info-sub">{detail.major_name || '—'}</span>
                 </div>
 
                 <div>
-                  <span className="exc-info-label">الكلية والاختصاص</span>
-                  <div className="exc-info-value" style={{ fontSize: '14px' }}>{ticket.college}</div>
-                  <span className="exc-info-sub">{ticket.department}</span>
+                  <span className="exc-info-label">الهاتف</span>
+                  <div className="exc-info-value ltr">{detail.phone || '—'}</div>
+                  <span className="exc-info-sub">حالة التحقق: {detail.email_verified ? 'موثّق' : 'غير موثّق'}</span>
                 </div>
 
                 <div>
-                  <span className="exc-info-label">نوع التذكرة والمقاعد</span>
-                  <span className="exc-ticket-chip">
-                    <span className="exc-symbol">confirmation_number</span>
-                    <span>{ticket.ticketType}</span>
+                  <span className="exc-info-label">فئة التذكرة</span>
+                  <div className="exc-info-value">
+                    {ticket ? (TICKET_TYPE_LABELS[ticket.ticket_type] || '—') : '—'}
+                  </div>
+                  <span className="exc-info-sub">عدد المرافقين: {ticket?.companions_count ?? '—'}</span>
+                </div>
+
+                <div>
+                  <span className="exc-info-label">المقاعد</span>
+                  <div className="exc-info-value">{ticket?.seat?.range || '—'}</div>
+                  <span className="exc-info-sub ltr">
+                    {Array.isArray(ticket?.seat?.companions) && ticket.seat.companions.length
+                      ? ticket.seat.companions.join('، ')
+                      : 'لا توجد مقاعد بعد'}
                   </span>
-                  <div className="exc-info-sub">{ticket.seats}</div>
-                  <span className={`exc-pay-chip ${ticket.payment}`} style={{ marginTop: '6px' }}>
-                    {ticket.payment === 'confirmed' ? 'الدفع مؤكد' : 'الدفع قيد المعالجة'}
-                  </span>
+                </div>
+
+                <div>
+                  <span className="exc-info-label">رموز QR</span>
+                  {(detail.qr_codes || []).length === 0 ? (
+                    <span className="exc-info-sub">لا توجد رموز بعد</span>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                      {(detail.qr_codes || []).map((qr) => (
+                        <span key={qr.id} className={`exc-pay-chip ${qr.is_activated ? 'confirmed' : 'pending'}`}>
+                          {QR_TYPE_LABELS[qr.code_type] || qr.code_type}: {qr.scanned ? 'تم مسحه' : qr.is_activated ? 'مُفعّل' : 'غير مُفعّل'}
+                          {qr.scanned_by_username ? ` (${qr.scanned_by_username})` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {ticket.scanned ? (
-                <div className="exc-alert">
-                  <span className="exc-symbol">info</span>
-                  <p style={{ margin: 0 }}>
-                    <strong>تنبيه أمني إداري:</strong> تم مسح رمز QR لهذه التذكرة الساعة {ticket.scanTime}. أي إجراء أدناه بيتسجل تلقائياً بالسجل الرقابي الموحد باسمك.
-                  </p>
+              {(ticket?.rejection_reason || ticket?.confirmed_at) && (
+                <div className="exc-info-grid" style={{ marginTop: '12px' }}>
+                  {ticket?.rejection_reason && (
+                    <div>
+                      <span className="exc-info-label">سبب الرفض</span>
+                      <div className="exc-info-value">{ticket.rejection_reason}</div>
+                    </div>
+                  )}
+                  {ticket?.confirmed_at && (
+                    <div>
+                      <span className="exc-info-label">تاريخ التثبيت</span>
+                      <div className="exc-info-value">{formatDateTime(ticket.confirmed_at)}</div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="exc-alert ok">
-                  <span className="exc-symbol">info</span>
-                  <p style={{ margin: 0 }}>
-                    <strong>التذكرة غير ممسوحة:</strong> بإمكانك تسجيل الدخول يدوياً إذا تعذّر المسح. الإجراء بيتسجل بالسجل الرقابي باسمك.
-                  </p>
+              )}
+
+              {(detail.payments || []).length > 0 && (
+                <div style={{ marginTop: '12px' }}>
+                  <span className="exc-info-label">سجل الدفعات</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                    {(detail.payments || []).map((p) => (
+                      <span key={p.id} className="exc-info-sub">
+                        {p.sender_name || '—'} — {p.amount ?? '—'} — {formatDateTime(p.submitted_at)}
+                        {p.reviewed_at ? ` (روجعت ${formatDateTime(p.reviewed_at)})` : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {actionError && (
+                <div className="exc-alert" role="alert">
+                  <span className="exc-symbol">error</span>
+                  <p style={{ margin: 0 }}>{actionError}</p>
                 </div>
               )}
 
@@ -424,8 +461,8 @@ export default function AdminExceptions({
                     type="button"
                     className="exc-action-btn primary"
                     onClick={handleManualEntry}
-                    disabled={ticket.scanned}
-                    title={ticket.scanned ? 'التذكرة ممسوحة مسبقاً' : ''}
+                    disabled={busy || !isConfirmed}
+                    title={!isConfirmed ? 'التذكرة غير مؤكدة' : ''}
                   >
                     <span className="exc-symbol">how_to_reg</span>
                     <span>تسجيل دخول يدوي</span>
@@ -435,8 +472,7 @@ export default function AdminExceptions({
                     type="button"
                     className="exc-action-btn"
                     onClick={handleCancelScan}
-                    disabled={!ticket.scanned}
-                    title={!ticket.scanned ? 'ما في مسح لإلغائه' : ''}
+                    disabled={busy}
                   >
                     <span className="exc-symbol">restart_alt</span>
                     <span>إلغاء مسح خاطئ</span>
@@ -446,7 +482,8 @@ export default function AdminExceptions({
                     type="button"
                     className="exc-action-btn warn"
                     onClick={handleReturnPending}
-                    disabled={ticket.payment === 'pending'}
+                    disabled={busy || !isConfirmed}
+                    title={!isConfirmed ? 'التذكرة غير مؤكدة' : ''}
                   >
                     <span className="exc-symbol">pending</span>
                     <span>إرجاع الدفع لقيد المعالجة</span>
@@ -456,9 +493,10 @@ export default function AdminExceptions({
                     type="button"
                     className="exc-action-btn"
                     onClick={() => {
-                      setEmailDraft(ticket.email);
+                      setEmailDraft(detail.email || '');
                       setEditingEmail((v) => !v);
                     }}
+                    disabled={busy}
                   >
                     <span className="exc-symbol">mark_email_read</span>
                     <span>تعديل البريد</span>
@@ -472,13 +510,13 @@ export default function AdminExceptions({
                       dir="ltr"
                       className="exc-input"
                       aria-label="البريد الإلكتروني الجديد"
-                      placeholder="name@baath-edu.sy"
+                      placeholder="البريد الإلكتروني الجديد"
                       value={emailDraft}
                       onChange={(e) => setEmailDraft(e.target.value)}
                       required
                     />
                     <div className="exc-email-actions">
-                      <button type="submit" className="exc-btn-small solid">حفظ البريد</button>
+                      <button type="submit" className="exc-btn-small solid" disabled={busy}>حفظ البريد</button>
                       <button type="button" className="exc-btn-small" onClick={() => setEditingEmail(false)}>
                         إلغاء
                       </button>
@@ -498,18 +536,7 @@ export default function AdminExceptions({
                 <span className="exc-symbol" style={{ color: '#124d44', fontSize: '24px' }}>history_toggle_off</span>
                 <h4 className="exc-card-title">سجل التدقيق الرقابي (Audit Log)</h4>
               </div>
-              <p className="exc-card-sub">سجل لجميع العمليات الطارئة المنفّذة من مشرفي اتحاد الطلبة بحمص.</p>
-            </div>
-
-            <div className="exc-log-tools">
-              <button type="button" className="exc-tool-btn">
-                <span className="exc-symbol" style={{ fontSize: '16px' }}>filter_list</span>
-                <span>تصفية السجل</span>
-              </button>
-              <button type="button" className="exc-tool-btn">
-                <span className="exc-symbol" style={{ fontSize: '16px' }}>download</span>
-                <span>تصدير PDF</span>
-              </button>
+              <p className="exc-card-sub">سجل لجميع العمليات الطارئة المنفّذة من المشرفين.</p>
             </div>
           </div>
 
@@ -521,18 +548,50 @@ export default function AdminExceptions({
                   <th>الإجراء المتخذ</th>
                   <th>المستفيد / التذكرة</th>
                   <th>الوقت والتاريخ</th>
-                  <th style={{ textAlign: 'center' }}>حالة العملية</th>
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log, index) => (
-                  <tr key={`${log.ticketId}-${log.time}-${index}`}>
+                {auditLoading && (
+                  <tr>
+                    <td colSpan={4}>
+                      <div className="exc-empty">
+                        <span className="exc-symbol">hourglass_top</span>
+                        <span>جارٍ تحميل السجل...</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!auditLoading && auditError && (
+                  <tr>
+                    <td colSpan={4}>
+                      <div className="exc-empty" role="alert">
+                        <span className="exc-symbol">error</span>
+                        <span>{auditError}</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!auditLoading && !auditError && logs.length === 0 && (
+                  <tr>
+                    <td colSpan={4}>
+                      <div className="exc-empty">
+                        <span className="exc-symbol">inbox</span>
+                        <span>لا توجد عمليات استثنائية مسجلة بعد</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!auditLoading && !auditError && logs.map((log) => (
+                  <tr key={log.id}>
                     <td className="exc-td-exec">
                       <div className="exc-exec-cell">
-                        <div className="exc-exec-avatar">{initialsOf(log.executorName)}</div>
+                        <div className="exc-exec-avatar">{initialsOf(log.actor?.username)}</div>
                         <div>
-                          <div className="exc-cell-main">{log.executorName}</div>
-                          <div className="exc-cell-sub">{log.executorRole}</div>
+                          <div className="exc-cell-main">{log.actor?.username || '—'}</div>
+                          <div className="exc-cell-sub">{log.actor?.role_label || '—'}</div>
                         </div>
                       </div>
                     </td>
@@ -540,24 +599,21 @@ export default function AdminExceptions({
                     <td data-label="الإجراء المتخذ">
                       <div className="exc-action-name">
                         <span className="exc-action-dot"></span>
-                        <span className="exc-cell-main">{log.actionName}</span>
+                        <span className="exc-cell-main">{log.action_label || log.action}</span>
                       </div>
-                      <div className="exc-cell-sub">{log.actionDesc}</div>
+                      <div className="exc-cell-sub">{log.details || '—'}</div>
                     </td>
 
                     <td data-label="المستفيد / التذكرة">
-                      <div className="exc-cell-main">{log.beneficiaryName}</div>
-                      <div className="exc-cell-sub num">{log.ticketId}</div>
+                      <div className="exc-cell-main">{log.graduate?.full_name || '—'}</div>
+                      <div className="exc-cell-sub num">
+                        {log.ticket_id != null ? `#${log.ticket_id}` : (log.graduate?.university_id || '—')}
+                      </div>
                     </td>
 
                     <td data-label="الوقت والتاريخ">
-                      <span className="exc-cell-sub" style={{ fontSize: '12px', color: '#201b0f' }}>{log.time}</span>
-                    </td>
-
-                    <td data-label="حالة العملية" style={{ textAlign: 'center' }}>
-                      <span className="exc-status-chip">
-                        <span className="exc-symbol">check</span>
-                        <span>موثقة بالنظام</span>
+                      <span className="exc-cell-sub" style={{ fontSize: '12px', color: '#201b0f' }}>
+                        {formatDateTime(log.created_at)}
                       </span>
                     </td>
                   </tr>
@@ -570,7 +626,7 @@ export default function AdminExceptions({
         </section>
 
         <p className="exc-footer-note">
-          الاتحاد الوطني لطلبة سورية — فرع جامعة حمص • منظومة إدارة فعاليات التخرج المركزية
+          منظومة إدارة فعاليات التخرج المركزية
         </p>
       </main>
     </div>

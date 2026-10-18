@@ -4,7 +4,7 @@
    ========================================================================== */
 
 .add-cer-app-container {
-  font-family: 'Ghroob', 'Cairo', sans-serif;
+  font-family: "Ghroob", "Cairo", sans-serif;
   background-color: #fcf6ed;
   color: #201b0f;
   min-height: 100vh;
@@ -29,7 +29,7 @@
 
 /* أيقونات Material Symbols */
 .add-cer-symbol {
-  font-family: 'Material Symbols Outlined';
+  font-family: "Material Symbols Outlined";
   font-weight: normal;
   font-style: normal;
   font-size: 20px;
@@ -44,7 +44,7 @@
 }
 
 .add-cer-symbol.fill {
-  font-variation-settings: 'FILL' 1;
+  font-variation-settings: "FILL" 1;
 }
 
 /* ================= الشريط العلوي ================= */
@@ -161,7 +161,9 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   font-family: inherit;
 }
 
@@ -251,25 +253,6 @@
   height: 8px;
   border-radius: 9999px;
   background-color: #ca4b00;
-}
-
-.add-cer-tag-pill.published {
-  background-color: rgba(18, 77, 68, 0.08);
-  border-color: rgba(18, 77, 68, 0.25);
-}
-
-.add-cer-tag-pill.published .add-cer-tag-dot {
-  background-color: #1e8a5a;
-}
-
-.add-cer-extend-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.add-cer-switch input:disabled + .add-cer-slider {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 .add-cer-form {
@@ -374,7 +357,9 @@
   border-radius: 9999px;
   border: 1px solid #e2bfb2;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   box-sizing: border-box;
   font-family: inherit;
 }
@@ -409,8 +394,13 @@
   pointer-events: none;
 }
 
-.add-cer-input-icon.left { left: 14px; }
-.add-cer-input-icon.right { right: 14px; color: #124d44; }
+.add-cer-input-icon.left {
+  left: 14px;
+}
+.add-cer-input-icon.right {
+  right: 14px;
+  color: #124d44;
+}
 
 .add-cer-extend-btn {
   display: inline-flex;
@@ -461,7 +451,10 @@
   color: #201b0f;
   font-size: 13px;
   font-weight: 700;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .add-cer-chip:hover .add-cer-chip-box {
@@ -694,7 +687,9 @@
   border: 1px solid rgba(202, 75, 0, 0.2);
   cursor: pointer;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
   font-family: inherit;
 }
 
@@ -742,20 +737,49 @@
 
 /* ================= Responsive ================= */
 @media (min-width: 640px) {
-  .add-cer-main-canvas { padding: 24px; gap: 24px; }
-  .add-cer-topbar { padding: 12px 24px; }
-  .add-cer-card-header { padding: 24px; }
-  .add-cer-form { padding: 24px; gap: 28px; }
-  .add-cer-help-btn { display: flex; padding: 8px; }
-  .add-cer-help-text { display: none; }
-  .add-cer-grid-2 { grid-template-columns: repeat(2, 1fr); }
-  .add-cer-grid-3 { grid-template-columns: repeat(2, 1fr); }
-  .add-cer-toggle-box { flex-direction: row; align-items: center; justify-content: space-between; }
-  .add-cer-form-footer { flex-direction: row; align-items: center; justify-content: space-between; }
+  .add-cer-main-canvas {
+    padding: 24px;
+    gap: 24px;
+  }
+  .add-cer-topbar {
+    padding: 12px 24px;
+  }
+  .add-cer-card-header {
+    padding: 24px;
+  }
+  .add-cer-form {
+    padding: 24px;
+    gap: 28px;
+  }
+  .add-cer-help-btn {
+    display: flex;
+    padding: 8px;
+  }
+  .add-cer-help-text {
+    display: none;
+  }
+  .add-cer-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .add-cer-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .add-cer-toggle-box {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .add-cer-form-footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 @media (min-width: 1024px) {
-  .add-cer-menu-btn { display: none; }
+  .add-cer-menu-btn {
+    display: none;
+  }
 
   .add-cer-topbar {
     margin-right: 288px;
@@ -763,26 +787,39 @@
     padding: 0 32px;
     flex-wrap: nowrap;
   }
-  .add-cer-topbar-title h2 { font-size: 22px; line-height: 30px; }
-  .add-cer-help-btn { padding: 8px 20px; }
-  .add-cer-help-text { display: inline; }
+  .add-cer-topbar-title h2 {
+    font-size: 22px;
+    line-height: 30px;
+  }
+  .add-cer-help-btn {
+    padding: 8px 20px;
+  }
+  .add-cer-help-text {
+    display: inline;
+  }
 
-  .add-cer-main-canvas { margin-right: 288px; padding: 32px; gap: 28px; }
-  .add-cer-card-header { flex-direction: row; align-items: center; justify-content: space-between; padding: 28px 32px; }
-  .add-cer-form { padding: 32px; }
-  .add-cer-grid-3 { grid-template-columns: repeat(3, 1fr); }
-  .add-cer-pkg-card { padding: 20px; }
+  .add-cer-main-canvas {
+    margin-right: 288px;
+    padding: 32px;
+    gap: 28px;
+  }
+  .add-cer-card-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 32px;
+  }
+  .add-cer-form {
+    padding: 32px;
+  }
+  .add-cer-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .add-cer-pkg-card {
+    padding: 20px;
+  }
 }
-/* ===== ملف بيانات الجامعة ===== */
-.add-cer-file-input { display: none; }
 
-.add-cer-file-template {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  font-size: 13px;
-}
 
 .add-cer-dropzone {
   display: flex;

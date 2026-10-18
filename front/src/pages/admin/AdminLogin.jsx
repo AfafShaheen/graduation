@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import '../../style/AdminLogin.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
+import { loginAdmin } from '../../api/admin';
+import { setAdminSession } from '../../api/session';
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
@@ -24,26 +26,23 @@ function FieldError({ message }) {
   );
 }
 
-/*
-  onLoginSuccess: يُستدعى بعد اجتياز الفحص الشكلي ببيانات الدخول.
-  errorMessage: رسالة خطأ من الباك إند (مثلاً: بيانات الدخول غير صحيحة).
-*/
-export default function AdminLogin({ onLoginSuccess, errorMessage = '' }) {
+export default function AdminLogin({ onLoginSuccess }) {
   const [formData, setFormData] = useState({ syndicateId: '', password: '' });
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false); // الأخطاء ما بتبين إلا بعد أول ضغطة على الزر
+  const [submitted, setSubmitted] = useState(false);
+  const [serverError, setServerError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // بعد أول ضغطة على الزر، الخطأ بيتحدّث مباشرة أثناء الكتابة
     if (submitted) {
       setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newErrors = {};
@@ -53,20 +52,33 @@ export default function AdminLogin({ onLoginSuccess, errorMessage = '' }) {
     setErrors(newErrors);
     setSubmitted(true);
 
-    // إذا في أي خطأ: وقّف وروح لأول حقل فيه خطأ
     const firstInvalid = Object.keys(newErrors).find((k) => newErrors[k]);
     if (firstInvalid) {
       document.getElementById(fieldIds[firstInvalid])?.focus();
       return;
     }
 
-    const credentials = {
-      syndicateId: formData.syndicateId.trim(),
-      password: formData.password,
-      rememberMe,
-    };
-    if (onLoginSuccess) onLoginSuccess(credentials);
-    else alert(`تم تسجيل دخول الإدارة بنجاح للمستخدم: ${credentials.syndicateId}`);
+    setLoading(true);
+    setServerError('');
+
+    try {
+      const { access_token, expires_in } = await loginAdmin({
+        username: formData.syndicateId.trim(),
+        password: formData.password,
+      });
+      setAdminSession({ accessToken: access_token, expiresIn: expires_in });
+      if (onLoginSuccess) onLoginSuccess();
+    } catch (err) {
+      if (err.status === 429) {
+        setServerError(err.message);
+      } else if (err.status === 401) {
+        setServerError('اسم المستخدم أو كلمة السر غير صحيحة');
+      } else {
+        setServerError(err.message || 'حدث خطأ غير متوقع');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -120,12 +132,12 @@ export default function AdminLogin({ onLoginSuccess, errorMessage = '' }) {
 
             {/* نموذج تسجيل الدخول */}
             <form className="ad-form" onSubmit={handleSubmit} noValidate autoComplete="off">
-              {errorMessage && (
+              {serverError && (
                 <div className="ad-form-alert" role="alert">
                   <span className="ad-symbol" style={{ fontSize: '18px' }}>
                     error
                   </span>
-                  <span>{errorMessage}</span>
+                  <span>{serverError}</span>
                 </div>
               )}
 
@@ -199,9 +211,9 @@ export default function AdminLogin({ onLoginSuccess, errorMessage = '' }) {
               </div>
 
               {/* زر التقديم */}
-              <button className="ad-submit-btn" type="submit">
-                <span>تسجيل الدخول إلى اللوحة</span>
-                <span className="ad-symbol">arrow_back</span>
+              <button className="ad-submit-btn" type="submit" disabled={loading}>
+                <span>{loading ? 'جارٍ تسجيل الدخول…' : 'تسجيل الدخول إلى اللوحة'}</span>
+                {!loading && <span className="ad-symbol">arrow_back</span>}
               </button>
             </form>
 

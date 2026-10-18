@@ -100,6 +100,8 @@ async def search_graduates_service(
         {
             "id": g.id,
             "full_name": g.full_name,
+            "first_name": g.first_name,
+            "last_name": g.last_name,
             "gender": g.gender,
             "college_id": g.college_id,
             "email": g.email,
@@ -179,6 +181,8 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
     result = {
         "id": grad.id,
         "full_name": grad.full_name,
+        "first_name": grad.first_name,
+        "last_name": grad.last_name,
         "gender": grad.gender,
         "college_id": grad.college_id,
         "email": grad.email,

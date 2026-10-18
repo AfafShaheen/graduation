@@ -1,28 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
+import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
+import { setRegistrationToken } from '../../api/session';
 
 /* حروف عربية ومسافات فقط (بدون أرقام أو رموز) */
 const ARABIC_ONLY = /^[\u0621-\u064A\u064B-\u0652\s]+$/;
 /* أرقام فقط، بدون تحديد عدد معين */
 const DIGITS_ONLY = /^[0-9]+$/;
 
-/*
-  الاختصاصات حسب الكلية: كل مفتاح هو قيمة الكلية، وقيمته مصفوفة { value, label }.
-  فاضية هلأ، فبتظهر "لا يوجد" بس. أضف الاختصاصات لاحقاً، مثلاً:
-  it: [{ value: 'software', label: 'هندسة البرمجيات' }]
-*/
-const MAJORS = {
-  it: [],
-  civil: [],
-  med: [],
-  pharm: [],
-  dent: [],
-  mech: [],
-  science: [],
-  arts: [],
-};
+const TOP_RANK_MAP = { none: null, first: 1, second: 2, third: 3 };
+const GENDER_MAP = { male: "ذكر", female: "أنثى" };
+
+/* رموز خطأ الأوائل (D11) التي تُعرض تحت حقل الاختيار */
+const TOP_RANK_ERROR_CODES = ['TOP_RANK_NOT_HONOR', 'TOP_RANK_SHOULD_BE_HONOR', 'TOP_RANK_MISMATCH'];
+
+export function toVerifyStep1Payload(formData, colleges) {
+  const college = colleges.find((c) => String(c.id) === String(formData.faculty));
+  const major = college?.majors?.find((m) => String(m.id) === String(formData.major));
+  const gpaValue = String(formData.gpa ?? '').trim();
+
+  return {
+    college_id: college?.id || null,
+    major_id: major?.id || null,
+    university_id: formData.studentId.trim(),
+    first_name: formData.firstName.trim(),
+    last_name: formData.lastName.trim(),
+    father_name: formData.fatherName.trim(),
+    mother_name: formData.motherName.trim(),
+    gender: GENDER_MAP[formData.gender],
+    // المعدل اختياري (D2): يُرسل فقط عند إدخاله
+    gpa: gpaValue === '' ? null : Number(gpaValue),
+    top_rank: TOP_RANK_MAP[formData.topRank] ?? null,
+  };
+}
 
 /* الترتيب بين الثلاثة الأوائل */
 const TOP_RANK_OPTIONS = [
@@ -34,14 +46,22 @@ const TOP_RANK_OPTIONS = [
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
-  fullName: (v) => {
-    const t = v.trim().replace(/\s+/g, ' ');
-    if (!t) return 'الاسم والكنية مطلوبان';
+  firstName: (v) => {
+    const t = v.trim();
+    if (!t) return 'الاسم مطلوب';
     if (!ARABIC_ONLY.test(t)) return 'يرجى كتابة الاسم بحروف عربية فقط';
-    if (t.split(' ').length < 2) return 'يرجى كتابة الاسم والكنية (كلمتان على الأقل)';
+    if (t.length < 2) return 'الاسم قصير جداً';
+    return '';
+  },
+  lastName: (v) => {
+    const t = v.trim();
+    if (!t) return 'الكنية مطلوبة';
+    if (!ARABIC_ONLY.test(t)) return 'يرجى كتابة الكنية بحروف عربية فقط';
+    if (t.length < 2) return 'الكنية قصيرة جداً';
     return '';
   },
   faculty: (v) => (v ? '' : 'اختر الكلية'),
+  gender: (v) => (v ? '' : 'اختر الجنس'),
   studentId: (v) => {
     const t = v.trim();
     if (!t) return 'الرقم الجامعي مطلوب';
@@ -49,8 +69,8 @@ const validators = {
     return '';
   },
   gpa: (v) => {
-    const t = String(v).trim();
-    if (!t) return 'المعدل مطلوب';
+    const t = String(v ?? '').trim();
+    if (!t) return ''; // المعدل اختياري (D2)
     const n = Number(t);
     if (Number.isNaN(n)) return 'يرجى إدخال المعدل كرقم';
     if (n < 0 || n > 100) return 'المعدل يجب أن يكون بين 0 و 100';
@@ -83,20 +103,44 @@ function FieldError({ message }) {
 
 export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
   const [formData, setFormData] = useState({
-    fullName: '',
-    gender: 'male',
+    firstName: '',
+    lastName: '',
+    gender: '',
     faculty: '',
-    major: 'none', // التخصص: "لا يوجد" افتراضياً
+    major: 'none',
     studentId: '',
-    topRank: 'none', // من الثلاثة الأوائل: "لا يوجد" افتراضياً
-    gpa: '', // المعدل كنسبة مئوية
+    topRank: 'none',
+    gpa: '',
     fatherName: '',
     motherName: '',
   });
 
   const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false); // الأخطاء ما بتبين إلا بعد أول ضغطة على الزر
+  const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [colleges, setColleges] = useState([]);
+  const [collegesLoading, setCollegesLoading] = useState(true);
+  const [collegesError, setCollegesError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    setCollegesLoading(true);
+    setCollegesError('');
+    getRegistrationColleges()
+      .then((data) => {
+        if (mounted) setColleges(data || []);
+      })
+      .catch((err) => {
+        if (mounted) setCollegesError(err.message || 'تعذّر تحميل الكليات');
+      })
+      .finally(() => {
+        if (mounted) setCollegesLoading(false);
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  const selectedCollege = colleges.find((c) => String(c.id) === String(formData.faculty));
+  const majors = selectedCollege?.majors || [];
 
   const handleInputChange = (e) => {
     let { name, value } = e.target;
@@ -123,11 +167,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     }
   };
 
-  const handleGenderSelect = (gender) => {
-    setFormData((prev) => ({ ...prev, gender }));
-  };
-
-  const handleNextStep = (e) => {
+  const handleNextStep = async (e) => {
     e.preventDefault();
     if (isLoading) return;
 
@@ -138,7 +178,6 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     setErrors(newErrors);
     setSubmitted(true);
 
-    // إذا في أي خطأ: وقّف وروح لأول حقل فيه خطأ
     const firstInvalid = Object.keys(newErrors).find((k) => newErrors[k]);
     if (firstInvalid) {
       document.getElementsByName(firstInvalid)[0]?.focus();
@@ -146,11 +185,32 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const payload = toVerifyStep1Payload(formData, colleges);
+      const { registration_token } = await verifyStep1(payload);
+      setRegistrationToken(registration_token);
       if (onNext) onNext(formData);
-      else alert('تم تأكيد بيانات المرحلة الأولى بنجاح! الانتقال إلى خطوة معلومات التواصل.');
-    }, 700);
+    } catch (err) {
+      if (err.fieldErrors) {
+        setErrors((prev) => ({ ...prev, ...err.fieldErrors }));
+        const firstField = Object.keys(err.fieldErrors)[0];
+        document.getElementsByName(firstField)?.[0]?.focus();
+      } else if (err.status === 400 || err.status === 403) {
+        const detail = err.data?.detail;
+        const code = detail && typeof detail === 'object' ? detail.code : null;
+        if (code && TOP_RANK_ERROR_CODES.includes(code)) {
+          setErrors({ topRank: err.message });
+        } else {
+          setErrors({ general: err.message });
+        }
+      } else if (err.status === 429) {
+        setErrors({ general: 'تم تجاوز الحد المسموح من المحاولات، يرجى الانتظار' });
+      } else {
+        setErrors({ general: err.message || 'حدث خطأ غير متوقع' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -201,23 +261,45 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
           <form onSubmit={handleNextStep} noValidate>
             {/* الاسم والكنية */}
-            <div className="form-group">
-              <label className="form-label">
-                الاسم والكنية <span className="required-star">*</span>
-              </label>
-              <div className="input-wrapper">
+            {errors.general && (
+              <div className="form-group">
+                <div className="info-box" style={{ margin: 0, borderColor: '#ba1a1a', background: '#fff5f5' }}>
+                  <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="form-group grid-two-cols">
+              <div>
+                <label className="form-label">
+                  الاسم <span className="required-star">*</span>
+                </label>
                 <input
                   type="text"
-                  name="fullName"
-                  className={`form-input input-with-icon ${errors.fullName ? 'error' : ''}`}
-                  placeholder="مثلاً: مجد العلي"
-                  value={formData.fullName}
+                  name="firstName"
+                  className={`form-input ${errors.firstName ? 'error' : ''}`}
+                  placeholder="مثلاً: مجد"
+                  value={formData.firstName}
                   onChange={handleInputChange}
-                  aria-invalid={!!errors.fullName}
+                  aria-invalid={!!errors.firstName}
                 />
-                <span className="material-symbols-outlined input-icon">badge</span>
+                <FieldError message={errors.firstName} />
               </div>
-              <FieldError message={errors.fullName} />
+              <div>
+                <label className="form-label">
+                  الكنية <span className="required-star">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  className={`form-input ${errors.lastName ? 'error' : ''}`}
+                  placeholder="مثلاً: العلي"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  aria-invalid={!!errors.lastName}
+                />
+                <FieldError message={errors.lastName} />
+              </div>
             </div>
 
             {/* الجنس */}
@@ -226,27 +308,20 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 الجنس <span className="required-star">*</span>
               </label>
               <div className="gender-grid">
-                <button
-                  type="button"
-                  className={`gender-btn ${formData.gender === 'male' ? 'active' : 'inactive'}`}
-                  onClick={() => handleGenderSelect('male')}
+                <select
+                  name="gender"
+                  className={`form-select select-with-icon ${errors.gender ? 'error' : ''}`}
+                  value={formData.gender}
+                  onChange={handleInputChange}
+                  aria-invalid={!!errors.gender}
                 >
-                  <span className="material-symbols-outlined">
-                    {formData.gender === 'male' ? 'check_circle' : 'radio_button_unchecked'}
-                  </span>
-                  <span>ذكر</span>
-                </button>
-                <button
-                  type="button"
-                  className={`gender-btn ${formData.gender === 'female' ? 'active' : 'inactive'}`}
-                  onClick={() => handleGenderSelect('female')}
-                >
-                  <span className="material-symbols-outlined">
-                    {formData.gender === 'female' ? 'check_circle' : 'radio_button_unchecked'}
-                  </span>
-                  <span>أنثى</span>
-                </button>
+                  <option value="" disabled>اختر الجنس...</option>
+                  <option value="male">ذكر</option>
+                  <option value="female">أنثى</option>
+                </select>
+                <span className="material-symbols-outlined input-icon">expand_more</span>
               </div>
+              <FieldError message={errors.gender} />
             </div>
 
             {/* الكلية */}
@@ -255,26 +330,38 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 الكلية <span className="required-star">*</span>
               </label>
               <div className="input-wrapper">
-                <select
-                  name="faculty"
-                  className={`form-select select-with-icon ${errors.faculty ? 'error' : ''}`}
-                  value={formData.faculty}
-                  onChange={handleInputChange}
-                  aria-invalid={!!errors.faculty}
-                >
-                  <option value="" disabled>
-                    اختر كليتك من القائمة...
-                  </option>
-                  <option value="it">الهندسة المعلوماتية</option>
-                  <option value="civil">الهندسة المدنية</option>
-                  <option value="med">الطب البشري</option>
-                  <option value="pharm">الصيدلة</option>
-                  <option value="dent">طب الأسنان</option>
-                  <option value="mech">الهندسة الميكانيكية</option>
-                  <option value="science">العلوم</option>
-                  <option value="arts">الآداب والعلوم الإنسانية</option>
-                </select>
-                <span className="material-symbols-outlined input-icon">expand_more</span>
+                {collegesLoading ? (
+                  <div className="form-select select-with-icon" style={{ display: 'flex', alignItems: 'center', color: '#725b51' }}>
+                    جارٍ تحميل الكليات...
+                  </div>
+                ) : collegesError ? (
+                  <div>
+                    <div className="error-text" style={{ marginBottom: 8 }}>{collegesError}</div>
+                    <button type="button" className="submit-btn" style={{ padding: '8px 16px', fontSize: 13 }} onClick={() => { setCollegesLoading(true); setCollegesError(''); getRegistrationColleges().then(setColleges).catch((e) => setCollegesError(e.message)).finally(() => setCollegesLoading(false)); }}>
+                      إعادة المحاولة
+                    </button>
+                  </div>
+                ) : colleges.length === 0 ? (
+                  <div className="info-box" style={{ margin: 0 }}>
+                    <p className="info-text">التسجيل غير مفتوح حالياً</p>
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      name="faculty"
+                      className={`form-select select-with-icon ${errors.faculty ? 'error' : ''}`}
+                      value={formData.faculty}
+                      onChange={handleInputChange}
+                      aria-invalid={!!errors.faculty}
+                    >
+                      <option value="" disabled>اختر كليتك من القائمة...</option>
+                      {colleges.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined input-icon">expand_more</span>
+                  </>
+                )}
               </div>
               <FieldError message={errors.faculty} />
             </div>
@@ -288,12 +375,11 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   className="form-select select-with-icon"
                   value={formData.major}
                   onChange={handleInputChange}
+                  disabled={!formData.faculty}
                 >
                   <option value="none">لا يوجد</option>
-                  {(MAJORS[formData.faculty] || []).map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
+                  {majors.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
                 </select>
                 <span className="material-symbols-outlined input-icon">expand_more</span>
@@ -342,15 +428,16 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 </select>
                 <span className="material-symbols-outlined input-icon">expand_more</span>
               </div>
+              <FieldError message={errors.topRank} />
             </div>
 
             {/* المعدل كنسبة مئوية */}
             <div className="form-group">
               <div className="label-row">
                 <label className="form-label" style={{ margin: 0 }}>
-                  المعدل (نسبة مئوية) <span className="required-star">*</span>
+                  المعدل (نسبة مئوية)
                 </label>
-                <span className="label-hint">من 0 إلى 100</span>
+                <span className="label-hint">اختياري، من 0 إلى 100</span>
               </div>
               <div className="input-wrapper">
                 <input

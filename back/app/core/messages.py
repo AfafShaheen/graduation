@@ -5,6 +5,22 @@ endpoint leaks which field mismatched (SRS FR-2, FR-6, NFR privacy).
 """
 
 GENERIC_VERIFY_FAIL = "ما قدرنا نتحقق من بياناتك، يرجى مراجعتها أو التواصل مع الاتحاد"
+
+# D11: the only *specific* verification failure (a top-student mismatch). The
+# real rank is never revealed and the same status as the generic failure is used
+# so the rest of the identity fields cannot be probed.
+TOP_RANK_NOT_HONOR = (
+    "يظهر لنا حسب البيانات من شؤون الطلبة أنك لست من الأوائل، يرجى التأكد، "
+    "وفي حال التأكد يرجى مراجعة اتحاد الطلبة."
+)
+TOP_RANK_SHOULD_BE_HONOR = (
+    "يظهر لنا حسب البيانات من شؤون الطلبة أنك من الأوائل، يرجى التأكد من اختيارك، "
+    "وفي حال التأكد يرجى مراجعة اتحاد الطلبة."
+)
+TOP_RANK_MISMATCH = (
+    "المرتبة التي اخترتها لا تطابق بيانات شؤون الطلبة، يرجى التأكد، "
+    "وفي حال التأكد يرجى مراجعة اتحاد الطلبة."
+)
 UNIVERSITY_ID_ALREADY_REGISTERED = "رقمك الجامعي مسجل مسبقاً"
 REGISTER_FAIL = "تعذّر إكمال التسجيل، يرجى مراجعة بياناتك أو التواصل مع الاتحاد"
 OTP_INVALID_GENERIC = "رمز التحقق غير صحيح أو منتهي الصلاحية"

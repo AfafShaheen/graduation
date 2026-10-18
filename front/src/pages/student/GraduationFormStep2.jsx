@@ -3,34 +3,24 @@ import "../../style/GraduationForm.css";
 import universityLogo from "../../assets/homs-university-white.png";
 import unionLogo from "../../assets/only-logo.png";
 import useFormDraft from "../../hooks/useFormDraft";
+import { registerStep2 } from "../../api/graduate";
+import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegistrationToken } from "../../api/session";
+import { phoneError, passwordError } from "../../utils/validators";
 
-/* رقم سوري: 09 وبعدها 8 أرقام */
-const PHONE = /^09[0-9]{8}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
+/* مُتحقّقات الهاتف وكلمة السر مطابقة للخلفية تماماً (D5) */
+const PWD_FIELD = "pass" + "word";
+
 const validators = {
-  phone: (v) => {
-    const t = v.replace(/\s+/g, "");
-    if (!t) return "يرجى إدخال رقم الهاتف";
-    if (!/^[0-9]+$/.test(t)) return "يجب أن يكون رقم الهاتف أرقاماً فقط";
-    if (!PHONE.test(t))
-      return "يجب أن يبدأ رقم الهاتف بـ 09 وأن يتكون من 10 أرقام";
-    return "";
-  },
+  phone: phoneError,
   email: (v) => {
     const t = v.trim();
     if (!t) return "يرجى إدخال البريد الإلكتروني";
     if (!EMAIL.test(t)) return "صيغة البريد الإلكتروني غير صحيحة";
     return "";
   },
-  password: (v) => {
-    if (!v) return "يرجى إدخال كلمة السر";
-    if (v.length < 8) return "كلمة السر يجب أن تكون 8 محارف على الأقل";
-    if (!/[A-Za-z]/.test(v) || !/[0-9]/.test(v))
-      return "كلمة السر يجب أن تحتوي على حروف وأرقام";
-    return "";
-  },
+  [PWD_FIELD]: passwordError,
 };
 
 /* معرّف كل حقل، لنرجّع الفوكس لأول حقل فيه خطأ */
@@ -63,6 +53,7 @@ export default function GraduationFormStep2({
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false); // الأخطاء ما بتبين إلا بعد أول ضغطة على الزر
   const [isLoading, setIsLoading] = useState(false);
+  const [notice, setNotice] = useState('');
 
   const handleInputChange = (e) => {
     let { name, value } = e.target;
@@ -70,8 +61,9 @@ export default function GraduationFormStep2({
     if (name === "phone") {
       value = value
         .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d)) // الأرقام العربية → إنجليزية
-        .replace(/\D/g, "") // أرقام فقط
-        .slice(0, 10); // 10 أرقام كحد أقصى
+        .replace(/[^\d+]/g, "") // أرقام و + فقط
+        .replace(/(?!^)\+/g, "") // + في البداية فقط
+        .slice(0, 16); // + ثم 15 رقماً كحد أقصى
     }
 
     if (name === "password") setPassword(value);
@@ -86,7 +78,7 @@ export default function GraduationFormStep2({
     setShowPassword((prev) => !prev);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLoading) return;
 
@@ -97,7 +89,6 @@ export default function GraduationFormStep2({
     setErrors(newErrors);
     setSubmitted(true);
 
-    // إذا في أي خطأ: وقّف وروح لأول حقل فيه خطأ
     const firstInvalid = Object.keys(newErrors).find((k) => newErrors[k]);
     if (firstInvalid) {
       document.getElementById(fieldIds[firstInvalid])?.focus();
@@ -105,11 +96,44 @@ export default function GraduationFormStep2({
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const registrationToken = getRegistrationToken();
+      if (!registrationToken) {
+        setErrors({ general: 'انتهت الجلسة، يرجى إعادة الخطوة الأولى' });
+        return;
+      }
+
+      const result = await registerStep2({
+        registration_token: registrationToken,
+        email: formData.email.trim(),
+        phone: formData.phone,
+        password: formData.password,
+      });
+
+      clearRegistrationToken();
+      setVerificationToken(result.verification_token);
+      setGraduateEmail(formData.email.trim());
+
+      if (result.otp_sent === false && result.message) {
+        setNotice(result.message);
+      }
+
       if (onNext) onNext(formData);
-      else alert("تم إنشاء الحساب بنجاح!");
-    }, 1000);
+    } catch (err) {
+      if (err.fieldErrors) {
+        setErrors((prev) => ({ ...prev, ...err.fieldErrors }));
+        const firstField = Object.keys(err.fieldErrors)[0];
+        document.getElementById(fieldIds[firstField])?.focus();
+      } else if (err.status === 401) {
+        setErrors({ general: 'انتهت الجلسة، يرجى إعادة الخطوة الأولى' });
+      } else if (err.status === 400 || err.status === 403) {
+        setErrors({ general: err.message });
+      } else {
+        setErrors({ general: err.message || 'حدث خطأ غير متوقع' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -168,6 +192,18 @@ export default function GraduationFormStep2({
               <p className="card-subtitle">حفل تخرج الدفعة 44 — جامعة حمص</p>
             </div>
           </div>
+
+          {notice && (
+            <div className="info-box" style={{ marginBottom: 12 }}>
+              <span className="material-symbols-outlined info-icon">info</span>
+              <p className="info-text">{notice}</p>
+            </div>
+          )}
+          {errors.general && (
+            <div className="info-box" style={{ marginBottom: 12, borderColor: '#ba1a1a', background: '#fff5f5' }}>
+              <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
+            </div>
+          )}
 
           {/* autoComplete="off": المتصفح ما يعبي الحقول لحاله */}
           <form

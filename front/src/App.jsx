@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Routes,
   Route,
@@ -6,6 +6,10 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
+import { logoutAdmin } from "./api/admin";
+import usePageMeta from "./hooks/usePageMeta";
+import { forgotPassword } from "./api/graduate";
+import TicketGuard from "./components/TicketGuard";
 import GraduationFormStep1 from "./pages/student/GraduationFormStep1";
 import GraduationFormStep2 from "./pages/student/GraduationFormStep2";
 import Otp from "./pages/student/Otp";
@@ -22,6 +26,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCeremonies from "./pages/admin/AdminCeremonies";
 import AdminAddCeremony from "./pages/admin/AdminAddCeremony";
+import AdminEditCeremonyRoute from "./pages/admin/AdminEditCeremonyRoute";
 import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
 import AdminScannersSettings from "./pages/admin/AdminScannersSettings";
 import AdminExceptions from "./pages/admin/AdminExceptions";
@@ -32,6 +37,7 @@ import ScannerCamera from "./pages/scanner/ScannerCamera";
 import ScanSuccessResult from "./pages/scanner/ScanSuccessResult";
 import ScanErrorResult from "./pages/scanner/ScanErrorResult";
 import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
+import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduateToken, isGraduateTokenExpired, getAdminToken, isAdminTokenExpired, clearAdminSession, getAdminUsername, getVerificationToken, getRegistrationToken, isRegistrationTokenExpired, getResetEmail, setResetEmail, getResetCode, getGraduateEmail } from "./api/session";
 
 /*
   وضع المعاينة (للتصميم فقط):
@@ -40,88 +46,55 @@ import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
 */
 const PREVIEW = true;
 
-/* عدد طلبات الدفع المعلّقة (شارة القائمة الجانبية): مؤقت لحد ما يجهز الباك إند، بدّله بالقيمة الحقيقية */
-const PENDING_PAYMENTS = 142;
-
-/* أسماء الكليات حسب القيمة المخزنة بصفحة الخطوة 1 */
-const FACULTY_LABELS = {
-  it: "كلية الهندسة المعلوماتية",
-  civil: "كلية الهندسة المدنية",
-  med: "كلية الطب البشري",
-  pharm: "كلية الصيدلة",
-  dent: "كلية طب الأسنان",
-  mech: "كلية الهندسة الميكانيكية",
-  science: "كلية العلوم",
-  arts: "كلية الآداب والعلوم الإنسانية",
-};
-
-/* "لا تعرض لي دليل التذكرة مرة أخرى": بنحفظها بـ localStorage لتضل حتى بعد إغلاق المتصفح */
-/* مؤقت لحد ما يجهز الباك إند، بعدها الأفضل تنحفظ على حساب الخريج */
-const GUIDE_SKIP_KEY = "grad.skipGuide";
-function readSkipGuide() {
-  try {
-    return localStorage.getItem(GUIDE_SKIP_KEY) === "1";
-  } catch (err) {
-    return false;
-  }
-}
-function saveSkipGuide() {
-  try {
-    localStorage.setItem(GUIDE_SKIP_KEY, "1");
-  } catch (err) {
-    /* التخزين غير متاح: نكمل بدونه */
-  }
-}
-
-/* حالة بتنحفظ بـ sessionStorage، فبتضل موجودة بعد تحديث الصفحة (وبتنمسح بإغلاق التبويب) */
-function usePersistentState(key, initialValue) {
-  const [value, setValue] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(key);
-      return raw ? JSON.parse(raw) : initialValue;
-    } catch (err) {
-      return initialValue;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      if (value === null || value === undefined || value === "") {
-        sessionStorage.removeItem(key);
-      } else {
-        sessionStorage.setItem(key, JSON.stringify(value));
-      }
-    } catch (err) {
-      /* التخزين غير متاح: نكمل بدونه */
-    }
-  }, [key, value]);
-
-  return [value, setValue];
-}
-
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const { pathname } = location;
 
-  const [email, setEmail] = usePersistentState("grad.email", ""); // بريد التسجيل
-  const [resetEmail, setResetEmail] = usePersistentState("grad.resetEmail", ""); // بريد استعادة كلمة السر
-  const [ticket, setTicket] = usePersistentState("grad.ticket", null); // الباقة المختارة
-  const [payment, setPayment] = usePersistentState("grad.payment", null); // بيانات تحويل شام كاش
-  const [student, setStudent] = usePersistentState("grad.student", null); // بيانات الخريج: الاسم والكلية والتخصص والرقم الجامعي والترتيب والمعدل
-  const [, setSurvey] = usePersistentState("grad.survey", null); // إجابات سؤالَي المسؤولية والخبرة
-  const [resetVerified, setResetVerified] = useState(false); // هل تأكد رمز الاستعادة؟ (ما منحفظها)
-  const [admin, setAdmin] = usePersistentState("grad.admin", null); // جلسة الإدارة (مؤقتة لحد ما يجهز الباك إند)
-  const [adminError, setAdminError] = useState(""); // رسالة خطأ دخول الإدارة
-  const [scanner, setScanner] = usePersistentState("grad.scanner", null); // جلسة الماسح (مؤقتة لحد ما يجهز الباك إند)
-  const [scannerError, setScannerError] = useState(""); // رسالة خطأ دخول الماسح
+  const [pendingPayments, setPendingPayments] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
+  usePageMeta({
+    robots: pathname === "/" ? "index, follow" : "noindex, nofollow",
+  });
+
+  const refreshPendingPayments = useCallback(async () => {
+    try {
+      const { adminRequest } = await import("./api/admin.js");
+      const res = await adminRequest("/api/admin/stats");
+      setPendingPayments(res?.tickets?.processing ?? 0);
+    } catch {
+      /* نتجاهل الفشل — تبقى الشارة على آخر قيمة */
+    }
+  }, []);
+
+  const handleAdminLogout = async () => {
+    try {
+      await logoutAdmin();
+    } catch {
+      /* نتجاهل أخطاء الخادم وننظف الجلسة محلياً */
+    }
+    clearAdminSession();
+    navigate("/admin", { replace: true });
+  };
+
+  const hasValidGraduate = getGraduateToken() && !isGraduateTokenExpired();
+  const hasValidAdmin = getAdminToken() && !isAdminTokenExpired();
+  const hasVerifySession = getVerificationToken();
+  const hasValidRegistration = getRegistrationToken() && !isRegistrationTokenExpired();
+  const adminName = getAdminUsername();
+
+  useEffect(() => {
+    if (hasValidAdmin) {
+      refreshPendingPayments();
+    }
+  }, [pathname, hasValidAdmin, refreshPendingPayments]);
+
   return (
-    <AdminStatsProvider pendingPayments={PENDING_PAYMENTS}>
+    <AdminStatsProvider pendingPayments={pendingPayments} refreshPendingPayments={refreshPendingPayments}>
       <Routes>
         {/* ===== التسجيل ===== */}
         <Route
@@ -129,18 +102,7 @@ function App() {
           element={
             <GraduationFormStep1
               onNavigateToLogin={() => navigate("/login")}
-              onNext={(data) => {
-                // نحفظ بيانات الخريج (التذكرة + التخصص والترتيب والمعدل للباك إند)
-                setStudent({
-                  fullName: data.fullName.trim(),
-                  faculty: data.faculty,
-                  major: data.major, // "none" = لا يوجد
-                  studentId: data.studentId.trim(),
-                  topRank: data.topRank, // none | first | second | third
-                  gpa: Number(data.gpa), // المعدل كنسبة مئوية (0-100)
-                });
-                navigate("/register");
-              }}
+              onNext={() => navigate("/register")}
             />
           }
         />
@@ -148,25 +110,27 @@ function App() {
         <Route
           path="/register"
           element={
-            <GraduationFormStep2
-              onBack={() => navigate("/")}
-              onNavigateToLogin={() => navigate("/login")}
-              onNext={(data) => {
-                setEmail(data.email);
-                navigate("/otp");
-              }}
-            />
+            hasValidRegistration || PREVIEW ? (
+              <GraduationFormStep2
+                onBack={() => navigate("/")}
+                onNavigateToLogin={() => navigate("/login")}
+                onNext={() => {
+                  navigate("/otp");
+                }}
+              />
+            ) : (
+              <Navigate to="/" replace />
+            )
           }
         />
 
         <Route
           path="/otp"
           element={
-            // بدون بريد (فتح مباشر) نرجعه للتسجيل
-            email || PREVIEW ? (
+            hasVerifySession || PREVIEW ? (
               <Otp
                 mode="register"
-                email={email || undefined}
+                email={getGraduateEmail() || undefined}
                 onBack={() => navigate("/register")}
                 onVerified={() => navigate("/questions", { replace: true })}
               />
@@ -180,7 +144,7 @@ function App() {
         <Route
           path="/questions"
           element={
-            email || PREVIEW ? (
+            hasValidGraduate || PREVIEW ? (
               <GraduateQuestions
                 onDone={(answers) => {
                   setSurvey(answers); // { wantsResponsibility, hasExperience }
@@ -188,7 +152,7 @@ function App() {
                 }}
               />
             ) : (
-              <Navigate to="/register" replace />
+              <Navigate to="/login" replace />
             )
           }
         />
@@ -198,7 +162,7 @@ function App() {
           path="/login"
           element={
             <Login
-              initialEmail={resetEmail}
+              initialEmail={getResetEmail() || ""}
               notice={
                 location.state?.passwordReset
                   ? "تم تغيير كلمة السر بنجاح، يمكنك تسجيل الدخول الآن"
@@ -214,7 +178,6 @@ function App() {
               }
               onForgotPassword={(em) => {
                 setResetEmail(em);
-                setResetVerified(false);
                 navigate("/reset-otp");
               }}
             />
@@ -225,15 +188,12 @@ function App() {
         <Route
           path="/reset-otp"
           element={
-            resetEmail || PREVIEW ? (
+            getResetEmail() || PREVIEW ? (
               <Otp
                 mode="reset"
-                email={resetEmail || undefined}
+                email={getResetEmail() || undefined}
                 onBack={() => navigate("/login")}
-                onVerified={() => {
-                  setResetVerified(true);
-                  navigate("/reset-password");
-                }}
+                onVerified={() => navigate("/reset-password")}
               />
             ) : (
               <Navigate to="/login" replace />
@@ -244,14 +204,15 @@ function App() {
         <Route
           path="/reset-password"
           element={
-            // لا يدخلها أحد إلا بعد تأكيد الرمز
-            resetVerified || PREVIEW ? (
+            getResetEmail() && getResetCode() ? (
               <ResetPassword
                 onBack={() => navigate("/login")}
-                onDone={() => {
-                  setResetVerified(false);
-                  navigate("/login", { state: { passwordReset: true } });
-                }}
+                onDone={() => navigate("/login", { state: { passwordReset: true } })}
+              />
+            ) : PREVIEW ? (
+              <ResetPassword
+                onBack={() => navigate("/login")}
+                onDone={() => navigate("/login", { state: { passwordReset: true } })}
               />
             ) : (
               <Navigate to="/login" replace />
@@ -277,62 +238,37 @@ function App() {
         <Route
           path="/tickets"
           element={
-            <SelectTicket
-              onBack={() => navigate("/login")}
-              onContinue={(data) => {
-                setTicket(data);
-                navigate("/payment");
-              }}
-            />
+            <TicketGuard>
+              <SelectTicket onBack={() => navigate("/login")} />
+            </TicketGuard>
           }
         />
 
         <Route
           path="/payment"
           element={
-            // لا ندخل صفحة الدفع بدون باقة محددة
-            ticket || PREVIEW ? (
-              <ShamCashPayment
-                amount={ticket?.price}
-                onBack={() => navigate("/tickets")}
-                onSuccess={(data) => {
-                  setPayment({
-                    ...data,
-                    submittedAt: new Date().toISOString(),
-                  });
-                  // replace: حتى لا يرجع المستخدم لصفحة الدفع بزر الرجوع بالمتصفح
-                  navigate("/payment-submitted", { replace: true });
-                }}
-              />
-            ) : (
-              <Navigate to="/tickets" replace />
-            )
+            <TicketGuard>
+              <ShamCashPayment onBack={() => navigate("/tickets")} />
+            </TicketGuard>
           }
         />
 
         <Route
           path="/payment-submitted"
           element={
-            // لا نعرض حالة الطلب إلا بعد إرسال بيانات الدفع
-            payment || PREVIEW ? (
-              <OrderStatus
-                transactionId={payment?.transactionId}
-                amountPaid={payment?.transferAmount}
-                orderDate={payment?.submittedAt}
-              />
-            ) : (
-              <Navigate to="/tickets" replace />
-            )
+            <TicketGuard>
+              <OrderStatus />
+            </TicketGuard>
           }
         />
 
-        {/* صفحة الرفض ما بتحتاج بيانات، والزر بيرجع المستخدم للدفع (وهناك الشرط) */}
+        {/* صفحة الرفض جنب الدفع: الحارس يتحقق من حالة التذكرة ويعيد التوجيه حسب الحاجة */}
         <Route
           path="/payment-rejected"
           element={
-            <OrderRejected
-              onResubmit={() => navigate("/payment", { replace: true })}
-            />
+            <TicketGuard>
+              <OrderRejected />
+            </TicketGuard>
           }
         />
 
@@ -340,47 +276,26 @@ function App() {
         <Route
           path="/my-ticket"
           element={
-            ticket || PREVIEW ? (
-              <MyTicket
-                studentName={student?.fullName}
-                faculty={FACULTY_LABELS[student?.faculty]}
-                universityId={student?.studentId}
-                companionsCount={ticket?.guestsCount}
-                // gateAndSeat و ticketCode و qrSrc تأتي من الباك إند بعد قبول الدفع
-              />
-            ) : (
-              <Navigate to="/tickets" replace />
-            )
+            <TicketGuard>
+              <MyTicket />
+            </TicketGuard>
           }
         />
 
         {/* ===== الإدارة: بتنفتح من الرابط /admin فقط، وما في أي رابط إلها بصفحات الطلاب ===== */}
         <Route
           path="/admin"
-          element={
-            <AdminLogin
-              errorMessage={adminError}
-              onLoginSuccess={(credentials) => {
-                // مؤقت: لما يجهز الباك إند، تحقق من البيانات هناك، وإذا فشل: setAdminError("بيانات الدخول غير صحيحة")
-                setAdminError("");
-                setAdmin({ username: credentials.syndicateId });
-                navigate("/admin/dashboard");
-              }}
-            />
-          }
+          element={<AdminLogin onLoginSuccess={() => navigate("/admin/dashboard")} />}
         />
 
         <Route
           path="/admin/dashboard"
           element={
-            admin || PREVIEW ? (
+            hasValidAdmin || PREVIEW ? (
               <AdminDashboard
-                adminName={admin?.username}
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
-                onLogout={() => {
-                  setAdmin(null);
-                  navigate("/admin", { replace: true });
-                }}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -392,20 +307,17 @@ function App() {
         <Route
           path="/admin/ceremonies"
           element={
-            admin || PREVIEW ? (
+            hasValidAdmin || PREVIEW ? (
               <AdminCeremonies
-                adminName={admin?.username}
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddCeremony={() => navigate("/admin/ceremonies/new")}
                 onEditCeremony={(item) =>
                   navigate(`/admin/ceremonies/${item.id}/edit`, {
-                    state: { ceremony: item },
+                    state: { eventItem: item },
                   })
                 }
-                onLogout={() => {
-                  setAdmin(null);
-                  navigate("/admin", { replace: true });
-                }}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -417,19 +329,13 @@ function App() {
         <Route
           path="/admin/ceremonies/new"
           element={
-            admin || PREVIEW ? (
+            hasValidAdmin || PREVIEW ? (
               <AdminAddCeremony
-                adminName={admin?.username}
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onCancel={() => navigate("/admin/ceremonies")}
-                onSubmitSuccess={() => {
-                  // مؤقت: لما يجهز الباك إند، أرسل بيانات الحفل (الوسيط) هناك قبل الرجوع
-                  navigate("/admin/ceremonies");
-                }}
-                onLogout={() => {
-                  setAdmin(null);
-                  navigate("/admin", { replace: true });
-                }}
+                onSubmitSuccess={() => navigate("/admin/ceremonies")}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -441,30 +347,13 @@ function App() {
         <Route
           path="/admin/ceremonies/:id/edit"
           element={
-            admin || PREVIEW ? (
-              // بيانات الحفل بتوصل من صفحة الحفلات، وبدونها (فتح مباشر) نرجع للقائمة
-              location.state?.ceremony ? (
-                <AdminAddCeremony
-                  key={location.state.ceremony.id}
-                  ceremony={{
-                    id: location.state.ceremony.id,
-                    ...location.state.ceremony.form,
-                  }}
-                  adminName={admin?.username}
-                  onNavigate={(section) => navigate(`/admin/${section}`)}
-                  onCancel={() => navigate("/admin/ceremonies")}
-                  onSubmitSuccess={() => {
-                    // مؤقت: لما يجهز الباك إند، أرسل التعديلات (الوسيط) هناك قبل الرجوع
-                    navigate("/admin/ceremonies");
-                  }}
-                  onLogout={() => {
-                    setAdmin(null);
-                    navigate("/admin", { replace: true });
-                  }}
-                />
-              ) : (
-                <Navigate to="/admin/ceremonies" replace />
-              )
+            hasValidAdmin || PREVIEW ? (
+              <AdminEditCeremonyRoute
+                key={location.state?.eventItem?.id}
+                adminName={adminName}
+                onNavigate={(section) => navigate(`/admin/${section}`)}
+                onLogout={handleAdminLogout}
+              />
             ) : (
               <Navigate to="/admin" replace />
             )
@@ -475,16 +364,13 @@ function App() {
         <Route
           path="/admin/payments"
           element={
-            admin || PREVIEW ? (
+            hasValidAdmin || PREVIEW ? (
               <AdminPaymentRequests
-                adminName={admin?.username}
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
-                // onConfirmPayment و onRejectPayment: أرسل القرار للباك إند هون
-                onLogout={() => {
-                  setAdmin(null);
-                  navigate("/admin", { replace: true });
-                }}
+                onPendingChanged={refreshPendingPayments}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -496,16 +382,12 @@ function App() {
         <Route
           path="/admin/scanners"
           element={
-            admin || PREVIEW ? (
+            hasValidAdmin || PREVIEW ? (
               <AdminScannersSettings
-                adminName={admin?.username}
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
-                // onAddScanner, onToggleScannerFreeze, onChangeScannerPassword, onSaveSettings, onUploadQr: اربطها بالباك إند
-                onLogout={() => {
-                  setAdmin(null);
-                  navigate("/admin", { replace: true });
-                }}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -517,16 +399,12 @@ function App() {
         <Route
           path="/admin/actions"
           element={
-            admin || PREVIEW ? (
+            hasValidAdmin || PREVIEW ? (
               <AdminExceptions
-                adminName={admin?.username}
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
-                // onManualEntry, onCancelScan, onReturnToPending, onEditEmail: اربطها بالباك إند
-                onLogout={() => {
-                  setAdmin(null);
-                  navigate("/admin", { replace: true });
-                }}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -538,15 +416,12 @@ function App() {
         <Route
           path="/admin/volunteers"
           element={
-            admin || PREVIEW ? (
+            hasValidAdmin || PREVIEW ? (
               <AdminVolunteers
-                adminName={admin?.username}
+                adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}
-                onLogout={() => {
-                  setAdmin(null);
-                  navigate("/admin", { replace: true });
-                }}
+                onLogout={handleAdminLogout}
               />
             ) : (
               <Navigate to="/admin" replace />
@@ -554,27 +429,10 @@ function App() {
           }
         />
 
-        {/* أي مسار إدارة غير معرّف: مؤقتاً لحد ما يجهز */}
+        {/* أي مسار إدارة غير معرّف: ارجع للوحة التحكم */}
         <Route
           path="/admin/*"
-          element={
-            admin || PREVIEW ? (
-              <div
-                style={{ padding: 24, textAlign: "center", direction: "rtl" }}
-              >
-                هذه الصفحة قيد الإنشاء
-                <br />
-                <button
-                  type="button"
-                  onClick={() => navigate("/admin/dashboard")}
-                >
-                  العودة إلى لوحة التحكم
-                </button>
-              </div>
-            ) : (
-              <Navigate to="/admin" replace />
-            )
-          }
+          element={<Navigate to="/admin/dashboard" replace />}
         />
 
         {/* ===== الماسح: بتنفتح من الرابط /scanner فقط، وما في أي رابط إلها بصفحات الطلاب ===== */}
@@ -593,8 +451,6 @@ function App() {
             />
           }
         />
-
-        {/* ===== شاشة المسح ===== */}
         <Route
           path="/scanner/scan"
           element={
@@ -679,10 +535,7 @@ function App() {
         />
 
         {/* اختصار: /dashboard يودّي للوحة الإدارة */}
-        <Route
-          path="/dashboard"
-          element={<Navigate to="/admin/dashboard" replace />}
-        />
+        <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
