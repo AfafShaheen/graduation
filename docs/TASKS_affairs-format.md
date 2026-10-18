@@ -95,7 +95,7 @@
 | B11.3 | استخدامه للقراءة فقط في التعديل | ✅ | 87832ef | collegeNames في مسار التعديل |
 | B12.1 | `front/Dockerfile` ARG/ENV | ✅ | 2fe3dc2 | ARG/ENV VITE_SITE_URL قبل build |
 | B12.2 | وسائط build للواجهة + `.env.example` | ✅ | 2fe3dc2 | front.build.args + متغير |
-| B13.1 | تحديث `docs/FRONTEND_WIRING.md` | ⬜ | | |
+| B13.1 | تحديث `docs/FRONTEND_WIRING.md` | ✅ | 5324221 | توثيق توصيلات الجزء B (B0–B15) |
 | B14.1 | أداة تحليل التخصصات دفعة واحدة | ✅ | 6ee717f | parseMajorsBatch + resolveBatchGroups + اختبارات |
 | B14.2 | واجهة الإضافة الجماعية | ✅ | 6ee717f | MajorsManager batch UI |
 | B15.1 | `utils/topRank.js` | ✅ | 013e3cc | topRankLabel + TOP_STUDENT_TITLE (+ اختبار) |
