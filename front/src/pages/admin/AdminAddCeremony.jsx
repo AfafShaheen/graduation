@@ -3,15 +3,11 @@ import '../../style/AdminAddCeremony.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import { createAdminEvent, updateAdminEvent, uploadUniversityRecords } from './hooks/useAdminEvents.js';
 import { ApiError } from '../../api/admin.js';
-
-const FACULTY_OPTIONS = [
-  { key: 'civil', label: 'الهندسة المدنية' },
-  { key: 'mech', label: 'الهندسة الميكانيكية' },
-  { key: 'it', label: 'الهندسة المعلوماتية' },
-  { key: 'arch', label: 'الهندسة المعمارية' },
-  { key: 'science', label: 'العلوم' },
-  { key: 'arts', label: 'الآداب' },
-];
+import CollegeNamesField from '../../components/CollegeNamesField';
+import {
+  resolveCollegeNames,
+  selectedKeysFromCollegeNames,
+} from './facultyOptions.js';
 
 export default function AdminAddCeremony({
   adminName = 'مسؤول الاتحاد',
@@ -107,22 +103,12 @@ export default function AdminAddCeremony({
     URL.revokeObjectURL(url);
   };
 
-  const [faculties, setFaculties] = useState(() => {
-    const init = {
-      civil: false,
-      mech: false,
-      it: false,
-      arch: false,
-      science: false,
-      arts: false,
-    };
-    if (ceremony && Array.isArray(ceremony.faculties)) {
-      FACULTY_OPTIONS.forEach((f) => {
-        if (ceremony.faculties.includes(f.label)) init[f.key] = true;
-      });
-    }
-    return init;
-  });
+  const [faculties, setFaculties] = useState(() =>
+    selectedKeysFromCollegeNames(
+      ceremony?.colleges || ceremony?.collegeNames || ceremony?.faculties || [],
+    ),
+  );
+  const [customColleges, setCustomColleges] = useState([]);
 
   // إغلاق القائمة بزر Escape
   useEffect(() => {
@@ -133,6 +119,16 @@ export default function AdminAddCeremony({
 
   const handleFacultyToggle = (key) => {
     setFaculties((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleAddCustomCollege = (name) => {
+    const value = String(name || '').trim();
+    if (!value) return;
+    setCustomColleges((prev) => (prev.includes(value) ? prev : [...prev, value]));
+  };
+
+  const handleRemoveCustomCollege = (name) => {
+    setCustomColleges((prev) => prev.filter((item) => item !== name));
   };
 
   const [submitting, setSubmitting] = useState(false);
@@ -154,7 +150,7 @@ export default function AdminAddCeremony({
     setSubmitError('');
     setFieldErrors({});
 
-    if (!isEdit && !Object.values(faculties).some(Boolean)) {
+    if (!isEdit && resolveCollegeNames(faculties, customColleges).length === 0) {
       setSubmitError('اختر كلية واحدة على الأقل لهذا الحفل');
       return;
     }
@@ -183,7 +179,7 @@ export default function AdminAddCeremony({
         if (!registrationStarted) payload.is_3companions_enabled = enablePkg3;
         result = await updateAdminEvent(eventId, payload);
       } else {
-        const collegeNames = FACULTY_OPTIONS.filter((f) => faculties[f.key]).map((f) => f.label);
+        const collegeNames = resolveCollegeNames(faculties, customColleges);
         result = await createAdminEvent({
           ...base,
           is_3companions_enabled: enablePkg3,
@@ -444,27 +440,15 @@ export default function AdminAddCeremony({
                 </span>
               </div>
 
-              <div className="add-cer-chips-grid">
-                {FACULTY_OPTIONS.map((item) => (
-                  <label key={item.key} className="add-cer-chip">
-                    <input
-                      type="checkbox"
-                      checked={faculties[item.key]}
-                      onChange={() => handleFacultyToggle(item.key)}
-                      disabled={isEdit}
-                    />
-                    <div className="add-cer-chip-box">
-                      <span className="add-cer-symbol">
-                        {faculties[item.key] ? 'check_circle' : 'radio_button_unchecked'}
-                      </span>
-                      <span>{item.label}</span>
-                    </div>
-                  </label>
-                ))}
-              </div>
-              {errFor('college_names') && (
-                <p className="add-cer-file-error" role="alert">{errFor('college_names')}</p>
-              )}
+              <CollegeNamesField
+                selectedKeys={faculties}
+                customNames={customColleges}
+                readOnlyNames={isEdit ? ceremony?.collegeNames || [] : null}
+                onToggle={handleFacultyToggle}
+                onAddCustom={handleAddCustomCollege}
+                onRemoveCustom={handleRemoveCustomCollege}
+                error={errFor('college_names') || errFor('colleges')}
+              />
             </div>
 
             <div className="add-cer-divider"></div>

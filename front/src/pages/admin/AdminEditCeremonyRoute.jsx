@@ -5,15 +5,6 @@ import MajorsManager from './MajorsManager';
 import { getAdminEvent } from './hooks/useAdminEvents.js';
 import { ApiError } from '../../api/admin.js';
 
-const FACULTY_OPTIONS = [
-  { key: 'civil', label: 'الهندسة المدنية' },
-  { key: 'mech', label: 'الهندسة الميكانيكية' },
-  { key: 'it', label: 'الهندسة المعلوماتية' },
-  { key: 'arch', label: 'الهندسة المعمارية' },
-  { key: 'science', label: 'العلوم' },
-  { key: 'arts', label: 'الآداب' },
-];
-
 const toDamascusDate = (iso) => {
   if (!iso) return '';
   const d = new Date(iso);
@@ -97,8 +88,8 @@ export default function AdminEditCeremonyRoute({
     pricePkg3: fmtPrice(event.price_3_companions),
     enablePkg3: event.is_3companions_enabled ?? true,
     seatPrefix: event.seat_prefix || '',
-    faculties: Array.isArray(event.colleges)
-      ? FACULTY_OPTIONS.filter((f) => event.colleges.some((c) => c.name === f.label)).map((f) => f.label)
+    collegeNames: Array.isArray(event.colleges)
+      ? event.colleges.map((c) => c.name).filter(Boolean)
       : [],
   };
 
