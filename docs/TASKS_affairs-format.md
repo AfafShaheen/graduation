@@ -1,6 +1,6 @@
 # قائمة مهام تحديث صيغة ملف شؤون الطلبة
 
-آخر تحديث: اكتمال B0–B10 في الجزء B (الواجهة)، والانتقال إلى B11.
+آخر تحديث: اكتمال B0–B11 في الجزء B (الواجهة)، والانتقال إلى B12.
 
 صيغة ملف شؤون الطلبة الثابتة (بالترتيب): الاسم، الكنية، اسم الأب، اسم الأم، الجنس، الكلية، التخصص، الرقم الجامعي، حالة الطالب من الأوائل، المعدل، رقم التواصل.
 
@@ -90,9 +90,9 @@
 | B10.3 | وسوم index.html + Vite transformIndexHtml | ✅ | f2e831f | حقن og/canonical/robots |
 | B10.4 | `usePageMeta` | ✅ | f2e831f | index فقط للمسار / |
 | B10.5 | nginx noindex + docs/SEO.md | ✅ | f2e831f | X-Robots-Tag للمسارات الخاصة |
-| B11.1 | مكوّن CollegeNamesField | ⬜ | | |
-| B11.2 | `src/pages/admin/facultyOptions.js` | ⬜ | | |
-| B11.3 | استخدامه للقراءة فقط في التعديل | ⬜ | | |
+| B11.1 | مكوّن CollegeNamesField | ✅ | 87832ef | رقائق معروفة + إضافة أسماء حرّة |
+| B11.2 | `src/pages/admin/facultyOptions.js` | ✅ | 87832ef | FACULTY_OPTIONS + أدوات |
+| B11.3 | استخدامه للقراءة فقط في التعديل | ✅ | 87832ef | collegeNames في مسار التعديل |
 | B12.1 | `front/Dockerfile` ARG/ENV | ⬜ | | |
 | B12.2 | وسائط build للواجهة + `.env.example` | ⬜ | | |
 | B13.1 | تحديث `docs/FRONTEND_WIRING.md` | ⬜ | | |
