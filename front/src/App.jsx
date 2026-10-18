@@ -46,6 +46,24 @@ import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduat
 */
 const PREVIEW = true;
 
+/* "لا تعرض لي دليل التذكرة مرة أخرى": بنحفظها بـ localStorage لتضل حتى بعد إغلاق المتصفح */
+/* مؤقت لحد ما يجهز الباك إند، بعدها الأفضل تنحفظ على حساب الخريج */
+const GUIDE_SKIP_KEY = "grad.skipGuide";
+function readSkipGuide() {
+  try {
+    return localStorage.getItem(GUIDE_SKIP_KEY) === "1";
+  } catch (err) {
+    return false;
+  }
+}
+function saveSkipGuide() {
+  try {
+    localStorage.setItem(GUIDE_SKIP_KEY, "1");
+  } catch (err) {
+    /* التخزين غير متاح: نكمل بدونه */
+  }
+}
+
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -147,7 +165,6 @@ function App() {
             hasValidGraduate || PREVIEW ? (
               <GraduateQuestions
                 onDone={(answers) => {
-                  setSurvey(answers); // { wantsResponsibility, hasExperience }
                   navigate("/guide", { replace: true }); // الدليل أولاً، ومنه لاختيار التذكرة
                 }}
               />
@@ -440,12 +457,7 @@ function App() {
           path="/scanner"
           element={
             <ScannerLogin
-              errorMessage={scannerError}
-              onLoginSuccess={(credentials) => {
-                // مؤقت: لما يجهز الباك إند، تحقق من البيانات هناك، وإذا فشل أو كان الحساب مجمّداً:
-                // setScannerError("بيانات الدخول غير صحيحة أو الحساب مجمّد")
-                setScannerError("");
-                setScanner({ username: credentials.username });
+              onLoginSuccess={() => {
                 navigate("/scanner/scan");
               }}
             />
@@ -454,10 +466,10 @@ function App() {
         <Route
           path="/scanner/scan"
           element={
-            scanner || PREVIEW ? (
+            getScannerToken() && !isScannerTokenExpired() ? (
               <ScannerCamera
                 onLogout={() => {
-                  setScanner(null);
+                  clearScannerSession();
                   navigate("/scanner", { replace: true });
                 }}
               />
@@ -469,7 +481,7 @@ function App() {
         <Route
           path="/scanner/result"
           element={
-            scanner || PREVIEW ? (
+            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
               <ScanSuccessResult onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
@@ -481,7 +493,7 @@ function App() {
         <Route
           path="/scanner/error"
           element={
-            scanner || PREVIEW ? (
+            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
               <ScanErrorResult
                 errorType={
                   new URLSearchParams(location.search).get("type") ||
@@ -500,7 +512,7 @@ function App() {
         <Route
           path="/scanner/wrong-ceremony"
           element={
-            scanner || PREVIEW ? (
+            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
               <WrongCeremoniesWarning onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
@@ -512,7 +524,7 @@ function App() {
         <Route
           path="/scanner/*"
           element={
-            scanner || PREVIEW ? (
+            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
               <div
                 style={{ padding: 24, textAlign: "center", direction: "rtl" }}
               >
@@ -521,7 +533,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setScanner(null);
+                    clearScannerSession();
                     navigate("/scanner", { replace: true });
                   }}
                 >
