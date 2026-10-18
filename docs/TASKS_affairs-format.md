@@ -100,8 +100,8 @@
 | B14.2 | واجهة الإضافة الجماعية | ✅ | 6ee717f | MajorsManager batch UI |
 | B15.1 | `utils/topRank.js` | ✅ | 013e3cc | topRankLabel + TOP_STUDENT_TITLE (+ اختبار) |
 | B15.2 | شارة الأوائل في MyTicket | ✅ | 013e3cc | شارة فوق رمز QR؛ دعم الخلفية 3f75191 |
-| B16.1 | الفحوص النهائية | ⬜ | | |
-| B16.2 | تقرير الجزء B | ⬜ | | |
+| B16.1 | الفحوص النهائية | ✅ | — | خلفية 324/0، الواجهة 33/0، بناء + لينت ناجح |
+| B16.2 | تقرير الجزء B | ✅ | — | `docs/REPORT_PART_B_affairs-format.md` |
 
 ## بوابة الدفع لكل جزء
 (a) نجاح اختبارات الجزء، (b) كل مهمة ✅/⛔ بسبب، (c) نجاح `docker compose build`، (d) بدء خدمة back وترحيلات + `/health` = 200، (e) `git status` نظيف؛ ثم `git pull --rebase origin dev` وإعادة الاختبار عند تغيّر شيء، ثم `git push origin dev`.
