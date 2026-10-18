@@ -50,6 +50,8 @@ function seoPlugin() {
 
 // https://vite.dev/config/
 export default defineConfig({
+  // cPanel sub-path deploy: VITE_BASE_PATH=/graduation/ (default '/' = unchanged)
+  base: globalThis.process?.env?.VITE_BASE_PATH || '/',
   plugins: [react(), seoPlugin()],
   server: {
     proxy: {

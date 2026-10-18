@@ -9,30 +9,43 @@ export class ApiError extends Error {
   }
 }
 
+// Sub-path deploy (cPanel): with VITE_BASE_PATH=/graduation/ the app lives under
+// /graduation/, so absolute paths must be prefixed. Default base '/' keeps the
+// root-path behaviour unchanged.
+export const appPath = (p) => import.meta.env.BASE_URL.replace(/\/$/, '') + p;
+
+function currentAppPath() {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  if (base && window.location.pathname.startsWith(base)) {
+    return window.location.pathname.slice(base.length) || "/";
+  }
+  return window.location.pathname;
+}
+
 async function proactiveCheck(path, token) {
   if (!token) return;
   const { isScannerTokenExpired, clearScannerSession, isAdminTokenExpired, clearAdminSession, isGraduateTokenExpired, clearGraduateSession } = await import("./session.js");
   if (path.startsWith("/api/scanner") && path !== "/api/scanner/auth/login") {
     if (isScannerTokenExpired()) {
       clearScannerSession();
-      if (window.location.pathname !== "/scanner") {
-        window.location.href = "/scanner";
+      if (currentAppPath() !== "/scanner") {
+        window.location.href = appPath("/scanner");
       }
       throw new ApiError(401, "انتهت جلسة الماسح، يرجى إعادة تسجيل الدخول.");
     }
   } else if (path.startsWith("/api/admin")) {
     if (path !== "/api/admin/auth/login" && isAdminTokenExpired()) {
       clearAdminSession();
-      if (!window.location.pathname.startsWith("/admin")) {
-        window.location.href = "/admin";
+      if (!currentAppPath().startsWith("/admin")) {
+        window.location.href = appPath("/admin");
       }
       throw new ApiError(401, "انتهت جلسة الإدارة، يرجى إعادة تسجيل الدخول.");
     }
   } else if (path.startsWith("/api/graduates") || path.startsWith("/api/auth/graduate")) {
     if (isGraduateTokenExpired()) {
       clearGraduateSession();
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      if (currentAppPath() !== "/login") {
+        window.location.href = appPath("/login");
       }
       throw new ApiError(401, "انتهت الجلسة، يرجى تسجيل الدخول.");
     }
@@ -110,18 +123,18 @@ export async function request(path, { method = "GET", body = null, token = null 
       const { clearGraduateSession, clearScannerSession, clearAdminSession } = await import("./session.js");
       if (path.startsWith("/api/scanner")) {
         clearScannerSession();
-        if (window.location.pathname !== "/scanner") {
-          window.location.href = "/scanner";
+        if (currentAppPath() !== "/scanner") {
+          window.location.href = appPath("/scanner");
         }
       } else if (path.startsWith("/api/admin")) {
         clearAdminSession();
-        if (!window.location.pathname.startsWith("/admin")) {
-          window.location.href = "/admin";
+        if (!currentAppPath().startsWith("/admin")) {
+          window.location.href = appPath("/admin");
         }
       } else {
         clearGraduateSession();
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
+        if (currentAppPath() !== "/login") {
+          window.location.href = appPath("/login");
         }
       }
     }
@@ -168,18 +181,18 @@ export async function requestBlob(path, { token } = {}) {
       const { clearGraduateSession, clearScannerSession, clearAdminSession } = await import("./session.js");
       if (path.startsWith("/api/scanner")) {
         clearScannerSession();
-        if (window.location.pathname !== "/scanner") {
-          window.location.href = "/scanner";
+        if (currentAppPath() !== "/scanner") {
+          window.location.href = appPath("/scanner");
         }
       } else if (path.startsWith("/api/admin")) {
         clearAdminSession();
-        if (!window.location.pathname.startsWith("/admin")) {
-          window.location.href = "/admin";
+        if (!currentAppPath().startsWith("/admin")) {
+          window.location.href = appPath("/admin");
         }
       } else {
         clearGraduateSession();
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
+        if (currentAppPath() !== "/login") {
+          window.location.href = appPath("/login");
         }
       }
     }

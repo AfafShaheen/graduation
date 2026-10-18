@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import "../../style/GraduationForm.css";
 import universityLogo from "../../assets/homs-university-white.png";
 import unionLogo from "../../assets/only-logo.png";
@@ -397,8 +398,8 @@ export default function GraduationFormStep2({
         <div style={{ textAlign: "center", margin: "16px 0" }}>
           <p style={{ fontSize: "13px", color: "#725b51", margin: 0 }}>
             هل لديك حساب مسبقاً؟{" "}
-            <a
-              href="/login"
+            <Link
+              to="/login"
               className="login-link"
               onClick={(e) => {
                 if (onNavigateToLogin) {
@@ -408,7 +409,7 @@ export default function GraduationFormStep2({
               }}
             >
               سجّل دخولك &lsaquo;
-            </a>
+             </Link>
           </p>
         </div>
 
