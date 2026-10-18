@@ -5,6 +5,7 @@ import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { getMyProfile } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
+import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
 
 const formatEventDate = (value) => {
   if (!value) return '';
@@ -92,6 +93,7 @@ export default function MyTicket() {
   const eventTitle = event?.name || 'حفل تخرج جامعة حمص';
   const eventDateText = formatEventDate(event?.event_date);
   const eventTimeText = formatEventTime(event?.event_time);
+  const topRank = topRankLabel(data?.top_rank);
 
   return (
     <div className="tk-app-container">
@@ -176,6 +178,33 @@ export default function MyTicket() {
                     <span className="tk-meta-label">وقت الحفل</span>
                     <span className="tk-meta-value">{eventTimeText || '—'}</span>
                   </div>
+                </div>
+              )}
+
+              {topRank && (
+                <div
+                  role="status"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    margin: '0 auto 12px',
+                    padding: '8px 14px',
+                    borderRadius: '999px',
+                    background: '#fff4e5',
+                    border: '1px solid #ffb598',
+                    color: '#8a4b1f',
+                    fontWeight: 600,
+                    width: 'fit-content',
+                  }}
+                >
+                  <span className="tk-symbol" style={{ fontSize: '18px' }}>
+                    workspace_premium
+                  </span>
+                  <span>
+                    {TOP_STUDENT_TITLE} — {topRank}
+                  </span>
                 </div>
               )}
 
