@@ -28,6 +28,9 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+from app.models import all_models  # noqa: F401  (registers every model, including MajorModel)
+from sqlalchemy.orm import configure_mappers; configure_mappers()
+
 app.include_router(graduates.router)
 app.include_router(auth.router)
 app.include_router(admin_graduates.router)
