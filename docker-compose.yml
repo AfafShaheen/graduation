@@ -70,6 +70,8 @@ services:
     build:
       context: ./front
       dockerfile: Dockerfile
+      args:
+        VITE_SITE_URL: ${VITE_SITE_URL:-}
     container_name: graduation_front
     ports:
       - "5173:80"

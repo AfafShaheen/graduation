@@ -10,6 +10,11 @@ RUN npm install
 
 COPY . .
 
+# وكيل بناء SEO: يُحقن عنوان الموقع في index.html وملفات sitemap/robots (B10/B12).
+# قابل للضبط وقت البناء: docker compose build --build-arg VITE_SITE_URL=https://example.com
+ARG VITE_SITE_URL=""
+ENV VITE_SITE_URL=$VITE_SITE_URL
+
 RUN npm run build
 
 # --- Stage 2: Production ---
