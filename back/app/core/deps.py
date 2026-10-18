@@ -1,3 +1,6 @@
+import logging
+import os
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +12,27 @@ from app.core.redis import redis_client
 from app.core import messages
 from app.core.security import secret_key, ALGORITHM
 from jose import jwt, JWTError
+
+logger = logging.getLogger(__name__)
+
+
+def _auth_redis_fail_open() -> bool:
+    return os.getenv("AUTH_REDIS_FAIL_OPEN", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+async def _blacklist_lookup(jti: str):
+    try:
+        return await redis_client.get(f"token_blacklist:{jti}")
+    except Exception:
+        if not _auth_redis_fail_open():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=messages.SERVICE_UNAVAILABLE,
+            )
+        # Fail open: never log the full token, the jti alone is fine.
+        logger.warning("auth blacklist lookup failed for jti %s (fail-open)", jti)
+        return None
+
 
 security = HTTPBearer()
 
@@ -36,14 +60,7 @@ async def get_current_admin(
             )
 
         if jti:
-            try:
-                blacklisted = await redis_client.get(f"token_blacklist:{jti}")
-            except Exception:
-                # Fail closed: if we cannot verify the token status, deny.
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=messages.SERVICE_UNAVAILABLE,
-                )
+            blacklisted = await _blacklist_lookup(jti)
             if blacklisted:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -90,14 +107,7 @@ async def get_current_scanner(
             )
 
         if jti:
-            try:
-                blacklisted = await redis_client.get(f"token_blacklist:{jti}")
-            except Exception:
-                # Fail closed: if we cannot verify the token status, deny.
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=messages.SERVICE_UNAVAILABLE,
-                )
+            blacklisted = await _blacklist_lookup(jti)
             if blacklisted:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -152,14 +162,7 @@ async def get_current_graduate(
             )
 
         if jti:
-            try:
-                blacklisted = await redis_client.get(f"token_blacklist:{jti}")
-            except Exception:
-                # Fail closed: if we cannot verify the token status, deny.
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=messages.SERVICE_UNAVAILABLE,
-                )
+            blacklisted = await _blacklist_lookup(jti)
             if blacklisted:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,

@@ -6,9 +6,18 @@ from functools import wraps
 
 load_dotenv()
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+# Empty/unset REDIS_URL: point at a closed port so every call fails fast
+# (callers with fail-open paths then skip the cache). Socket timeouts keep a
+# hung Redis from hanging requests.
+REDIS_URL = os.getenv("REDIS_URL") or "redis://127.0.0.1:9/9"
 
-redis_client = redis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+redis_client = redis.from_url(
+    REDIS_URL,
+    encoding="utf-8",
+    decode_responses=True,
+    socket_connect_timeout=2,
+    socket_timeout=2,
+)
 
 async def get_redis():
     return redis_client

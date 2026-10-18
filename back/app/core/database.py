@@ -28,8 +28,8 @@ def _env_flag(name: str, default: bool = False) -> bool:
 
 engine = create_async_engine(
     DATABASE_URL,
-    pool_size=20,
-    max_overflow=10,
+    pool_size=int(os.getenv("DB_POOL_SIZE", "20")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
     echo=_env_flag("SQL_ECHO", False),
     pool_pre_ping=True
 )
