@@ -30,7 +30,6 @@ export default function AdminAddCeremony({
   const [pricePkg2, setPricePkg2] = useState(ceremony?.pricePkg2 || '');
   const [pricePkg3, setPricePkg3] = useState(ceremony?.pricePkg3 || '');
   const [enablePkg3, setEnablePkg3] = useState(ceremony?.enablePkg3 ?? true);
-  const [seatPrefix, setSeatPrefix] = useState(ceremony?.seatPrefix || '');
   const [fieldErrors, setFieldErrors] = useState({});
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
 
@@ -168,7 +167,7 @@ export default function AdminAddCeremony({
       name: ceremonyName,
       event_date: ceremonyDate ? ceremonyDate.slice(0, 10) : ceremonyDate,
       event_time: eventTime,
-      seat_prefix: seatPrefix.trim() || null,
+      seat_prefix: null,
       registration_start: startDate ? `${startDate}T00:00:00+03:00` : startDate,
       registration_end: endDate ? `${endDate}T23:59:59+03:00` : endDate,
       whatsapp_group_link: whatsappLink,
@@ -409,33 +408,6 @@ export default function AdminAddCeremony({
                   )}
                 </div>
               </div>
-            </div>
-
-            <div className="add-cer-divider"></div>
-
-            {/* بادئة أرقام المقاعد */}
-            <div className="add-cer-field-group">
-              <label className="add-cer-label" htmlFor="seat-prefix">
-                بادئة أرقام المقاعد (اختياري)
-              </label>
-              <div className="add-cer-input-wrap">
-                <input
-                  id="seat-prefix"
-                  type="text"
-                  maxLength={3}
-                  className="add-cer-input with-icon-left"
-                  value={seatPrefix}
-                  onChange={(e) => setSeatPrefix(e.target.value)}
-                  placeholder="مثال: E أو أ"
-                />
-                <span className="add-cer-symbol add-cer-input-icon left">event_seat</span>
-              </div>
-              <p className="add-cer-hint">
-                من 1 إلى 3 محارف تُسبَق بها أرقام مقاعد الخريجين والمرافقين على التذاكر. لا يمكن تغييرها بعد تخصيص أي مقعد.
-              </p>
-              {errFor('seat_prefix') && (
-                <p className="add-cer-file-error" role="alert">{errFor('seat_prefix')}</p>
-              )}
             </div>
 
             <div className="add-cer-divider"></div>
