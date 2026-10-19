@@ -140,14 +140,28 @@ def split_full_name(full_name: str | None) -> tuple[str, str]:
 
 
 def _cell_text(row: Dict[str, Any], key: str) -> str:
-    """Return a clean string cell from a parsed row (empty for NaN/None)."""
+    """Return a clean string cell from a parsed row (empty for NaN/None).
+
+    Excel parses numeric cells as floats, so an integer university id can
+    arrive as ``12345678.0`` and would never match typed input. Integral
+    values and ``"<digits>.0"`` strings are rendered without the trailing
+    decimal part.
+    """
     if key not in row:
         return ""
     value = row.get(key)
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return ""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    if isinstance(value, int) and not isinstance(value, bool):
+        return str(value)
     text = str(value).strip()
-    return "" if text.lower() == "nan" else text
+    if text.lower() == "nan":
+        return ""
+    if text.endswith(".0") and text[:-2].isdigit():
+        return text[:-2]
+    return text
 
 
 async def invalidate_uni_records_cache(event_id: int) -> None:

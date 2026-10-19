@@ -115,3 +115,33 @@ async def test_upload_normalization_matches_hamza_and_taamarbuta(client, db, mak
     assert resp.json()["errors"] == []
     rec = (await db.execute(select(UniversityRecordModel).where(UniversityRecordModel.university_id == "300005"))).scalar_one()
     assert rec.major_id == major.id
+
+
+async def test_upload_numeric_university_id_cell_drops_trailing_decimal(
+    client, db, make_event, make_college, make_admin
+):
+    """Excel numeric ids must not be stored as 12345678.0 (they would never match typed input)."""
+    event = await make_event()
+    await make_college(event.id, name="كلية العلوم")
+    token = await _admin_token(client, make_admin)
+
+    file_content = _make_xlsx(
+        [
+            (310001, "سامر", "أ", "ب", "كلية العلوم", "ذكر", 85),
+            (310002.0, "ليلى", "ج", "د", "كلية العلوم", "أنثى", 78.5),
+        ],
+        headers=["university_id", "full_name", "father_name", "mother_name", "college", "gender", "gpa"],
+    )
+    resp = await client.post(
+        f"/api/admin/events/{event.id}/university-records",
+        files={"file": ("rec.xlsx", file_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["errors"] == []
+    assert resp.json()["added"] == 2
+
+    ids = (
+        await db.execute(select(UniversityRecordModel.university_id).order_by(UniversityRecordModel.university_id))
+    ).scalars().all()
+    assert list(ids) == ["310001", "310002"]
