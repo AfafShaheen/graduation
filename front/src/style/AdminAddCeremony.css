@@ -255,6 +255,33 @@
   background-color: #ca4b00;
 }
 
+.add-cer-header-tags {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.add-cer-draft-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background-color: transparent;
+  border: 1px solid rgba(202, 75, 0, 0.35);
+  color: #ca4b00;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-cer-draft-clear:hover {
+  background-color: rgba(202, 75, 0, 0.08);
+}
+
 .add-cer-form {
   padding: 20px 16px;
   display: flex;

@@ -3,11 +3,34 @@ import '../../style/AdminAddCeremony.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import { createAdminEvent, updateAdminEvent, uploadUniversityRecords } from './hooks/useAdminEvents.js';
 import { ApiError } from '../../api/admin.js';
+import useFormDraft from '../../hooks/useFormDraft';
 import CollegeNamesField from '../../components/CollegeNamesField';
 import {
   resolveCollegeNames,
   selectedKeysFromCollegeNames,
 } from './facultyOptions.js';
+
+/* مفاتيح مسودة نموذج الحفل الجديد (localStorage) */
+const CEREMONY_DRAFT_KEYS = [
+  'name',
+  'date',
+  'start',
+  'end',
+  'whatsapp',
+  'price2',
+  'price3',
+  'pkg3',
+  'faculties',
+  'customColleges',
+].map((k) => `adm.cer.${k}`);
+
+function clearCeremonyDrafts() {
+  try {
+    CEREMONY_DRAFT_KEYS.forEach((k) => window.localStorage.removeItem(k));
+  } catch {
+    /* التخزين غير متاح، نتجاهل */
+  }
+}
 
 export default function AdminAddCeremony({
   adminName = 'مسؤول الاتحاد',
@@ -22,14 +45,49 @@ export default function AdminAddCeremony({
   children,
 }) {
   const isEdit = !!ceremony;
-  const [ceremonyName, setCeremonyName] = useState(ceremony?.ceremonyName || '');
-  const [ceremonyDate, setCeremonyDate] = useState(ceremony?.ceremonyDate || '');
-  const [startDate, setStartDate] = useState(ceremony?.startDate || '');
-  const [endDate, setEndDate] = useState(ceremony?.endDate || '');
-  const [whatsappLink, setWhatsappLink] = useState(ceremony?.whatsappLink || '');
-  const [pricePkg2, setPricePkg2] = useState(ceremony?.pricePkg2 || '');
-  const [pricePkg3, setPricePkg3] = useState(ceremony?.pricePkg3 || '');
-  const [enablePkg3, setEnablePkg3] = useState(ceremony?.enablePkg3 ?? true);
+  // الحفل الجديد يحفظ مسودة في localStorage؛ التعديل لا يحفظ مسودة.
+  const draftKey = (name) => (isEdit ? null : `adm.cer.${name}`);
+
+  const [ceremonyName, setCeremonyName] = useFormDraft(
+    draftKey('name'),
+    ceremony?.ceremonyName || '',
+    { storage: 'local' },
+  );
+  const [ceremonyDate, setCeremonyDate] = useFormDraft(
+    draftKey('date'),
+    ceremony?.ceremonyDate || '',
+    { storage: 'local' },
+  );
+  const [startDate, setStartDate] = useFormDraft(
+    draftKey('start'),
+    ceremony?.startDate || '',
+    { storage: 'local' },
+  );
+  const [endDate, setEndDate] = useFormDraft(
+    draftKey('end'),
+    ceremony?.endDate || '',
+    { storage: 'local' },
+  );
+  const [whatsappLink, setWhatsappLink] = useFormDraft(
+    draftKey('whatsapp'),
+    ceremony?.whatsappLink || '',
+    { storage: 'local' },
+  );
+  const [pricePkg2, setPricePkg2] = useFormDraft(
+    draftKey('price2'),
+    ceremony?.pricePkg2 || '',
+    { storage: 'local' },
+  );
+  const [pricePkg3, setPricePkg3] = useFormDraft(
+    draftKey('price3'),
+    ceremony?.pricePkg3 || '',
+    { storage: 'local' },
+  );
+  const [enablePkg3, setEnablePkg3] = useFormDraft(
+    draftKey('pkg3'),
+    ceremony?.enablePkg3 ?? true,
+    { storage: 'local' },
+  );
   const [fieldErrors, setFieldErrors] = useState({});
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
 
@@ -107,12 +165,16 @@ export default function AdminAddCeremony({
     URL.revokeObjectURL(url);
   };
 
-  const [faculties, setFaculties] = useState(() =>
+  const [faculties, setFaculties] = useFormDraft(
+    draftKey('faculties'),
     selectedKeysFromCollegeNames(
       ceremony?.colleges || ceremony?.collegeNames || ceremony?.faculties || [],
     ),
+    { storage: 'local' },
   );
-  const [customColleges, setCustomColleges] = useState([]);
+  const [customColleges, setCustomColleges] = useFormDraft(draftKey('customColleges'), [], {
+    storage: 'local',
+  });
 
   // إغلاق القائمة بزر Escape
   useEffect(() => {
@@ -133,6 +195,25 @@ export default function AdminAddCeremony({
 
   const handleRemoveCustomCollege = (name) => {
     setCustomColleges((prev) => prev.filter((item) => item !== name));
+  };
+
+  // مسح المسودة المحفوظة والرجوع إلى نموذج فارغ (لإنشاء حفل جديد فقط)
+  const handleClearDraft = () => {
+    if (!window.confirm('هل تريد مسح المسودة الحالية والبدء بحفل جديد فارغ؟')) return;
+    clearCeremonyDrafts();
+    setCeremonyName('');
+    setCeremonyDate('');
+    setStartDate('');
+    setEndDate('');
+    setWhatsappLink('');
+    setPricePkg2('');
+    setPricePkg3('');
+    setEnablePkg3(true);
+    setFaculties(selectedKeysFromCollegeNames([]));
+    setCustomColleges([]);
+    removeFile();
+    setFieldErrors({});
+    setSubmitError('');
   };
 
   const [submitting, setSubmitting] = useState(false);
@@ -209,6 +290,7 @@ export default function AdminAddCeremony({
           return;
         }
       }
+      clearCeremonyDrafts();
       if (onSubmitSuccess) {
         onSubmitSuccess(result);
       } else {
@@ -303,10 +385,19 @@ export default function AdminAddCeremony({
               </div>
             </div>
 
-            <span className="add-cer-tag-pill">
-              <span className="add-cer-tag-dot"></span>
-              <span>مسودة غير منشورة</span>
-            </span>
+            <div className="add-cer-header-tags">
+              <span className="add-cer-tag-pill">
+                <span className="add-cer-tag-dot"></span>
+                <span>مسودة غير منشورة</span>
+              </span>
+
+              {!isEdit && (
+                <button type="button" className="add-cer-draft-clear" onClick={handleClearDraft}>
+                  <span className="add-cer-symbol" style={{ fontSize: '16px' }}>delete_sweep</span>
+                  <span>مسح المسودة</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <form className="add-cer-form" onSubmit={handleSubmit}>
