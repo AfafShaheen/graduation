@@ -7,8 +7,6 @@ import { useAdminVolunteers } from './hooks/useAdminVolunteers.js';
 import { fetchRecentPayments } from './hooks/useAdminPayments.js';
 import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
 
-const STATUS_LABELS = { confirmed: 'مؤكد', review: 'قيد التدقيق', rejected: 'مرفوض' };
-
 const PAY_STATUS_UI = {
   CONFIRMED: 'confirmed',
   PROCESSING: 'review',
@@ -140,8 +138,6 @@ export default function AdminDashboard({
       }))
       .filter((r) => !q || r.name.includes(q) || String(r.uniId).includes(q));
   }, [payments, searchQuery]);
-
-  const recentReviews = reviewRows.slice(0, 4);
 
   const totalPages = Math.max(1, Math.ceil(reviewRows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -578,42 +574,6 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          <div className="adm-verif-col adm-bento-card">
-            <div className="adm-bento-head bordered">
-              <div>
-                <h4 className="adm-bento-title small">آخر تدقيقات الدفع</h4>
-                <p className="adm-bento-sub small">عمليات التحقق المسجلة حديثاً من الاتحاد الوطني</p>
-              </div>
-              <span className="adm-symbol" style={{ color: '#ca4b00' }}>
-                history
-              </span>
-            </div>
-
-            <div className="adm-verif-list">
-              {recentReviews.length === 0 && (
-                <p className="adm-bento-sub small">
-                  {payLoading ? 'جارٍ التحميل...' : payError || 'لا توجد عمليات حديثة.'}
-                </p>
-              )}
-              {recentReviews.map((item) => (
-                <div className="adm-verif-item" key={item.ticketId}>
-                  <div>
-                    <span className="adm-verif-name">{item.name}</span>
-                    <span className="adm-verif-desc">{item.college} • {item.ticketType}</span>
-                  </div>
-                  <span className={`adm-chip ${item.status}`}>{STATUS_LABELS[item.status]}</span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="adm-btn-primary outline full"
-              onClick={() => onNavigate && onNavigate('payments')}
-            >
-              سجل التدقيقات الكامل
-            </button>
-          </div>
         </section>
 
         {/* سجل تدقيق الطلبة */}
