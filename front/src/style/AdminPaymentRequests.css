@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    طلبات الدفع (.pay-req-*): بنفس هوية لوحة التحكم (.adm-*) + ريسبونسف كامل
    الشريط الجانبي ثابت على الشاشات الكبيرة، وقائمة منزلقة على الصغيرة
    ========================================================================== */
@@ -725,7 +725,7 @@
   .pay-req-menu-btn { display: none; }
 
   .pay-req-topbar {
-    margin-right: 288px;
+    margin-right: var(--adm-sb-width, 288px);
     height: 80px;
     padding: 0 32px;
     flex-wrap: nowrap;
@@ -734,7 +734,7 @@
   .pay-req-help-btn { padding: 8px 20px; }
   .pay-req-help-text { display: inline; }
 
-  .pay-req-main-canvas { margin-right: 288px; padding: 32px; gap: 28px; }
+  .pay-req-main-canvas { margin-right: var(--adm-sb-width, 288px); padding: 32px; gap: 28px; }
   .pay-req-hero-titles h3 { font-size: 28px; line-height: 38px; }
   .pay-req-stats-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; }
 
@@ -770,7 +770,7 @@
 }
 
 @media (min-width: 1440px) {
-  .pay-req-main-canvas { margin-left: auto; margin-right: 288px; }
+  .pay-req-main-canvas { margin-left: auto; margin-right: var(--adm-sb-width, 288px); }
 }
 /* ===== نافذة رفض طلب الدفع ===== */
 .pay-req-modal-overlay {

@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    صفحة الحفلات (.cer-*): بنفس هوية لوحة التحكم (.adm-*) + ريسبونسف كامل
    الشريط الجانبي ثابت على الشاشات الكبيرة، وقائمة منزلقة على الصغيرة
    ========================================================================== */
@@ -647,7 +647,7 @@
   .cer-menu-btn { display: none; }
 
   .cer-topbar {
-    margin-right: 288px;
+    margin-right: var(--adm-sb-width, 288px);
     height: 80px;
     padding: 0 32px;
     flex-wrap: nowrap;
@@ -657,7 +657,7 @@
   .cer-help-text { display: inline; }
   .cer-profile-box { display: flex; }
 
-  .cer-main-canvas { margin-right: 288px; padding: 32px; gap: 28px; }
+  .cer-main-canvas { margin-right: var(--adm-sb-width, 288px); padding: 32px; gap: 28px; }
 
   .cer-hero-row { flex-direction: row; align-items: center; justify-content: space-between; }
   .cer-hero-titles h3 { font-size: 28px; line-height: 38px; }
@@ -689,7 +689,7 @@
 }
 
 @media (min-width: 1440px) {
-  .cer-main-canvas { margin-left: auto; margin-right: 288px; }
+  .cer-main-canvas { margin-left: auto; margin-right: var(--adm-sb-width, 288px); }
 }
 
 /* زر حذف الحفل */

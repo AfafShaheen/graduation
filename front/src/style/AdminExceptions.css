@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    الإجراءات الاستثنائية (.exc-*): بنفس هوية لوحة التحكم (.adm-*) + ريسبونسف كامل
    الشريط الجانبي ثابت على الشاشات الكبيرة، وقائمة منزلقة على الصغيرة
    ========================================================================== */
@@ -867,7 +867,7 @@
   .exc-menu-btn { display: none; }
 
   .exc-topbar {
-    margin-right: 288px;
+    margin-right: var(--adm-sb-width, 288px);
     height: 80px;
     padding: 0 32px;
     flex-wrap: nowrap;
@@ -877,7 +877,7 @@
   .exc-help-btn { padding: 8px 20px; }
   .exc-help-text { display: inline; }
 
-  .exc-main-canvas { margin-right: 288px; padding: 32px; gap: 28px; }
+  .exc-main-canvas { margin-right: var(--adm-sb-width, 288px); padding: 32px; gap: 28px; }
   .exc-hero-titles h3 { font-size: 28px; line-height: 38px; }
   .exc-info-grid { grid-template-columns: repeat(4, 1fr); }
   .exc-actions-grid { grid-template-columns: repeat(4, 1fr); }
@@ -907,5 +907,5 @@
 }
 
 @media (min-width: 1440px) {
-  .exc-main-canvas { margin-left: auto; margin-right: 288px; }
+  .exc-main-canvas { margin-left: auto; margin-right: var(--adm-sb-width, 288px); }
 }
