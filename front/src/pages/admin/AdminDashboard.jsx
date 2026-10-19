@@ -206,7 +206,7 @@ export default function AdminDashboard({
 
         <div className="adm-topbar-title">
           <h2>تذاكر حفل التخرج — لوحة الإدارة</h2>
-          <span>جامعة حمص • فرع الاتحاد الوطني لطلبة سورية</span>
+          <span>جامعة حمص</span>
         </div>
 
         <form className="adm-search-form" onSubmit={handleSearch} role="search">

@@ -126,7 +126,7 @@ export default function AdminLogin({ onLoginSuccess }) {
 
               <h2 className="ad-headline">لوحة تحكم الإدارة</h2>
               <p className="ad-subtext">
-                منظومة تذاكر حفل تخرج جامعة حمص — فرع الاتحاد الوطني لطلبة سورية
+                منظومة تذاكر حفل تخرج جامعة حمص
               </p>
             </div>
 

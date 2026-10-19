@@ -755,7 +755,7 @@ export default function AdminAddCeremony({
 
         <p className="add-cer-footer-note">
           <span className="add-cer-symbol">verified_user</span>
-          <span>منظومة إدارة التذاكر الموحدة — الاتحاد الوطني لطلبة سورية، فرع جامعة حمص</span>
+          <span>منظومة إدارة التذاكر الموحدة — جامعة حمص</span>
         </p>
       </main>
     </div>

@@ -113,17 +113,13 @@ export default function AdminCeremonies({
 
         <div className="cer-topbar-title">
           <h2>إدارة مواعيد وحفلات التخرج</h2>
-          <span>جامعة حمص • العام الأكاديمي 2023 - 2024</span>
+          <span>جامعة حمص</span>
         </div>
 
         <div className="cer-topbar-actions">
           <div className="cer-profile-box">
             <div className="cer-profile-info">
               <span className="cer-profile-name">{adminName}</span>
-              <span className="cer-profile-role">{adminRole}</span>
-            </div>
-            <div className="cer-profile-avatar">
-              <span className="cer-symbol">person</span>
             </div>
           </div>
         </div>

@@ -233,7 +233,7 @@ export default function AdminScannersSettings({
 
         <div className="scan-set-topbar-title">
           <h2>الماسحون والإعدادات</h2>
-          <span>جامعة حمص • شعبة الحفلات والتخرج</span>
+          <span>جامعة حمص</span>
         </div>
       </header>
 

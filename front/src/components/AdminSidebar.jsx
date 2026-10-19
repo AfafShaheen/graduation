@@ -31,7 +31,6 @@ export default function AdminSidebar({
   onAddTicket,
   onLogout,
   adminName = 'مسؤول الاتحاد',
-  adminRole = 'الاتحاد الوطني لطلبة سورية',
 }) {
   const { pendingPayments } = useAdminStats();
 
@@ -110,7 +109,6 @@ export default function AdminSidebar({
               </div>
               <div className="adm-user-info">
                 <p className="adm-user-name">{adminName}</p>
-                <p className="adm-user-role">{adminRole}</p>
               </div>
             </div>
 
