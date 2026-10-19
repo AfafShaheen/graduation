@@ -358,6 +358,8 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
     major_map = {(m.college_id, normalize_arabic(m.name)): m.id for m in all_majors}
 
     seen_uni_ids = set()
+    file_colleges: List[str] = []
+    unmatched_colleges: List[str] = []
 
     for idx, row in enumerate(records, start=2): # Row 1 is header
         uni_id = _cell_text(row, "university_id")
@@ -409,16 +411,29 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
             errors.append(f"السطر {idx}: قيمة الجنس غير صحيحة '{gender}' (يجب أن تكون 'ذكر' أو 'أنثى').")
 
         # Check non-existent college names using normalized lookup
+        if college_name and college_name not in file_colleges:
+            file_colleges.append(college_name)
         normalized_college_name = normalize_arabic(college_name)
         college_id = college_map.get(normalized_college_name)
         if not college_id:
-            errors.append(f'الكلية "{college_name}" المذكورة في الملف غير مربوطة بهذا الحفل')
+            errors.append(f'السطر {idx}: الكلية "{college_name}" غير مرتبطة بهذا الحفل.')
+            if college_name not in unmatched_colleges:
+                unmatched_colleges.append(college_name)
         else:
             # Check major if provided and not empty / NaN / "لا يوجد"
             if major_raw and major_raw.lower() not in ["nan", "none", "لا يوجد", ""]:
                 norm_major = normalize_arabic(major_raw)
                 if (college_id, norm_major) not in major_map:
                     errors.append(f'السطر {idx}: التخصص "{major_raw}" غير موجود ضمن كلية "{college_name}". يرجى إضافته من إدارة التخصصات أولاً.')
+
+    if unmatched_colleges:
+        event_college_names = [c.name for c in colleges]
+        errors.append(
+            "كليات وردت في الملف وغير مرتبطة بهذا الحفل: "
+            + "، ".join(unmatched_colleges)
+            + " | الكليات المرتبطة بهذا الحفل: "
+            + ("، ".join(event_college_names) if event_college_names else "لا توجد كليات مرتبطة بهذا الحفل.")
+        )
 
     return errors
 

@@ -145,3 +145,26 @@ async def test_upload_numeric_university_id_cell_drops_trailing_decimal(
         await db.execute(select(UniversityRecordModel.university_id).order_by(UniversityRecordModel.university_id))
     ).scalars().all()
     assert list(ids) == ["310001", "310002"]
+
+
+async def test_upload_unlinked_college_lists_file_and_event_colleges(
+    client, db, make_event, make_college, make_admin
+):
+    """A college missing from the event must produce a message showing both sides."""
+    event = await make_event()
+    await make_college(event.id, name="كلية الآداب")
+    token = await _admin_token(client, make_admin)
+
+    file_content = _make_xlsx([("320001", "رامي", "أ", "ب", "معهد تقاني طب الاسنان", "ذكر", 80)])
+    resp = await client.post(
+        f"/api/admin/events/{event.id}/university-records",
+        files={"file": ("rec.xlsx", file_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["added"] == 0
+    joined = "\n".join(data["errors"])
+    assert "معهد تقاني طب الاسنان" in joined
+    assert "كلية الآداب" in joined
+    assert "غير مرتبطة بهذا الحفل" in joined
