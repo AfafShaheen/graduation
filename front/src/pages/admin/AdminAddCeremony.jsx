@@ -38,6 +38,9 @@ export default function AdminAddCeremony({
   const [dataFile, setDataFile] = useState(null);
   const [fileError, setFileError] = useState('');
   const [uploadSummary, setUploadSummary] = useState(null);
+  const [uploadErrors, setUploadErrors] = useState([]);
+  const [savedEventId, setSavedEventId] = useState(eventId || null);
+  const [retryingUpload, setRetryingUpload] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = React.useRef(null);
 
@@ -83,11 +86,13 @@ export default function AdminAddCeremony({
     setFileError('');
     setDataFile(file);
     setUploadSummary(null);
+    setUploadErrors([]);
   };
 
   const removeFile = () => {
     setDataFile(null);
     setFileError('');
+    setUploadErrors([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -188,16 +193,20 @@ export default function AdminAddCeremony({
       }
 
       const id = eventId ?? result?.id ?? result?.event_id;
+      if (id) setSavedEventId(id);
+
       if (dataFile && id) {
+        setUploadErrors([]);
         try {
           const uploadResult = await uploadUniversityRecords(id, dataFile);
           if (uploadResult?.summary) setUploadSummary(uploadResult.summary);
         } catch (upErr) {
+          const details =
+            upErr instanceof ApiError && Array.isArray(upErr.data?.errors) ? upErr.data.errors : [];
+          setUploadErrors(details);
           setSubmitError(
-            'تم حفظ الحفل لكن لم يُستورد ملف بيانات الخريجين: ' +
-              (upErr instanceof ApiError ? upErr.message : 'خطأ غير معروف')
+            'تم حفظ الحفل، لكن لم يُستورد ملف بيانات الخريجين. راجع الأخطاء أدناه ثم أعد المحاولة — الملف باقٍ في النموذج.'
           );
-          if (onSubmitSuccess) onSubmitSuccess(result);
           return;
         }
       }
@@ -215,6 +224,25 @@ export default function AdminAddCeremony({
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // إعادة محاولة رفع الملف بعد نجاح إنشاء/تعديل الحفل
+  const handleRetryUpload = async () => {
+    if (!savedEventId || !dataFile) return;
+    setRetryingUpload(true);
+    setSubmitError('');
+    setUploadErrors([]);
+    try {
+      const uploadResult = await uploadUniversityRecords(savedEventId, dataFile);
+      if (uploadResult?.summary) setUploadSummary(uploadResult.summary);
+    } catch (upErr) {
+      const details =
+        upErr instanceof ApiError && Array.isArray(upErr.data?.errors) ? upErr.data.errors : [];
+      setUploadErrors(details);
+      setSubmitError('لم يكتمل الاستيراد بعد. راجع الأخطاء أدناه ثم أعد المحاولة.');
+    } finally {
+      setRetryingUpload(false);
     }
   };
 
@@ -665,6 +693,41 @@ export default function AdminAddCeremony({
                 </p>
               )}
 
+              {uploadErrors.length > 0 && (
+                <div role="alert">
+                  <p className="add-cer-file-error" style={{ marginBottom: '8px' }}>
+                    لم يُستورد ملف بيانات الخريجين — الأخطاء ({uploadErrors.length}):
+                  </p>
+                  <ul
+                    style={{
+                      maxHeight: '220px',
+                      overflowY: 'auto',
+                      margin: '0 0 10px',
+                      paddingInlineStart: '20px',
+                      color: '#8a1f1f',
+                      fontSize: '13px',
+                      lineHeight: '1.9',
+                    }}
+                  >
+                    {uploadErrors.slice(0, 50).map((msg, i) => (
+                      <li key={i}>{msg}</li>
+                    ))}
+                  </ul>
+                  {uploadErrors.length > 50 && (
+                    <p className="add-cer-hint">و{uploadErrors.length - 50} خطأ إضافي — أصلح الملف أو الكليات أولاً.</p>
+                  )}
+                  <button
+                    type="button"
+                    className="add-cer-btn-submit"
+                    onClick={handleRetryUpload}
+                    disabled={retryingUpload || !dataFile}
+                  >
+                    <span>{retryingUpload ? 'جارٍ إعادة المحاولة...' : 'إعادة محاولة رفع الملف'}</span>
+                    <span className="add-cer-symbol" style={{ fontSize: '18px' }}>refresh</span>
+                  </button>
+                </div>
+              )}
+
               <div className="add-cer-columns">
                 <span className="add-cer-hint">
                   يُقبل ملف شؤون الطلبة بترتيبه الثابت، ويبقى عمود «الاسم الكامل» مدعوماً. الأعمدة المطلوبة بالسطر الأول (بنفس التسمية تماماً):
@@ -692,7 +755,11 @@ export default function AdminAddCeremony({
                 إلغاء والعودة لقائمة الحفلات
               </button>
 
-              <button type="submit" className="add-cer-btn-submit" disabled={submitting}>
+              <button
+                type="submit"
+                className="add-cer-btn-submit"
+                disabled={submitting || retryingUpload || uploadErrors.length > 0}
+              >
                 <span>{submitting ? 'جارٍ الحفظ...' : isEdit ? 'حفظ التعديلات' : 'حفظ ونشر الحفل الجديد'}</span>
                 <span className="add-cer-symbol" style={{ fontSize: '20px' }}>cloud_upload</span>
               </button>
