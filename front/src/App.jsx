@@ -44,7 +44,25 @@ import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduat
   true  = أي صفحة بتفتح مباشرة من شريط العنوان بدون شروط، بقيم تجريبية.
   false = الشروط شغالة (مثلاً الدفع لا يُفتح بدون باقة)، وهذا هو الوضع الصحيح عند الإطلاق.
 */
-const PREVIEW = true;
+const PREVIEW = import.meta.env.VITE_PREVIEW === "true";
+
+const GUIDE_SKIP_KEY = "grad.skipGuide";
+
+function readSkipGuide() {
+  try {
+    return window.localStorage.getItem(GUIDE_SKIP_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function saveSkipGuide() {
+  try {
+    window.localStorage.setItem(GUIDE_SKIP_KEY, "1");
+  } catch {
+    /* التخزين المحلي غير متاح */
+  }
+}
 
 function App() {
   const navigate = useNavigate();
@@ -52,6 +70,11 @@ function App() {
   const { pathname } = location;
 
   const [pendingPayments, setPendingPayments] = useState(0);
+  const [, setSurvey] = useState(null);
+  const [scanner, setScanner] = useState(() =>
+    Boolean(getScannerToken() && !isScannerTokenExpired())
+  );
+  const [scannerError, setScannerError] = useState("");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -176,7 +199,8 @@ function App() {
                   replace: true,
                 })
               }
-              onForgotPassword={(em) => {
+              onForgotPassword={async (em) => {
+                await forgotPassword(em);
                 setResetEmail(em);
                 navigate("/reset-otp");
               }}
@@ -457,6 +481,7 @@ function App() {
             scanner || PREVIEW ? (
               <ScannerCamera
                 onLogout={() => {
+                  clearScannerSession();
                   setScanner(null);
                   navigate("/scanner", { replace: true });
                 }}
@@ -521,6 +546,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
+                    clearScannerSession();
                     setScanner(null);
                     navigate("/scanner", { replace: true });
                   }}
