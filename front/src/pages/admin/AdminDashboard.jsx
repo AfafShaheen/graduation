@@ -76,13 +76,6 @@ export default function AdminDashboard({
 
   const { events } = useAdminEvents({ limit: 100 });
 
-  // اختيار أول حفل تلقائياً لعرض بيانات الدفع وآخر التدقيقات
-  useEffect(() => {
-    if (!eventId && events.length > 0) {
-      setEventId(String(events[0].id));
-    }
-  }, [events, eventId]);
-
   const selectedEvent = useMemo(
     () => events.find((e) => String(e.id) === String(eventId)) || null,
     [events, eventId]
@@ -252,7 +245,7 @@ export default function AdminDashboard({
               <span className="adm-mini-dot"></span>
               <span className="adm-pulse-label">{selectedEvent ? selectedEvent.name : 'كل الحفلات'}</span>
             </div>
-            <h3>مرحباً زميلنا، إليك ملخص حجوزات الحفل وإحصائياته</h3>
+            <h3>مرحباً زميلنا، إليك ملخص حجوزات الحفلات وإحصائياته</h3>
             <p>
               تحديث مباشر لبيانات الدفع، وتدقيق بطاقات الخريجين والمرافقين المعتمدين.
             </p>
@@ -636,7 +629,11 @@ export default function AdminDashboard({
                   <tr>
                     <td colSpan={5}>
                       <span className="adm-reason-empty">
-                        {payLoading ? 'جارٍ تحميل البيانات...' : payError || 'لا توجد بيانات لعرضها.'}
+                        {payLoading
+                          ? 'جارٍ تحميل البيانات...'
+                          : !eventId
+                            ? 'اختر حفلاً من القائمة أعلاه لعرض سجل تدقيق الخريجين.'
+                            : payError || 'لا توجد بيانات لعرضها.'}
                       </span>
                     </td>
                   </tr>
