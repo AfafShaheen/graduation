@@ -229,22 +229,6 @@ export default function AdminPaymentRequests({
             <span>جامعة حمص</span>
           </div>
         </div>
-
-        <div className="pay-req-topbar-actions">
-          <button aria-label="التنبيهات" className="pay-req-icon-btn" title="التنبيهات" type="button">
-            <span className="pay-req-symbol">notifications</span>
-            <span className="pay-req-notif-dot"></span>
-          </button>
-
-          <button aria-label="التقويم" className="pay-req-icon-btn" title="التقويم" type="button">
-            <span className="pay-req-symbol">calendar_today</span>
-          </button>
-
-          <button className="pay-req-help-btn" type="button">
-            <span className="pay-req-symbol" style={{ fontSize: '18px' }}>help_outline</span>
-            <span className="pay-req-help-text">المساعدة والدعم</span>
-          </button>
-        </div>
       </header>
 
       {/* المحتوى */}

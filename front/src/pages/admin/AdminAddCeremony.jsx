@@ -284,22 +284,6 @@ export default function AdminAddCeremony({
             <span>{isEdit ? 'تعديل الحفل' : 'إضافة حفل جديد'}</span>
           </div>
         </div>
-
-        <div className="add-cer-topbar-actions">
-          <button aria-label="التنبيهات" className="add-cer-icon-btn" title="التنبيهات" type="button">
-            <span className="add-cer-symbol">notifications</span>
-            <span className="add-cer-notif-dot"></span>
-          </button>
-
-          <button aria-label="التقويم" className="add-cer-icon-btn" title="التقويم" type="button">
-            <span className="add-cer-symbol">calendar_today</span>
-          </button>
-
-          <button className="add-cer-help-btn" type="button">
-            <span className="add-cer-symbol" style={{ fontSize: '18px' }}>help_outline</span>
-            <span className="add-cer-help-text">المساعدة والدعم</span>
-          </button>
-        </div>
       </header>
 
       {/* المحتوى الرئيسي */}

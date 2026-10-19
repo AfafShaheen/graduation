@@ -235,18 +235,6 @@ export default function AdminScannersSettings({
           <h2>الماسحون والإعدادات</h2>
           <span>جامعة حمص • شعبة الحفلات والتخرج</span>
         </div>
-
-        <div className="scan-set-topbar-actions">
-          <button aria-label="التنبيهات" className="scan-set-icon-btn" title="التنبيهات" type="button">
-            <span className="scan-set-symbol">notifications</span>
-            <span className="scan-set-notif-dot"></span>
-          </button>
-
-          <button className="scan-set-help-btn" type="button">
-            <span className="scan-set-symbol" style={{ fontSize: '18px' }}>help_outline</span>
-            <span className="scan-set-help-text">المساعدة والدعم</span>
-          </button>
-        </div>
       </header>
 
       {/* المحتوى */}

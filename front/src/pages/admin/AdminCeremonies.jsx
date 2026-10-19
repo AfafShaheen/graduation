@@ -142,32 +142,6 @@ export default function AdminCeremonies({
         </div>
 
         <div className="cer-topbar-actions">
-          <button
-            aria-label="التنبيهات"
-            className="cer-icon-action-btn"
-            title="التنبيهات"
-            type="button"
-          >
-            <span className="cer-symbol">notifications</span>
-            <span className="cer-notif-dot"></span>
-          </button>
-
-          <button
-            aria-label="التقويم"
-            className="cer-icon-action-btn"
-            title="التقويم"
-            type="button"
-          >
-            <span className="cer-symbol">calendar_today</span>
-          </button>
-
-          <button className="cer-help-btn" type="button">
-            <span className="cer-symbol" style={{ fontSize: "18px" }}>
-              help_outline
-            </span>
-            <span className="cer-help-text">المساعدة والدعم</span>
-          </button>
-
           <div className="cer-profile-box">
             <div className="cer-profile-info">
               <span className="cer-profile-name">{adminName}</span>

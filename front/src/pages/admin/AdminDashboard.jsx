@@ -213,24 +213,6 @@ export default function AdminDashboard({
           <span>جامعة حمص • فرع الاتحاد الوطني لطلبة سورية</span>
         </div>
 
-        <div className="adm-topbar-actions">
-          <button aria-label="التنبيهات" className="adm-icon-action-btn" title="التنبيهات" type="button">
-            <span className="adm-symbol">notifications</span>
-            <span className="adm-notif-dot"></span>
-          </button>
-
-          <button aria-label="التقويم" className="adm-icon-action-btn" title="التقويم" type="button">
-            <span className="adm-symbol">calendar_today</span>
-          </button>
-
-          <button className="adm-help-btn" type="button">
-            <span className="adm-symbol" style={{ fontSize: '18px' }}>
-              help_outline
-            </span>
-            <span className="adm-help-text">المساعدة والدعم</span>
-          </button>
-        </div>
-
         <form className="adm-search-form" onSubmit={handleSearch} role="search">
           <input
             type="text"
