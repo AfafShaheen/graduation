@@ -68,8 +68,13 @@ export default function AdminScannersSettings({
   const [qrUploading, setQrUploading] = useState(false);
   const qrInputRef = useRef(null);
 
+  // علامة تعديل يدوي: تمنع إعادة تهيئة حقول نموذج الدفع عند أي تحديث للاعدادات
+  // (مثل بعد رفع صورة QR، إذ يُعاد جلب الإعدادات وتُمسح ما كتبه المشرف).
+  const settingsDirtyRef = useRef(false);
+
   useEffect(() => {
     if (!settings) return;
+    if (settingsDirtyRef.current) return;
     setBeneficiaryName(settings.shamcash_receiver_name || '');
     setShamCashAccount(settings.shamcash_account_number || '');
     setSupportPhone(settings.contact_phone || '');
@@ -151,6 +156,7 @@ export default function AdminScannersSettings({
         contact_phone: supportPhone,
       });
       setNotice('تم حفظ إعدادات الدفع بنجاح');
+      settingsDirtyRef.current = false;
       await refetchSettings();
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
@@ -471,7 +477,10 @@ export default function AdminScannersSettings({
                       type="text"
                       className="scan-set-input"
                       value={beneficiaryName}
-                      onChange={(e) => setBeneficiaryName(e.target.value)}
+                      onChange={(e) => {
+                        settingsDirtyRef.current = true;
+                        setBeneficiaryName(e.target.value);
+                      }}
                       required
                     />
                     <span className="scan-set-symbol scan-set-input-icon right">account_balance</span>
@@ -488,7 +497,10 @@ export default function AdminScannersSettings({
                       dir="ltr"
                       className="scan-set-input ltr"
                       value={shamCashAccount}
-                      onChange={(e) => setShamCashAccount(e.target.value)}
+                      onChange={(e) => {
+                        settingsDirtyRef.current = true;
+                        setShamCashAccount(e.target.value);
+                      }}
                       required
                     />
                     <span className="scan-set-symbol scan-set-input-icon left">wallet</span>
@@ -505,7 +517,10 @@ export default function AdminScannersSettings({
                       dir="ltr"
                       className="scan-set-input ltr"
                       value={supportPhone}
-                      onChange={(e) => setSupportPhone(e.target.value)}
+                      onChange={(e) => {
+                        settingsDirtyRef.current = true;
+                        setSupportPhone(e.target.value);
+                      }}
                       required
                     />
                     <span className="scan-set-symbol scan-set-input-icon left">phone_in_talk</span>
