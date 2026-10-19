@@ -19,6 +19,14 @@ from app.core.redis import redis_client
 
 
 def parse_gpa(val: Any) -> Decimal | None:
+    """Parse the Affairs ``المعدل`` cell into a 0-100 percentage.
+
+    Accepts Arabic-Indic digits, the Arabic decimal separator, thousands
+    commas and a trailing percent sign. Excel stores percentage-formatted
+    cells as raw fractions (``72.72%`` is read as ``0.7272``), so a value in
+    ``(0, 1]`` is treated as a fraction and scaled by 100. Any parse failure
+    or out-of-range value yields ``None`` (the caller reports it as invalid).
+    """
     if val is None or pd.isna(val) or str(val).strip() == "" or str(val).lower() == "nan":
         return None
     s = str(val).strip()
@@ -28,18 +36,15 @@ def parse_gpa(val: Any) -> Decimal | None:
     s = s.translate(trans)
     s = s.replace("٪", "").replace("%", "").strip()
     s = s.replace("٫", ".").replace(",", ".").replace("،", ".")
-    parts = s.split(".")
-    if len(parts) > 2:
-        return None
-    if len(parts) == 2 and len(parts[1]) > 2:
-        return None
     try:
         d = Decimal(s)
-        if d < 0 or d > 100:
-            return None
-        return d.quantize(Decimal("0.01"))
     except Exception:
         return None
+    if 0 < d <= 1:
+        d = d * 100
+    if d < 0 or d > 100:
+        return None
+    return d.quantize(Decimal("0.01"))
 
 
 _GENDER_MAP = {

@@ -14,9 +14,10 @@ from io import BytesIO
 from decimal import Decimal
 from openpyxl import Workbook
 from sqlalchemy import select
+import pytest
 
 from app.core import messages
-from app.services.university_records_service import normalize_phone
+from app.services.university_records_service import normalize_phone, parse_gpa
 from app.models.university_record import UniversityRecordModel
 
 _AFFAIRS_HEADERS = [
@@ -528,3 +529,29 @@ async def test_legacy_full_name_payload_matches_split_record(
         json=_verify_payload(college.id, "410003", top_rank=1),
     )
     assert resp.status_code == 200, resp.text
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (0.7272, Decimal("72.72")),
+        (1.0, Decimal("100.00")),
+        (1, Decimal("100.00")),
+        ("72.72%", Decimal("72.72")),
+        ("٧٢٫٧٩", Decimal("72.79")),
+        ("72،79٪", Decimal("72.79")),
+        (3.5, Decimal("3.50")),
+        (85, Decimal("85.00")),
+        ("85.555", Decimal("85.56")),
+        (0, Decimal("0.00")),
+        ("", None),
+        ("nan", None),
+        (None, None),
+        ("-1", None),
+        ("100.01", None),
+        ("12.3.4", None),
+        ("abc", None),
+    ],
+)
+def test_parse_gpa_accepts_excel_fractions_and_arabic_formats(raw, expected):
+    assert parse_gpa(raw) == expected
