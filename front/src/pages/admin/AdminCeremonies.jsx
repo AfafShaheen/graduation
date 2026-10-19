@@ -3,7 +3,6 @@ import "../../style/AdminCeremonies.css";
 import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
 import { useAdminStats } from './hooks/useAdminStats.js';
-import { deleteEvent, ApiError } from '../../api/admin.js';
 
 const STATUS_LABELS = {
   open: "مفتوح للتسجيل",
@@ -19,12 +18,11 @@ export default function AdminCeremonies({
   ceremonies: ceremoniesProp,
   onAddCeremony,
   onEditCeremony,
-  onViewCeremony,
   onNavigate,
   onLogout,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { events, loading, error, refetch } = useAdminEvents({ search: searchQuery });
+  const { events, loading, error } = useAdminEvents({ search: searchQuery });
   const { stats } = useAdminStats();
   const perEvent = stats?.per_event || [];
 
@@ -63,29 +61,6 @@ export default function AdminCeremonies({
 
   const [statusFilter, setStatusFilter] = useState("");
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
-  const [confirmTarget, setConfirmTarget] = useState(null);
-  const [deleteBusy, setDeleteBusy] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
-
-  const askDelete = (item) => {
-    setDeleteError("");
-    setConfirmTarget(item);
-  };
-
-  const handleDelete = async () => {
-    if (!confirmTarget) return;
-    setDeleteBusy(true);
-    setDeleteError("");
-    try {
-      await deleteEvent(confirmTarget.id);
-      setConfirmTarget(null);
-      await refetch();
-    } catch (e) {
-      setDeleteError(e instanceof ApiError ? e.message : "تعذّر حذف الحفل، حاول لاحقاً.");
-    } finally {
-      setDeleteBusy(false);
-    }
-  };
 
   // إغلاق القائمة بزر Escape
   useEffect(() => {
@@ -311,36 +286,6 @@ export default function AdminCeremonies({
                               edit
                             </span>
                           </button>
-                          <button
-                            type="button"
-                            className="cer-icon-action-btn small"
-                            title="معاينة التذاكر والمقاعد"
-                            aria-label="معاينة التذاكر والمقاعد"
-                            onClick={() =>
-                              onViewCeremony && onViewCeremony(item)
-                            }
-                          >
-                            <span
-                              className="cer-symbol"
-                              style={{ fontSize: "18px" }}
-                            >
-                              visibility
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            className="cer-icon-action-btn small danger"
-                            title="حذف الحفل"
-                            aria-label="حذف الحفل"
-                            onClick={() => askDelete(item)}
-                          >
-                            <span
-                              className="cer-symbol"
-                              style={{ fontSize: "18px" }}
-                            >
-                              delete
-                            </span>
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -354,47 +299,6 @@ export default function AdminCeremonies({
             <div className="cer-empty">ما في حفلات مطابقة للبحث</div>
           )}
         </div>
-
-        {confirmTarget && (
-          <div
-            className="cer-modal-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-label="تأكيد حذف الحفل"
-            onClick={() => !deleteBusy && setConfirmTarget(null)}
-          >
-            <div className="cer-modal" onClick={(e) => e.stopPropagation()}>
-              <h4 className="cer-modal-title">حذف الحفل</h4>
-              <p className="cer-modal-sub">
-                هل أنت متأكد من حذف «{confirmTarget.title}»؟ سيتم إزالة الحفل
-                وتسجيلاته نهائياً، ولا يمكن التراجع عن هذا الإجراء.
-              </p>
-              {deleteError && (
-                <p className="cer-modal-error" role="alert">
-                  {deleteError}
-                </p>
-              )}
-              <div className="cer-modal-actions">
-                <button
-                  type="button"
-                  className="cer-modal-cancel"
-                  disabled={deleteBusy}
-                  onClick={() => setConfirmTarget(null)}
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="button"
-                  className="cer-modal-confirm"
-                  disabled={deleteBusy}
-                  onClick={handleDelete}
-                >
-                  {deleteBusy ? "جارٍ الحذف..." : "تأكيد الحذف"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
