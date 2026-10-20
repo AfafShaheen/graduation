@@ -200,10 +200,11 @@ export default function AdminCeremonies({
             <table className="cer-table">
               <thead>
                 <tr>
-                  <th style={{ width: "24%" }}>اسم الحفل</th>
-                  <th style={{ width: "18%" }}>التاريخ والموعد</th>
-                  <th style={{ width: "18%" }}>فترة التسجيل والدفع</th>
-                  <th style={{ width: "18%" }}>الكليات المشمولة</th>
+                  <th style={{ width: "20%" }}>اسم الحفل</th>
+                  <th style={{ width: "16%" }}>التاريخ والموعد</th>
+                  <th style={{ width: "16%" }}>فترة التسجيل والدفع</th>
+                  <th style={{ width: "12%", textAlign: "center" }}>حالة التسجيل</th>
+                  <th style={{ width: "16%" }}>الكليات المشمولة</th>
                   <th style={{ width: "8%", textAlign: "center" }}>
                     الإجراءات
                   </th>
@@ -246,6 +247,9 @@ export default function AdminCeremonies({
 
                       <td data-label="فترة التسجيل والدفع">
                         <div className="cer-period">{item.period}</div>
+                      </td>
+
+                      <td data-label="حالة التسجيل" style={{ textAlign: "center" }}>
                         <span className={`cer-chip ${item.status}`}>
                           {item.status === "open" && (
                             <span className="cer-chip-dot"></span>
