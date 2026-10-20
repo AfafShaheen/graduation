@@ -9,11 +9,15 @@ from app.core.security import (
     verify_password,
     get_password_hash,
     create_access_token,
+    create_refresh_token,
     create_verification_token,
     secret_key,
     ALGORITHM,
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS,
+    REFRESH_TOKEN_TYPE,
 )
+from app.services import refresh_token_service as refresh_store
 from jose import jwt
 import uuid
 import logging
@@ -111,11 +115,14 @@ async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
 
     # 5. Generate JWT token
     access_value = create_graduate_access_token(graduate)
+    refresh_value, refresh_expires_in = await _issue_refresh(graduate, uuid.uuid4().hex)
 
     return {
         "access_token": access_value,
         "token_type": "bearer",
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "refresh_token": refresh_value,
+        "refresh_expires_in": refresh_expires_in,
     }
 
 
@@ -135,3 +142,60 @@ async def logout_graduate(credentials, current_graduate: GraduateModel) -> dict:
         pass
 
     return {"status": "success", "message": "تم تسجيل الخروج بنجاح."}
+
+
+def _session_unauthorized():
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="انتهت صلاحية الجلسة، يرجى تسجيل الدخول من جديد.",
+    )
+
+
+def _make_refresh(data):
+    days = GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS
+    return create_refresh_token(data, days)
+
+
+async def _issue_refresh(graduate: GraduateModel, family: str):
+    data = {"sub": str(graduate.id), "role": "graduate", "family": family}
+    value = _make_refresh(data)
+    payload = jwt.decode(value, secret_key, algorithms=[ALGORITHM])
+    await refresh_store.store_refresh_token(
+        payload["jti"], family, "graduate", str(graduate.id), GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS
+    )
+    return value, GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS * 86400
+
+
+def _decode_refresh(refresh_value: str, role: str) -> dict:
+    try:
+        payload = jwt.decode(refresh_value, secret_key, algorithms=[ALGORITHM])
+    except Exception:
+        raise _session_unauthorized()
+    if payload.get("type") != REFRESH_TOKEN_TYPE or payload.get("role") != role:
+        raise _session_unauthorized()
+    return payload
+
+
+async def refresh_graduate_session(refresh_value: str, db: AsyncSession) -> dict:
+    payload = _decode_refresh(refresh_value, role="graduate")
+    family = payload.get("family")
+    outcome = await refresh_store.consume_refresh_token(payload["jti"], family, "graduate")
+    if outcome != "ok":
+        raise _session_unauthorized()
+    graduate = await db.get(GraduateModel, int(payload["sub"]))
+    if not graduate:
+        raise _session_unauthorized()
+    if not graduate.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"message": "يجب تأكيد البريد الإلكتروني أولاً لإكمال هذه العملية."},
+        )
+    access_value = create_graduate_access_token(graduate)
+    rotation, rotation_expires = await _issue_refresh(graduate, family)
+    return {
+        "access_token": access_value,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "refresh_token": rotation,
+        "refresh_expires_in": rotation_expires,
+    }

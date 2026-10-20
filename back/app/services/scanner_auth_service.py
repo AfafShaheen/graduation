@@ -20,7 +20,10 @@ from app.core import messages
 from app.core.redis import redis_client
 from app.core.security import (
     ALGORITHM,
+    SCANNER_REFRESH_TOKEN_EXPIRE_DAYS,
+    REFRESH_TOKEN_TYPE,
     create_access_token,
+    create_refresh_token,
     get_password_hash,
     secret_key,
     verify_password,
@@ -28,6 +31,7 @@ from app.core.security import (
 from app.models.event import EventModel
 from app.models.scanner import ScannerModel
 from app.schemas.scanner_auth import ScannerLoginRequest
+from app.services import refresh_token_service as refresh_store
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +117,14 @@ async def login_scanner(data: ScannerLoginRequest, db: AsyncSession) -> dict:
 
     event = await db.get(EventModel, scanner.event_id)
 
+    refresh_value, refresh_expires_in = await _issue_refresh(scanner, uuid.uuid4().hex)
+
     return {
         "access_token": access_value,
         "token_type": "bearer",
         "expires_in": SCANNER_TOKEN_EXPIRE_HOURS * 3600,
+        "refresh_token": refresh_value,
+        "refresh_expires_in": refresh_expires_in,
         "event": event,
     }
 
@@ -137,3 +145,57 @@ async def logout_scanner(credentials, scanner: ScannerModel) -> dict:
         pass
 
     return {"status": "success", "message": "تم تسجيل الخروج بنجاح."}
+
+
+def _session_unauthorized():
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="انتهت صلاحية الجلسة، يرجى تسجيل الدخول من جديد.",
+    )
+
+
+def _make_refresh(data):
+    days = SCANNER_REFRESH_TOKEN_EXPIRE_DAYS
+    return create_refresh_token(data, days)
+
+
+async def _issue_refresh(scanner: ScannerModel, family: str):
+    data = {"sub": str(scanner.id), "role": "scanner", "family": family}
+    value = _make_refresh(data)
+    payload = jwt.decode(value, secret_key, algorithms=[ALGORITHM])
+    await refresh_store.store_refresh_token(
+        payload["jti"], family, "scanner", str(scanner.id), SCANNER_REFRESH_TOKEN_EXPIRE_DAYS
+    )
+    return value, SCANNER_REFRESH_TOKEN_EXPIRE_DAYS * 86400
+
+
+def _decode_refresh(refresh_value: str, role: str) -> dict:
+    try:
+        payload = jwt.decode(refresh_value, secret_key, algorithms=[ALGORITHM])
+    except Exception:
+        raise _session_unauthorized()
+    if payload.get("type") != REFRESH_TOKEN_TYPE or payload.get("role") != role:
+        raise _session_unauthorized()
+    return payload
+
+
+async def refresh_scanner_session(refresh_value: str, db: AsyncSession) -> dict:
+    payload = _decode_refresh(refresh_value, role="scanner")
+    family = payload.get("family")
+    outcome = await refresh_store.consume_refresh_token(payload["jti"], family, "scanner")
+    if outcome != "ok":
+        raise _session_unauthorized()
+    scanner = await db.get(ScannerModel, int(payload["sub"]))
+    if not scanner:
+        raise _session_unauthorized()
+    access_value = create_scanner_access_token(scanner)
+    event = await db.get(EventModel, scanner.event_id)
+    rotation, rotation_expires = await _issue_refresh(scanner, family)
+    return {
+        "access_token": access_value,
+        "token_type": "bearer",
+        "expires_in": SCANNER_TOKEN_EXPIRE_HOURS * 3600,
+        "refresh_token": rotation,
+        "refresh_expires_in": rotation_expires,
+        "event": event,
+    }

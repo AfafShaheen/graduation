@@ -6,7 +6,17 @@ from fastapi import HTTPException, status
 from app.models.admin import AdminModel
 from app.schemas.admin_auth import AdminLoginRequest
 from app.core.redis import redis_client
-from app.core.security import verify_password, get_password_hash, create_access_token, secret_key, ALGORITHM
+from app.core.security import (
+    ALGORITHM,
+    ADMIN_REFRESH_TOKEN_EXPIRE_DAYS,
+    REFRESH_TOKEN_TYPE,
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+    secret_key,
+    verify_password,
+)
+from app.services import refresh_token_service as refresh_store
 from jose import jwt
 import logging
 
@@ -80,10 +90,14 @@ async def login_admin(data: AdminLoginRequest, db: AsyncSession) -> dict:
         "username": admin.username
     })
 
+    refresh_value, refresh_expires_in = await _issue_refresh(admin, uuid.uuid4().hex)
+
     return {
         "access_token": token,
         "token_type": "bearer",
-        "expires_in": 120 * 60
+        "expires_in": 120 * 60,
+        "refresh_token": refresh_value,
+        "refresh_expires_in": refresh_expires_in,
     }
 
 
@@ -103,3 +117,58 @@ async def logout_admin(credentials, admin: dict) -> dict:
         pass
 
     return {"status": "success", "message": "تم تسجيل الخروج بنجاح."}
+
+def _session_unauthorized():
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="انتهت صلاحية الجلسة، يرجى تسجيل الدخول من جديد.",
+    )
+
+
+def _make_refresh(data):
+    days = ADMIN_REFRESH_TOKEN_EXPIRE_DAYS
+    return create_refresh_token(data, days)
+
+
+async def _issue_refresh(admin: AdminModel, family: str):
+    data = {"sub": str(admin.id), "role": "admin", "family": family}
+    value = _make_refresh(data)
+    payload = jwt.decode(value, secret_key, algorithms=[ALGORITHM])
+    await refresh_store.store_refresh_token(
+        payload["jti"], family, "admin", str(admin.id), ADMIN_REFRESH_TOKEN_EXPIRE_DAYS
+    )
+    return value, ADMIN_REFRESH_TOKEN_EXPIRE_DAYS * 86400
+
+
+def _decode_refresh(refresh_value: str, role: str) -> dict:
+    try:
+        payload = jwt.decode(refresh_value, secret_key, algorithms=[ALGORITHM])
+    except Exception:
+        raise _session_unauthorized()
+    if payload.get("type") != REFRESH_TOKEN_TYPE or payload.get("role") != role:
+        raise _session_unauthorized()
+    return payload
+
+
+async def refresh_admin_session(refresh_value: str, db: AsyncSession) -> dict:
+    payload = _decode_refresh(refresh_value, role="admin")
+    family = payload.get("family")
+    outcome = await refresh_store.consume_refresh_token(payload["jti"], family, "admin")
+    if outcome != "ok":
+        raise _session_unauthorized()
+    admin = await db.get(AdminModel, int(payload["sub"]))
+    if not admin:
+        raise _session_unauthorized()
+    access_value = create_access_token({
+        "sub": str(admin.id),
+        "role": "admin",
+        "username": admin.username,
+    })
+    rotation, rotation_expires = await _issue_refresh(admin, family)
+    return {
+        "access_token": access_value,
+        "token_type": "bearer",
+        "expires_in": 120 * 60,
+        "refresh_token": rotation,
+        "refresh_expires_in": rotation_expires,
+    }

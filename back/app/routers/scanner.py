@@ -7,13 +7,18 @@ from app.core.database import get_db
 from app.core.deps import get_current_scanner, security
 from app.models.scanner import ScannerModel
 from app.schemas.scanner_auth import (
+    RefreshRequest,
     ScanRequest,
     ScanResponse,
     ScannerLoginRequest,
     ScannerTokenResponse,
 )
 from app.services.scan_service import scan_service
-from app.services.scanner_auth_service import login_scanner, logout_scanner
+from app.services.scanner_auth_service import (
+    login_scanner,
+    logout_scanner,
+    refresh_scanner_session,
+)
 
 router = APIRouter(prefix="/api/scanner", tags=["Scanner"])
 
@@ -25,6 +30,15 @@ router = APIRouter(prefix="/api/scanner", tags=["Scanner"])
 )
 async def login(data: ScannerLoginRequest, db: AsyncSession = Depends(get_db)):
     return await login_scanner(data, db)
+
+
+@router.post(
+    "/auth/refresh",
+    response_model=ScannerTokenResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
+    return await refresh_scanner_session(data.refresh_token, db)
 
 
 @router.post("/auth/logout", status_code=status.HTTP_200_OK)

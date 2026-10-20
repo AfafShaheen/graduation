@@ -153,11 +153,11 @@
 | P7.1 | SMTP + فشل الإرسال الظاهر | ✅ | `915e41c` | `test_email_status` 7 passed؛ baseline أضيف `/api/admin/settings/email-status` |
 | P7.2 | أداة تشخيص المطابقة | ✅ | (هذا الكوميت) | `test_university_record_diagnostic` 6 passed؛ صفحة «تشخيص المطابقة» + `diagnoseUniversityRecord`؛ baseline أضيف `/api/admin/university-records/diagnose` |
 | P7.3 | نص نموذج المطابقة | ✅ | (هذا الكوميت) | توضيح النص في `GraduationFormStep1.jsx`؛ npm test 29 passed |
-| P8.1 | توليد رمز التجديد + `jti` | ⬜ | — | — |
-| P8.2 | نقاط التجديد للفاعلين الثلاثة | ⬜ | — | — |
-| P8.3 | إرجاع/إبطال رمز التجديد | ⬜ | — | — |
-| P8.4 | تجديد تلقائي في الواجهة | ⬜ | — | — |
-| P8.5 | اختبارات + baseline | ⬜ | — | — |
+| P8.1 | توليد رمز التجديد + `jti` | ✅ | (هذا الكوميت) | `core/security.py`: `create_refresh_token`/`decode_token` + أعمار (أدمن/ماسح 30 يوم، خريج 7 أيام)؛ `services/refresh_token_service.py` تخزين `refresh:{jti}` + `refresh_family:{family}` في Redis |
+| P8.2 | نقاط التجديد للفاعلين الثلاثة | ✅ | (هذا الكوميت) | `POST /api/admin/auth/refresh`، `/api/scanner/auth/refresh`، `/api/auth/graduate/refresh`؛ `refresh_admin_session`/`refresh_graduate_session`/`refresh_scanner_session`؛ المخططات تحمل `refresh_token`/`refresh_expires_in` |
+| P8.3 | إرجاع/إبطال رمز التجديد | ✅ | (هذا الكوميت) | تدوير الرمز عند كل تجديد + كشف إعادة الاستخدام (إعادة استخدام رمز قديم → إبطال العائلة → 401)؛ عزل الأدوار |
+| P8.4 | تجديد تلقائي في الواجهة | ✅ | (هذا الكوميت) | `session.js` مفاتيح refresh + مُحدِّثات؛ `client.js` تجديد عند 401 وإعادة المحاولة؛ صفحات الدخول الأربع |
+| P8.5 | اختبارات + baseline | ✅ | (هذا الكوميت) | `test_refresh_tokens.py` 8 passed؛ contract 1 passed؛ lint 42/0؛ npm test 29 |
 | P9.1 | جدول `event_ticket_packages` + الترحيل | ⬜ | — | — |
 | P9.2 | واجهة الباقات الديناميكية | ⬜ | — | — |
 | P9.3 | تحديث بقية المنظومة | ⬜ | — | — |
