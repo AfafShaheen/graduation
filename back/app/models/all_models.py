@@ -18,6 +18,7 @@ from app.models import (
     ScannerModel,
     SettingModel,
     TicketModel,
+    UniversityFileModel,
     UniversityRecordModel,
     VolunteerAnswerModel,
 )
@@ -36,6 +37,7 @@ __all__ = [
     "ScannerModel",
     "SettingModel",
     "TicketModel",
+    "UniversityFileModel",
     "UniversityRecordModel",
     "VolunteerAnswerModel",
 ]

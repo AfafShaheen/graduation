@@ -8,6 +8,7 @@ from app.models.scanner import ScannerModel
 from app.models.setting import SettingModel
 from app.models.graduate import GraduateModel
 from app.models.university_record import UniversityRecordModel
+from app.models.university_file import UniversityFileModel
 from app.models.ticket import TicketModel
 from app.models.payment import PaymentModel
 from app.models.qr_code import QrCodeModel
