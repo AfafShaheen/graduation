@@ -122,6 +122,36 @@ async def test_verify_step1_unknown_college_is_generic_failure(client):
     assert resp.json()["detail"] == messages.GENERIC_VERIFY_FAIL
 
 
+async def test_verify_step1_prefers_the_open_window_event(
+    client, db, make_event, make_college, make_university_record
+):
+    """P5.5: a reusable college resolves to the event whose window is open now.
+
+    The college is linked to a past (closed) event and a currently open one;
+    verify-step1 must pick the open event and succeed instead of reporting
+    REGISTRATION_CLOSED for the older ceremony.
+    """
+    closed = await make_event(
+        name="حفل سابق",
+        registration_start=datetime(2020, 1, 1, tzinfo=UTC),
+        registration_end=datetime(2021, 1, 1, tzinfo=UTC),
+    )
+    open_event = await make_event(
+        name="حفل مفتوح",
+        registration_start=datetime(2020, 1, 1, tzinfo=UTC),
+        registration_end=datetime(2040, 1, 1, tzinfo=UTC),
+    )
+    college = await make_college(closed.id, name="كلية مشتركة")
+    await make_college(open_event.id, name="كلية مشتركة")
+    await make_university_record(open_event.id, college.id, university_id="800005")
+
+    resp = await client.post(
+        "/api/graduates/verify-step1", json=_payload(college.id, "800005")
+    )
+
+    assert resp.status_code == 200, resp.text
+
+
 async def test_register_step2_rechecks_window_and_closes(
     client, make_event, make_college
 ):
