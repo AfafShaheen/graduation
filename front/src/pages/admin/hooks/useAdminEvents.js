@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useState, useCallback } from "react";
 import { adminRequest, ApiError } from "../../../api/admin.js";
+import { cachedRequest, invalidate, CACHE_TTL } from "../../../api/cache.js";
 
 export function useAdminEvents({ search = "", skip = 0, limit = 100, activeOnly = false } = {}) {
   const [events, setEvents] = useState([]);
@@ -7,32 +8,50 @@ export function useAdminEvents({ search = "", skip = 0, limit = 100, activeOnly 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchEvents = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const query = { skip, limit };
-      if (search) query.search = search;
-      if (activeOnly) query.active_only = true;
-      const res = await adminRequest("/api/admin/events", { query });
-      setEvents(res.items || []);
-      setTotal(res.total || 0);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "حدث خطأ غير متوقع.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const cacheKey = `events:${search}:${skip}:${limit}:${activeOnly}`;
+
+  const fetchEvents = useCallback(
+    async ({ force = false } = {}) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const query = { skip, limit };
+        if (search) query.search = search;
+        if (activeOnly) query.active_only = true;
+        const res = await cachedRequest(
+          cacheKey,
+          CACHE_TTL.events,
+          () => adminRequest("/api/admin/events", { query }),
+          { force },
+        );
+        setEvents(res.items || []);
+        setTotal(res.total || 0);
+      } catch (e) {
+        setError(e instanceof ApiError ? e.message : "حدث خطأ غير متوقع.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [cacheKey, search, skip, limit, activeOnly],
+  );
 
   useEffect(() => {
     fetchEvents();
-  }, [search, skip, limit, activeOnly]);
+  }, [fetchEvents]);
 
-  return { events, total, loading, error, refetch: fetchEvents };
+  return {
+    events,
+    total,
+    loading,
+    error,
+    refetch: () => fetchEvents({ force: true }),
+  };
 }
 
 export async function createAdminEvent(payload) {
-  return await adminRequest("/api/admin/events", { method: "POST", body: payload });
+  const res = await adminRequest("/api/admin/events", { method: "POST", body: payload });
+  invalidate("events:");
+  return res;
 }
 
 export async function getAdminEvent(id) {
@@ -40,7 +59,9 @@ export async function getAdminEvent(id) {
 }
 
 export async function updateAdminEvent(id, payload) {
-  return await adminRequest(`/api/admin/events/${id}`, { method: "PUT", body: payload });
+  const res = await adminRequest(`/api/admin/events/${id}`, { method: "PUT", body: payload });
+  invalidate("events:");
+  return res;
 }
 
 export async function uploadUniversityRecords(eventId, file) {
@@ -48,6 +69,7 @@ export async function uploadUniversityRecords(eventId, file) {
   const form = new FormData();
   form.append("file", file);
   const res = await adminForm(`/api/admin/events/${eventId}/university-records`, form, "POST");
+  invalidate("events:");
   if (res && Array.isArray(res.errors) && res.errors.length > 0) {
     throw new Err(0, res.errors.join("\n"), res);
   }
