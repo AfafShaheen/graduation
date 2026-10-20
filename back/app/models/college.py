@@ -20,6 +20,12 @@ class CollegeModel(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    majors = relationship(
+        "MajorModel",
+        back_populates="college",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     events = relationship(
         "EventModel",
         secondary="event_colleges",

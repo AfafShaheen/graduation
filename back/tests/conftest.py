@@ -297,9 +297,19 @@ def make_college(db):
 
 @pytest.fixture
 def make_major(db):
+    from sqlalchemy import select
     from app.models.major import MajorModel
 
     async def _make(college_id, name="هندسة برمجيات"):
+        existing = (
+            await db.execute(
+                select(MajorModel).where(
+                    MajorModel.college_id == college_id, MajorModel.name == name
+                )
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            return existing
         major = MajorModel(college_id=college_id, name=name)
         db.add(major)
         await db.commit()

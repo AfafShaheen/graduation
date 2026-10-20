@@ -9,7 +9,7 @@ class MajorModel(Base):
     name = Column(String(255), nullable=False)
     college_id = Column(Integer, ForeignKey("colleges.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    college = relationship("CollegeModel", backref="majors")
+    college = relationship("CollegeModel", back_populates="majors")
 
     __table_args__ = (
         UniqueConstraint("college_id", "name", name="unique_major_name_per_college"),

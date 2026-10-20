@@ -1,14 +1,31 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from typing import List
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class CollegeCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
-    event_id: int
+
 
 class CollegeUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=2, max_length=255)
-    event_id: Optional[int] = None
+    name: str = Field(..., min_length=2, max_length=255)
 
-class CollegeResponse(CollegeCreate):
+
+class CollegeMajorItem(BaseModel):
     id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CollegeEventItem(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CollegeResponse(BaseModel):
+    id: int
+    name: str
+    majors: List[CollegeMajorItem] = []
+    events: List[CollegeEventItem] = []
     model_config = ConfigDict(from_attributes=True)
