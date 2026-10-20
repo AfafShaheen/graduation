@@ -30,6 +30,7 @@ import AdminEditCeremonyRoute from "./pages/admin/AdminEditCeremonyRoute";
 import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
 import AdminScannersSettings from "./pages/admin/AdminScannersSettings";
 import AdminExceptions from "./pages/admin/AdminExceptions";
+import AdminColleges from "./pages/admin/AdminColleges";
 import AdminVolunteers from "./pages/admin/AdminVolunteers";
 import { AdminStatsProvider } from "./context/AdminStatsContext";
 import ScannerLogin from "./pages/scanner/ScannerLogin";
@@ -425,6 +426,23 @@ function App() {
           element={
             hasValidAdmin || PREVIEW ? (
               <AdminExceptions
+                adminName={adminName}
+                onNavigate={(section) => navigate(`/admin/${section}`)}
+                onAddTicket={() => navigate("/admin/ceremonies/new")}
+                onLogout={handleAdminLogout}
+              />
+            ) : (
+              <Navigate to="/admin" replace />
+            )
+          }
+        />
+
+        {/* ===== الكليات والاختصاصات ===== */}
+        <Route
+          path="/admin/colleges"
+          element={
+            hasValidAdmin || PREVIEW ? (
+              <AdminColleges
                 adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onAddTicket={() => navigate("/admin/ceremonies/new")}

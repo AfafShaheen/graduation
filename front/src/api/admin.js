@@ -64,10 +64,29 @@ export async function deleteEvent(id) {
   });
 }
 
+export async function listColleges() {
+  const auth = getAdminToken();
+  return request("/api/admin/colleges", { token: auth });
+}
+
+export async function createCollege(data) {
+  const auth = getAdminToken();
+  return request("/api/admin/colleges", { method: "POST", body: data, token: auth });
+}
+
+export async function updateCollege(id, data) {
+  const auth = getAdminToken();
+  return request(`/api/admin/colleges/${id}`, { method: "PUT", body: data, token: auth });
+}
+
+export async function deleteCollege(id) {
+  const auth = getAdminToken();
+  return request(`/api/admin/colleges/${id}`, { method: "DELETE", token: auth });
+}
+
 export async function getMajors(collegeId) {
-  return request(`/api/admin/colleges/${collegeId}/majors`, {
-    token: getAdminToken(),
-  });
+  const auth = getAdminToken();
+  return request(`/api/admin/colleges/${collegeId}/majors`, { token: auth });
 }
 
 export async function createMajor(collegeId, data) {

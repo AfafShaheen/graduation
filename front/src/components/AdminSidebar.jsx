@@ -17,6 +17,7 @@ function readCollapsed() {
 const NAV_ITEMS = [
   { id: 'dashboard', icon: 'dashboard', label: 'لوحة الإحصائيات' },
   { id: 'ceremonies', icon: 'school', label: 'الحفلات' },
+  { id: 'colleges', icon: 'account_balance', label: 'كليات واختصاصات' },
   { id: 'payments', icon: 'receipt_long', label: 'طلبات الدفع' },
   { id: 'scanners', icon: 'qr_code_scanner', label: 'الماسحون' },
   { id: 'actions', icon: 'admin_panel_settings', label: 'إجراءات استثنائية' },
