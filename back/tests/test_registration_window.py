@@ -180,6 +180,8 @@ async def test_public_settings_exposes_only_contact_phone(client, db):
 async def test_create_event_rejects_college_from_other_event(
     client, make_event, make_college, make_admin
 ):
+    """P5.3 supersedes the FR-14 name rule: a shared college is allowed only
+    when the windows never overlap, so an overlapping window is rejected."""
     event = await make_event()
     await make_college(event.id, name="كلية الهندسة")
 
@@ -191,7 +193,7 @@ async def test_create_event_rejects_college_from_other_event(
     )
 
     assert resp.status_code == 400
-    assert resp.json()["detail"] == messages.COLLEGE_LINKED_TO_OTHER_EVENT
+    assert messages.COLLEGE_WINDOW_OVERLAP in resp.json()["detail"]
 
 
 async def test_create_event_collapses_duplicate_college_names(
@@ -213,3 +215,39 @@ async def test_create_event_collapses_duplicate_college_names(
         .where(EventCollegeModel.event_id == event_id)
     )
     assert len(rows.scalars().all()) == 1
+
+
+async def test_create_event_rejects_overlapping_window_for_shared_college(
+    client, make_event, make_college, make_admin
+):
+    """P5.3: a catalog college cannot join two events with overlapping windows."""
+    event = await make_event()
+    await make_college(event.id, name="كلية الصيدلة")
+
+    token = await _admin_token(client, make_admin)
+    overlap = await client.post(
+        "/api/admin/events",
+        json=_create_event_payload(["كلية الصيدلة"]),
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert overlap.status_code == 400
+    assert messages.COLLEGE_WINDOW_OVERLAP in overlap.json()["detail"]
+
+
+async def test_create_event_allows_disjoint_window_for_shared_college(
+    client, make_event, make_college, make_admin
+):
+    """P5.3: the same college may be reused when its windows never overlap."""
+    event = await make_event()
+    await make_college(event.id, name="كلية العلوم")
+
+    token = await _admin_token(client, make_admin)
+    payload = _create_event_payload(["كلية العلوم"])
+    payload["registration_start"] = "2036-01-01T00:00:00+00:00"
+    payload["registration_end"] = "2037-01-01T00:00:00+00:00"
+    resp = await client.post(
+        "/api/admin/events",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201, resp.text

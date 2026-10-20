@@ -17,13 +17,14 @@ from app.core.redis import redis_client
 from app.core import messages
 from app.services.graduate_service import normalize_arabic
 from app.services.audit_log import ActorType, record_audit
+from app.services.college_links import assert_windows_do_not_overlap
 
 
 def _normalize_college_key(name: str) -> str:
     return normalize_arabic(name).casefold()
 
 
-def _dedupe_college_names(names: List[str]) -> tuple[list[str], set[str]]:
+def _dedupe_college_names(names: List[str]) -> list[str]:
     """Drop blank names and collapse duplicates (after normalization)."""
     ordered: list[str] = []
     seen: set[str] = set()
@@ -36,33 +37,7 @@ def _dedupe_college_names(names: List[str]) -> tuple[list[str], set[str]]:
             continue
         seen.add(key)
         ordered.append(cleaned)
-    return ordered, seen
-
-
-async def _ensure_college_names_available(
-    db: AsyncSession,
-    normalized_keys: set[str],
-    exclude_event_id: int | None = None,
-) -> None:
-    """Reject college names already linked to a different event (FR-14, UC-6 alt-a).
-
-    Colleges live in a global catalog (P5.1), so the check looks at the
-    ``event_colleges`` links instead of a college-owned event.
-    """
-    if not normalized_keys:
-        return
-    res = await db.execute(
-        select(CollegeModel.name, EventCollegeModel.event_id)
-        .join(EventCollegeModel, EventCollegeModel.college_id == CollegeModel.id)
-    )
-    for existing_name, existing_event_id in res.all():
-        if exclude_event_id is not None and existing_event_id == exclude_event_id:
-            continue
-        if _normalize_college_key(existing_name) in normalized_keys:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=messages.COLLEGE_LINKED_TO_OTHER_EVENT,
-            )
+    return ordered
 
 
 async def _colleges_by_normalized_name(db: AsyncSession) -> dict[str, CollegeModel]:
@@ -99,8 +74,18 @@ async def invalidate_events_cache() -> None:
 
 
 async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict) -> dict:
-    college_names, normalized_keys = _dedupe_college_names(data.college_names)
-    await _ensure_college_names_available(db, normalized_keys)
+    college_names = _dedupe_college_names(data.college_names)
+
+    # 2. Link catalog colleges (creating missing ones by name). P5.3 allows a
+    # college to be reused as long as the registration windows never overlap,
+    # so the legacy "name linked to another event" rule was removed (P5.4).
+    colleges = await _resolve_colleges_for_event(db, college_names)
+    await assert_windows_do_not_overlap(
+        db,
+        [college.id for college in colleges],
+        data.registration_start,
+        data.registration_end,
+    )
 
     # 1. Create Event record
     new_event = EventModel(
@@ -120,7 +105,6 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
     await db.refresh(new_event)
 
     # 2. Link catalog colleges (creating missing ones by name)
-    colleges = await _resolve_colleges_for_event(db, college_names)
     for college in colleges:
         db.add(EventCollegeModel(event_id=new_event.id, college_id=college.id))
     await db.flush()
@@ -283,6 +267,29 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
                 status_code=status.HTTP_409_CONFLICT,
                 detail=messages.SEAT_PREFIX_LOCKED,
             )
+
+    # P5.3: a changed registration window may not overlap with another event
+    # that shares one of this event's colleges.
+    new_start = update_data.get("registration_start", ev.registration_start)
+    new_end = update_data.get("registration_end", ev.registration_end)
+    existing_college_ids = list(
+        (
+            await db.execute(
+                select(EventCollegeModel.college_id).where(
+                    EventCollegeModel.event_id == event_id
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    await assert_windows_do_not_overlap(
+        db,
+        existing_college_ids,
+        new_start,
+        new_end,
+        exclude_event_id=event_id,
+    )
 
     for key, value in update_data.items():
         setattr(ev, key, value)
