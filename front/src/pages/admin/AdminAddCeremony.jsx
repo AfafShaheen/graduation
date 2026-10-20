@@ -2,13 +2,9 @@
 import '../../style/AdminAddCeremony.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import { createAdminEvent, updateAdminEvent, uploadUniversityRecords } from './hooks/useAdminEvents.js';
-import { ApiError } from '../../api/admin.js';
+import { ApiError, listColleges } from '../../api/admin.js';
 import useFormDraft from '../../hooks/useFormDraft';
-import CollegeNamesField from '../../components/CollegeNamesField';
-import {
-  resolveCollegeNames,
-  selectedKeysFromCollegeNames,
-} from './facultyOptions.js';
+import CollegeCatalogField from '../../components/CollegeCatalogField';
 
 /* مفاتيح مسودة نموذج الحفل الجديد (localStorage) */
 const CEREMONY_DRAFT_KEYS = [
@@ -20,8 +16,7 @@ const CEREMONY_DRAFT_KEYS = [
   'price2',
   'price3',
   'pkg3',
-  'faculties',
-  'customColleges',
+  'collegeIds',
 ].map((k) => `adm.cer.${k}`);
 
 function clearCeremonyDrafts() {
@@ -165,16 +160,32 @@ export default function AdminAddCeremony({
     URL.revokeObjectURL(url);
   };
 
-  const [faculties, setFaculties] = useFormDraft(
-    draftKey('faculties'),
-    selectedKeysFromCollegeNames(
-      ceremony?.colleges || ceremony?.collegeNames || ceremony?.faculties || [],
-    ),
+  // كتالوج الكليات المركزي (يُحمّل مرة واحدة عند فتح النموذج)
+  const [catalogColleges, setCatalogColleges] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await listColleges();
+        const items = Array.isArray(data) ? data : data?.items || [];
+        if (alive) setCatalogColleges(items.filter((c) => c && c.id != null));
+      } catch {
+        if (alive) setCatalogColleges([]);
+      } finally {
+        if (alive) setCatalogLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const [selectedCollegeIds, setSelectedCollegeIds] = useFormDraft(
+    draftKey('collegeIds'),
+    [],
     { storage: 'local' },
   );
-  const [customColleges, setCustomColleges] = useFormDraft(draftKey('customColleges'), [], {
-    storage: 'local',
-  });
 
   // إغلاق القائمة بزر Escape
   useEffect(() => {
@@ -183,18 +194,17 @@ export default function AdminAddCeremony({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const handleFacultyToggle = (key) => {
-    setFaculties((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleCollegeToggle = (id) => {
+    setSelectedCollegeIds((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+    });
   };
 
-  const handleAddCustomCollege = (name) => {
-    const value = String(name || '').trim();
-    if (!value) return;
-    setCustomColleges((prev) => (prev.includes(value) ? prev : [...prev, value]));
-  };
-
-  const handleRemoveCustomCollege = (name) => {
-    setCustomColleges((prev) => prev.filter((item) => item !== name));
+  // أسماء الكليات المختارة (للموجودين في الكتالوج)
+  const selectedCollegeNames = () => {
+    const ids = Array.isArray(selectedCollegeIds) ? selectedCollegeIds : [];
+    return catalogColleges.filter((c) => ids.includes(c.id)).map((c) => c.name);
   };
 
   // مسح المسودة المحفوظة والرجوع إلى نموذج فارغ (لإنشاء حفل جديد فقط)
@@ -209,8 +219,7 @@ export default function AdminAddCeremony({
     setPricePkg2('');
     setPricePkg3('');
     setEnablePkg3(true);
-    setFaculties(selectedKeysFromCollegeNames([]));
-    setCustomColleges([]);
+    setSelectedCollegeIds([]);
     removeFile();
     setFieldErrors({});
     setSubmitError('');
@@ -235,7 +244,7 @@ export default function AdminAddCeremony({
     setSubmitError('');
     setFieldErrors({});
 
-    if (!isEdit && resolveCollegeNames(faculties, customColleges).length === 0) {
+    if (!isEdit && selectedCollegeNames().length === 0) {
       setSubmitError('اختر كلية واحدة على الأقل لهذا الحفل');
       return;
     }
@@ -264,7 +273,7 @@ export default function AdminAddCeremony({
         if (!registrationStarted) payload.is_3companions_enabled = enablePkg3;
         result = await updateAdminEvent(eventId, payload);
       } else {
-        const collegeNames = resolveCollegeNames(faculties, customColleges);
+        const collegeNames = selectedCollegeNames();
         result = await createAdminEvent({
           ...base,
           is_3companions_enabled: enablePkg3,
@@ -515,13 +524,12 @@ export default function AdminAddCeremony({
                 </span>
               </div>
 
-              <CollegeNamesField
-                selectedKeys={faculties}
-                customNames={customColleges}
+              <CollegeCatalogField
+                colleges={catalogColleges}
+                selectedIds={selectedCollegeIds}
+                onToggle={handleCollegeToggle}
                 readOnlyNames={isEdit ? ceremony?.collegeNames || [] : null}
-                onToggle={handleFacultyToggle}
-                onAddCustom={handleAddCustomCollege}
-                onRemoveCustom={handleRemoveCustomCollege}
+                loading={catalogLoading}
                 error={errFor('college_names') || errFor('colleges')}
               />
             </div>
