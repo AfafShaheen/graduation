@@ -150,8 +150,8 @@
 | P6.3 | صفحة «ملفات البيانات» + إزالة الرفع من نموذج الحفل | ✅ | (P6.3 commit) | frontend lint 0 errors/40 warnings; npm test 29 passed |
 | P6.4 | إزالة الرفع من نموذج الحفل + عرض المرفوع | ✅ | (P6.3 commit) | دُمج مع P6.3 |
 | P6.5 | معاينة قبل الاستيراد (اختياري) | ⛔ | — | اختياري، أُجّل خارج نطاق التسليم الحالي |
-| P7.1 | SMTP + فشل الإرسال الظاهر | ⬜ | — | — |
-| P7.2 | أداة تشخيص المطابقة | ⬜ | — | — |
+| P7.1 | SMTP + فشل الإرسال الظاهر | ✅ | `915e41c` | `test_email_status` 7 passed؛ baseline أضيف `/api/admin/settings/email-status` |
+| P7.2 | أداة تشخيص المطابقة | ✅ | (هذا الكوميت) | `test_university_record_diagnostic` 6 passed؛ صفحة «تشخيص المطابقة» + `diagnoseUniversityRecord`؛ baseline أضيف `/api/admin/university-records/diagnose` |
 | P7.3 | نص نموذج المطابقة | ⬜ | — | — |
 | P8.1 | توليد رمز التجديد + `jti` | ⬜ | — | — |
 | P8.2 | نقاط التجديد للفاعلين الثلاثة | ⬜ | — | — |

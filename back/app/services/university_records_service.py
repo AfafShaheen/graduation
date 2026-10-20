@@ -716,3 +716,129 @@ async def delete_university_record(record_id: int, admin: dict, db: AsyncSession
     await invalidate_uni_records_cache(event_id)
 
     return {"status": "success", "message": "تم حذف السجل الجامعي بنجاح."}
+
+
+async def diagnose_university_record(
+    data: Any,
+    db: AsyncSession,
+) -> dict:
+    """P7.2: ADMIN-ONLY matching diagnostic.
+
+    Exposes the stored university record for a (university_id, college_id) pair
+    together with a per-field comparison against the graduate-supplied identity
+    fields, so the union can pinpoint what is preventing Step-1 verification.
+    This mirrors the exact matching performed by ``verify_step1_service`` but is
+    intentionally restricted to admins (privacy / S5): end users keep getting the
+    generic failure only.
+    """
+    record_res = await db.execute(
+        select(UniversityRecordModel).where(
+            UniversityRecordModel.university_id == data.university_id,
+            UniversityRecordModel.college_id == data.college_id,
+        )
+    )
+    record = record_res.scalar_one_or_none()
+
+    if record is None:
+        return {
+            "found": False,
+            "record": None,
+            "fields": [],
+            "mismatches": [],
+            "already_registered": False,
+            "message": "لا يوجد سجل جامعي مطابق لهذا الرقم الجامعي في هذه الكلية.",
+        }
+
+    college_res = await db.get(CollegeModel, record.college_id)
+    major_name = None
+    if record.major_id is not None:
+        major = await db.get(MajorModel, record.major_id)
+        major_name = major.name if major else None
+
+    grad_res = await db.execute(
+        select(GraduateModel).where(
+            GraduateModel.university_id == record.university_id,
+            GraduateModel.college_id == record.college_id,
+        )
+    )
+    already_registered = grad_res.scalar_one_or_none() is not None
+
+    def _cmp(field: str, label: str, expected: Any, provided: Any) -> dict:
+        exp = normalize_arabic(str(expected)) if expected is not None else ""
+        prov = normalize_arabic(str(provided)) if provided is not None else ""
+        return {
+            "field": field,
+            "label": label,
+            "expected": None if expected is None else str(expected),
+            "provided": None if provided is None else str(provided),
+            "matches": exp == prov and (expected is not None or provided is not None),
+        }
+
+    full_record = f"{record.first_name or ''} {record.last_name or ''}".strip()
+    provided_full = (
+        f"{data.first_name or ''} {data.last_name or ''}".strip()
+        if (data.first_name is not None or data.last_name is not None)
+        else (data.full_name or "")
+    )
+
+    # Mirror _names_match (split both sides => compare parts; otherwise compare
+    # the composed full name against the stored full_name).
+    if (
+        data.first_name is not None
+        and data.last_name is not None
+        and record.first_name is not None
+        and record.last_name is not None
+    ):
+        fields: List[dict] = [
+            _cmp("first_name", "الاسم", record.first_name, data.first_name),
+            _cmp("last_name", "الكنية", record.last_name, data.last_name),
+        ]
+    else:
+        name_expected = full_record or record.full_name
+        fields = [_cmp("full_name", "الاسم الكامل", name_expected, provided_full)]
+
+    fields += [
+        _cmp("father_name", "اسم الأب", record.father_name, data.father_name),
+        _cmp("mother_name", "اسم الأم", record.mother_name, data.mother_name),
+        _cmp("gender", "الجنس", record.gender, data.gender),
+    ]
+
+    if data.major_id is not None or record.major_id is not None:
+        fields.append(
+            {
+                "field": "major_id",
+                "label": "التخصص",
+                "expected": None if record.major_id is None else str(record.major_id),
+                "provided": None if data.major_id is None else str(data.major_id),
+                "matches": data.major_id == record.major_id,
+            }
+        )
+
+    mismatches = [f["label"] for f in fields if not f["matches"]]
+
+    return {
+        "found": True,
+        "record": {
+            "record_id": record.id,
+            "event_id": record.event_id,
+            "university_id": record.university_id,
+            "full_name": record.full_name,
+            "first_name": record.first_name,
+            "last_name": record.last_name,
+            "father_name": record.father_name,
+            "mother_name": record.mother_name,
+            "gender": record.gender,
+            "college_id": record.college_id,
+            "college_name": college_res.name if college_res else None,
+            "major_id": record.major_id,
+            "major_name": major_name,
+            "gpa": str(record.gpa) if record.gpa is not None else None,
+            "top_rank_from_file": record.top_rank_from_file,
+            "phone": record.phone,
+            "imported_at": record.imported_at,
+        },
+        "fields": fields,
+        "mismatches": mismatches,
+        "already_registered": already_registered,
+        "message": None,
+    }

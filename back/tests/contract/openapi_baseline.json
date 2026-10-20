@@ -452,6 +452,193 @@
         "title": "CollegeUpdate",
         "type": "object"
       },
+      "DiagnosticField": {
+        "properties": {
+          "expected": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "matches": {
+            "title": "Matches",
+            "type": "boolean"
+          },
+          "provided": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provided"
+          }
+        },
+        "required": [
+          "field",
+          "label",
+          "matches"
+        ],
+        "title": "DiagnosticField",
+        "type": "object"
+      },
+      "DiagnosticRecord": {
+        "properties": {
+          "college_id": {
+            "title": "College Id",
+            "type": "integer"
+          },
+          "college_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "College Name"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "integer"
+          },
+          "father_name": {
+            "title": "Father Name",
+            "type": "string"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "gender": {
+            "title": "Gender",
+            "type": "string"
+          },
+          "gpa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpa"
+          },
+          "imported_at": {
+            "format": "date-time",
+            "title": "Imported At",
+            "type": "string"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "major_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Id"
+          },
+          "major_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Name"
+          },
+          "mother_name": {
+            "title": "Mother Name",
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "record_id": {
+            "title": "Record Id",
+            "type": "integer"
+          },
+          "top_rank_from_file": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Rank From File"
+          },
+          "university_id": {
+            "title": "University Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id",
+          "event_id",
+          "university_id",
+          "full_name",
+          "father_name",
+          "mother_name",
+          "gender",
+          "college_id",
+          "imported_at"
+        ],
+        "title": "DiagnosticRecord",
+        "type": "object"
+      },
       "EventBrief": {
         "properties": {
           "event_date": {
@@ -1902,6 +2089,156 @@
           "items"
         ],
         "title": "UniversityFileListResponse",
+        "type": "object"
+      },
+      "UniversityRecordDiagnosticRequest": {
+        "properties": {
+          "college_id": {
+            "title": "College Id",
+            "type": "integer"
+          },
+          "father_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Father Name"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "major_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Id"
+          },
+          "mother_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mother Name"
+          },
+          "university_id": {
+            "title": "University Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "university_id",
+          "college_id"
+        ],
+        "title": "UniversityRecordDiagnosticRequest",
+        "type": "object"
+      },
+      "UniversityRecordDiagnosticResponse": {
+        "properties": {
+          "already_registered": {
+            "default": false,
+            "title": "Already Registered",
+            "type": "boolean"
+          },
+          "fields": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticField"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "found": {
+            "title": "Found",
+            "type": "boolean"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "mismatches": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Mismatches",
+            "type": "array"
+          },
+          "record": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiagnosticRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "found"
+        ],
+        "title": "UniversityRecordDiagnosticResponse",
         "type": "object"
       },
       "UniversityRecordItem": {
@@ -4846,6 +5183,52 @@
         "summary": "Link File",
         "tags": [
           "Admin University Data Files"
+        ]
+      }
+    },
+    "/api/admin/university-records/diagnose": {
+      "post": {
+        "operationId": "diagnose_record_api_admin_university_records_diagnose_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UniversityRecordDiagnosticRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniversityRecordDiagnosticResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Diagnose Record",
+        "tags": [
+          "Admin University Records & FR-15"
         ]
       }
     },

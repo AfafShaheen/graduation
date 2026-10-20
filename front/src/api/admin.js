@@ -135,6 +135,15 @@ export async function deleteUniversityRecord(id) {
   });
 }
 
+export async function diagnoseUniversityRecord(payload) {
+  const auth = getAdminToken();
+  return request("/api/admin/university-records/diagnose", {
+    method: "POST",
+    body: payload,
+    token: auth
+  });
+}
+
 export async function listUniversityFiles() {
   const auth = getAdminToken();
   return request("/api/admin/university-files", { token: auth });
