@@ -152,7 +152,7 @@
 | P6.5 | معاينة قبل الاستيراد (اختياري) | ⛔ | — | اختياري، أُجّل خارج نطاق التسليم الحالي |
 | P7.1 | SMTP + فشل الإرسال الظاهر | ✅ | `915e41c` | `test_email_status` 7 passed؛ baseline أضيف `/api/admin/settings/email-status` |
 | P7.2 | أداة تشخيص المطابقة | ✅ | (هذا الكوميت) | `test_university_record_diagnostic` 6 passed؛ صفحة «تشخيص المطابقة» + `diagnoseUniversityRecord`؛ baseline أضيف `/api/admin/university-records/diagnose` |
-| P7.3 | نص نموذج المطابقة | ⬜ | — | — |
+| P7.3 | نص نموذج المطابقة | ✅ | (هذا الكوميت) | توضيح النص في `GraduationFormStep1.jsx`؛ npm test 29 passed |
 | P8.1 | توليد رمز التجديد + `jti` | ⬜ | — | — |
 | P8.2 | نقاط التجديد للفاعلين الثلاثة | ⬜ | — | — |
 | P8.3 | إرجاع/إبطال رمز التجديد | ⬜ | — | — |
