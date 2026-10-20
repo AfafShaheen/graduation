@@ -9,6 +9,19 @@ export class ApiError extends Error {
   }
 }
 
+// Sub-path deploy (cPanel): with VITE_BASE_PATH=/graduation/ the app lives under
+// /graduation/, so absolute paths must be prefixed. Default base '/' keeps the
+// root-path behaviour unchanged.
+export const appPath = (p) => import.meta.env.BASE_URL.replace(/\/$/, "") + p;
+
+function currentAppPath() {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  if (base && window.location.pathname.startsWith(base)) {
+    return window.location.pathname.slice(base.length) || "/";
+  }
+  return window.location.pathname;
+}
+
 async function refreshSession(path, token) {
   const session = await import("./session.js");
   const baseUrl = import.meta.env.VITE_API_URL || "";
@@ -124,16 +137,16 @@ async function proactiveCheck(path, token) {
 
 function logoutRedirect(path) {
   if (path.startsWith("/api/scanner")) {
-    if (window.location.pathname !== "/scanner") {
-      window.location.href = "/scanner";
+    if (currentAppPath() !== "/scanner") {
+      window.location.href = appPath("/scanner");
     }
   } else if (path.startsWith("/api/admin")) {
-    if (!window.location.pathname.startsWith("/admin")) {
-      window.location.href = "/admin";
+    if (!currentAppPath().startsWith("/admin")) {
+      window.location.href = appPath("/admin");
     }
   } else {
-    if (window.location.pathname !== "/login") {
-      window.location.href = "/login";
+    if (currentAppPath() !== "/login") {
+      window.location.href = appPath("/login");
     }
   }
 }
@@ -148,6 +161,23 @@ async function handleUnauthorized(path) {
     clearGraduateSession();
   }
   logoutRedirect(path);
+}
+
+// One shared code path for 401 recovery: refresh once, retry the same request
+// with the new token, and let the caller decide what to do with the response.
+// Returns null when the refresh failed (caller must handle the unauthorized
+// case), or throws ApiError(0) if the retried request itself failed.
+async function refreshAndRetry(path, token, url, config) {
+  const refreshed = await refreshSession(path, token);
+  if (!refreshed) return null;
+  try {
+    return await fetch(url, {
+      ...config,
+      headers: { ...config.headers, Authorization: `Bearer ${refreshed}` },
+    });
+  } catch {
+    throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
+  }
 }
 
 export async function request(path, { method = "GET", body = null, token = null } = {}) {
@@ -216,26 +246,17 @@ export async function request(path, { method = "GET", body = null, token = null 
       if (isLogin || !token) {
         throw new ApiError(response.status, errorMessage, data, fieldErrors);
       }
-      const refreshed = await refreshSession(path, token);
-      if (refreshed) {
-        const retryHeaders = { ...headers, Authorization: `Bearer ${refreshed}` };
-        let retryResponse;
-        try {
-          retryResponse = await fetch(url, { ...config, headers: retryHeaders });
-        } catch {
-          throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
-        }
-        if (retryResponse.ok) {
-          const retryType = retryResponse.headers.get("content-type");
-          if (retryType && retryType.includes("application/json")) {
-            try {
-              return await retryResponse.json();
-            } catch {
-              return null;
-            }
+      const retryResponse = await refreshAndRetry(path, token, url, config);
+      if (retryResponse && retryResponse.ok) {
+        const retryType = retryResponse.headers.get("content-type");
+        if (retryType && retryType.includes("application/json")) {
+          try {
+            return await retryResponse.json();
+          } catch {
+            return null;
           }
-          return null;
         }
+        return null;
       }
       await handleUnauthorized(path);
     }
@@ -250,11 +271,11 @@ export async function requestBlob(path, { token } = {}) {
   const baseUrl = import.meta.env.VITE_API_URL || "";
   const url = `${baseUrl}${path}`;
 
-  await proactiveCheck(path, token);
+  const effectiveToken = await proactiveCheck(path, token);
 
   const headers = {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (effectiveToken) {
+    headers["Authorization"] = `Bearer ${effectiveToken}`;
   }
 
   let response;
@@ -278,24 +299,21 @@ export async function requestBlob(path, { token } = {}) {
       } catch {}
     }
 
-    if (response.status === 401 && token) {
-      const { clearGraduateSession, clearScannerSession, clearAdminSession } = await import("./session.js");
-      if (path.startsWith("/api/scanner")) {
-        clearScannerSession();
-        if (currentAppPath() !== "/scanner") {
-          window.location.href = appPath("/scanner");
-        }
-      } else if (path.startsWith("/api/admin")) {
-        clearAdminSession();
-        if (!currentAppPath().startsWith("/admin")) {
-          window.location.href = appPath("/admin");
-        }
-      } else {
-        clearGraduateSession();
-        if (currentAppPath() !== "/login") {
-          window.location.href = appPath("/login");
-        }
+    if (response.status === 401) {
+      if (!token) {
+        throw new ApiError(response.status, errorMessage);
       }
+      const retryResponse = await refreshAndRetry(path, token, url, { headers });
+      if (retryResponse && retryResponse.ok) {
+        const retryDisposition = retryResponse.headers.get("Content-Disposition") || "";
+        let retryFilename = "download";
+        const retryMatch = retryDisposition.match(/filename="?([^"]+)"?/);
+        if (retryMatch) {
+          retryFilename = retryMatch[1];
+        }
+        return { blob: await retryResponse.blob(), filename: retryFilename };
+      }
+      await handleUnauthorized(path);
     }
 
     throw new ApiError(response.status, errorMessage);
