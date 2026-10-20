@@ -136,15 +136,15 @@
 | P3.2 | `useFormDraft` لنموذج الحفل | ⬜ | — | — |
 | P3.3 | تخزين مؤقت للقوائم | ⬜ | — | — |
 | P4.1 | عمود حالة التسجيل | ⬜ | — | — |
-| P5.1 | ترحيل `event_colleges` | ⬜ | — | — |
-| P5.2 | CRUD الكليات | ⬜ | — | — |
-| P5.3 | قاعدة وضوح الربط | ⬜ | — | — |
-| P5.4 | الحفل يقبل كليات من الكتالوج | ⬜ | — | — |
-| P5.5 | تحديث اختيار الحفل بالكلية | ⬜ | — | — |
-| P5.6 | صفحة «كليات واختصاصات» | ⬜ | — | — |
-| P5.7 | نموذج الحفل: اختيار من الكتالوج | ⬜ | — | — |
-| P5.8 | اختبارات + baseline | ⬜ | — | — |
-| P5.9 | اختبار منع التسجيل بحفل منتهٍ | ⬜ | — | — |
+| P5.1 | ترحيل `event_colleges` | ✅ | `a92d238` | backend 344 passed؛ العقد دون تغيير |
+| P5.2 | CRUD الكليات | ✅ | `23d50d5` | اختبارات `test_admin_college_crud` 6 passed؛ backend 350 passed |
+| P5.3 | قاعدة وضوح الربط | ✅ | `300030a` | backend 352 passed؛ `COLLEGE_WINDOW_OVERLAP` |
+| P5.4 | الحفل يقبل كليات من الكتالوج | ✅ | `300030a` | إنشاء/تعديل الحفل يفرضان عدم تداخل النوافذ |
+| P5.5 | تحديث اختيار الحفل بالكلية | ✅ | `d5aef4e` | `test_verify_step1_prefers_the_open_window_event` 12 passed |
+| P5.6 | صفحة «كليات واختصاصات» | ✅ | `c4fa793` | frontend lint 0 errors/38 warnings; npm test 33 passed |
+| P5.7 | نموذج الحفل: اختيار من الكتالوج | ✅ | `3cf6f47` | frontend lint 0 errors/38 warnings; npm test 29 passed (حُذف 4 لـfacultyOptions) |
+| P5.8 | اختبارات + baseline | ✅ | (docs) | backend 354 passed؛ العقد دون تغيير فلا تحديث baseline |
+| P5.9 | اختبار منع التسجيل بحفل منتهٍ | ✅ | `e2c85a1` | `test_ticket_selection.py` 11 passed |
 | P6.1 | جدول `university_files` + ترحيل | ⬜ | — | — |
 | P6.2 | صفحة «ملفات البيانات» | ⬜ | — | — |
 | P6.3 | تدفق الربط من الصفحة | ⬜ | — | — |
