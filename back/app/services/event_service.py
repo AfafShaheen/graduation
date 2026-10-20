@@ -5,8 +5,10 @@ from typing import List, Optional, Dict, Any
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
+from sqlalchemy.orm import selectinload
 from app.models.event import EventModel
 from app.models.college import CollegeModel
+from app.models.event_college import EventCollegeModel
 from app.models.graduate import GraduateModel
 from app.models.ticket import TicketModel
 from app.models.university_record import UniversityRecordModel
@@ -42,10 +44,17 @@ async def _ensure_college_names_available(
     normalized_keys: set[str],
     exclude_event_id: int | None = None,
 ) -> None:
-    """Reject college names already linked to a different event (FR-14, UC-6 alt-a)."""
+    """Reject college names already linked to a different event (FR-14, UC-6 alt-a).
+
+    Colleges live in a global catalog (P5.1), so the check looks at the
+    ``event_colleges`` links instead of a college-owned event.
+    """
     if not normalized_keys:
         return
-    res = await db.execute(select(CollegeModel.name, CollegeModel.event_id))
+    res = await db.execute(
+        select(CollegeModel.name, EventCollegeModel.event_id)
+        .join(EventCollegeModel, EventCollegeModel.college_id == CollegeModel.id)
+    )
     for existing_name, existing_event_id in res.all():
         if exclude_event_id is not None and existing_event_id == exclude_event_id:
             continue
@@ -54,6 +63,29 @@ async def _ensure_college_names_available(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=messages.COLLEGE_LINKED_TO_OTHER_EVENT,
             )
+
+
+async def _colleges_by_normalized_name(db: AsyncSession) -> dict[str, CollegeModel]:
+    res = await db.execute(select(CollegeModel))
+    return {_normalize_college_key(c.name): c for c in res.scalars().all()}
+
+
+async def _resolve_colleges_for_event(
+    db: AsyncSession, college_names: List[str]
+) -> list[CollegeModel]:
+    """Find or create catalog colleges for the given names."""
+    existing = await _colleges_by_normalized_name(db)
+    colleges: list[CollegeModel] = []
+    for cleaned_name in college_names:
+        key = _normalize_college_key(cleaned_name)
+        college = existing.get(key)
+        if college is None:
+            college = CollegeModel(name=cleaned_name)
+            db.add(college)
+            await db.flush()
+            existing[key] = college
+        colleges.append(college)
+    return colleges
 
 
 async def invalidate_events_cache() -> None:
@@ -87,12 +119,11 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
     await db.flush()
     await db.refresh(new_event)
 
-    # 2. Create linked College records
-    colleges = []
-    for cleaned_name in college_names:
-        college = CollegeModel(name=cleaned_name, event_id=new_event.id)
-        db.add(college)
-        colleges.append(cleaned_name)
+    # 2. Link catalog colleges (creating missing ones by name)
+    colleges = await _resolve_colleges_for_event(db, college_names)
+    for college in colleges:
+        db.add(EventCollegeModel(event_id=new_event.id, college_id=college.id))
+    await db.flush()
 
     # 3. Audit log
     await record_audit(
@@ -101,7 +132,7 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
         admin["admin_id"],
         "CREATE_EVENT",
         f"Event ID {new_event.id}",
-        f"Created event '{new_event.name}' with colleges: {', '.join(colleges)}",
+        f"Created event '{new_event.name}' with colleges: {', '.join(c.name for c in colleges)}",
         event_id=new_event.id,
     )
 
@@ -130,7 +161,7 @@ async def list_events_service(
     except Exception:
         pass
 
-    stmt = select(EventModel)
+    stmt = select(EventModel).options(selectinload(EventModel.colleges))
     if search:
         stmt = stmt.where(EventModel.name.ilike(f"%{search}%"))
 
@@ -153,8 +184,7 @@ async def list_events_service(
 
     items = []
     for ev in events:
-        colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == ev.id))
-        colleges = colleges_res.scalars().all()
+        colleges = ev.colleges
         items.append({
             "id": ev.id,
             "name": ev.name,
@@ -190,12 +220,11 @@ async def get_event_details_service(db: AsyncSession, event_id: int) -> dict:
     except Exception:
         pass
 
-    ev = await db.get(EventModel, event_id)
+    ev = await db.get(EventModel, event_id, options=(selectinload(EventModel.colleges),))
     if not ev:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الحفل.")
 
-    colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
-    colleges = colleges_res.scalars().all()
+    colleges = ev.colleges
 
     result = {
         "id": ev.id,
@@ -282,7 +311,9 @@ async def delete_event_service(db: AsyncSession, event_id: int, admin: dict) -> 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الحفل.")
 
     # Check if there are ANY graduates or university_records tied to this event's colleges
-    colleges_res = await db.execute(select(CollegeModel.id).where(CollegeModel.event_id == event_id))
+    colleges_res = await db.execute(
+        select(EventCollegeModel.college_id).where(EventCollegeModel.event_id == event_id)
+    )
     college_ids = [c for c in colleges_res.scalars().all()]
 
     if college_ids:

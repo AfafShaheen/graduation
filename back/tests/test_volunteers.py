@@ -437,8 +437,8 @@ async def test_event_scoping_and_unknown_event_404(
     admin = await make_admin()
     event_a = await make_event()
     event_b = await make_event()
-    college_a = await make_college(event_a.id)
-    college_b = await make_college(event_b.id)
+    college_a = await make_college(event_a.id, name="كلية أ")
+    college_b = await make_college(event_b.id, name="كلية ب")
     await _volunteer(db, make_graduate, college_a.id, university_id="1",
                      wants=True, has_experience=True)
     await _volunteer(db, make_graduate, college_b.id, university_id="2",

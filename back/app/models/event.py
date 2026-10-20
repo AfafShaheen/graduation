@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, DateTime, Time, Boolean, Numeric, CheckConstraint
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.models.base import Base
 
@@ -17,6 +18,19 @@ class EventModel(Base):
     price_2_companions = Column(Numeric(10, 2), nullable=False)
     price_3_companions = Column(Numeric(10, 2), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    college_links = relationship(
+        "EventCollegeModel",
+        back_populates="event",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    colleges = relationship(
+        "CollegeModel",
+        secondary="event_colleges",
+        viewonly=True,
+        back_populates="events",
+    )
 
     __table_args__ = (
         CheckConstraint("registration_start <= registration_end", name="chk_event_registration_period"),

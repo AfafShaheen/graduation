@@ -15,6 +15,7 @@ from app.models.volunteer_answer import VolunteerAnswerModel
 from app.services.qr_service import activate_companion_codes
 from app.services.seat_service import seat_labels
 from app.services.audit_log import ActorType, record_audit
+from app.services.college_links import colleges_of_event_filter, resolve_college_event
 from app.core import messages
 from app.core.redis import redis_client
 from app.core.sql_utils import escape_like
@@ -57,7 +58,7 @@ async def search_graduates_service(
 
     filters = []
     if event_id is not None:
-        filters.append(CollegeModel.event_id == event_id)
+        filters.append(colleges_of_event_filter(event_id))
     if college_id is not None:
         filters.append(GraduateModel.college_id == college_id)
     if major_id is not None:
@@ -262,10 +263,8 @@ async def admin_force_update_email_service(db: AsyncSession, graduate_id: int, n
     db.add(grad)
 
     # Atomic audit log (D21: structured event/graduate refs)
-    event_row = await db.execute(
-        select(CollegeModel.event_id).where(CollegeModel.id == grad.college_id)
-    )
-    event_id = event_row.scalar_one_or_none()
+    resolved = await resolve_college_event(db, grad.college_id) if grad.college_id else None
+    event_id = resolved.id if resolved else None
     await record_audit(
         db,
         ActorType.ADMIN,

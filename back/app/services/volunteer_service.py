@@ -26,6 +26,7 @@ from app.models.major import MajorModel
 from app.models.volunteer_answer import VolunteerAnswerModel
 from app.services.audit_log import ActorType, record_audit
 from app.services.admin_graduate_service import invalidate_admin_cache
+from app.services.college_links import colleges_of_event_filter
 
 CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -140,7 +141,7 @@ def _scope_filters(
     """Filters applied to the list (NOT to ``stats`` except ``event_id``)."""
     filters = []
     if event_id is not None:
-        filters.append(CollegeModel.event_id == event_id)
+        filters.append(colleges_of_event_filter(event_id))
     if college_id is not None:
         filters.append(GraduateModel.college_id == college_id)
     if wants_responsibility is not None:
@@ -181,7 +182,7 @@ async def _stats_scope(db: AsyncSession, event_id: int | None) -> dict:
         .join(CollegeModel, CollegeModel.id == GraduateModel.college_id)
     )
     if event_id is not None:
-        base = base.where(CollegeModel.event_id == event_id)
+        base = base.where(colleges_of_event_filter(event_id))
 
     all_count = (await db.execute(base)).scalar_one()
     wants = (

@@ -14,6 +14,7 @@ from app.models.event import EventModel
 from app.models.graduate import GraduateModel
 from app.models.major import MajorModel
 from app.services.graduate_service import normalize_arabic
+from app.services.college_links import colleges_for_event
 from app.services.audit_log import ActorType, record_audit
 from app.core.redis import redis_client
 
@@ -348,8 +349,7 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
         return [f"الأعمدة التالية مفقودة في الملف: {'، '.join(missing_arabic)}"]
 
     # Fetch colleges linked to this event and build normalized lookup dictionary
-    colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
-    colleges = colleges_res.scalars().all()
+    colleges = await colleges_for_event(db, event_id)
     college_map = {normalize_arabic(c.name): c.id for c in colleges}
 
     # Load all majors once into a dict keyed by (college_id, normalize_arabic(name))
@@ -439,8 +439,7 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
 
 
 async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: AsyncSession) -> Dict[str, int]:
-    colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
-    colleges = colleges_res.scalars().all()
+    colleges = await colleges_for_event(db, event_id)
     college_map = {normalize_arabic(c.name): c.id for c in colleges}
 
     majors_res = await db.execute(select(MajorModel))

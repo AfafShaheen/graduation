@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import messages
 from app.models.college import CollegeModel
 from app.models.event import EventModel
+from app.models.event_college import EventCollegeModel
 from app.models.graduate import GraduateModel
 from app.models.payment import PaymentModel
 from app.models.ticket import TicketModel
@@ -129,6 +130,14 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
         .subquery()
     )
 
+    college_event_id = (
+        select(EventCollegeModel.event_id)
+        .where(EventCollegeModel.college_id == CollegeModel.id)
+        .order_by(EventCollegeModel.event_id.desc())
+        .limit(1)
+        .scalar_subquery()
+    )
+
     stmt = (
         select(
             EventModel.name,
@@ -141,7 +150,7 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
             MajorModel.name.label("major_name"),
         )
         .join(CollegeModel, CollegeModel.id == GraduateModel.college_id)
-        .join(EventModel, EventModel.id == CollegeModel.event_id)
+        .join(EventModel, EventModel.id == college_event_id)
         .outerjoin(MajorModel, MajorModel.id == GraduateModel.major_id)
         .outerjoin(
             TicketModel,

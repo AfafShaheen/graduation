@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import messages
 from app.models.college import CollegeModel
 from app.models.event import EventModel
+from app.models.event_college import EventCollegeModel
 from app.models.graduate import GraduateModel
 from app.models.payment import PaymentModel
 from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
@@ -100,9 +101,13 @@ def _registered_without_ticket_stmt(event_id):
 
 
 def _colleges_stmt(event_id):
-    stmt = select(CollegeModel.id, CollegeModel.name).order_by(CollegeModel.id)
+    stmt = (
+        select(CollegeModel.id, CollegeModel.name)
+        .join(EventCollegeModel, EventCollegeModel.college_id == CollegeModel.id)
+        .order_by(CollegeModel.id)
+    )
     if event_id is not None:
-        stmt = stmt.where(CollegeModel.event_id == event_id)
+        stmt = stmt.where(EventCollegeModel.event_id == event_id)
     return stmt
 
 

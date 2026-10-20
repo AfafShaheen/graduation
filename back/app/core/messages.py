@@ -45,6 +45,7 @@ SCAN_NOT_ACTIVATED = "رمز غير مفعَّل (رمز مرافق قبل ال�
 REGISTRATION_NOT_OPEN = "لم يُفتح التسجيل لحفلك بعد"
 REGISTRATION_CLOSED = "انتهت فترة التسجيل لحفلك"
 COLLEGE_LINKED_TO_OTHER_EVENT = "الكلية مرتبطة بحفل آخر"
+COLLEGE_WINDOW_OVERLAP = "الكلية مرتبطة بحفل آخر بنافذة تسجيل متداخلة"
 TICKET_ALREADY_EXISTS = "لديك تذكرة مسجلة مسبقاً"
 THREE_COMPANIONS_DISABLED = "هذا النوع من التذاكر غير متاح لحفلك"
 TICKET_CHOICE_NOT_CONFIRMED = "يجب تأكيد اختيار التذكرة قبل المتابعة"

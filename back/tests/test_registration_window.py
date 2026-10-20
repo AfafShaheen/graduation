@@ -13,6 +13,7 @@ from sqlalchemy import select
 
 from app.core import messages
 from app.models.college import CollegeModel
+from app.models.event_college import EventCollegeModel
 from app.models.setting import SettingModel
 from app.services.graduate_service import create_registration_token
 from app.services.settings_service import CONTACT_PHONE
@@ -206,5 +207,9 @@ async def test_create_event_collapses_duplicate_college_names(
     assert resp.status_code == 201, resp.text
     event_id = resp.json()["event_id"]
 
-    rows = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
+    rows = await db.execute(
+        select(CollegeModel)
+        .join(EventCollegeModel, EventCollegeModel.college_id == CollegeModel.id)
+        .where(EventCollegeModel.event_id == event_id)
+    )
     assert len(rows.scalars().all()) == 1
