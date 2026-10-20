@@ -4348,6 +4348,31 @@
         ]
       }
     },
+    "/api/admin/settings/email-status": {
+      "get": {
+        "description": "Expose whether OTP email delivery is really configured (P7.1).\n\nLets staff spot a misconfigured SMTP setup instead of it failing silently.",
+        "operationId": "get_email_status_api_admin_settings_email_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Email Status",
+        "tags": [
+          "Admin Settings"
+        ]
+      }
+    },
     "/api/admin/settings/shamcash-qr": {
       "delete": {
         "operationId": "delete_shamcash_qr_api_admin_settings_shamcash_qr_delete",

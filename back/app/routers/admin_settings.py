@@ -10,6 +10,7 @@ from app.services.settings_admin_service import (
     update_settings_service,
     update_shamcash_qr_service,
 )
+from app.services.email_service import smtp_status
 
 router = APIRouter(prefix="/api/admin/settings", tags=["Admin Settings"])
 
@@ -20,6 +21,17 @@ async def get_settings(
     admin: dict = Depends(get_current_admin),
 ):
     return await get_admin_settings_service(db)
+
+
+@router.get("/email-status", status_code=status.HTTP_200_OK)
+async def get_email_status(
+    admin: dict = Depends(get_current_admin),
+):
+    """Expose whether OTP email delivery is really configured (P7.1).
+
+    Lets staff spot a misconfigured SMTP setup instead of it failing silently.
+    """
+    return smtp_status()
 
 
 @router.put("", status_code=status.HTTP_200_OK)
