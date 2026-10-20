@@ -2,9 +2,9 @@
   "repo_root": "..",
 
   "ftp": {
-    "host": "ftp.sunion-homs-uni.sy",
+    "host": "sunion-homs-uni.sy",
     "port": 21,
-    "user": "graduationsunionhomsuni@sunion-homs-uni.sy",
+    "user": "PUT_FTP_USERNAME_HERE",
     "tls": true,
     "verify_tls": false
   },
