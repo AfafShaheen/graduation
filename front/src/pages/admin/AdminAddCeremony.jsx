@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import '../../style/AdminAddCeremony.css';
 import AdminSidebar from '../../components/AdminSidebar';
-import { createAdminEvent, updateAdminEvent, uploadUniversityRecords } from './hooks/useAdminEvents.js';
+import { createAdminEvent, updateAdminEvent } from './hooks/useAdminEvents.js';
 import { ApiError, listColleges } from '../../api/admin.js';
 import useFormDraft from '../../hooks/useFormDraft';
 import CollegeCatalogField from '../../components/CollegeCatalogField';
@@ -86,80 +86,6 @@ export default function AdminAddCeremony({
   const [fieldErrors, setFieldErrors] = useState({});
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
 
-  // ملف بيانات الجامعة (اختياري عند الحفظ، لكن لازم يكون جاهز قبل فتح التسجيل)
-  const [dataFile, setDataFile] = useState(null);
-  const [fileError, setFileError] = useState('');
-  const [uploadSummary, setUploadSummary] = useState(null);
-  const [uploadErrors, setUploadErrors] = useState([]);
-  const [savedEventId, setSavedEventId] = useState(eventId || null);
-  const [retryingUpload, setRetryingUpload] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = React.useRef(null);
-
-  const REQUIRED_COLUMNS = [
-    'الاسم',
-    'الكنية',
-    'اسم الأب',
-    'اسم الأم',
-    'الجنس',
-    'الكلية',
-    'التخصص',
-    'الرقم الجامعي',
-    'حالة الطالب من الأوائل',
-    'المعدل',
-    'رقم التواصل',
-  ];
-  const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
-  const MAX_SIZE_MB = 25;
-
-  const formatSize = (bytes) =>
-    bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-
-  const validateFile = (file) => {
-    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-      return 'الصيغ المدعومة فقط: xlsx وxls وcsv';
-    }
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      return `حجم الملف يتجاوز ${MAX_SIZE_MB} ميغابايت`;
-    }
-    return null;
-  };
-
-  const handleFiles = (files) => {
-    if (!files || !files.length) return;
-    const file = files[0];
-    const err = validateFile(file);
-    if (err) {
-      setFileError(err);
-      setDataFile(null);
-      return;
-    }
-    setFileError('');
-    setDataFile(file);
-    setUploadSummary(null);
-    setUploadErrors([]);
-  };
-
-  const removeFile = () => {
-    setDataFile(null);
-    setFileError('');
-    setUploadErrors([]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const downloadTemplate = () => {
-    const blob = new Blob([`\uFEFF${REQUIRED_COLUMNS.join(',')}\n`], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'graduates-template.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   // كتالوج الكليات المركزي (يُحمّل مرة واحدة عند فتح النموذج)
   const [catalogColleges, setCatalogColleges] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
@@ -220,7 +146,6 @@ export default function AdminAddCeremony({
     setPricePkg3('');
     setEnablePkg3(true);
     setSelectedCollegeIds([]);
-    removeFile();
     setFieldErrors({});
     setSubmitError('');
   };
@@ -282,23 +207,7 @@ export default function AdminAddCeremony({
       }
 
       const id = eventId ?? result?.id ?? result?.event_id;
-      if (id) setSavedEventId(id);
 
-      if (dataFile && id) {
-        setUploadErrors([]);
-        try {
-          const uploadResult = await uploadUniversityRecords(id, dataFile);
-          if (uploadResult?.summary) setUploadSummary(uploadResult.summary);
-        } catch (upErr) {
-          const details =
-            upErr instanceof ApiError && Array.isArray(upErr.data?.errors) ? upErr.data.errors : [];
-          setUploadErrors(details);
-          setSubmitError(
-            'تم حفظ الحفل، لكن لم يُستورد ملف بيانات الخريجين. راجع الأخطاء أدناه ثم أعد المحاولة — الملف باقٍ في النموذج.'
-          );
-          return;
-        }
-      }
       clearCeremonyDrafts();
       if (onSubmitSuccess) {
         onSubmitSuccess(result);
@@ -314,25 +223,6 @@ export default function AdminAddCeremony({
       }
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  // إعادة محاولة رفع الملف بعد نجاح إنشاء/تعديل الحفل
-  const handleRetryUpload = async () => {
-    if (!savedEventId || !dataFile) return;
-    setRetryingUpload(true);
-    setSubmitError('');
-    setUploadErrors([]);
-    try {
-      const uploadResult = await uploadUniversityRecords(savedEventId, dataFile);
-      if (uploadResult?.summary) setUploadSummary(uploadResult.summary);
-    } catch (upErr) {
-      const details =
-        upErr instanceof ApiError && Array.isArray(upErr.data?.errors) ? upErr.data.errors : [];
-      setUploadErrors(details);
-      setSubmitError('لم يكتمل الاستيراد بعد. راجع الأخطاء أدناه ثم أعد المحاولة.');
-    } finally {
-      setRetryingUpload(false);
     }
   };
 
@@ -669,130 +559,24 @@ export default function AdminAddCeremony({
             <div className="add-cer-divider"></div>
 
             {/* ملف بيانات الجامعة */}
-            <div className="add-cer-field-group" style={{ gap: '14px' }}>
+            <div className="add-cer-field-group" style={{ gap: '12px' }}>
               <div className="add-cer-section-head">
                 <h4 className="add-cer-section-title">
                   <span className="add-cer-symbol">upload_file</span>
-                  <span>ملف بيانات الخريجين (اختياري)</span>
+                  <span>ملف بيانات الخريجين</span>
                 </h4>
-                <button type="button" className="add-cer-extend-btn" onClick={downloadTemplate}>
-                  <span className="add-cer-symbol" style={{ fontSize: '14px' }}>download</span>
-                  <span>تحميل قالب فارغ</span>
-                </button>
               </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ACCEPTED_EXTENSIONS.join(',')}
-                style={{ display: 'none' }}
-                onChange={(e) => handleFiles(e.target.files)}
-              />
-
-              <div
-                className={`add-cer-dropzone ${dragOver ? 'over' : ''} ${fileError ? 'error' : ''}`}
-                role="button"
-                tabIndex={0}
-                aria-label="اسحب الملف هنا أو اضغط للتصفح"
-                onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    fileInputRef.current?.click();
-                  }
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  handleFiles(e.dataTransfer.files);
-                }}
+              <p className="add-cer-hint">
+                صار رفع ملفات بيانات الخريجين وربطها بالحفلات من صفحة «ملفات البيانات» المركزية. أنشئ الحفل هنا ثم ارفع الملف واربطه بالحفل من هناك.
+              </p>
+              <button
+                type="button"
+                className="add-cer-extend-btn"
+                onClick={() => onNavigate && onNavigate('files')}
               >
-                <span className="add-cer-drop-icon">
-                  <span className="add-cer-symbol" style={{ fontSize: '30px' }}>upload_file</span>
-                </span>
-                <p className="add-cer-drop-title">
-                  اسحب ملف Excel أو CSV وأفلته هنا، أو <span>اضغط للتصفح</span>
-                </p>
-                <p className="add-cer-hint">
-                  الصيغ المدعومة: xlsx وxls وcsv — الحجم الأقصى {MAX_SIZE_MB} ميغابايت
-                </p>
-              </div>
-
-              {fileError && (
-                <p className="add-cer-file-error" role="alert">
-                  {fileError}
-                </p>
-              )}
-
-              {dataFile && (
-                <div className="add-cer-file-chip">
-                  <span className="add-cer-symbol" style={{ color: '#124d44', fontSize: '18px' }}>attach_file</span>
-                  <span className="add-cer-file-name">{dataFile.name}</span>
-                  <span className="add-cer-file-size">({formatSize(dataFile.size)})</span>
-                  <span className="add-cer-symbol add-cer-file-ok" style={{ fontSize: '18px' }}>check_circle</span>
-                  <button type="button" className="add-cer-file-remove" aria-label="إزالة الملف" onClick={removeFile}>
-                    <span className="add-cer-symbol" style={{ fontSize: '18px' }}>close</span>
-                  </button>
-                </div>
-              )}
-
-              {uploadSummary && (
-                <p className="add-cer-hint" role="status" style={{ color: '#124d44' }}>
-                  نتيجة الرفع: أُضيف {uploadSummary.added ?? 0}، حُدّث {uploadSummary.updated ?? 0}، تُخطّي{' '}
-                  {uploadSummary.skipped ?? 0}، أخطاء {uploadSummary.error_count ?? 0} (المجموع {uploadSummary.total ?? 0}).
-                </p>
-              )}
-
-              {uploadErrors.length > 0 && (
-                <div role="alert">
-                  <p className="add-cer-file-error" style={{ marginBottom: '8px' }}>
-                    لم يُستورد ملف بيانات الخريجين — الأخطاء ({uploadErrors.length}):
-                  </p>
-                  <ul
-                    style={{
-                      maxHeight: '220px',
-                      overflowY: 'auto',
-                      margin: '0 0 10px',
-                      paddingInlineStart: '20px',
-                      color: '#8a1f1f',
-                      fontSize: '13px',
-                      lineHeight: '1.9',
-                    }}
-                  >
-                    {uploadErrors.slice(0, 50).map((msg, i) => (
-                      <li key={i}>{msg}</li>
-                    ))}
-                  </ul>
-                  {uploadErrors.length > 50 && (
-                    <p className="add-cer-hint">و{uploadErrors.length - 50} خطأ إضافي — أصلح الملف أو الكليات أولاً.</p>
-                  )}
-                  <button
-                    type="button"
-                    className="add-cer-btn-submit"
-                    onClick={handleRetryUpload}
-                    disabled={retryingUpload || !dataFile}
-                  >
-                    <span>{retryingUpload ? 'جارٍ إعادة المحاولة...' : 'إعادة محاولة رفع الملف'}</span>
-                    <span className="add-cer-symbol" style={{ fontSize: '18px' }}>refresh</span>
-                  </button>
-                </div>
-              )}
-
-              <div className="add-cer-columns">
-                <span className="add-cer-hint">
-                  يُقبل ملف شؤون الطلبة بترتيبه الثابت، ويبقى عمود «الاسم الكامل» مدعوماً. الأعمدة المطلوبة بالسطر الأول (بنفس التسمية تماماً):
-                </span>
-                <div className="add-cer-col-chips">
-                  {REQUIRED_COLUMNS.map((col) => (
-                    <span key={col} className="add-cer-col-chip">{col}</span>
-                  ))}
-                </div>
-              </div>
+                <span className="add-cer-symbol" style={{ fontSize: '16px' }}>folder_shared</span>
+                <span>الانتقال إلى ملفات البيانات</span>
+              </button>
             </div>
 
             <div className="add-cer-divider"></div>
@@ -813,7 +597,7 @@ export default function AdminAddCeremony({
               <button
                 type="submit"
                 className="add-cer-btn-submit"
-                disabled={submitting || retryingUpload || uploadErrors.length > 0}
+                disabled={submitting}
               >
                 <span>{submitting ? 'جارٍ الحفظ...' : isEdit ? 'حفظ التعديلات' : 'حفظ ونشر الحفل الجديد'}</span>
                 <span className="add-cer-symbol" style={{ fontSize: '20px' }}>cloud_upload</span>

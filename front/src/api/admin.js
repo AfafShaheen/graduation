@@ -135,6 +135,42 @@ export async function deleteUniversityRecord(id) {
   });
 }
 
+export async function listUniversityFiles() {
+  const auth = getAdminToken();
+  return request("/api/admin/university-files", { token: auth });
+}
+
+export async function uploadUniversityFile(file, eventId) {
+  const auth = getAdminToken();
+  const formData = new FormData();
+  formData.append("file", file);
+  if (eventId != null) {
+    formData.append("event_id", String(eventId));
+  }
+  return request("/api/admin/university-files", {
+    method: "POST",
+    body: formData,
+    token: auth
+  });
+}
+
+export async function linkUniversityFile(fileId, eventId) {
+  const auth = getAdminToken();
+  return request(`/api/admin/university-files/${fileId}/link`, {
+    method: "POST",
+    body: { event_id: eventId },
+    token: auth
+  });
+}
+
+export async function deleteUniversityFile(fileId) {
+  const auth = getAdminToken();
+  return request(`/api/admin/university-files/${fileId}`, {
+    method: "DELETE",
+    token: auth
+  });
+}
+
 export async function getPayments(eventId, params) {
   return request(`/api/admin/events/${eventId}/payments${buildQuery(params)}`, {
     token: getAdminToken(),
