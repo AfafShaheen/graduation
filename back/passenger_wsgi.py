@@ -1,42 +1,46 @@
-"""Passenger WSGI entry point for the cPanel deploy (shared hosting, no Docker).
-
-Passenger ("Setup Python App") imports this file and calls ``application``.
-The ASGI FastAPI app is wrapped with a2wsgi so it can speak WSGI.
-
-Configuration comes from the cPanel Python App env vars. A local ``.env``
-file next to this script is loaded only when it exists (handy on a laptop);
-it is NOT required.
-
-The app is mounted under a URL prefix (``APP_URL_PREFIX``, default
-``/gradapi``). Passenger normally strips that prefix from ``PATH_INFO``; if a
-server ever leaves it in place, the wrapper below strips it defensively.
-"""
-
 import os
 import sys
+import threading
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+if APP_DIR not in sys.path:
+    sys.path.insert(0, APP_DIR)
 
-from pathlib import Path
-
-_env_file = Path(__file__).resolve().parent / ".env"
-if _env_file.exists():
+env_file = os.path.join(APP_DIR, ".env")
+if os.path.exists(env_file):
     from dotenv import load_dotenv
+    load_dotenv(env_file, override=False)
 
-    load_dotenv(_env_file)
+# Importing the app here is safe: it starts no threads.
+from app.main import app  # noqa: E402
 
-from a2wsgi import ASGIMiddleware
+_PREFIX = os.getenv("APP_URL_PREFIX", "/gradapi").rstrip("/")
 
-from app.main import app
+# a2wsgi starts a background event-loop thread when ASGIMiddleware is created.
+# Passenger may fork worker processes after loading this file, and threads do not
+# survive a fork, so requests would hang forever. Create the middleware lazily,
+# once per process, on the first request.
+_asgi = None
+_asgi_pid = None
+_lock = threading.Lock()
 
-_asgi = ASGIMiddleware(app)
 
-APP_URL_PREFIX = os.environ.get("APP_URL_PREFIX", "/gradapi").rstrip("/")
+def _get_asgi():
+    global _asgi, _asgi_pid
+    pid = os.getpid()
+    if _asgi is None or _asgi_pid != pid:
+        with _lock:
+            if _asgi is None or _asgi_pid != pid:
+                from a2wsgi import ASGIMiddleware
+                _asgi = ASGIMiddleware(app)
+                _asgi_pid = pid
+    return _asgi
 
 
 def application(environ, start_response):
-    prefix = APP_URL_PREFIX
-    path_info = environ.get("PATH_INFO", "")
-    if prefix and path_info.startswith(prefix):
-        environ["PATH_INFO"] = path_info[len(prefix):] or "/"
-    return _asgi(environ, start_response)
+    # Passenger already strips /gradapi (SCRIPT_NAME=/gradapi, PATH_INFO=/health).
+    # Keep this defensive strip in case a server config passes the full path.
+    path = environ.get("PATH_INFO", "")
+    if _PREFIX and (path == _PREFIX or path.startswith(_PREFIX + "/")):
+        environ["PATH_INFO"] = path[len(_PREFIX):] or "/"
+    return _get_asgi()(environ, start_response)

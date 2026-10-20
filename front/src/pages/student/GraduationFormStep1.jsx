@@ -493,7 +493,9 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             <div className="info-box">
               <span className="material-symbols-outlined info-icon">verified_user</span>
               <p className="info-text">
-                تُطابق هذه البيانات مع سجلات الامتحانات المركزية لإصدار التذكرة الرسمية المعتمدة.
+                يُرجى إدخال بياناتك كما هي مسجّلة في سجلات الجامعة تماماً (الاسم، الكنية، اسم الأب،
+                اسم الأم، الجنس، الكلية، التخصص والرقم الجامعي)؛ إذ تُقارَن مع كشوفات الجامعة
+                المعتمدة لإصدار التذكرة الرسمية. اختلاف أي حقل يمنع إتمام التحقق.
               </p>
             </div>
           </form>

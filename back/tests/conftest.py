@@ -263,11 +263,31 @@ def make_event(db):
 
 @pytest.fixture
 def make_college(db):
+    from sqlalchemy import select
     from app.models.college import CollegeModel
+    from app.models.event_college import EventCollegeModel
 
     async def _make(event_id, name="كلية الهندسة المعلوماتية"):
-        college = CollegeModel(name=name, event_id=event_id)
-        db.add(college)
+        existing = (
+            await db.execute(select(CollegeModel).where(CollegeModel.name == name))
+        ).scalar_one_or_none()
+        if existing is None:
+            college = CollegeModel(name=name)
+            db.add(college)
+            await db.flush()
+        else:
+            college = existing
+        if event_id is not None:
+            already = (
+                await db.execute(
+                    select(EventCollegeModel).where(
+                        EventCollegeModel.event_id == event_id,
+                        EventCollegeModel.college_id == college.id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if already is None:
+                db.add(EventCollegeModel(event_id=event_id, college_id=college.id))
         await db.commit()
         await db.refresh(college)
         return college
@@ -277,9 +297,19 @@ def make_college(db):
 
 @pytest.fixture
 def make_major(db):
+    from sqlalchemy import select
     from app.models.major import MajorModel
 
     async def _make(college_id, name="هندسة برمجيات"):
+        existing = (
+            await db.execute(
+                select(MajorModel).where(
+                    MajorModel.college_id == college_id, MajorModel.name == name
+                )
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            return existing
         major = MajorModel(college_id=college_id, name=name)
         db.add(major)
         await db.commit()

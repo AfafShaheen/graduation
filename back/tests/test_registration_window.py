@@ -13,6 +13,7 @@ from sqlalchemy import select
 
 from app.core import messages
 from app.models.college import CollegeModel
+from app.models.event_college import EventCollegeModel
 from app.models.setting import SettingModel
 from app.services.graduate_service import create_registration_token
 from app.services.settings_service import CONTACT_PHONE
@@ -121,6 +122,36 @@ async def test_verify_step1_unknown_college_is_generic_failure(client):
     assert resp.json()["detail"] == messages.GENERIC_VERIFY_FAIL
 
 
+async def test_verify_step1_prefers_the_open_window_event(
+    client, db, make_event, make_college, make_university_record
+):
+    """P5.5: a reusable college resolves to the event whose window is open now.
+
+    The college is linked to a past (closed) event and a currently open one;
+    verify-step1 must pick the open event and succeed instead of reporting
+    REGISTRATION_CLOSED for the older ceremony.
+    """
+    closed = await make_event(
+        name="حفل سابق",
+        registration_start=datetime(2020, 1, 1, tzinfo=UTC),
+        registration_end=datetime(2021, 1, 1, tzinfo=UTC),
+    )
+    open_event = await make_event(
+        name="حفل مفتوح",
+        registration_start=datetime(2020, 1, 1, tzinfo=UTC),
+        registration_end=datetime(2040, 1, 1, tzinfo=UTC),
+    )
+    college = await make_college(closed.id, name="كلية مشتركة")
+    await make_college(open_event.id, name="كلية مشتركة")
+    await make_university_record(open_event.id, college.id, university_id="800005")
+
+    resp = await client.post(
+        "/api/graduates/verify-step1", json=_payload(college.id, "800005")
+    )
+
+    assert resp.status_code == 200, resp.text
+
+
 async def test_register_step2_rechecks_window_and_closes(
     client, make_event, make_college
 ):
@@ -179,6 +210,8 @@ async def test_public_settings_exposes_only_contact_phone(client, db):
 async def test_create_event_rejects_college_from_other_event(
     client, make_event, make_college, make_admin
 ):
+    """P5.3 supersedes the FR-14 name rule: a shared college is allowed only
+    when the windows never overlap, so an overlapping window is rejected."""
     event = await make_event()
     await make_college(event.id, name="كلية الهندسة")
 
@@ -190,7 +223,7 @@ async def test_create_event_rejects_college_from_other_event(
     )
 
     assert resp.status_code == 400
-    assert resp.json()["detail"] == messages.COLLEGE_LINKED_TO_OTHER_EVENT
+    assert messages.COLLEGE_WINDOW_OVERLAP in resp.json()["detail"]
 
 
 async def test_create_event_collapses_duplicate_college_names(
@@ -206,5 +239,45 @@ async def test_create_event_collapses_duplicate_college_names(
     assert resp.status_code == 201, resp.text
     event_id = resp.json()["event_id"]
 
-    rows = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
+    rows = await db.execute(
+        select(CollegeModel)
+        .join(EventCollegeModel, EventCollegeModel.college_id == CollegeModel.id)
+        .where(EventCollegeModel.event_id == event_id)
+    )
     assert len(rows.scalars().all()) == 1
+
+
+async def test_create_event_rejects_overlapping_window_for_shared_college(
+    client, make_event, make_college, make_admin
+):
+    """P5.3: a catalog college cannot join two events with overlapping windows."""
+    event = await make_event()
+    await make_college(event.id, name="كلية الصيدلة")
+
+    token = await _admin_token(client, make_admin)
+    overlap = await client.post(
+        "/api/admin/events",
+        json=_create_event_payload(["كلية الصيدلة"]),
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert overlap.status_code == 400
+    assert messages.COLLEGE_WINDOW_OVERLAP in overlap.json()["detail"]
+
+
+async def test_create_event_allows_disjoint_window_for_shared_college(
+    client, make_event, make_college, make_admin
+):
+    """P5.3: the same college may be reused when its windows never overlap."""
+    event = await make_event()
+    await make_college(event.id, name="كلية العلوم")
+
+    token = await _admin_token(client, make_admin)
+    payload = _create_event_payload(["كلية العلوم"])
+    payload["registration_start"] = "2036-01-01T00:00:00+00:00"
+    payload["registration_end"] = "2037-01-01T00:00:00+00:00"
+    resp = await client.post(
+        "/api/admin/events",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201, resp.text

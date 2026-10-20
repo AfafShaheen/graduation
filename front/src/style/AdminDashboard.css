@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    لوحة تحكم الإدارة (.adm-*): بنفس هوية بقية الصفحات + ريسبونسف كامل
    الشريط الجانبي ثابت على الشاشات الكبيرة، وقائمة منزلقة على الصغيرة
    ========================================================================== */
@@ -1250,7 +1250,7 @@
   .adm-menu-btn { display: none; }
 
   .adm-topbar {
-    margin-right: 288px;
+    margin-right: var(--adm-sb-width, 288px);
     height: 80px;
     padding: 0 32px;
     flex-wrap: nowrap;
@@ -1263,7 +1263,7 @@
   .adm-help-btn { padding: 8px 20px; }
   .adm-help-text { display: inline; }
 
-  .adm-main-canvas { margin-right: 288px; padding: 32px; gap: 28px; }
+  .adm-main-canvas { margin-right: var(--adm-sb-width, 288px); padding: 32px; gap: 28px; }
 
   .adm-hero-row { flex-direction: row; align-items: center; justify-content: space-between; }
   .adm-hero-titles h3 { font-size: 28px; line-height: 38px; }
@@ -1290,5 +1290,5 @@
 
 /* الشاشات الكبيرة جداً */
 @media (min-width: 1440px) {
-  .adm-main-canvas { margin-left: auto; margin-right: 288px; }
+  .adm-main-canvas { margin-left: auto; margin-right: var(--adm-sb-width, 288px); }
 }

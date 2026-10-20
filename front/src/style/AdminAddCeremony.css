@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    صفحة إضافة حفل (.add-cer-*): بنفس هوية لوحة التحكم (.adm-*) + ريسبونسف كامل
    الشريط الجانبي ثابت على الشاشات الكبيرة، وقائمة منزلقة على الصغيرة
    ========================================================================== */
@@ -253,6 +253,33 @@
   height: 8px;
   border-radius: 9999px;
   background-color: #ca4b00;
+}
+
+.add-cer-header-tags {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.add-cer-draft-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background-color: transparent;
+  border: 1px solid rgba(202, 75, 0, 0.35);
+  color: #ca4b00;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-cer-draft-clear:hover {
+  background-color: rgba(202, 75, 0, 0.08);
 }
 
 .add-cer-form {
@@ -782,7 +809,7 @@
   }
 
   .add-cer-topbar {
-    margin-right: 288px;
+    margin-right: var(--adm-sb-width, 288px);
     height: 80px;
     padding: 0 32px;
     flex-wrap: nowrap;
@@ -799,7 +826,7 @@
   }
 
   .add-cer-main-canvas {
-    margin-right: 288px;
+    margin-right: var(--adm-sb-width, 288px);
     padding: 32px;
     gap: 28px;
   }

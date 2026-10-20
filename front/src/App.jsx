@@ -30,6 +30,9 @@ import AdminEditCeremonyRoute from "./pages/admin/AdminEditCeremonyRoute";
 import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
 import AdminScannersSettings from "./pages/admin/AdminScannersSettings";
 import AdminExceptions from "./pages/admin/AdminExceptions";
+import AdminColleges from "./pages/admin/AdminColleges";
+import AdminUniversityFiles from "./pages/admin/AdminUniversityFiles";
+import AdminVerifyDiagnostic from "./pages/admin/AdminVerifyDiagnostic";
 import AdminVolunteers from "./pages/admin/AdminVolunteers";
 import { AdminStatsProvider } from "./context/AdminStatsContext";
 import ScannerLogin from "./pages/scanner/ScannerLogin";
@@ -44,23 +47,23 @@ import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduat
   true  = أي صفحة بتفتح مباشرة من شريط العنوان بدون شروط، بقيم تجريبية.
   false = الشروط شغالة (مثلاً الدفع لا يُفتح بدون باقة)، وهذا هو الوضع الصحيح عند الإطلاق.
 */
-const PREVIEW = true;
+const PREVIEW = import.meta.env.VITE_PREVIEW === "true";
 
-/* "لا تعرض لي دليل التذكرة مرة أخرى": بنحفظها بـ localStorage لتضل حتى بعد إغلاق المتصفح */
-/* مؤقت لحد ما يجهز الباك إند، بعدها الأفضل تنحفظ على حساب الخريج */
 const GUIDE_SKIP_KEY = "grad.skipGuide";
+
 function readSkipGuide() {
   try {
-    return localStorage.getItem(GUIDE_SKIP_KEY) === "1";
-  } catch (err) {
+    return window.localStorage.getItem(GUIDE_SKIP_KEY) === "1";
+  } catch {
     return false;
   }
 }
+
 function saveSkipGuide() {
   try {
-    localStorage.setItem(GUIDE_SKIP_KEY, "1");
-  } catch (err) {
-    /* التخزين غير متاح: نكمل بدونه */
+    window.localStorage.setItem(GUIDE_SKIP_KEY, "1");
+  } catch {
+    /* التخزين المحلي غير متاح */
   }
 }
 
@@ -70,6 +73,11 @@ function App() {
   const { pathname } = location;
 
   const [pendingPayments, setPendingPayments] = useState(0);
+  const [, setSurvey] = useState(null);
+  const [scanner, setScanner] = useState(() =>
+    Boolean(getScannerToken() && !isScannerTokenExpired())
+  );
+  const [scannerError, setScannerError] = useState("");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -193,7 +201,8 @@ function App() {
                   replace: true,
                 })
               }
-              onForgotPassword={(em) => {
+              onForgotPassword={async (em) => {
+                await forgotPassword(em);
                 setResetEmail(em);
                 navigate("/reset-otp");
               }}
@@ -429,6 +438,57 @@ function App() {
           }
         />
 
+        {/* ===== الكليات والاختصاصات ===== */}
+        <Route
+          path="/admin/colleges"
+          element={
+            hasValidAdmin || PREVIEW ? (
+              <AdminColleges
+                adminName={adminName}
+                onNavigate={(section) => navigate(`/admin/${section}`)}
+                onAddTicket={() => navigate("/admin/ceremonies/new")}
+                onLogout={handleAdminLogout}
+              />
+            ) : (
+              <Navigate to="/admin" replace />
+            )
+          }
+        />
+
+        {/* ===== تشخيص المطابقة ===== */}
+        <Route
+          path="/admin/verify"
+          element={
+            hasValidAdmin || PREVIEW ? (
+              <AdminVerifyDiagnostic
+                adminName={adminName}
+                onNavigate={(section) => navigate(`/admin/${section}`)}
+                onAddTicket={() => navigate("/admin/ceremonies/new")}
+                onLogout={handleAdminLogout}
+              />
+            ) : (
+              <Navigate to="/admin" replace />
+            )
+          }
+        />
+
+        {/* ===== ملفات البيانات ===== */}
+        <Route
+          path="/admin/files"
+          element={
+            hasValidAdmin || PREVIEW ? (
+              <AdminUniversityFiles
+                adminName={adminName}
+                onNavigate={(section) => navigate(`/admin/${section}`)}
+                onAddTicket={() => navigate("/admin/ceremonies/new")}
+                onLogout={handleAdminLogout}
+              />
+            ) : (
+              <Navigate to="/admin" replace />
+            )
+          }
+        />
+
         {/* ===== المتطوعون ===== */}
         <Route
           path="/admin/volunteers"
@@ -469,6 +529,7 @@ function App() {
             getScannerToken() && !isScannerTokenExpired() ? (
               <ScannerCamera
                 onLogout={() => {
+                  clearScannerSession();
                   clearScannerSession();
                   navigate("/scanner", { replace: true });
                 }}
@@ -533,6 +594,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
+                    clearScannerSession();
                     clearScannerSession();
                     navigate("/scanner", { replace: true });
                   }}

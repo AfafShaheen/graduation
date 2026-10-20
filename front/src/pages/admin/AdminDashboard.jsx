@@ -7,8 +7,6 @@ import { useAdminVolunteers } from './hooks/useAdminVolunteers.js';
 import { fetchRecentPayments } from './hooks/useAdminPayments.js';
 import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
 
-const STATUS_LABELS = { confirmed: 'مؤكد', review: 'قيد التدقيق', rejected: 'مرفوض' };
-
 const PAY_STATUS_UI = {
   CONFIRMED: 'confirmed',
   PROCESSING: 'review',
@@ -78,13 +76,6 @@ export default function AdminDashboard({
 
   const { events } = useAdminEvents({ limit: 100 });
 
-  // اختيار أول حفل تلقائياً لعرض بيانات الدفع وآخر التدقيقات
-  useEffect(() => {
-    if (!eventId && events.length > 0) {
-      setEventId(String(events[0].id));
-    }
-  }, [events, eventId]);
-
   const selectedEvent = useMemo(
     () => events.find((e) => String(e.id) === String(eventId)) || null,
     [events, eventId]
@@ -140,8 +131,6 @@ export default function AdminDashboard({
       }))
       .filter((r) => !q || r.name.includes(q) || String(r.uniId).includes(q));
   }, [payments, searchQuery]);
-
-  const recentReviews = reviewRows.slice(0, 4);
 
   const totalPages = Math.max(1, Math.ceil(reviewRows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -210,25 +199,7 @@ export default function AdminDashboard({
 
         <div className="adm-topbar-title">
           <h2>تذاكر حفل التخرج — لوحة الإدارة</h2>
-          <span>جامعة حمص • فرع الاتحاد الوطني لطلبة سورية</span>
-        </div>
-
-        <div className="adm-topbar-actions">
-          <button aria-label="التنبيهات" className="adm-icon-action-btn" title="التنبيهات" type="button">
-            <span className="adm-symbol">notifications</span>
-            <span className="adm-notif-dot"></span>
-          </button>
-
-          <button aria-label="التقويم" className="adm-icon-action-btn" title="التقويم" type="button">
-            <span className="adm-symbol">calendar_today</span>
-          </button>
-
-          <button className="adm-help-btn" type="button">
-            <span className="adm-symbol" style={{ fontSize: '18px' }}>
-              help_outline
-            </span>
-            <span className="adm-help-text">المساعدة والدعم</span>
-          </button>
+          <span>جامعة حمص</span>
         </div>
 
         <form className="adm-search-form" onSubmit={handleSearch} role="search">
@@ -274,7 +245,7 @@ export default function AdminDashboard({
               <span className="adm-mini-dot"></span>
               <span className="adm-pulse-label">{selectedEvent ? selectedEvent.name : 'كل الحفلات'}</span>
             </div>
-            <h3>مرحباً زميلنا، إليك ملخص حجوزات الحفل وإحصائياته</h3>
+            <h3>مرحباً زميلنا، إليك ملخص حجوزات الحفلات وإحصائياته</h3>
             <p>
               تحديث مباشر لبيانات الدفع، وتدقيق بطاقات الخريجين والمرافقين المعتمدين.
             </p>
@@ -596,42 +567,6 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          <div className="adm-verif-col adm-bento-card">
-            <div className="adm-bento-head bordered">
-              <div>
-                <h4 className="adm-bento-title small">آخر تدقيقات الدفع</h4>
-                <p className="adm-bento-sub small">عمليات التحقق المسجلة حديثاً من الاتحاد الوطني</p>
-              </div>
-              <span className="adm-symbol" style={{ color: '#ca4b00' }}>
-                history
-              </span>
-            </div>
-
-            <div className="adm-verif-list">
-              {recentReviews.length === 0 && (
-                <p className="adm-bento-sub small">
-                  {payLoading ? 'جارٍ التحميل...' : payError || 'لا توجد عمليات حديثة.'}
-                </p>
-              )}
-              {recentReviews.map((item) => (
-                <div className="adm-verif-item" key={item.ticketId}>
-                  <div>
-                    <span className="adm-verif-name">{item.name}</span>
-                    <span className="adm-verif-desc">{item.college} • {item.ticketType}</span>
-                  </div>
-                  <span className={`adm-chip ${item.status}`}>{STATUS_LABELS[item.status]}</span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="adm-btn-primary outline full"
-              onClick={() => onNavigate && onNavigate('payments')}
-            >
-              سجل التدقيقات الكامل
-            </button>
-          </div>
         </section>
 
         {/* سجل تدقيق الطلبة */}
@@ -694,7 +629,11 @@ export default function AdminDashboard({
                   <tr>
                     <td colSpan={5}>
                       <span className="adm-reason-empty">
-                        {payLoading ? 'جارٍ تحميل البيانات...' : payError || 'لا توجد بيانات لعرضها.'}
+                        {payLoading
+                          ? 'جارٍ تحميل البيانات...'
+                          : !eventId
+                            ? 'اختر حفلاً من القائمة أعلاه لعرض سجل تدقيق الخريجين.'
+                            : payError || 'لا توجد بيانات لعرضها.'}
                       </span>
                     </td>
                   </tr>

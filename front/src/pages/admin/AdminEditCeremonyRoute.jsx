@@ -87,7 +87,6 @@ export default function AdminEditCeremonyRoute({
     pricePkg2: fmtPrice(event.price_2_companions),
     pricePkg3: fmtPrice(event.price_3_companions),
     enablePkg3: event.is_3companions_enabled ?? true,
-    seatPrefix: event.seat_prefix || '',
     collegeNames: Array.isArray(event.colleges)
       ? event.colleges.map((c) => c.name).filter(Boolean)
       : [],

@@ -1,14 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import '../style/AdminSidebar.css';
 import unionLogo from '../assets/only-logo.png';
 import { useAdminStats } from '../context/AdminStatsContext';
+
+const COLLAPSE_KEY = 'adm.sidebar.collapsed';
+
+function readCollapsed() {
+  try {
+    return window.localStorage.getItem(COLLAPSE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 /* عناصر القائمة: id هو اسم القسم اللي بيوصل لـ onNavigate (مثلاً /admin/payments) */
 const NAV_ITEMS = [
   { id: 'dashboard', icon: 'dashboard', label: 'لوحة الإحصائيات' },
   { id: 'ceremonies', icon: 'school', label: 'الحفلات' },
+  { id: 'colleges', icon: 'account_balance', label: 'كليات واختصاصات' },
+  { id: 'files', icon: 'folder_shared', label: 'ملفات البيانات' },
+  { id: 'verify', icon: 'fact_check', label: 'تشخيص المطابقة' },
   { id: 'payments', icon: 'receipt_long', label: 'طلبات الدفع' },
-  { id: 'scanners', icon: 'qr_code_scanner', label: 'الماسحون والإعدادات' },
+  { id: 'scanners', icon: 'qr_code_scanner', label: 'الماسحون' },
   { id: 'actions', icon: 'admin_panel_settings', label: 'إجراءات استثنائية' },
 ];
 
@@ -31,9 +44,21 @@ export default function AdminSidebar({
   onAddTicket,
   onLogout,
   adminName = 'مسؤول الاتحاد',
-  adminRole = 'الاتحاد الوطني لطلبة سورية',
 }) {
   const { pendingPayments } = useAdminStats();
+  // طيّ الشريط على الديسكتوب (يُحفظ الاختيار للجلسات القادمة)
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--adm-sb-width', collapsed ? '0px' : '288px');
+    try {
+      window.localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
+    } catch {
+      /* تجاهل عدم توفر التخزين */
+    }
+    return () => root.style.removeProperty('--adm-sb-width');
+  }, [collapsed]);
 
   const handleNav = (e, id) => {
     e.preventDefault();
@@ -41,12 +66,24 @@ export default function AdminSidebar({
     if (id !== currentId && onNavigate) onNavigate(id);
   };
 
+  // على الديسكتوب الزر يطوي/يوسّع الشريط، وعلى الجوال يقفل القائمة
+  const handleToggle = () => {
+    const isDesktop =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(min-width: 1024px)').matches;
+    if (isDesktop) setCollapsed((c) => !c);
+    else if (onClose) onClose();
+  };
+
   return (
     <>
       {/* خلفية تعتيم القائمة على الشاشات الصغيرة */}
       {open && <div className="adm-overlay" onClick={onClose}></div>}
 
-      <aside className={`adm-sidebar ${open ? 'open' : ''}`} aria-label="القائمة الجانبية">
+      <aside
+        className={`adm-sidebar ${open ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}
+        aria-label="القائمة الجانبية"
+      >
         <div className="adm-sidebar-inner">
           <div>
             {/* الشعار */}
@@ -61,8 +98,8 @@ export default function AdminSidebar({
               <button
                 type="button"
                 className="adm-sidebar-close"
-                aria-label="إغلاق القائمة"
-                onClick={onClose}
+                aria-label="طي القائمة"
+                onClick={handleToggle}
               >
                 <span className="adm-symbol">close</span>
               </button>
@@ -110,7 +147,6 @@ export default function AdminSidebar({
               </div>
               <div className="adm-user-info">
                 <p className="adm-user-name">{adminName}</p>
-                <p className="adm-user-role">{adminRole}</p>
               </div>
             </div>
 
@@ -121,6 +157,18 @@ export default function AdminSidebar({
           </div>
         </div>
       </aside>
+
+      {/* زر توسيع الشريط على الديسكتوب بعد طيّه */}
+      {collapsed && (
+        <button
+          type="button"
+          className="adm-expand-btn"
+          aria-label="توسيع القائمة الجانبية"
+          onClick={() => setCollapsed(false)}
+        >
+          <span className="adm-symbol">menu_open</span>
+        </button>
+      )}
     </>
   );
 }

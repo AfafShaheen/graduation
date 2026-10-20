@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.redis import redis_client
 from app.models.college import CollegeModel
 from app.models.event import EventModel
+from app.models.event_college import EventCollegeModel
 from app.schemas.major import RegistrationCollegeItem
 from app.services.settings_service import (
     CONTACT_PHONE,
@@ -45,25 +46,53 @@ async def list_registration_colleges(db: AsyncSession = Depends(get_db)):
         pass
 
     now = datetime.now(UTC)
+
+    def _window_open(ev: EventModel) -> bool:
+        return (
+            (ev.registration_start is None or ev.registration_start <= now)
+            and (ev.registration_end is None or ev.registration_end >= now)
+        )
+
+    def _pick_event(events: list[EventModel]) -> EventModel:
+        open_ones = [ev for ev in events if _window_open(ev)]
+        if open_ones:
+            return sorted(
+                open_ones,
+                key=lambda ev: (ev.registration_end or datetime.max.replace(tzinfo=UTC), ev.id),
+            )[0]
+        return sorted(
+            events,
+            key=lambda ev: (ev.registration_end or datetime.min.replace(tzinfo=UTC), ev.id),
+        )[-1]
+
     stmt = (
         select(CollegeModel)
-        .join(EventModel, CollegeModel.event_id == EventModel.id)
-        .options(selectinload(CollegeModel.majors))
+        .join(EventCollegeModel, EventCollegeModel.college_id == CollegeModel.id)
+        .join(EventModel, EventModel.id == EventCollegeModel.event_id)
+        .options(selectinload(CollegeModel.majors), selectinload(CollegeModel.events))
         .where(
             (EventModel.registration_end.is_(None)) | (EventModel.registration_end >= now)
         )
         .order_by(CollegeModel.name)
+        .distinct()
     )
     result = await db.execute(stmt)
     colleges = result.scalars().all()
 
     output = []
     for c in colleges:
+        eligible = [
+            ev for ev in c.events
+            if ev.registration_end is None or ev.registration_end >= now
+        ]
+        if not eligible:
+            continue
+        event = _pick_event(eligible)
         sorted_majors = sorted(c.majors, key=lambda m: m.name)
         output.append({
             "id": c.id,
             "name": c.name,
-            "event_id": c.event_id,
+            "event_id": event.id,
             "majors": [{"id": m.id, "name": m.name} for m in sorted_majors]
         })
 

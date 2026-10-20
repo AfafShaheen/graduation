@@ -92,11 +92,23 @@ How to run `scripts/run_migrations.py`, in order of preference:
    python scripts/run_migrations.py
    ```
 
-2. **cPanel "Execute python script"** on `scripts/run_migrations.py` (the
-   Python App env vars, including `DATABASE_URL`, are available to it).
+2. **A cron job with a temporary env file** (this is what worked on this host —
+   see "Lessons from the first deploy", §3). Cron does NOT see the Python
+   app's env vars, so load them from a file with `--env-file`:
+
+   ```bash
+   python /home/sunionhomsuni/graduation_back/scripts/run_migrations.py \
+       --env-file /home/sunionhomsuni/graduation_back/.migrate.env
+   ```
 
 3. **From a laptop** with Remote PostgreSQL and your IP whitelisted
    (temporarily), setting `DATABASE_URL` to point at the server.
+
+**Option A — cPanel "Execute python script"** — keep it as a fallback, but note
+that on this host the button fails with *"This command is supported only for
+NodeJS and Python"*. If it works for you, point it at
+`scripts/run_migrations.py` (the Python App env vars, including `DATABASE_URL`,
+are available to it).
 
 If the script fails with `permission denied for schema public`, fix it via
 phpPgAdmin as the database owner (or ask support):
@@ -114,9 +126,18 @@ again to confirm it is now a no-op that just upgrades to head.
 
 `create_admin.py` is interactive (no terminal on cPanel), so use the env-based
 variant. Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` on the Python App page
-(production requires ≥ 12 characters), then run
-`scripts/create_admin_from_env.py` via "Execute python script". **Delete
-`ADMIN_PASSWORD` afterwards** and restart the app.
+(production requires ≥ 12 characters), then run it with a cron job and a
+temporary env file (see "Lessons from the first deploy", §3):
+
+```bash
+python /home/sunionhomsuni/graduation_back/scripts/create_admin_from_env.py \
+    --env-file /home/sunionhomsuni/graduation_back/.admin.env
+```
+
+The script prints only the password **length** and `APP_ENV`, never the
+password. If the length is below the policy minimum it hints that the value
+may have been truncated by the shell — use `--env-file`. **Delete the env file
+and `ADMIN_PASSWORD` afterwards** and restart the app.
 
 ---
 
@@ -238,3 +259,104 @@ is unaffected.
   behaviour); the example env file sets `true` for cPanel.
 - **6.2 `DB_POOL_SIZE=3` / `DB_MAX_OVERFLOW=2`** — smaller asyncpg pool for
   shared-host PostgreSQL connection limits (code default stays 20 / 10).
+
+---
+
+## 10. Lessons from the first deploy
+
+What actually happened on this host, in order. All commands use placeholders —
+never real secrets.
+
+### 10.1 "Run Pip Install" can hang and lock the app
+
+The button hung, and every later action failed with
+`Can't acquire lock for app: graduation_back`. There is no terminal, so:
+
+1. Diagnose with a one-shot cron job (Once Per Minute, delete after one run):
+
+   ```bash
+   ps aux > ~/ps_out.txt 2>&1
+   ```
+
+2. Open `~/ps_out.txt` in File Manager. You are looking for
+   `cloudlinux-selector` / `cloudlinux-cli-user.py ... install-modules`
+   processes. There is **no real `pip` child** — the button is stuck, not slow.
+3. `kill -9` those PIDs with another one-shot cron job:
+
+   ```bash
+   kill -9 <PID1> <PID2>
+   ```
+
+4. **Never click Run Pip Install repeatedly** — each click adds another lock.
+
+### 10.2 Install packages with cron instead of the button
+
+One-shot pattern with a marker file and a log (the marker stops it from
+running again; delete the cron job after the first run):
+
+```bash
+[ -f ~/pip_started ] || { touch ~/pip_started; /home/USER/virtualenv/graduation_back/3.11/bin/python -m pip install -r /home/USER/graduation_back/requirements.txt > ~/pip_log.txt 2>&1; echo EXIT=$? >> ~/pip_log.txt; }
+```
+
+Verify without the button:
+
+```bash
+/home/USER/virtualenv/graduation_back/3.11/bin/python -c "import a2wsgi, fastapi, sqlalchemy, asyncpg, redis, pandas, dotenv; print('IMPORT OK')"
+```
+
+### 10.3 Migrations and the admin via cron + a temporary env file
+
+Create `/home/USER/graduation_back/.migrate.env` (outside `public_html`) with
+`APP_ENV`, `DATABASE_URL`, a **dummy** `JWT_SECRET_KEY` (the scripts never
+issue tokens) and, for the admin step, `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
+Then run each script once via a one-shot cron job:
+
+```bash
+python /home/USER/graduation_back/scripts/run_migrations.py --env-file /home/USER/graduation_back/.migrate.env
+python /home/USER/graduation_back/scripts/create_admin_from_env.py --env-file /home/USER/graduation_back/.admin.env
+```
+
+`create_admin_from_env.py` prints only the password **length** and `APP_ENV`.
+When done: delete the env files, the markers and the logs, and remove
+`ADMIN_*` from the app's env vars.
+
+### 10.4 Cron gotchas
+
+- Cron does **not** see the Python app's env vars — always `--env-file`.
+- `%` is special in crontab: escape it as `\%`, or keep URLs in the env file.
+- Use absolute paths for everything.
+- Always redirect output to a log file (`> ~/x.log 2>&1`) — cron swallows it.
+
+### 10.5 Admin password
+
+At least 12 characters when `APP_ENV=production` (4 in development). Avoid
+`'`, `"`, `$`, `` ` `` and `\` in it — the shell mangles them, and a mangled
+password silently fails the length check (the script prints a hint).
+
+### 10.6 Passenger facts
+
+- Passenger **strips the URL prefix**: the app receives
+  `SCRIPT_NAME=/gradapi`, `PATH_INFO=/health`. The defensive strip in
+  `passenger_wsgi.py` is just a safety net.
+- **The a2wsgi + fork hang:** `ASGIMiddleware(app)` starts a background
+  event-loop thread; Passenger forks workers after loading the file and
+  threads do not survive `fork()`, so every request hung forever. Fixed by
+  creating the middleware lazily per process (see `back/passenger_wsgi.py`
+  and its regression test `back/tests/test_passenger_wsgi.py`).
+- To test Passenger without the app: upload a minimal `passenger_wsgi.py`
+  whose `application` returns `b"ok"`, curl the URL, then restore the real
+  file. Clear `stderr.log` before each test so old lines don't confuse you.
+- `signal 15` lines in the log are normal Passenger restarts.
+
+### 10.7 The deploy tool (`deploy/`)
+
+- First time only: create an FTP account whose directory **is** the home
+  folder, copy `deploy.config.example.json` to `deploy.config.json`, fill in
+  the FTP user. The FTP password is **never** stored — the script asks for it
+  each run (or reads `DEPLOY_FTP_PASSWORD`).
+- `deploy_front.bat` builds the frontend and swaps `public_html/graduation`
+  atomically (old version kept as `graduation__old`).
+- `deploy_back.bat` uploads only changed backend files (hash cache in
+  `.deploy_cache.json`) and restarts the app via `tmp/restart.txt`.
+- If the frontend check fails after a front deploy, restore with
+  `python deploy/deploy.py rollback-front`.

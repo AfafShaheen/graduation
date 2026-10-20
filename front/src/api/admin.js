@@ -64,10 +64,29 @@ export async function deleteEvent(id) {
   });
 }
 
+export async function listColleges() {
+  const auth = getAdminToken();
+  return request("/api/admin/colleges", { token: auth });
+}
+
+export async function createCollege(data) {
+  const auth = getAdminToken();
+  return request("/api/admin/colleges", { method: "POST", body: data, token: auth });
+}
+
+export async function updateCollege(id, data) {
+  const auth = getAdminToken();
+  return request(`/api/admin/colleges/${id}`, { method: "PUT", body: data, token: auth });
+}
+
+export async function deleteCollege(id) {
+  const auth = getAdminToken();
+  return request(`/api/admin/colleges/${id}`, { method: "DELETE", token: auth });
+}
+
 export async function getMajors(collegeId) {
-  return request(`/api/admin/colleges/${collegeId}/majors`, {
-    token: getAdminToken(),
-  });
+  const auth = getAdminToken();
+  return request(`/api/admin/colleges/${collegeId}/majors`, { token: auth });
 }
 
 export async function createMajor(collegeId, data) {
@@ -113,6 +132,51 @@ export async function deleteUniversityRecord(id) {
   return request(`/api/admin/university-records/${id}`, {
     method: "DELETE",
     token: getAdminToken(),
+  });
+}
+
+export async function diagnoseUniversityRecord(payload) {
+  const auth = getAdminToken();
+  return request("/api/admin/university-records/diagnose", {
+    method: "POST",
+    body: payload,
+    token: auth
+  });
+}
+
+export async function listUniversityFiles() {
+  const auth = getAdminToken();
+  return request("/api/admin/university-files", { token: auth });
+}
+
+export async function uploadUniversityFile(file, eventId) {
+  const auth = getAdminToken();
+  const formData = new FormData();
+  formData.append("file", file);
+  if (eventId != null) {
+    formData.append("event_id", String(eventId));
+  }
+  return request("/api/admin/university-files", {
+    method: "POST",
+    body: formData,
+    token: auth
+  });
+}
+
+export async function linkUniversityFile(fileId, eventId) {
+  const auth = getAdminToken();
+  return request(`/api/admin/university-files/${fileId}/link`, {
+    method: "POST",
+    body: { event_id: eventId },
+    token: auth
+  });
+}
+
+export async function deleteUniversityFile(fileId) {
+  const auth = getAdminToken();
+  return request(`/api/admin/university-files/${fileId}`, {
+    method: "DELETE",
+    token: auth
   });
 }
 

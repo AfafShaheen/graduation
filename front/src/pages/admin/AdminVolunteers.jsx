@@ -264,7 +264,7 @@ export default function AdminVolunteers({
 
         <div className="adm-topbar-title">
           <h2>الخريجون الراغبون بتولّي مسؤولية</h2>
-          <span>جامعة حمص • فرع الاتحاد الوطني لطلبة سورية</span>
+          <span>جامعة حمص</span>
         </div>
 
         <button type="button" className="vol-back-btn" onClick={() => onNavigate && onNavigate('dashboard')}>

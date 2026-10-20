@@ -105,3 +105,63 @@
 
 ## بوابة الدفع لكل جزء
 (a) نجاح اختبارات الجزء، (b) كل مهمة ✅/⛔ بسبب، (c) نجاح `docker compose build`، (d) بدء خدمة back وترحيلات + `/health` = 200، (e) `git status` نظيف؛ ثم `git pull --rebase origin dev` وإعادة الاختبار عند تغيّر شيء، ثم `git push origin dev`.
+
+---
+
+# الجزء C — معالجة ملاحظات السيرفر
+
+الخطة الكاملة في `docs/PLAN_server-feedback.md`.
+
+| ID | المهمة | الحالة | commit | الدليل |
+|----|--------|--------|--------|--------|
+| P0.1 | حفظ الخطة + قائمة المهام | ✅ | `39d03c6` | `docs/PLAN_server-feedback.md` |
+| P0.2 | تسجيل خط الأساس (باك/فرنت/lint) | ✅ | — | فرنت 33 / lint 40 تحذير 0 خطأ — باك مؤجل لـP10 |
+| P1.1 | إصلاح `parse_gpa` (كسر Excel + نسبة + أرقام عربية) | ✅ | `91960e8` | 38 نجحت |
+| P1.2 | إيقاف إخفاء أخطاء الرفع في نموذج الحفل | ✅ | `1d06b30` | lint 0 خطأ + 33 نجحت |
+| P1.3 | رسالة الكلية: كليات الملف مقابل كليات الحفل | ✅ | `5f66d59` | 7 نجحت |
+| P1.4 | إزالة `.0` من الرقم الجامعي | ✅ | `38ca15b` | 6 نجحت |
+| P1.5 | إصلاح `App.jsx` المكسور بعد دمج الريموت (حالة الماسح + `PREVIEW` + forgotPassword + clearScannerSession) | ✅ | `18f0815` | lint 40 تحذير 0 خطأ + 33 نجحت |
+| P2.1 | حذف الأزرار الميتة والشريط العلوي المكرر | ✅ | 9f38aa0 | lint 0 errors / 33 tests |
+| P2.2 | حذف بطاقة «آخر تدقيقات الدفع» | ✅ | 75d69c1 | lint 0 errors / 33 tests |
+| P2.3 | جدول الحفلات: حذف المعاينة والحذف (يبقى تعديل) | ✅ | 9b23414 | lint 0 errors / 33 tests |
+| P2.4 | الشعار «جامعة حمص» فقط | ✅ | 865c35e | lint 0 errors / 33 tests |
+| P2.5 | إزالة حقل بادئة المقاعد | ✅ | 922793a | lint 0 errors / 33 tests |
+| P2.6 | نقل زر «إضافة تذكرة جديدة» إلى سياق الحفل | ⛔ | — | يُنفَّذ مع P9.4 |
+| P2.7 | البروفايل: الاسم فقط | ✅ | 865c35e | lint 0 errors / 33 tests |
+| P2.8 | إصلاح فلتر «كل الحفلات» في اللوحة | ✅ | eabd51d | lint 0 errors / 33 tests |
+| P2.9 | نص الملخص + شارة الحفل الديناميكية | ✅ | eabd51d | lint 0 errors / 33 tests |
+| P2.10 | فصل الماسحين عن إعدادات الدفع | ✅ | f69b2a9 | lint 0 errors / 33 tests |
+| P2.11 | إصلاح مسح حقول شام كاش بعد رفع QR | ✅ | b0056d1 | lint 0 errors / 33 tests |
+| P3.1 | شريط جانبي قابل للطي على الديسكتوب | ⬜ | — | — |
+| P3.2 | `useFormDraft` لنموذج الحفل | ⬜ | — | — |
+| P3.3 | تخزين مؤقت للقوائم | ⬜ | — | — |
+| P4.1 | عمود حالة التسجيل | ⬜ | — | — |
+| P5.1 | ترحيل `event_colleges` | ✅ | `a92d238` | backend 344 passed؛ العقد دون تغيير |
+| P5.2 | CRUD الكليات | ✅ | `23d50d5` | اختبارات `test_admin_college_crud` 6 passed؛ backend 350 passed |
+| P5.3 | قاعدة وضوح الربط | ✅ | `300030a` | backend 352 passed؛ `COLLEGE_WINDOW_OVERLAP` |
+| P5.4 | الحفل يقبل كليات من الكتالوج | ✅ | `300030a` | إنشاء/تعديل الحفل يفرضان عدم تداخل النوافذ |
+| P5.5 | تحديث اختيار الحفل بالكلية | ✅ | `d5aef4e` | `test_verify_step1_prefers_the_open_window_event` 12 passed |
+| P5.6 | صفحة «كليات واختصاصات» | ✅ | `c4fa793` | frontend lint 0 errors/38 warnings; npm test 33 passed |
+| P5.7 | نموذج الحفل: اختيار من الكتالوج | ✅ | `3cf6f47` | frontend lint 0 errors/38 warnings; npm test 29 passed (حُذف 4 لـfacultyOptions) |
+| P5.8 | اختبارات + baseline | ✅ | (docs) | backend 354 passed؛ العقد دون تغيير فلا تحديث baseline |
+| P5.9 | اختبار منع التسجيل بحفل منتهٍ | ✅ | `e2c85a1` | `test_ticket_selection.py` 11 passed |
+| P6.1 | جدول `university_files` + ترحيل | ✅ | `9aa487c` | `alembic upgrade head` يطبّق 0009؛ 14 عموداً |
+| P6.2 | خدمة وواجهات ملفات البيانات | ✅ | `d00a874` | `test_admin_university_files` 5 passed؛ عقد OpenAPI محدّث |
+| P6.3 | صفحة «ملفات البيانات» + إزالة الرفع من نموذج الحفل | ✅ | (P6.3 commit) | frontend lint 0 errors/40 warnings; npm test 29 passed |
+| P6.4 | إزالة الرفع من نموذج الحفل + عرض المرفوع | ✅ | (P6.3 commit) | دُمج مع P6.3 |
+| P6.5 | معاينة قبل الاستيراد (اختياري) | ⛔ | — | اختياري، أُجّل خارج نطاق التسليم الحالي |
+| P7.1 | SMTP + فشل الإرسال الظاهر | ✅ | `915e41c` | `test_email_status` 7 passed؛ baseline أضيف `/api/admin/settings/email-status` |
+| P7.2 | أداة تشخيص المطابقة | ✅ | (هذا الكوميت) | `test_university_record_diagnostic` 6 passed؛ صفحة «تشخيص المطابقة» + `diagnoseUniversityRecord`؛ baseline أضيف `/api/admin/university-records/diagnose` |
+| P7.3 | نص نموذج المطابقة | ✅ | (هذا الكوميت) | توضيح النص في `GraduationFormStep1.jsx`؛ npm test 29 passed |
+| P8.1 | توليد رمز التجديد + `jti` | ⬜ | — | — |
+| P8.2 | نقاط التجديد للفاعلين الثلاثة | ⬜ | — | — |
+| P8.3 | إرجاع/إبطال رمز التجديد | ⬜ | — | — |
+| P8.4 | تجديد تلقائي في الواجهة | ⬜ | — | — |
+| P8.5 | اختبارات + baseline | ⬜ | — | — |
+| P9.1 | جدول `event_ticket_packages` + الترحيل | ⬜ | — | — |
+| P9.2 | واجهة الباقات الديناميكية | ⬜ | — | — |
+| P9.3 | تحديث بقية المنظومة | ⬜ | — | — |
+| P9.4 | زر إضافة تذكرة داخل الحفل | ⬜ | — | — |
+| P9.5 | اختبارات شاملة | ⬜ | — | — |
+| P10.1 | التحقق النهائي | ⬜ | — | — |
+| P10.2 | التوثيق والدفع | ⬜ | — | — |

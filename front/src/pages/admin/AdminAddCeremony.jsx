@@ -1,13 +1,31 @@
 ﻿import React, { useState, useEffect } from 'react';
 import '../../style/AdminAddCeremony.css';
 import AdminSidebar from '../../components/AdminSidebar';
-import { createAdminEvent, updateAdminEvent, uploadUniversityRecords } from './hooks/useAdminEvents.js';
-import { ApiError } from '../../api/admin.js';
-import CollegeNamesField from '../../components/CollegeNamesField';
-import {
-  resolveCollegeNames,
-  selectedKeysFromCollegeNames,
-} from './facultyOptions.js';
+import { createAdminEvent, updateAdminEvent } from './hooks/useAdminEvents.js';
+import { ApiError, listColleges } from '../../api/admin.js';
+import useFormDraft from '../../hooks/useFormDraft';
+import CollegeCatalogField from '../../components/CollegeCatalogField';
+
+/* مفاتيح مسودة نموذج الحفل الجديد (localStorage) */
+const CEREMONY_DRAFT_KEYS = [
+  'name',
+  'date',
+  'start',
+  'end',
+  'whatsapp',
+  'price2',
+  'price3',
+  'pkg3',
+  'collegeIds',
+].map((k) => `adm.cer.${k}`);
+
+function clearCeremonyDrafts() {
+  try {
+    CEREMONY_DRAFT_KEYS.forEach((k) => window.localStorage.removeItem(k));
+  } catch {
+    /* التخزين غير متاح، نتجاهل */
+  }
+}
 
 export default function AdminAddCeremony({
   adminName = 'مسؤول الاتحاد',
@@ -22,93 +40,78 @@ export default function AdminAddCeremony({
   children,
 }) {
   const isEdit = !!ceremony;
-  const [ceremonyName, setCeremonyName] = useState(ceremony?.ceremonyName || '');
-  const [ceremonyDate, setCeremonyDate] = useState(ceremony?.ceremonyDate || '');
-  const [startDate, setStartDate] = useState(ceremony?.startDate || '');
-  const [endDate, setEndDate] = useState(ceremony?.endDate || '');
-  const [whatsappLink, setWhatsappLink] = useState(ceremony?.whatsappLink || '');
-  const [pricePkg2, setPricePkg2] = useState(ceremony?.pricePkg2 || '');
-  const [pricePkg3, setPricePkg3] = useState(ceremony?.pricePkg3 || '');
-  const [enablePkg3, setEnablePkg3] = useState(ceremony?.enablePkg3 ?? true);
-  const [seatPrefix, setSeatPrefix] = useState(ceremony?.seatPrefix || '');
+  // الحفل الجديد يحفظ مسودة في localStorage؛ التعديل لا يحفظ مسودة.
+  const draftKey = (name) => (isEdit ? null : `adm.cer.${name}`);
+
+  const [ceremonyName, setCeremonyName] = useFormDraft(
+    draftKey('name'),
+    ceremony?.ceremonyName || '',
+    { storage: 'local' },
+  );
+  const [ceremonyDate, setCeremonyDate] = useFormDraft(
+    draftKey('date'),
+    ceremony?.ceremonyDate || '',
+    { storage: 'local' },
+  );
+  const [startDate, setStartDate] = useFormDraft(
+    draftKey('start'),
+    ceremony?.startDate || '',
+    { storage: 'local' },
+  );
+  const [endDate, setEndDate] = useFormDraft(
+    draftKey('end'),
+    ceremony?.endDate || '',
+    { storage: 'local' },
+  );
+  const [whatsappLink, setWhatsappLink] = useFormDraft(
+    draftKey('whatsapp'),
+    ceremony?.whatsappLink || '',
+    { storage: 'local' },
+  );
+  const [pricePkg2, setPricePkg2] = useFormDraft(
+    draftKey('price2'),
+    ceremony?.pricePkg2 || '',
+    { storage: 'local' },
+  );
+  const [pricePkg3, setPricePkg3] = useFormDraft(
+    draftKey('price3'),
+    ceremony?.pricePkg3 || '',
+    { storage: 'local' },
+  );
+  const [enablePkg3, setEnablePkg3] = useFormDraft(
+    draftKey('pkg3'),
+    ceremony?.enablePkg3 ?? true,
+    { storage: 'local' },
+  );
   const [fieldErrors, setFieldErrors] = useState({});
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
 
-  // ملف بيانات الجامعة (اختياري عند الحفظ، لكن لازم يكون جاهز قبل فتح التسجيل)
-  const [dataFile, setDataFile] = useState(null);
-  const [fileError, setFileError] = useState('');
-  const [uploadSummary, setUploadSummary] = useState(null);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = React.useRef(null);
+  // كتالوج الكليات المركزي (يُحمّل مرة واحدة عند فتح النموذج)
+  const [catalogColleges, setCatalogColleges] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await listColleges();
+        const items = Array.isArray(data) ? data : data?.items || [];
+        if (alive) setCatalogColleges(items.filter((c) => c && c.id != null));
+      } catch {
+        if (alive) setCatalogColleges([]);
+      } finally {
+        if (alive) setCatalogLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  const REQUIRED_COLUMNS = [
-    'الاسم',
-    'الكنية',
-    'اسم الأب',
-    'اسم الأم',
-    'الجنس',
-    'الكلية',
-    'التخصص',
-    'الرقم الجامعي',
-    'حالة الطالب من الأوائل',
-    'المعدل',
-    'رقم التواصل',
-  ];
-  const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
-  const MAX_SIZE_MB = 25;
-
-  const formatSize = (bytes) =>
-    bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-
-  const validateFile = (file) => {
-    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-      return 'الصيغ المدعومة فقط: xlsx وxls وcsv';
-    }
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      return `حجم الملف يتجاوز ${MAX_SIZE_MB} ميغابايت`;
-    }
-    return null;
-  };
-
-  const handleFiles = (files) => {
-    if (!files || !files.length) return;
-    const file = files[0];
-    const err = validateFile(file);
-    if (err) {
-      setFileError(err);
-      setDataFile(null);
-      return;
-    }
-    setFileError('');
-    setDataFile(file);
-    setUploadSummary(null);
-  };
-
-  const removeFile = () => {
-    setDataFile(null);
-    setFileError('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const downloadTemplate = () => {
-    const blob = new Blob([`\uFEFF${REQUIRED_COLUMNS.join(',')}\n`], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'graduates-template.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const [faculties, setFaculties] = useState(() =>
-    selectedKeysFromCollegeNames(
-      ceremony?.colleges || ceremony?.collegeNames || ceremony?.faculties || [],
-    ),
+  const [selectedCollegeIds, setSelectedCollegeIds] = useFormDraft(
+    draftKey('collegeIds'),
+    [],
+    { storage: 'local' },
   );
-  const [customColleges, setCustomColleges] = useState([]);
 
   // إغلاق القائمة بزر Escape
   useEffect(() => {
@@ -117,18 +120,34 @@ export default function AdminAddCeremony({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const handleFacultyToggle = (key) => {
-    setFaculties((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleCollegeToggle = (id) => {
+    setSelectedCollegeIds((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+    });
   };
 
-  const handleAddCustomCollege = (name) => {
-    const value = String(name || '').trim();
-    if (!value) return;
-    setCustomColleges((prev) => (prev.includes(value) ? prev : [...prev, value]));
+  // أسماء الكليات المختارة (للموجودين في الكتالوج)
+  const selectedCollegeNames = () => {
+    const ids = Array.isArray(selectedCollegeIds) ? selectedCollegeIds : [];
+    return catalogColleges.filter((c) => ids.includes(c.id)).map((c) => c.name);
   };
 
-  const handleRemoveCustomCollege = (name) => {
-    setCustomColleges((prev) => prev.filter((item) => item !== name));
+  // مسح المسودة المحفوظة والرجوع إلى نموذج فارغ (لإنشاء حفل جديد فقط)
+  const handleClearDraft = () => {
+    if (!window.confirm('هل تريد مسح المسودة الحالية والبدء بحفل جديد فارغ؟')) return;
+    clearCeremonyDrafts();
+    setCeremonyName('');
+    setCeremonyDate('');
+    setStartDate('');
+    setEndDate('');
+    setWhatsappLink('');
+    setPricePkg2('');
+    setPricePkg3('');
+    setEnablePkg3(true);
+    setSelectedCollegeIds([]);
+    setFieldErrors({});
+    setSubmitError('');
   };
 
   const [submitting, setSubmitting] = useState(false);
@@ -150,7 +169,7 @@ export default function AdminAddCeremony({
     setSubmitError('');
     setFieldErrors({});
 
-    if (!isEdit && resolveCollegeNames(faculties, customColleges).length === 0) {
+    if (!isEdit && selectedCollegeNames().length === 0) {
       setSubmitError('اختر كلية واحدة على الأقل لهذا الحفل');
       return;
     }
@@ -163,7 +182,7 @@ export default function AdminAddCeremony({
       name: ceremonyName,
       event_date: ceremonyDate ? ceremonyDate.slice(0, 10) : ceremonyDate,
       event_time: eventTime,
-      seat_prefix: seatPrefix.trim() || null,
+      seat_prefix: null,
       registration_start: startDate ? `${startDate}T00:00:00+03:00` : startDate,
       registration_end: endDate ? `${endDate}T23:59:59+03:00` : endDate,
       whatsapp_group_link: whatsappLink,
@@ -179,7 +198,7 @@ export default function AdminAddCeremony({
         if (!registrationStarted) payload.is_3companions_enabled = enablePkg3;
         result = await updateAdminEvent(eventId, payload);
       } else {
-        const collegeNames = resolveCollegeNames(faculties, customColleges);
+        const collegeNames = selectedCollegeNames();
         result = await createAdminEvent({
           ...base,
           is_3companions_enabled: enablePkg3,
@@ -188,19 +207,8 @@ export default function AdminAddCeremony({
       }
 
       const id = eventId ?? result?.id ?? result?.event_id;
-      if (dataFile && id) {
-        try {
-          const uploadResult = await uploadUniversityRecords(id, dataFile);
-          if (uploadResult?.summary) setUploadSummary(uploadResult.summary);
-        } catch (upErr) {
-          setSubmitError(
-            'تم حفظ الحفل لكن لم يُستورد ملف بيانات الخريجين: ' +
-              (upErr instanceof ApiError ? upErr.message : 'خطأ غير معروف')
-          );
-          if (onSubmitSuccess) onSubmitSuccess(result);
-          return;
-        }
-      }
+
+      clearCeremonyDrafts();
       if (onSubmitSuccess) {
         onSubmitSuccess(result);
       } else {
@@ -256,22 +264,6 @@ export default function AdminAddCeremony({
             <span>{isEdit ? 'تعديل الحفل' : 'إضافة حفل جديد'}</span>
           </div>
         </div>
-
-        <div className="add-cer-topbar-actions">
-          <button aria-label="التنبيهات" className="add-cer-icon-btn" title="التنبيهات" type="button">
-            <span className="add-cer-symbol">notifications</span>
-            <span className="add-cer-notif-dot"></span>
-          </button>
-
-          <button aria-label="التقويم" className="add-cer-icon-btn" title="التقويم" type="button">
-            <span className="add-cer-symbol">calendar_today</span>
-          </button>
-
-          <button className="add-cer-help-btn" type="button">
-            <span className="add-cer-symbol" style={{ fontSize: '18px' }}>help_outline</span>
-            <span className="add-cer-help-text">المساعدة والدعم</span>
-          </button>
-        </div>
       </header>
 
       {/* المحتوى الرئيسي */}
@@ -292,10 +284,19 @@ export default function AdminAddCeremony({
               </div>
             </div>
 
-            <span className="add-cer-tag-pill">
-              <span className="add-cer-tag-dot"></span>
-              <span>مسودة غير منشورة</span>
-            </span>
+            <div className="add-cer-header-tags">
+              <span className="add-cer-tag-pill">
+                <span className="add-cer-tag-dot"></span>
+                <span>مسودة غير منشورة</span>
+              </span>
+
+              {!isEdit && (
+                <button type="button" className="add-cer-draft-clear" onClick={handleClearDraft}>
+                  <span className="add-cer-symbol" style={{ fontSize: '16px' }}>delete_sweep</span>
+                  <span>مسح المسودة</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <form className="add-cer-form" onSubmit={handleSubmit}>
@@ -401,33 +402,6 @@ export default function AdminAddCeremony({
 
             <div className="add-cer-divider"></div>
 
-            {/* بادئة أرقام المقاعد */}
-            <div className="add-cer-field-group">
-              <label className="add-cer-label" htmlFor="seat-prefix">
-                بادئة أرقام المقاعد (اختياري)
-              </label>
-              <div className="add-cer-input-wrap">
-                <input
-                  id="seat-prefix"
-                  type="text"
-                  maxLength={3}
-                  className="add-cer-input with-icon-left"
-                  value={seatPrefix}
-                  onChange={(e) => setSeatPrefix(e.target.value)}
-                  placeholder="مثال: E أو أ"
-                />
-                <span className="add-cer-symbol add-cer-input-icon left">event_seat</span>
-              </div>
-              <p className="add-cer-hint">
-                من 1 إلى 3 محارف تُسبَق بها أرقام مقاعد الخريجين والمرافقين على التذاكر. لا يمكن تغييرها بعد تخصيص أي مقعد.
-              </p>
-              {errFor('seat_prefix') && (
-                <p className="add-cer-file-error" role="alert">{errFor('seat_prefix')}</p>
-              )}
-            </div>
-
-            <div className="add-cer-divider"></div>
-
             {/* الكليات */}
             <div className="add-cer-field-group" style={{ gap: '14px' }}>
               <div className="add-cer-section-head">
@@ -440,13 +414,12 @@ export default function AdminAddCeremony({
                 </span>
               </div>
 
-              <CollegeNamesField
-                selectedKeys={faculties}
-                customNames={customColleges}
+              <CollegeCatalogField
+                colleges={catalogColleges}
+                selectedIds={selectedCollegeIds}
+                onToggle={handleCollegeToggle}
                 readOnlyNames={isEdit ? ceremony?.collegeNames || [] : null}
-                onToggle={handleFacultyToggle}
-                onAddCustom={handleAddCustomCollege}
-                onRemoveCustom={handleRemoveCustomCollege}
+                loading={catalogLoading}
                 error={errFor('college_names') || errFor('colleges')}
               />
             </div>
@@ -586,95 +559,24 @@ export default function AdminAddCeremony({
             <div className="add-cer-divider"></div>
 
             {/* ملف بيانات الجامعة */}
-            <div className="add-cer-field-group" style={{ gap: '14px' }}>
+            <div className="add-cer-field-group" style={{ gap: '12px' }}>
               <div className="add-cer-section-head">
                 <h4 className="add-cer-section-title">
                   <span className="add-cer-symbol">upload_file</span>
-                  <span>ملف بيانات الخريجين (اختياري)</span>
+                  <span>ملف بيانات الخريجين</span>
                 </h4>
-                <button type="button" className="add-cer-extend-btn" onClick={downloadTemplate}>
-                  <span className="add-cer-symbol" style={{ fontSize: '14px' }}>download</span>
-                  <span>تحميل قالب فارغ</span>
-                </button>
               </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ACCEPTED_EXTENSIONS.join(',')}
-                style={{ display: 'none' }}
-                onChange={(e) => handleFiles(e.target.files)}
-              />
-
-              <div
-                className={`add-cer-dropzone ${dragOver ? 'over' : ''} ${fileError ? 'error' : ''}`}
-                role="button"
-                tabIndex={0}
-                aria-label="اسحب الملف هنا أو اضغط للتصفح"
-                onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    fileInputRef.current?.click();
-                  }
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  handleFiles(e.dataTransfer.files);
-                }}
+              <p className="add-cer-hint">
+                صار رفع ملفات بيانات الخريجين وربطها بالحفلات من صفحة «ملفات البيانات» المركزية. أنشئ الحفل هنا ثم ارفع الملف واربطه بالحفل من هناك.
+              </p>
+              <button
+                type="button"
+                className="add-cer-extend-btn"
+                onClick={() => onNavigate && onNavigate('files')}
               >
-                <span className="add-cer-drop-icon">
-                  <span className="add-cer-symbol" style={{ fontSize: '30px' }}>upload_file</span>
-                </span>
-                <p className="add-cer-drop-title">
-                  اسحب ملف Excel أو CSV وأفلته هنا، أو <span>اضغط للتصفح</span>
-                </p>
-                <p className="add-cer-hint">
-                  الصيغ المدعومة: xlsx وxls وcsv — الحجم الأقصى {MAX_SIZE_MB} ميغابايت
-                </p>
-              </div>
-
-              {fileError && (
-                <p className="add-cer-file-error" role="alert">
-                  {fileError}
-                </p>
-              )}
-
-              {dataFile && (
-                <div className="add-cer-file-chip">
-                  <span className="add-cer-symbol" style={{ color: '#124d44', fontSize: '18px' }}>attach_file</span>
-                  <span className="add-cer-file-name">{dataFile.name}</span>
-                  <span className="add-cer-file-size">({formatSize(dataFile.size)})</span>
-                  <span className="add-cer-symbol add-cer-file-ok" style={{ fontSize: '18px' }}>check_circle</span>
-                  <button type="button" className="add-cer-file-remove" aria-label="إزالة الملف" onClick={removeFile}>
-                    <span className="add-cer-symbol" style={{ fontSize: '18px' }}>close</span>
-                  </button>
-                </div>
-              )}
-
-              {uploadSummary && (
-                <p className="add-cer-hint" role="status" style={{ color: '#124d44' }}>
-                  نتيجة الرفع: أُضيف {uploadSummary.added ?? 0}، حُدّث {uploadSummary.updated ?? 0}، تُخطّي{' '}
-                  {uploadSummary.skipped ?? 0}، أخطاء {uploadSummary.error_count ?? 0} (المجموع {uploadSummary.total ?? 0}).
-                </p>
-              )}
-
-              <div className="add-cer-columns">
-                <span className="add-cer-hint">
-                  يُقبل ملف شؤون الطلبة بترتيبه الثابت، ويبقى عمود «الاسم الكامل» مدعوماً. الأعمدة المطلوبة بالسطر الأول (بنفس التسمية تماماً):
-                </span>
-                <div className="add-cer-col-chips">
-                  {REQUIRED_COLUMNS.map((col) => (
-                    <span key={col} className="add-cer-col-chip">{col}</span>
-                  ))}
-                </div>
-              </div>
+                <span className="add-cer-symbol" style={{ fontSize: '16px' }}>folder_shared</span>
+                <span>الانتقال إلى ملفات البيانات</span>
+              </button>
             </div>
 
             <div className="add-cer-divider"></div>
@@ -692,7 +594,11 @@ export default function AdminAddCeremony({
                 إلغاء والعودة لقائمة الحفلات
               </button>
 
-              <button type="submit" className="add-cer-btn-submit" disabled={submitting}>
+              <button
+                type="submit"
+                className="add-cer-btn-submit"
+                disabled={submitting}
+              >
                 <span>{submitting ? 'جارٍ الحفظ...' : isEdit ? 'حفظ التعديلات' : 'حفظ ونشر الحفل الجديد'}</span>
                 <span className="add-cer-symbol" style={{ fontSize: '20px' }}>cloud_upload</span>
               </button>
@@ -704,7 +610,7 @@ export default function AdminAddCeremony({
 
         <p className="add-cer-footer-note">
           <span className="add-cer-symbol">verified_user</span>
-          <span>منظومة إدارة التذاكر الموحدة — الاتحاد الوطني لطلبة سورية، فرع جامعة حمص</span>
+          <span>منظومة إدارة التذاكر الموحدة — جامعة حمص</span>
         </p>
       </main>
     </div>

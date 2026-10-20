@@ -220,7 +220,6 @@ async def test_price_snapshot_survives_event_price_change(
     ticket = await db.get(TicketModel, created.json()["id"])
     assert ticket.price == Decimal("100000")
 
-
 async def test_unverified_graduate_is_rejected(
     client, make_event, make_college, make_graduate
 ):
@@ -242,3 +241,32 @@ async def test_unverified_graduate_is_rejected(
     )
 
     assert response.status_code == 403
+
+
+async def test_select_uses_open_window_for_reusable_college(
+    client, db, make_event, make_college, make_graduate
+):
+    """P5.9: a college shared by a closed and an open ceremony must not block
+    ticket selection; the open event is resolved and selection succeeds."""
+    closed = await make_event(
+        name="حفل منتهٍ",
+        registration_start=datetime(2020, 1, 1, tzinfo=UTC),
+        registration_end=datetime(2020, 1, 2, tzinfo=UTC),
+    )
+    open_event = await make_event(
+        name="حفل مفتوح",
+        registration_start=datetime(2020, 1, 1, tzinfo=UTC),
+        registration_end=datetime(2040, 1, 1, tzinfo=UTC),
+    )
+    college = await make_college(closed.id)
+    await make_college(open_event.id)
+    graduate = await make_graduate(college.id, email_verified=True)
+    access_value = await _login(client, graduate)
+
+    response = await client.post(
+        "/api/graduates/me/ticket", headers=_auth(access_value), json=_SELECT_BODY
+    )
+
+    assert response.status_code == 201, response.text
+    ticket = await db.get(TicketModel, response.json()["id"])
+    assert ticket.event_id == open_event.id

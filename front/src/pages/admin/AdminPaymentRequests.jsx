@@ -1,8 +1,15 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import '../../style/AdminPaymentRequests.css';
+import '../../style/AdminScannersSettings.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
 import { fetchAllEventPayments, confirmTicket, rejectTicket } from './hooks/useAdminPayments.js';
+import {
+  useAdminSettings,
+  updateAdminSettings,
+  uploadShamcashQr,
+  deleteShamcashQr,
+} from './hooks/useAdminSettings.js';
 import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-US');
@@ -23,6 +30,9 @@ const STATUS_TO_UI = {
 };
 
 const ALL_STATUSES = ['PROCESSING', 'AWAITING_PAYMENT', 'CONFIRMED', 'REJECTED'];
+
+const QR_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+const QR_MAX_MB = 1;
 
 export default function AdminPaymentRequests({
   adminName = 'مسؤول الاتحاد',
@@ -95,6 +105,113 @@ export default function AdminPaymentRequests({
   useEffect(() => {
     loadPayments();
   }, [loadPayments]);
+
+  // ===== إعدادات الدفع وشام كاش =====
+  const [activeTab, setActiveTab] = useState('payments'); // 'payments' | 'settings'
+  const { settings, loading: settingsLoading, error: settingsError, refetch: refetchSettings } =
+    useAdminSettings();
+  const [beneficiaryName, setBeneficiaryName] = useState('');
+  const [shamCashAccount, setShamCashAccount] = useState('');
+  const [supportPhone, setSupportPhone] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsNotice, setSettingsNotice] = useState('');
+  const [settingsActionError, setSettingsActionError] = useState('');
+  const [qrPreview, setQrPreview] = useState('');
+  const [qrUploading, setQrUploading] = useState(false);
+  const qrInputRef = useRef(null);
+
+  // علامة تعديل يدوي: تمنع إعادة تهيئة حقول نموذج الدفع عند أي تحديث للإعدادات
+  // (مثل بعد رفع صورة QR، إذ يُعاد جلب الإعدادات وتُمسح ما كتبه المشرف).
+  const settingsDirtyRef = useRef(false);
+
+  useEffect(() => {
+    if (!settings) return;
+    if (settingsDirtyRef.current) return;
+    setBeneficiaryName(settings.shamcash_receiver_name || '');
+    setShamCashAccount(settings.shamcash_account_number || '');
+    setSupportPhone(settings.contact_phone || '');
+  }, [settings]);
+
+  // إخفاء إشعار الإعدادات تلقائياً
+  useEffect(() => {
+    if (!settingsNotice) return undefined;
+    const t = setTimeout(() => setSettingsNotice(''), 3500);
+    return () => clearTimeout(t);
+  }, [settingsNotice]);
+
+  // تحرير رابط معاينة الـ QR عند الاستبدال/الإزالة
+  useEffect(() => {
+    return () => {
+      if (qrPreview) URL.revokeObjectURL(qrPreview);
+    };
+  }, [qrPreview]);
+
+  const currentQr = qrPreview || (settings && settings.shamcash_qr_image) || '';
+
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    setSettingsActionError('');
+    try {
+      setSavingSettings(true);
+      await updateAdminSettings({
+        shamcash_receiver_name: beneficiaryName,
+        shamcash_account_number: shamCashAccount,
+        contact_phone: supportPhone,
+      });
+      setSettingsNotice('تم حفظ إعدادات الدفع بنجاح');
+      settingsDirtyRef.current = false;
+      await refetchSettings();
+    } catch (err) {
+      setSettingsActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleQrFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setSettingsActionError('');
+    if (!QR_TYPES.includes(file.type)) {
+      setSettingsActionError('صيغة الصورة غير مدعومة. المسموح: PNG أو JPEG أو WEBP');
+      if (qrInputRef.current) qrInputRef.current.value = '';
+      return;
+    }
+    if (file.size > QR_MAX_MB * 1024 * 1024) {
+      setSettingsActionError(`حجم الصورة يتجاوز ${QR_MAX_MB} ميغابايت`);
+      if (qrInputRef.current) qrInputRef.current.value = '';
+      return;
+    }
+    try {
+      setQrUploading(true);
+      await uploadShamcashQr(file);
+      setQrPreview(URL.createObjectURL(file));
+      setSettingsNotice('تم رفع صورة QR الجديدة');
+      await refetchSettings();
+    } catch (err) {
+      setSettingsActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
+    } finally {
+      setQrUploading(false);
+      if (qrInputRef.current) qrInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteQr = async () => {
+    setSettingsActionError('');
+    if (!window.confirm('هل تريد حذف صورة QR الحالية؟')) return;
+    try {
+      setQrUploading(true);
+      await deleteShamcashQr();
+      if (qrPreview) URL.revokeObjectURL(qrPreview);
+      setQrPreview('');
+      setSettingsNotice('تم حذف صورة QR');
+      await refetchSettings();
+    } catch (err) {
+      setSettingsActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
+    } finally {
+      setQrUploading(false);
+    }
+  };
 
   const mapped = useMemo(
     () =>
@@ -229,22 +346,6 @@ export default function AdminPaymentRequests({
             <span>جامعة حمص</span>
           </div>
         </div>
-
-        <div className="pay-req-topbar-actions">
-          <button aria-label="التنبيهات" className="pay-req-icon-btn" title="التنبيهات" type="button">
-            <span className="pay-req-symbol">notifications</span>
-            <span className="pay-req-notif-dot"></span>
-          </button>
-
-          <button aria-label="التقويم" className="pay-req-icon-btn" title="التقويم" type="button">
-            <span className="pay-req-symbol">calendar_today</span>
-          </button>
-
-          <button className="pay-req-help-btn" type="button">
-            <span className="pay-req-symbol" style={{ fontSize: '18px' }}>help_outline</span>
-            <span className="pay-req-help-text">المساعدة والدعم</span>
-          </button>
-        </div>
       </header>
 
       {/* المحتوى */}
@@ -259,6 +360,37 @@ export default function AdminPaymentRequests({
           <p>قارن المبلغ المُدخل بالسعر المطلوب واسم المرسل، ثم أكّد الدفع لإصدار التذكرة أو ارفضه مع إشعار الطالب.</p>
         </section>
 
+        {/* التبويبات: طلبات الدفع / إعدادات الدفع وشام كاش */}
+        <div className="scan-set-tabs-header">
+          <div className="scan-set-tabs">
+            <button
+              type="button"
+              className={`scan-set-tab-btn ${activeTab === 'payments' ? 'active' : 'inactive'}`}
+              onClick={() => setActiveTab('payments')}
+            >
+              <span className="scan-set-symbol" style={{ fontSize: '18px' }}>receipt</span>
+              <span>طلبات الدفع</span>
+              <span className="scan-set-tab-count">{fmt(mapped.length)} طلب</span>
+            </button>
+
+            <button
+              type="button"
+              className={`scan-set-tab-btn ${activeTab === 'settings' ? 'active' : 'inactive'}`}
+              onClick={() => setActiveTab('settings')}
+            >
+              <span className="scan-set-symbol" style={{ fontSize: '18px' }}>tune</span>
+              <span>إعدادات الدفع وشام كاش</span>
+            </button>
+          </div>
+
+          <span className="scan-set-live-pill">
+            <span className="scan-set-live-dot"></span>
+            <span>تحويل رسوم التخرج عبر شام كاش</span>
+          </span>
+        </div>
+
+        {activeTab === 'payments' && (
+          <>
         {/* الإحصائيات */}
         <section className="pay-req-stats-grid">
           <div className="pay-req-stat-card">
@@ -519,6 +651,165 @@ export default function AdminPaymentRequests({
             </div>
           </div>
         </div>
+          </>
+        )}
+
+        {activeTab === 'settings' && (
+          <>
+            {settingsNotice && (
+              <div className="scan-set-notice" role="status">
+                <span className="scan-set-symbol" style={{ fontSize: '18px' }}>check_circle</span>
+                <span>{settingsNotice}</span>
+              </div>
+            )}
+
+            {settingsActionError && (
+              <div className="scan-set-error" role="alert">
+                <span className="scan-set-symbol" style={{ fontSize: '18px' }}>error</span>
+                <span>{settingsActionError}</span>
+              </div>
+            )}
+
+            <div className="scan-set-settings-grid">
+              <div className="scan-set-card">
+                <div className="scan-set-card-head" style={{ justifyContent: 'flex-start' }}>
+                  <div className="scan-set-card-title">
+                    <div className="scan-set-title-icon orange">
+                      <span className="scan-set-symbol" style={{ fontSize: '22px' }}>payments</span>
+                    </div>
+                    <div>
+                      <h4>إعدادات الدفع وشام كاش (Sham Cash)</h4>
+                      <p>بيانات تحويل رسوم بطاقات التخرج وحساب الفرع الطلابي المعتمد</p>
+                    </div>
+                  </div>
+                </div>
+
+                {settingsError && <div className="scan-set-empty" role="alert">{settingsError}</div>}
+                {settingsLoading && <div className="scan-set-empty">جارٍ التحميل...</div>}
+
+                <form className="scan-set-form-stack" onSubmit={handleSaveSettings}>
+                  <div className="scan-set-field">
+                    <label className="scan-set-label" htmlFor="beneficiary">اسم المستلم الرسمي (الجهة المستفيدة)</label>
+                    <div className="scan-set-input-wrap">
+                      <input
+                        id="beneficiary"
+                        type="text"
+                        className="scan-set-input"
+                        value={beneficiaryName}
+                        onChange={(e) => {
+                          settingsDirtyRef.current = true;
+                          setBeneficiaryName(e.target.value);
+                        }}
+                        required
+                      />
+                      <span className="scan-set-symbol scan-set-input-icon right">account_balance</span>
+                    </div>
+                    <p className="scan-set-hint">الاسم الذي يظهر للطلاب عند تأكيد عملية تسديد رسوم التخرج.</p>
+                  </div>
+
+                  <div className="scan-set-field">
+                    <label className="scan-set-label" htmlFor="shamcash">رقم الحساب في محفظة شام كاش</label>
+                    <div className="scan-set-input-wrap">
+                      <input
+                        id="shamcash"
+                        type="text"
+                        dir="ltr"
+                        className="scan-set-input ltr"
+                        value={shamCashAccount}
+                        onChange={(e) => {
+                          settingsDirtyRef.current = true;
+                          setShamCashAccount(e.target.value);
+                        }}
+                        required
+                      />
+                      <span className="scan-set-symbol scan-set-input-icon left">wallet</span>
+                    </div>
+                    <p className="scan-set-hint">رقم الحساب التعريفي المعتمد لدى محفظة شام كاش.</p>
+                  </div>
+
+                  <div className="scan-set-field">
+                    <label className="scan-set-label" htmlFor="support-phone">رقم التواصل مع المسؤول (للدعم المالي والاستفسار)</label>
+                    <div className="scan-set-input-wrap">
+                      <input
+                        id="support-phone"
+                        type="tel"
+                        dir="ltr"
+                        className="scan-set-input ltr"
+                        value={supportPhone}
+                        onChange={(e) => {
+                          settingsDirtyRef.current = true;
+                          setSupportPhone(e.target.value);
+                        }}
+                        required
+                      />
+                      <span className="scan-set-symbol scan-set-input-icon left">phone_in_talk</span>
+                    </div>
+                    <p className="scan-set-hint">يظهر للطلاب المتعثرين بالدفع لمراجعة مكتب الاتحاد.</p>
+                  </div>
+
+                  <div className="scan-set-form-actions">
+                    <button type="submit" className="scan-set-btn-primary" disabled={savingSettings}>
+                      <span className="scan-set-symbol" style={{ fontSize: '18px' }}>check</span>
+                      <span>{savingSettings ? 'جارٍ الحفظ...' : 'حفظ التعديلات والإعدادات'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="scan-set-card scan-set-qr-card">
+                <div>
+                  <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#124d44', margin: '0 0 4px 0' }}>
+                    رمز الاستجابة السريعة (QR شام كاش)
+                  </h4>
+                  <p className="scan-set-hint">الكود المعروض حالياً لتسديد رسوم حفل التخرج</p>
+                </div>
+
+                <div className="scan-set-qr-frame">
+                  <div className="scan-set-qr-box">
+                    {currentQr ? (
+                      <img src={currentQr} alt="كود الـ QR الحالي لشام كاش" />
+                    ) : (
+                      <>
+                        <span className="scan-set-symbol" style={{ fontSize: '40px' }}>qr_code_2</span>
+                        <span>ما في صورة QR مرفوعة</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <input
+                  ref={qrInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="scan-set-file-input"
+                  aria-label="رفع صورة QR جديد"
+                  onChange={handleQrFile}
+                />
+                <button
+                  type="button"
+                  className="scan-set-btn-outline full"
+                  onClick={() => qrInputRef.current && qrInputRef.current.click()}
+                  disabled={qrUploading}
+                >
+                  <span className="scan-set-symbol" style={{ fontSize: '18px' }}>cloud_upload</span>
+                  <span>{qrUploading ? 'جارٍ الرفع...' : 'رفع صورة QR جديد'}</span>
+                </button>
+                {(qrPreview || (settings && settings.shamcash_qr_image)) && (
+                  <button
+                    type="button"
+                    className="scan-set-btn-outline full danger"
+                    onClick={handleDeleteQr}
+                    disabled={qrUploading}
+                  >
+                    <span className="scan-set-symbol" style={{ fontSize: '18px' }}>delete</span>
+                    <span>حذف صورة QR الحالية</span>
+                  </button>
+                )}
+                <span className="scan-set-hint">PNG أو JPG بدقة لا تقل عن 500×500 بكسل</span>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       {/* نافذة رفض الدفع */}

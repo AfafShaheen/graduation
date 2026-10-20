@@ -281,6 +281,31 @@
         "title": "Body_update_shamcash_qr_api_admin_settings_shamcash_qr_put",
         "type": "object"
       },
+      "Body_upload_file_api_admin_university_files_post": {
+        "properties": {
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_file_api_admin_university_files_post",
+        "type": "object"
+      },
       "Body_upload_records_api_admin_events__event_id__university_records_post": {
         "properties": {
           "file": {
@@ -309,6 +334,39 @@
         "title": "ChangeEmailRequest",
         "type": "object"
       },
+      "CollegeCreate": {
+        "properties": {
+          "name": {
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CollegeCreate",
+        "type": "object"
+      },
+      "CollegeEventItem": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CollegeEventItem",
+        "type": "object"
+      },
       "CollegeItem": {
         "properties": {
           "id": {
@@ -325,6 +383,260 @@
           "name"
         ],
         "title": "CollegeItem",
+        "type": "object"
+      },
+      "CollegeMajorItem": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CollegeMajorItem",
+        "type": "object"
+      },
+      "CollegeResponse": {
+        "properties": {
+          "events": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CollegeEventItem"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "majors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CollegeMajorItem"
+            },
+            "title": "Majors",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CollegeResponse",
+        "type": "object"
+      },
+      "CollegeUpdate": {
+        "properties": {
+          "name": {
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CollegeUpdate",
+        "type": "object"
+      },
+      "DiagnosticField": {
+        "properties": {
+          "expected": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "matches": {
+            "title": "Matches",
+            "type": "boolean"
+          },
+          "provided": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provided"
+          }
+        },
+        "required": [
+          "field",
+          "label",
+          "matches"
+        ],
+        "title": "DiagnosticField",
+        "type": "object"
+      },
+      "DiagnosticRecord": {
+        "properties": {
+          "college_id": {
+            "title": "College Id",
+            "type": "integer"
+          },
+          "college_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "College Name"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "integer"
+          },
+          "father_name": {
+            "title": "Father Name",
+            "type": "string"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "gender": {
+            "title": "Gender",
+            "type": "string"
+          },
+          "gpa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpa"
+          },
+          "imported_at": {
+            "format": "date-time",
+            "title": "Imported At",
+            "type": "string"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "major_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Id"
+          },
+          "major_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Name"
+          },
+          "mother_name": {
+            "title": "Mother Name",
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "record_id": {
+            "title": "Record Id",
+            "type": "integer"
+          },
+          "top_rank_from_file": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Rank From File"
+          },
+          "university_id": {
+            "title": "University Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id",
+          "event_id",
+          "university_id",
+          "full_name",
+          "father_name",
+          "mother_name",
+          "gender",
+          "college_id",
+          "imported_at"
+        ],
+        "title": "DiagnosticRecord",
         "type": "object"
       },
       "EventBrief": {
@@ -1632,6 +1944,303 @@
         "title": "TicketTypeEnum",
         "type": "string"
       },
+      "UniversityFileCollegeItem": {
+        "properties": {
+          "college_id": {
+            "title": "College Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rows": {
+            "title": "Rows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "college_id",
+          "name",
+          "rows"
+        ],
+        "title": "UniversityFileCollegeItem",
+        "type": "object"
+      },
+      "UniversityFileItem": {
+        "properties": {
+          "colleges": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/UniversityFileCollegeItem"
+            },
+            "title": "Colleges",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "event_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "original_name": {
+            "title": "Original Name",
+            "type": "string"
+          },
+          "rows_imported": {
+            "title": "Rows Imported",
+            "type": "integer"
+          },
+          "rows_skipped": {
+            "title": "Rows Skipped",
+            "type": "integer"
+          },
+          "rows_total": {
+            "title": "Rows Total",
+            "type": "integer"
+          },
+          "rows_updated": {
+            "title": "Rows Updated",
+            "type": "integer"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "original_name",
+          "rows_total",
+          "rows_imported",
+          "rows_updated",
+          "rows_skipped",
+          "status",
+          "created_at"
+        ],
+        "title": "UniversityFileItem",
+        "type": "object"
+      },
+      "UniversityFileLinkRequest": {
+        "properties": {
+          "event_id": {
+            "title": "Event Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "event_id"
+        ],
+        "title": "UniversityFileLinkRequest",
+        "type": "object"
+      },
+      "UniversityFileListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UniversityFileItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "UniversityFileListResponse",
+        "type": "object"
+      },
+      "UniversityRecordDiagnosticRequest": {
+        "properties": {
+          "college_id": {
+            "title": "College Id",
+            "type": "integer"
+          },
+          "father_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Father Name"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "major_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Id"
+          },
+          "mother_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mother Name"
+          },
+          "university_id": {
+            "title": "University Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "university_id",
+          "college_id"
+        ],
+        "title": "UniversityRecordDiagnosticRequest",
+        "type": "object"
+      },
+      "UniversityRecordDiagnosticResponse": {
+        "properties": {
+          "already_registered": {
+            "default": false,
+            "title": "Already Registered",
+            "type": "boolean"
+          },
+          "fields": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticField"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "found": {
+            "title": "Found",
+            "type": "boolean"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "mismatches": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Mismatches",
+            "type": "array"
+          },
+          "record": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiagnosticRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "found"
+        ],
+        "title": "UniversityRecordDiagnosticResponse",
+        "type": "object"
+      },
       "UniversityRecordItem": {
         "properties": {
           "college_id": {
@@ -2530,6 +3139,180 @@
         "summary": "Logout",
         "tags": [
           "Admin Authentication"
+        ]
+      }
+    },
+    "/api/admin/colleges": {
+      "get": {
+        "operationId": "list_colleges_api_admin_colleges_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CollegeResponse"
+                  },
+                  "title": "Response List Colleges Api Admin Colleges Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Colleges",
+        "tags": [
+          "Admin Majors Management"
+        ]
+      },
+      "post": {
+        "operationId": "create_college_api_admin_colleges_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollegeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollegeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create College",
+        "tags": [
+          "Admin Majors Management"
+        ]
+      }
+    },
+    "/api/admin/colleges/{college_id}": {
+      "delete": {
+        "operationId": "delete_college_api_admin_colleges__college_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "college_id",
+            "required": true,
+            "schema": {
+              "title": "College Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete College",
+        "tags": [
+          "Admin Majors Management"
+        ]
+      },
+      "put": {
+        "operationId": "update_college_api_admin_colleges__college_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "college_id",
+            "required": true,
+            "schema": {
+              "title": "College Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollegeUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollegeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update College",
+        "tags": [
+          "Admin Majors Management"
         ]
       }
     },
@@ -3902,6 +4685,31 @@
         ]
       }
     },
+    "/api/admin/settings/email-status": {
+      "get": {
+        "description": "Expose whether OTP email delivery is really configured (P7.1).\n\nLets staff spot a misconfigured SMTP setup instead of it failing silently.",
+        "operationId": "get_email_status_api_admin_settings_email_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Email Status",
+        "tags": [
+          "Admin Settings"
+        ]
+      }
+    },
     "/api/admin/settings/shamcash-qr": {
       "delete": {
         "operationId": "delete_shamcash_qr_api_admin_settings_shamcash_qr_delete",
@@ -4207,6 +5015,220 @@
         "summary": "Revert Payment",
         "tags": [
           "Admin Graduate Management & Exceptional Actions"
+        ]
+      }
+    },
+    "/api/admin/university-files": {
+      "get": {
+        "operationId": "get_files_api_admin_university_files_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniversityFileListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Files",
+        "tags": [
+          "Admin University Data Files"
+        ]
+      },
+      "post": {
+        "operationId": "upload_file_api_admin_university_files_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_file_api_admin_university_files_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upload File",
+        "tags": [
+          "Admin University Data Files"
+        ]
+      }
+    },
+    "/api/admin/university-files/{file_id}": {
+      "delete": {
+        "operationId": "delete_file_api_admin_university_files__file_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "title": "File Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete File",
+        "tags": [
+          "Admin University Data Files"
+        ]
+      }
+    },
+    "/api/admin/university-files/{file_id}/link": {
+      "post": {
+        "operationId": "link_file_api_admin_university_files__file_id__link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "title": "File Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UniversityFileLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Link File",
+        "tags": [
+          "Admin University Data Files"
+        ]
+      }
+    },
+    "/api/admin/university-records/diagnose": {
+      "post": {
+        "operationId": "diagnose_record_api_admin_university_records_diagnose_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UniversityRecordDiagnosticRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniversityRecordDiagnosticResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Diagnose Record",
+        "tags": [
+          "Admin University Records & FR-15"
         ]
       }
     },

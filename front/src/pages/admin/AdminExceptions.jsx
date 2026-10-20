@@ -214,16 +214,6 @@ export default function AdminExceptions({
             <span className="exc-symbol" style={{ color: '#ca4b00', fontSize: '18px' }}>schedule</span>
             <span>{nowLabel()}</span>
           </div>
-
-          <button aria-label="التنبيهات" className="exc-icon-btn" title="التنبيهات" type="button">
-            <span className="exc-symbol">notifications</span>
-            <span className="exc-notif-dot"></span>
-          </button>
-
-          <button className="exc-help-btn" type="button">
-            <span className="exc-symbol" style={{ fontSize: '18px' }}>help_outline</span>
-            <span className="exc-help-text">المساعدة والدعم</span>
-          </button>
         </div>
       </header>
 

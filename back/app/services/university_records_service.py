@@ -14,11 +14,20 @@ from app.models.event import EventModel
 from app.models.graduate import GraduateModel
 from app.models.major import MajorModel
 from app.services.graduate_service import normalize_arabic
+from app.services.college_links import colleges_for_event
 from app.services.audit_log import ActorType, record_audit
 from app.core.redis import redis_client
 
 
 def parse_gpa(val: Any) -> Decimal | None:
+    """Parse the Affairs ``المعدل`` cell into a 0-100 percentage.
+
+    Accepts Arabic-Indic digits, the Arabic decimal separator, thousands
+    commas and a trailing percent sign. Excel stores percentage-formatted
+    cells as raw fractions (``72.72%`` is read as ``0.7272``), so a value in
+    ``(0, 1]`` is treated as a fraction and scaled by 100. Any parse failure
+    or out-of-range value yields ``None`` (the caller reports it as invalid).
+    """
     if val is None or pd.isna(val) or str(val).strip() == "" or str(val).lower() == "nan":
         return None
     s = str(val).strip()
@@ -28,18 +37,15 @@ def parse_gpa(val: Any) -> Decimal | None:
     s = s.translate(trans)
     s = s.replace("٪", "").replace("%", "").strip()
     s = s.replace("٫", ".").replace(",", ".").replace("،", ".")
-    parts = s.split(".")
-    if len(parts) > 2:
-        return None
-    if len(parts) == 2 and len(parts[1]) > 2:
-        return None
     try:
         d = Decimal(s)
-        if d < 0 or d > 100:
-            return None
-        return d.quantize(Decimal("0.01"))
     except Exception:
         return None
+    if 0 < d <= 1:
+        d = d * 100
+    if d < 0 or d > 100:
+        return None
+    return d.quantize(Decimal("0.01"))
 
 
 _GENDER_MAP = {
@@ -135,14 +141,28 @@ def split_full_name(full_name: str | None) -> tuple[str, str]:
 
 
 def _cell_text(row: Dict[str, Any], key: str) -> str:
-    """Return a clean string cell from a parsed row (empty for NaN/None)."""
+    """Return a clean string cell from a parsed row (empty for NaN/None).
+
+    Excel parses numeric cells as floats, so an integer university id can
+    arrive as ``12345678.0`` and would never match typed input. Integral
+    values and ``"<digits>.0"`` strings are rendered without the trailing
+    decimal part.
+    """
     if key not in row:
         return ""
     value = row.get(key)
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return ""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    if isinstance(value, int) and not isinstance(value, bool):
+        return str(value)
     text = str(value).strip()
-    return "" if text.lower() == "nan" else text
+    if text.lower() == "nan":
+        return ""
+    if text.endswith(".0") and text[:-2].isdigit():
+        return text[:-2]
+    return text
 
 
 async def invalidate_uni_records_cache(event_id: int) -> None:
@@ -329,8 +349,7 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
         return [f"الأعمدة التالية مفقودة في الملف: {'، '.join(missing_arabic)}"]
 
     # Fetch colleges linked to this event and build normalized lookup dictionary
-    colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
-    colleges = colleges_res.scalars().all()
+    colleges = await colleges_for_event(db, event_id)
     college_map = {normalize_arabic(c.name): c.id for c in colleges}
 
     # Load all majors once into a dict keyed by (college_id, normalize_arabic(name))
@@ -339,6 +358,8 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
     major_map = {(m.college_id, normalize_arabic(m.name)): m.id for m in all_majors}
 
     seen_uni_ids = set()
+    file_colleges: List[str] = []
+    unmatched_colleges: List[str] = []
 
     for idx, row in enumerate(records, start=2): # Row 1 is header
         uni_id = _cell_text(row, "university_id")
@@ -390,10 +411,14 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
             errors.append(f"السطر {idx}: قيمة الجنس غير صحيحة '{gender}' (يجب أن تكون 'ذكر' أو 'أنثى').")
 
         # Check non-existent college names using normalized lookup
+        if college_name and college_name not in file_colleges:
+            file_colleges.append(college_name)
         normalized_college_name = normalize_arabic(college_name)
         college_id = college_map.get(normalized_college_name)
         if not college_id:
-            errors.append(f'الكلية "{college_name}" المذكورة في الملف غير مربوطة بهذا الحفل')
+            errors.append(f'السطر {idx}: الكلية "{college_name}" غير مرتبطة بهذا الحفل.')
+            if college_name not in unmatched_colleges:
+                unmatched_colleges.append(college_name)
         else:
             # Check major if provided and not empty / NaN / "لا يوجد"
             if major_raw and major_raw.lower() not in ["nan", "none", "لا يوجد", ""]:
@@ -401,12 +426,20 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
                 if (college_id, norm_major) not in major_map:
                     errors.append(f'السطر {idx}: التخصص "{major_raw}" غير موجود ضمن كلية "{college_name}". يرجى إضافته من إدارة التخصصات أولاً.')
 
+    if unmatched_colleges:
+        event_college_names = [c.name for c in colleges]
+        errors.append(
+            "كليات وردت في الملف وغير مرتبطة بهذا الحفل: "
+            + "، ".join(unmatched_colleges)
+            + " | الكليات المرتبطة بهذا الحفل: "
+            + ("، ".join(event_college_names) if event_college_names else "لا توجد كليات مرتبطة بهذا الحفل.")
+        )
+
     return errors
 
 
 async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: AsyncSession) -> Dict[str, int]:
-    colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
-    colleges = colleges_res.scalars().all()
+    colleges = await colleges_for_event(db, event_id)
     college_map = {normalize_arabic(c.name): c.id for c in colleges}
 
     majors_res = await db.execute(select(MajorModel))
@@ -683,3 +716,129 @@ async def delete_university_record(record_id: int, admin: dict, db: AsyncSession
     await invalidate_uni_records_cache(event_id)
 
     return {"status": "success", "message": "تم حذف السجل الجامعي بنجاح."}
+
+
+async def diagnose_university_record(
+    data: Any,
+    db: AsyncSession,
+) -> dict:
+    """P7.2: ADMIN-ONLY matching diagnostic.
+
+    Exposes the stored university record for a (university_id, college_id) pair
+    together with a per-field comparison against the graduate-supplied identity
+    fields, so the union can pinpoint what is preventing Step-1 verification.
+    This mirrors the exact matching performed by ``verify_step1_service`` but is
+    intentionally restricted to admins (privacy / S5): end users keep getting the
+    generic failure only.
+    """
+    record_res = await db.execute(
+        select(UniversityRecordModel).where(
+            UniversityRecordModel.university_id == data.university_id,
+            UniversityRecordModel.college_id == data.college_id,
+        )
+    )
+    record = record_res.scalar_one_or_none()
+
+    if record is None:
+        return {
+            "found": False,
+            "record": None,
+            "fields": [],
+            "mismatches": [],
+            "already_registered": False,
+            "message": "لا يوجد سجل جامعي مطابق لهذا الرقم الجامعي في هذه الكلية.",
+        }
+
+    college_res = await db.get(CollegeModel, record.college_id)
+    major_name = None
+    if record.major_id is not None:
+        major = await db.get(MajorModel, record.major_id)
+        major_name = major.name if major else None
+
+    grad_res = await db.execute(
+        select(GraduateModel).where(
+            GraduateModel.university_id == record.university_id,
+            GraduateModel.college_id == record.college_id,
+        )
+    )
+    already_registered = grad_res.scalar_one_or_none() is not None
+
+    def _cmp(field: str, label: str, expected: Any, provided: Any) -> dict:
+        exp = normalize_arabic(str(expected)) if expected is not None else ""
+        prov = normalize_arabic(str(provided)) if provided is not None else ""
+        return {
+            "field": field,
+            "label": label,
+            "expected": None if expected is None else str(expected),
+            "provided": None if provided is None else str(provided),
+            "matches": exp == prov and (expected is not None or provided is not None),
+        }
+
+    full_record = f"{record.first_name or ''} {record.last_name or ''}".strip()
+    provided_full = (
+        f"{data.first_name or ''} {data.last_name or ''}".strip()
+        if (data.first_name is not None or data.last_name is not None)
+        else (data.full_name or "")
+    )
+
+    # Mirror _names_match (split both sides => compare parts; otherwise compare
+    # the composed full name against the stored full_name).
+    if (
+        data.first_name is not None
+        and data.last_name is not None
+        and record.first_name is not None
+        and record.last_name is not None
+    ):
+        fields: List[dict] = [
+            _cmp("first_name", "الاسم", record.first_name, data.first_name),
+            _cmp("last_name", "الكنية", record.last_name, data.last_name),
+        ]
+    else:
+        name_expected = full_record or record.full_name
+        fields = [_cmp("full_name", "الاسم الكامل", name_expected, provided_full)]
+
+    fields += [
+        _cmp("father_name", "اسم الأب", record.father_name, data.father_name),
+        _cmp("mother_name", "اسم الأم", record.mother_name, data.mother_name),
+        _cmp("gender", "الجنس", record.gender, data.gender),
+    ]
+
+    if data.major_id is not None or record.major_id is not None:
+        fields.append(
+            {
+                "field": "major_id",
+                "label": "التخصص",
+                "expected": None if record.major_id is None else str(record.major_id),
+                "provided": None if data.major_id is None else str(data.major_id),
+                "matches": data.major_id == record.major_id,
+            }
+        )
+
+    mismatches = [f["label"] for f in fields if not f["matches"]]
+
+    return {
+        "found": True,
+        "record": {
+            "record_id": record.id,
+            "event_id": record.event_id,
+            "university_id": record.university_id,
+            "full_name": record.full_name,
+            "first_name": record.first_name,
+            "last_name": record.last_name,
+            "father_name": record.father_name,
+            "mother_name": record.mother_name,
+            "gender": record.gender,
+            "college_id": record.college_id,
+            "college_name": college_res.name if college_res else None,
+            "major_id": record.major_id,
+            "major_name": major_name,
+            "gpa": str(record.gpa) if record.gpa is not None else None,
+            "top_rank_from_file": record.top_rank_from_file,
+            "phone": record.phone,
+            "imported_at": record.imported_at,
+        },
+        "fields": fields,
+        "mismatches": mismatches,
+        "already_registered": already_registered,
+        "message": None,
+    }

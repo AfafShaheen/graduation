@@ -1,10 +1,11 @@
 """Apply database migrations on the cPanel server (no Docker, no shell needed).
 
-Runnable from cPanel's "Execute python script" (the Python App's env vars are
-available to it) or from a laptop with DATABASE_URL set:
+Runnable from a laptop, from cPanel's "Execute python script", or from a cron
+job (which does NOT see the Python app's env vars — use --env-file there):
 
     cd back
     python scripts/run_migrations.py
+    python scripts/run_migrations.py --env-file /home/USER/graduation_back/.migrate.env
 
 Steps:
   1. Print DATABASE_URL with the password masked.
@@ -29,21 +30,55 @@ Notes:
     stay in synchronous context.
 """
 
+import argparse
 import asyncio
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-import asyncpg
-from sqlalchemy.engine import make_url
-
-from alembic import command
-from alembic.config import Config
-
-from app.core.database import DATABASE_URL
-
 BACK_DIR = Path(__file__).resolve().parent.parent
+if str(BACK_DIR) not in sys.path:
+    sys.path.insert(0, str(BACK_DIR))
+
+
+def _load_env_file(path_str):
+    """Load env vars from a file BEFORE anything from app.* is imported."""
+    path = Path(path_str).expanduser()
+    if not path.is_file():
+        raise SystemExit(f"ERROR: --env-file not found: {path}")
+    from dotenv import load_dotenv
+    # utf-8-sig strips a BOM: without it python-dotenv silently drops the
+    # first line of a file written by PowerShell Set-Content / Notepad.
+    load_dotenv(path, override=True, encoding="utf-8-sig")
+    print(f"Loaded environment from {path}")
+
+
+def _parse_args(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Apply database migrations (see the module docstring)."
+    )
+    parser.add_argument(
+        "--env-file",
+        default=None,
+        metavar="PATH",
+        help="load environment variables from this file (python-dotenv syntax) "
+             "before importing the app — use it when the shell may have mangled "
+             "the values (cron, 'set -a; . file')",
+    )
+    return parser.parse_args(argv)
+
+
+_args = _parse_args()
+if _args.env_file:
+    _load_env_file(_args.env_file)
+
+import asyncpg  # noqa: E402
+from sqlalchemy.engine import make_url  # noqa: E402
+
+from alembic import command  # noqa: E402
+from alembic.config import Config  # noqa: E402
+
+from app.core.database import DATABASE_URL  # noqa: E402
+
 INIT_SQL = BACK_DIR / "migrations" / "0001_init_schema.sql"
 ALEMBIC_INI = BACK_DIR / "alembic.ini"
 

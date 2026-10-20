@@ -5,8 +5,10 @@ from typing import List, Optional, Dict, Any
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
+from sqlalchemy.orm import selectinload
 from app.models.event import EventModel
 from app.models.college import CollegeModel
+from app.models.event_college import EventCollegeModel
 from app.models.graduate import GraduateModel
 from app.models.ticket import TicketModel
 from app.models.university_record import UniversityRecordModel
@@ -15,13 +17,14 @@ from app.core.redis import redis_client
 from app.core import messages
 from app.services.graduate_service import normalize_arabic
 from app.services.audit_log import ActorType, record_audit
+from app.services.college_links import assert_windows_do_not_overlap
 
 
 def _normalize_college_key(name: str) -> str:
     return normalize_arabic(name).casefold()
 
 
-def _dedupe_college_names(names: List[str]) -> tuple[list[str], set[str]]:
+def _dedupe_college_names(names: List[str]) -> list[str]:
     """Drop blank names and collapse duplicates (after normalization)."""
     ordered: list[str] = []
     seen: set[str] = set()
@@ -34,26 +37,30 @@ def _dedupe_college_names(names: List[str]) -> tuple[list[str], set[str]]:
             continue
         seen.add(key)
         ordered.append(cleaned)
-    return ordered, seen
+    return ordered
 
 
-async def _ensure_college_names_available(
-    db: AsyncSession,
-    normalized_keys: set[str],
-    exclude_event_id: int | None = None,
-) -> None:
-    """Reject college names already linked to a different event (FR-14, UC-6 alt-a)."""
-    if not normalized_keys:
-        return
-    res = await db.execute(select(CollegeModel.name, CollegeModel.event_id))
-    for existing_name, existing_event_id in res.all():
-        if exclude_event_id is not None and existing_event_id == exclude_event_id:
-            continue
-        if _normalize_college_key(existing_name) in normalized_keys:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=messages.COLLEGE_LINKED_TO_OTHER_EVENT,
-            )
+async def _colleges_by_normalized_name(db: AsyncSession) -> dict[str, CollegeModel]:
+    res = await db.execute(select(CollegeModel))
+    return {_normalize_college_key(c.name): c for c in res.scalars().all()}
+
+
+async def _resolve_colleges_for_event(
+    db: AsyncSession, college_names: List[str]
+) -> list[CollegeModel]:
+    """Find or create catalog colleges for the given names."""
+    existing = await _colleges_by_normalized_name(db)
+    colleges: list[CollegeModel] = []
+    for cleaned_name in college_names:
+        key = _normalize_college_key(cleaned_name)
+        college = existing.get(key)
+        if college is None:
+            college = CollegeModel(name=cleaned_name)
+            db.add(college)
+            await db.flush()
+            existing[key] = college
+        colleges.append(college)
+    return colleges
 
 
 async def invalidate_events_cache() -> None:
@@ -67,8 +74,18 @@ async def invalidate_events_cache() -> None:
 
 
 async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict) -> dict:
-    college_names, normalized_keys = _dedupe_college_names(data.college_names)
-    await _ensure_college_names_available(db, normalized_keys)
+    college_names = _dedupe_college_names(data.college_names)
+
+    # 2. Link catalog colleges (creating missing ones by name). P5.3 allows a
+    # college to be reused as long as the registration windows never overlap,
+    # so the legacy "name linked to another event" rule was removed (P5.4).
+    colleges = await _resolve_colleges_for_event(db, college_names)
+    await assert_windows_do_not_overlap(
+        db,
+        [college.id for college in colleges],
+        data.registration_start,
+        data.registration_end,
+    )
 
     # 1. Create Event record
     new_event = EventModel(
@@ -87,12 +104,10 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
     await db.flush()
     await db.refresh(new_event)
 
-    # 2. Create linked College records
-    colleges = []
-    for cleaned_name in college_names:
-        college = CollegeModel(name=cleaned_name, event_id=new_event.id)
-        db.add(college)
-        colleges.append(cleaned_name)
+    # 2. Link catalog colleges (creating missing ones by name)
+    for college in colleges:
+        db.add(EventCollegeModel(event_id=new_event.id, college_id=college.id))
+    await db.flush()
 
     # 3. Audit log
     await record_audit(
@@ -101,7 +116,7 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
         admin["admin_id"],
         "CREATE_EVENT",
         f"Event ID {new_event.id}",
-        f"Created event '{new_event.name}' with colleges: {', '.join(colleges)}",
+        f"Created event '{new_event.name}' with colleges: {', '.join(c.name for c in colleges)}",
         event_id=new_event.id,
     )
 
@@ -130,7 +145,7 @@ async def list_events_service(
     except Exception:
         pass
 
-    stmt = select(EventModel)
+    stmt = select(EventModel).options(selectinload(EventModel.colleges))
     if search:
         stmt = stmt.where(EventModel.name.ilike(f"%{search}%"))
 
@@ -153,8 +168,7 @@ async def list_events_service(
 
     items = []
     for ev in events:
-        colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == ev.id))
-        colleges = colleges_res.scalars().all()
+        colleges = ev.colleges
         items.append({
             "id": ev.id,
             "name": ev.name,
@@ -190,12 +204,11 @@ async def get_event_details_service(db: AsyncSession, event_id: int) -> dict:
     except Exception:
         pass
 
-    ev = await db.get(EventModel, event_id)
+    ev = await db.get(EventModel, event_id, options=(selectinload(EventModel.colleges),))
     if not ev:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الحفل.")
 
-    colleges_res = await db.execute(select(CollegeModel).where(CollegeModel.event_id == event_id))
-    colleges = colleges_res.scalars().all()
+    colleges = ev.colleges
 
     result = {
         "id": ev.id,
@@ -255,6 +268,29 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
                 detail=messages.SEAT_PREFIX_LOCKED,
             )
 
+    # P5.3: a changed registration window may not overlap with another event
+    # that shares one of this event's colleges.
+    new_start = update_data.get("registration_start", ev.registration_start)
+    new_end = update_data.get("registration_end", ev.registration_end)
+    existing_college_ids = list(
+        (
+            await db.execute(
+                select(EventCollegeModel.college_id).where(
+                    EventCollegeModel.event_id == event_id
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    await assert_windows_do_not_overlap(
+        db,
+        existing_college_ids,
+        new_start,
+        new_end,
+        exclude_event_id=event_id,
+    )
+
     for key, value in update_data.items():
         setattr(ev, key, value)
 
@@ -282,7 +318,9 @@ async def delete_event_service(db: AsyncSession, event_id: int, admin: dict) -> 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الحفل.")
 
     # Check if there are ANY graduates or university_records tied to this event's colleges
-    colleges_res = await db.execute(select(CollegeModel.id).where(CollegeModel.event_id == event_id))
+    colleges_res = await db.execute(
+        select(EventCollegeModel.college_id).where(EventCollegeModel.event_id == event_id)
+    )
     college_ids = [c for c in colleges_res.scalars().all()]
 
     if college_ids:

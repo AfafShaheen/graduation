@@ -1,18 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../style/AdminScannersSettings.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
 import { useAdminScanners, createScanner, deleteScanner } from './hooks/useAdminScanners.js';
-import {
-  useAdminSettings,
-  updateAdminSettings,
-  uploadShamcashQr,
-  deleteShamcashQr,
-} from './hooks/useAdminSettings.js';
 import { ApiError } from '../../api/admin.js';
-
-const QR_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-const QR_MAX_MB = 1;
 
 function formatDate(value) {
   if (!value) return '—';
@@ -35,7 +26,6 @@ export default function AdminScannersSettings({
   onNavigate,
   onLogout,
 }) {
-  const [activeTab, setActiveTab] = useState('scanners'); // 'scanners' | 'settings'
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
   const [notice, setNotice] = useState('');
   const [actionError, setActionError] = useState('');
@@ -57,24 +47,6 @@ export default function AdminScannersSettings({
   const { scanners, loading: scannersLoading, error: scannersError, refetch: refetchScanners } =
     useAdminScanners(scannerEventId || null);
 
-  // ===== قسم الإعدادات =====
-  const { settings, loading: settingsLoading, error: settingsError, refetch: refetchSettings } =
-    useAdminSettings();
-  const [beneficiaryName, setBeneficiaryName] = useState('');
-  const [shamCashAccount, setShamCashAccount] = useState('');
-  const [supportPhone, setSupportPhone] = useState('');
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [qrPreview, setQrPreview] = useState('');
-  const [qrUploading, setQrUploading] = useState(false);
-  const qrInputRef = useRef(null);
-
-  useEffect(() => {
-    if (!settings) return;
-    setBeneficiaryName(settings.shamcash_receiver_name || '');
-    setShamCashAccount(settings.shamcash_account_number || '');
-    setSupportPhone(settings.contact_phone || '');
-  }, [settings]);
-
   // إغلاق القائمة بزر Escape
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && setNavOpen(false);
@@ -89,20 +61,12 @@ export default function AdminScannersSettings({
     return () => clearTimeout(t);
   }, [notice]);
 
-  // تحرير رابط معاينة الـ QR عند الاستبدال/الإزالة
-  useEffect(() => {
-    return () => {
-      if (qrPreview) URL.revokeObjectURL(qrPreview);
-    };
-  }, [qrPreview]);
-
   const eventName = (id) => {
     const found = events.find((e) => String(e.id) === String(id));
     return found ? found.name : '—';
   };
 
   const scannersCount = scanners.length;
-  const currentQr = qrPreview || (settings && settings.shamcash_qr_image) || '';
 
   const handleAddScanner = async (e) => {
     e.preventDefault();
@@ -140,70 +104,6 @@ export default function AdminScannersSettings({
     }
   };
 
-  const handleSaveSettings = async (e) => {
-    e.preventDefault();
-    setActionError('');
-    try {
-      setSavingSettings(true);
-      await updateAdminSettings({
-        shamcash_receiver_name: beneficiaryName,
-        shamcash_account_number: shamCashAccount,
-        contact_phone: supportPhone,
-      });
-      setNotice('تم حفظ إعدادات الدفع بنجاح');
-      await refetchSettings();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
-    } finally {
-      setSavingSettings(false);
-    }
-  };
-
-  const handleQrFile = async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    setActionError('');
-    if (!QR_TYPES.includes(file.type)) {
-      setActionError('صيغة الصورة غير مدعومة. المسموح: PNG أو JPEG أو WEBP');
-      if (qrInputRef.current) qrInputRef.current.value = '';
-      return;
-    }
-    if (file.size > QR_MAX_MB * 1024 * 1024) {
-      setActionError(`حجم الصورة يتجاوز ${QR_MAX_MB} ميغابايت`);
-      if (qrInputRef.current) qrInputRef.current.value = '';
-      return;
-    }
-    try {
-      setQrUploading(true);
-      await uploadShamcashQr(file);
-      setQrPreview(URL.createObjectURL(file));
-      setNotice('تم رفع صورة QR الجديدة');
-      await refetchSettings();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
-    } finally {
-      setQrUploading(false);
-      if (qrInputRef.current) qrInputRef.current.value = '';
-    }
-  };
-
-  const handleDeleteQr = async () => {
-    setActionError('');
-    if (!window.confirm('هل تريد حذف صورة QR الحالية؟')) return;
-    try {
-      setQrUploading(true);
-      await deleteShamcashQr();
-      if (qrPreview) URL.revokeObjectURL(qrPreview);
-      setQrPreview('');
-      setNotice('تم حذف صورة QR');
-      await refetchSettings();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
-    } finally {
-      setQrUploading(false);
-    }
-  };
-
   return (
     <div className="scan-set-app-container">
       <div className="scan-set-top-accent"></div>
@@ -232,20 +132,8 @@ export default function AdminScannersSettings({
         </button>
 
         <div className="scan-set-topbar-title">
-          <h2>الماسحون والإعدادات</h2>
-          <span>جامعة حمص • شعبة الحفلات والتخرج</span>
-        </div>
-
-        <div className="scan-set-topbar-actions">
-          <button aria-label="التنبيهات" className="scan-set-icon-btn" title="التنبيهات" type="button">
-            <span className="scan-set-symbol">notifications</span>
-            <span className="scan-set-notif-dot"></span>
-          </button>
-
-          <button className="scan-set-help-btn" type="button">
-            <span className="scan-set-symbol" style={{ fontSize: '18px' }}>help_outline</span>
-            <span className="scan-set-help-text">المساعدة والدعم</span>
-          </button>
+          <h2>الماسحون</h2>
+          <span>جامعة حمص</span>
         </div>
       </header>
 
@@ -254,11 +142,11 @@ export default function AdminScannersSettings({
         <section className="scan-set-hero-titles">
           <div className="scan-set-pulse-tag">
             <span className="scan-set-mini-dot"></span>
-            <span className="scan-set-pulse-label">الماسحون والإعدادات</span>
+            <span className="scan-set-pulse-label">الماسحون</span>
             <span className="scan-set-pulse-venue">• {scannersCount} حساب ماسح</span>
           </div>
-          <h3>إدارة الماسحين وإعدادات الدفع</h3>
-          <p>أضف حسابات الماسحين الميدانيين وتحكم بها، وحدّد بيانات حساب شام كاش المعتمد لاستلام رسوم التذاكر.</p>
+          <h3>إدارة الماسحين الميدانيين</h3>
+          <p>أضف حسابات الماسحين الميدانيين وتحكم بها، وتابع صلاحياتهم على حفلات التخرج.</p>
         </section>
 
         {notice && (
@@ -275,39 +163,8 @@ export default function AdminScannersSettings({
           </div>
         )}
 
-        {/* التبويبات */}
-        <div className="scan-set-tabs-header">
-          <div className="scan-set-tabs">
-            <button
-              type="button"
-              className={`scan-set-tab-btn ${activeTab === 'scanners' ? 'active' : 'inactive'}`}
-              onClick={() => setActiveTab('scanners')}
-            >
-              <span className="scan-set-symbol" style={{ fontSize: '18px' }}>badge</span>
-              <span>الماسحون المعتمدون</span>
-              <span className="scan-set-tab-count">{scannersCount} حساب</span>
-            </button>
-
-            <button
-              type="button"
-              className={`scan-set-tab-btn ${activeTab === 'settings' ? 'active' : 'inactive'}`}
-              onClick={() => setActiveTab('settings')}
-            >
-              <span className="scan-set-symbol" style={{ fontSize: '18px' }}>tune</span>
-              <span>إعدادات الدفع وشام كاش</span>
-            </button>
-          </div>
-
-          <span className="scan-set-live-pill">
-            <span className="scan-set-live-dot"></span>
-            <span>التحقق المباشر متصل عبر QR Scanner</span>
-          </span>
-        </div>
-
-        {/* القسم الأول: الماسحون */}
-        {activeTab === 'scanners' && (
-          <>
-            <div className="scan-set-card">
+        {/* قسم الماسحين */}
+        <div className="scan-set-card">
               <div className="scan-set-card-head">
                 <div className="scan-set-card-title">
                   <div className="scan-set-title-icon">
@@ -452,141 +309,6 @@ export default function AdminScannersSettings({
                 <span className="scan-set-ssl">SSL 256-bit Encrypted</span>
               </div>
             </div>
-          </>
-        )}
-
-        {/* القسم الثاني: إعدادات الدفع */}
-        {activeTab === 'settings' && (
-          <div className="scan-set-settings-grid">
-            <div className="scan-set-card">
-              <div className="scan-set-card-head" style={{ justifyContent: 'flex-start' }}>
-                <div className="scan-set-card-title">
-                  <div className="scan-set-title-icon orange">
-                    <span className="scan-set-symbol" style={{ fontSize: '22px' }}>payments</span>
-                  </div>
-                  <div>
-                    <h4>إعدادات الدفع وشام كاش (Sham Cash)</h4>
-                    <p>بيانات تحويل رسوم بطاقات التخرج وحساب الفرع الطلابي المعتمد</p>
-                  </div>
-                </div>
-              </div>
-
-              {settingsError && <div className="scan-set-empty" role="alert">{settingsError}</div>}
-              {settingsLoading && <div className="scan-set-empty">جارٍ التحميل...</div>}
-
-              <form className="scan-set-form-stack" onSubmit={handleSaveSettings}>
-                <div className="scan-set-field">
-                  <label className="scan-set-label" htmlFor="beneficiary">اسم المستلم الرسمي (الجهة المستفيدة)</label>
-                  <div className="scan-set-input-wrap">
-                    <input
-                      id="beneficiary"
-                      type="text"
-                      className="scan-set-input"
-                      value={beneficiaryName}
-                      onChange={(e) => setBeneficiaryName(e.target.value)}
-                      required
-                    />
-                    <span className="scan-set-symbol scan-set-input-icon right">account_balance</span>
-                  </div>
-                  <p className="scan-set-hint">الاسم الذي يظهر للطلاب عند تأكيد عملية تسديد رسوم التخرج.</p>
-                </div>
-
-                <div className="scan-set-field">
-                  <label className="scan-set-label" htmlFor="shamcash">رقم الحساب في محفظة شام كاش</label>
-                  <div className="scan-set-input-wrap">
-                    <input
-                      id="shamcash"
-                      type="text"
-                      dir="ltr"
-                      className="scan-set-input ltr"
-                      value={shamCashAccount}
-                      onChange={(e) => setShamCashAccount(e.target.value)}
-                      required
-                    />
-                    <span className="scan-set-symbol scan-set-input-icon left">wallet</span>
-                  </div>
-                  <p className="scan-set-hint">رقم الحساب التعريفي المعتمد لدى محفظة شام كاش.</p>
-                </div>
-
-                <div className="scan-set-field">
-                  <label className="scan-set-label" htmlFor="support-phone">رقم التواصل مع المسؤول (للدعم المالي والاستفسار)</label>
-                  <div className="scan-set-input-wrap">
-                    <input
-                      id="support-phone"
-                      type="tel"
-                      dir="ltr"
-                      className="scan-set-input ltr"
-                      value={supportPhone}
-                      onChange={(e) => setSupportPhone(e.target.value)}
-                      required
-                    />
-                    <span className="scan-set-symbol scan-set-input-icon left">phone_in_talk</span>
-                  </div>
-                  <p className="scan-set-hint">يظهر للطلاب المتعثرين بالدفع لمراجعة مكتب الاتحاد.</p>
-                </div>
-
-                <div className="scan-set-form-actions">
-                  <button type="submit" className="scan-set-btn-primary" disabled={savingSettings}>
-                    <span className="scan-set-symbol" style={{ fontSize: '18px' }}>check</span>
-                    <span>{savingSettings ? 'جارٍ الحفظ...' : 'حفظ التعديلات والإعدادات'}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <div className="scan-set-card scan-set-qr-card">
-              <div>
-                <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#124d44', margin: '0 0 4px 0' }}>
-                  رمز الاستجابة السريعة (QR شام كاش)
-                </h4>
-                <p className="scan-set-hint">الكود المعروض حالياً لتسديد رسوم حفل التخرج</p>
-              </div>
-
-              <div className="scan-set-qr-frame">
-                <div className="scan-set-qr-box">
-                  {currentQr ? (
-                    <img src={currentQr} alt="كود الـ QR الحالي لشام كاش" />
-                  ) : (
-                    <>
-                      <span className="scan-set-symbol" style={{ fontSize: '40px' }}>qr_code_2</span>
-                      <span>ما في صورة QR مرفوعة</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <input
-                ref={qrInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="scan-set-file-input"
-                aria-label="رفع صورة QR جديد"
-                onChange={handleQrFile}
-              />
-              <button
-                type="button"
-                className="scan-set-btn-outline full"
-                onClick={() => qrInputRef.current && qrInputRef.current.click()}
-                disabled={qrUploading}
-              >
-                <span className="scan-set-symbol" style={{ fontSize: '18px' }}>cloud_upload</span>
-                <span>{qrUploading ? 'جارٍ الرفع...' : 'رفع صورة QR جديد'}</span>
-              </button>
-              {(qrPreview || (settings && settings.shamcash_qr_image)) && (
-                <button
-                  type="button"
-                  className="scan-set-btn-outline full danger"
-                  onClick={handleDeleteQr}
-                  disabled={qrUploading}
-                >
-                  <span className="scan-set-symbol" style={{ fontSize: '18px' }}>delete</span>
-                  <span>حذف صورة QR الحالية</span>
-                </button>
-              )}
-              <span className="scan-set-hint">PNG أو JPG بدقة لا تقل عن 500×500 بكسل</span>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

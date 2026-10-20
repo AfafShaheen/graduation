@@ -8,7 +8,14 @@ from app.models.university_record import UniversityRecordModel
 from app.schemas.major import MajorCreate, MajorUpdate
 from app.services.audit_log import ActorType, record_audit
 from app.services.graduate_service import normalize_arabic
+from app.services.college_links import resolve_college_event
 from app.core.redis import redis_client
+
+
+async def _audit_event_id(db: AsyncSession, college_id: int) -> int | None:
+    """Catalog colleges may serve several events; log against the resolved one."""
+    event = await resolve_college_event(db, college_id)
+    return event.id if event else None
 
 
 async def invalidate_majors_cache() -> None:
@@ -59,7 +66,7 @@ async def create_major_service(db: AsyncSession, college_id: int, data: MajorCre
         "CREATE_MAJOR",
         f"Major ID {new_major.id}",
         f"Created major '{new_major.name}' for college ID {college_id}",
-        event_id=college.event_id,
+        event_id=await _audit_event_id(db, college_id),
     )
 
     await db.commit()
@@ -88,8 +95,6 @@ async def update_major_service(db: AsyncSession, major_id: int, data: MajorUpdat
     major.name = data.name.strip()
     db.add(major)
 
-    college = await db.get(CollegeModel, major.college_id)
-
     await record_audit(
         db,
         ActorType.ADMIN,
@@ -97,7 +102,7 @@ async def update_major_service(db: AsyncSession, major_id: int, data: MajorUpdat
         "UPDATE_MAJOR",
         f"Major ID {major_id}",
         f"Renamed major from '{old_name}' to '{major.name}'",
-        event_id=college.event_id if college else None,
+        event_id=await _audit_event_id(db, major.college_id),
     )
 
     await db.commit()
@@ -125,8 +130,6 @@ async def delete_major_service(db: AsyncSession, major_id: int, admin: dict) -> 
             detail="لا يمكن حذف التخصص لأنه مرتبط بسجلات جامعية."
         )
 
-    college = await db.get(CollegeModel, major.college_id)
-
     await db.delete(major)
 
     await record_audit(
@@ -136,7 +139,7 @@ async def delete_major_service(db: AsyncSession, major_id: int, admin: dict) -> 
         "DELETE_MAJOR",
         f"Major ID {major_id}",
         f"Deleted major '{major.name}'",
-        event_id=college.event_id if college else None,
+        event_id=await _audit_event_id(db, major.college_id),
     )
 
     await db.commit()

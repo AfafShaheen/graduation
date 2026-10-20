@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    الماسحون والإعدادات (.scan-set-*): بنفس هوية لوحة التحكم (.adm-*) + ريسبونسف كامل
    الشريط الجانبي ثابت على الشاشات الكبيرة، وقائمة منزلقة على الصغيرة
    ========================================================================== */
@@ -797,7 +797,7 @@
   .scan-set-menu-btn { display: none; }
 
   .scan-set-topbar {
-    margin-right: 288px;
+    margin-right: var(--adm-sb-width, 288px);
     height: 80px;
     padding: 0 32px;
     flex-wrap: nowrap;
@@ -806,7 +806,7 @@
   .scan-set-help-btn { padding: 8px 20px; }
   .scan-set-help-text { display: inline; }
 
-  .scan-set-main-canvas { margin-right: 288px; padding: 32px; gap: 28px; }
+  .scan-set-main-canvas { margin-right: var(--adm-sb-width, 288px); padding: 32px; gap: 28px; }
   .scan-set-hero-titles h3 { font-size: 28px; line-height: 38px; }
 
   .scan-set-form-grid { grid-template-columns: repeat(4, 1fr); }
@@ -840,7 +840,7 @@
 }
 
 @media (min-width: 1440px) {
-  .scan-set-main-canvas { margin-left: auto; margin-right: 288px; }
+  .scan-set-main-canvas { margin-left: auto; margin-right: var(--adm-sb-width, 288px); }
 }
 
 .scan-set-error {

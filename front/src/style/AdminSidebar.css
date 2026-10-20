@@ -3,6 +3,11 @@
    ثابت على الشاشات الكبيرة، وقائمة منزلقة على الصغيرة
    ========================================================================== */
 
+/* عرض الشريط الجانبي: تُستخدم لتقليص هوامش محتوى الصفحات عند طيّ الشريط */
+:root {
+  --adm-sb-width: 288px;
+}
+
 /* أيقونات Material Symbols */
 .adm-symbol {
   font-family: 'Material Symbols Outlined';
@@ -29,6 +34,11 @@
   inset: 0;
   background-color: rgba(32, 27, 15, 0.45);
   z-index: 44;
+}
+
+/* زر توسيع الشريط: يظهر على الديسكتوب فقط بعد طيّ الشريط */
+.adm-expand-btn {
+  display: none;
 }
 
 .adm-sidebar {
@@ -251,13 +261,38 @@
   cursor: pointer;
 }
 
-/* لابتوب: الشريط ثابت وبدون تعتيم */
+/* لابتوب: الشريط ثابت وقابل للطي، وبدون تعتيم */
 @media (min-width: 1024px) {
   .adm-sidebar {
     transform: none;
-    width: 288px;
-    transition: none;
+    width: var(--adm-sb-width, 288px);
+    transition: width 0.2s ease;
+    overflow: hidden;
   }
-  .adm-overlay,
-  .adm-sidebar-close { display: none; }
+  .adm-sidebar.collapsed .adm-sidebar-inner {
+    display: none;
+  }
+  .adm-overlay {
+    display: none;
+  }
+  .adm-expand-btn {
+    display: flex;
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 45;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    align-items: center;
+    justify-content: center;
+    background-color: #124d44;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 14px -4px rgba(0, 0, 0, 0.35);
+  }
+  .adm-expand-btn:hover {
+    background-color: #0d3b34;
+  }
 }

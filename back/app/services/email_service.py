@@ -41,6 +41,23 @@ class VerifyOutcome(enum.Enum):
     NOT_FOUND = "NOT_FOUND"
 
 
+class SendOutcome(str, enum.Enum):
+    """Why an OTP email was (not) delivered.
+
+    SENT: a real SMTP transaction completed.
+    DEV_LOGGED: SMTP is not configured and APP_ENV is development/test, so the
+        code was only logged. Never a real delivery — surfaced so a
+        misconfigured server cannot masquerade as a working one.
+    NOT_CONFIGURED: SMTP is not configured in a non-development environment.
+    FAILED: SMTP is configured but the transaction raised.
+    """
+
+    SENT = "SENT"
+    DEV_LOGGED = "DEV_LOGGED"
+    NOT_CONFIGURED = "NOT_CONFIGURED"
+    FAILED = "FAILED"
+
+
 _metadata = MetaData()
 
 otp_codes = Table(
@@ -73,18 +90,19 @@ def hash_otp(code: str) -> str:
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
 
-def send_otp_email(
+def deliver_otp_email(
     to_email: str,
     code: str,
     purpose: OtpPurpose,
     *,
     smtp: dict[str, str | int] | None = None,
-) -> bool:
-    """Send the OTP via SMTP. Return True only when delivery actually succeeded.
+) -> SendOutcome:
+    """Attempt OTP delivery and report *why* it did or did not happen.
 
-    SMTP configured -> real send. Not configured -> the code is logged only in
-    development/test; any other environment is treated as a failure. The OTP
-    code is never written to the logs when sending fails.
+    Unlike :func:`send_otp_email`, this distinguishes a genuine SMTP send from
+    the development-only "logged, not sent" shortcut, so callers and operators
+    can tell a working mail setup from a misconfigured one. The OTP code is
+    never written to the logs when sending fails.
     """
     cfg = smtp if smtp is not None else {}
     host = str(cfg.get("host") or os.environ.get("SMTP_HOST", ""))
@@ -93,14 +111,19 @@ def send_otp_email(
     auth = str(cfg.get("auth") or os.environ.get("SMTP_PASSWORD", ""))
     sender = str(cfg.get("from") or os.environ.get("SMTP_FROM", user))
     use_tls = bool(cfg.get("tls", True))
-    
+
     if not host or not user:
         app_env = os.environ.get("APP_ENV", "development").strip().lower()
         if app_env in ("development", "test"):
             logger.info("SMTP not configured; OTP for %s (%s): %s", to_email, purpose.value, code)
-            return True
-        logger.error("SMTP is not configured; refusing to send OTP email")
-        return False
+            return SendOutcome.DEV_LOGGED
+        logger.error(
+            "SMTP is not configured (SMTP_HOST/SMTP_USER empty) while APP_ENV=%s; "
+            "refusing to send OTP email to %s. Configure the SMTP_* variables.",
+            app_env,
+            to_email,
+        )
+        return SendOutcome.NOT_CONFIGURED
 
     if purpose is OtpPurpose.PASSWORD_RESET:
         subject = "استعادة كلمة السر — رمز التحقق"
@@ -123,10 +146,61 @@ def send_otp_email(
                 server.starttls()
             server.login(user, auth)
             server.send_message(message)
-        return True
+        return SendOutcome.SENT
     except (smtplib.SMTPException, OSError) as exc:
-        logger.error("Failed to send OTP email for %s: %s", to_email, exc)
-        return False
+        logger.error(
+            "Failed to send OTP email to %s via %s:%s (%s): %s",
+            to_email,
+            host,
+            port,
+            type(exc).__name__,
+            exc,
+        )
+        return SendOutcome.FAILED
+
+
+def send_otp_email(
+    to_email: str,
+    code: str,
+    purpose: OtpPurpose,
+    *,
+    smtp: dict[str, str | int] | None = None,
+) -> bool:
+    """Send the OTP via SMTP. Return True only when delivery actually succeeded.
+
+    Thin compatibility wrapper over :func:`deliver_otp_email`. The development
+    "logged only" shortcut counts as success so local flows keep working; every
+    other outcome (not configured outside development, or a raised SMTP error)
+    is a failure.
+    """
+    outcome = deliver_otp_email(to_email, code, purpose, smtp=smtp)
+    return outcome in (SendOutcome.SENT, SendOutcome.DEV_LOGGED)
+
+
+def smtp_status() -> dict[str, object]:
+    """Report whether OTP email delivery is genuinely configured.
+
+    Used by the admin settings view so a misconfigured production server is
+    visible instead of silently reporting success. Never returns secrets.
+    """
+    host = os.environ.get("SMTP_HOST", "").strip()
+    user = os.environ.get("SMTP_USER", "").strip()
+    sender = os.environ.get("SMTP_FROM", "").strip() or user
+    app_env = os.environ.get("APP_ENV", "development").strip().lower()
+    configured = bool(host and user)
+    if configured:
+        state = "configured"
+    elif app_env in ("development", "test"):
+        state = "development_logged"
+    else:
+        state = "not_configured"
+    return {
+        "configured": configured,
+        "state": state,
+        "app_env": app_env,
+        "host": host,
+        "sender": sender,
+    }
 
 
 def verify_otp(

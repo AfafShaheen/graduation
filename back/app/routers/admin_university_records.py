@@ -5,11 +5,14 @@ from app.core.deps import get_current_admin
 from app.schemas.university_records import (
     UniversityRecordUploadResponse,
     UniversityRecordListResponse,
+    UniversityRecordDiagnosticRequest,
+    UniversityRecordDiagnosticResponse,
 )
 from app.services.university_records_service import (
     upload_university_records,
     list_university_records,
     delete_university_record,
+    diagnose_university_record,
 )
 
 router = APIRouter(prefix="/api/admin", tags=["Admin University Records & FR-15"])
@@ -42,3 +45,11 @@ async def delete_record(
     admin: dict = Depends(get_current_admin)
 ):
     return await delete_university_record(record_id, admin, db)
+
+@router.post("/university-records/diagnose", response_model=UniversityRecordDiagnosticResponse, status_code=status.HTTP_200_OK)
+async def diagnose_record(
+    payload: UniversityRecordDiagnosticRequest,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin)
+):
+    return await diagnose_university_record(payload, db)
