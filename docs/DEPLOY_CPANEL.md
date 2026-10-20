@@ -66,6 +66,11 @@ Public API: `https://sunion-homs-uni.sy/gradapi/api/...`
    password URL-encoded, the Redis password URL-encoded, and the mailbox
    password. Special characters in passwords must be URL-encoded:
    `@` → `%40`, `#` → `%23`, `/` → `%2F`, `:` → `%3A`.
+   `UNIVERSITY_FILES_DIR` points at a folder for uploaded university data
+   files — keep it **outside `public_html`** (never web-reachable) and
+   **outside the app root** (so deploys don't touch it), e.g.
+   `/home/sunionhomsuni/graduation_storage/university_files`. Create it once
+   and make it writable by the app.
 
 6. **Restart** the Python app.
 
@@ -159,6 +164,11 @@ and `ADMIN_PASSWORD` afterwards** and restart the app.
   so a hung Redis cannot hang requests.
 - `DB_POOL_SIZE` / `DB_MAX_OVERFLOW` control the asyncpg pool (defaults 20/10;
   the example uses 3/2 for shared-host connection limits).
+- **Refresh tokens live in Redis** (`refresh_token_service.py`). If Redis is
+  down, refreshing an access token fails, so once the access token expires the
+  user must log in again after Redis comes back. `AUTH_REDIS_FAIL_OPEN` only
+  covers the auth blacklist lookups in `app/core/deps.py` — it does **not**
+  apply to refresh tokens.
 
 ---
 
@@ -234,6 +244,17 @@ is unaffected.
 3. If there are new migrations, run `scripts/run_migrations.py` again
    (it is a no-op when the database is already at head).
 4. For frontend changes: rebuild (section 6) and re-upload `dist/`.
+
+**After pulling new migrations:** run them on the server with a one-shot cron
+job (§10.3) using the temporary env file:
+
+```bash
+python /home/sunionhomsuni/graduation_back/scripts/run_migrations.py --env-file /home/sunionhomsuni/graduation_back/.migrate.env
+```
+
+The current migrations are `0008_college_catalog` and `0009_university_files`
+(plus the `0001` init baseline). After `0009` runs, `UNIVERSITY_FILES_DIR`
+(section 2) must be set or every upload fails.
 
 ---
 
