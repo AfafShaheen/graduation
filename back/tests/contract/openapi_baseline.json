@@ -81,6 +81,14 @@
             "title": "Expires In",
             "type": "integer"
           },
+          "refresh_expires_in": {
+            "title": "Refresh Expires In",
+            "type": "integer"
+          },
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          },
           "token_type": {
             "default": "bearer",
             "title": "Token Type",
@@ -89,7 +97,9 @@
         },
         "required": [
           "access_token",
-          "expires_in"
+          "expires_in",
+          "refresh_token",
+          "refresh_expires_in"
         ],
         "title": "AdminTokenResponse",
         "type": "object"
@@ -1126,6 +1136,14 @@
             "title": "Expires In",
             "type": "integer"
           },
+          "refresh_expires_in": {
+            "title": "Refresh Expires In",
+            "type": "integer"
+          },
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          },
           "token_type": {
             "default": "bearer",
             "title": "Token Type",
@@ -1134,7 +1152,9 @@
         },
         "required": [
           "access_token",
-          "expires_in"
+          "expires_in",
+          "refresh_token",
+          "refresh_expires_in"
         ],
         "title": "GraduateTokenResponse",
         "type": "object"
@@ -1752,6 +1772,14 @@
             "title": "Expires In",
             "type": "integer"
           },
+          "refresh_expires_in": {
+            "title": "Refresh Expires In",
+            "type": "integer"
+          },
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          },
           "token_type": {
             "default": "bearer",
             "title": "Token Type",
@@ -1761,6 +1789,8 @@
         "required": [
           "access_token",
           "expires_in",
+          "refresh_token",
+          "refresh_expires_in",
           "event"
         ],
         "title": "ScannerTokenResponse",
@@ -2830,6 +2860,49 @@
         ],
         "title": "VolunteerStats",
         "type": "object"
+      },
+      "app__schemas__admin_auth__RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "minLength": 10,
+            "title": "Refresh Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
+        "type": "object"
+      },
+      "app__schemas__auth__RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "minLength": 10,
+            "title": "Refresh Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
+        "type": "object"
+      },
+      "app__schemas__scanner_auth__RefreshRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "refresh_token": {
+            "minLength": 10,
+            "title": "Refresh Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -3137,6 +3210,47 @@
           }
         ],
         "summary": "Logout",
+        "tags": [
+          "Admin Authentication"
+        ]
+      }
+    },
+    "/api/admin/auth/refresh": {
+      "post": {
+        "operationId": "refresh_api_admin_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__schemas__admin_auth__RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh",
         "tags": [
           "Admin Authentication"
         ]
@@ -5776,6 +5890,47 @@
         ]
       }
     },
+    "/api/auth/graduate/refresh": {
+      "post": {
+        "operationId": "refresh_api_auth_graduate_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__schemas__auth__RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraduateTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh",
+        "tags": [
+          "Graduate Authentication"
+        ]
+      }
+    },
     "/api/auth/resend-otp": {
       "post": {
         "operationId": "resend_otp_endpoint_api_auth_resend_otp_post",
@@ -6331,6 +6486,47 @@
           }
         ],
         "summary": "Logout",
+        "tags": [
+          "Scanner"
+        ]
+      }
+    },
+    "/api/scanner/auth/refresh": {
+      "post": {
+        "operationId": "refresh_api_scanner_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__schemas__scanner_auth__RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScannerTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh",
         "tags": [
           "Scanner"
         ]

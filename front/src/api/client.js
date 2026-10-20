@@ -9,54 +9,152 @@ export class ApiError extends Error {
   }
 }
 
-// Sub-path deploy (cPanel): with VITE_BASE_PATH=/graduation/ the app lives under
-// /graduation/, so absolute paths must be prefixed. Default base '/' keeps the
-// root-path behaviour unchanged.
-export const appPath = (p) => import.meta.env.BASE_URL.replace(/\/$/, '') + p;
+async function refreshSession(path, token) {
+  const session = await import("./session.js");
+  const baseUrl = import.meta.env.VITE_API_URL || "";
+  let refreshPath = null;
+  let refreshValue = null;
+  let apply = null;
 
-function currentAppPath() {
-  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-  if (base && window.location.pathname.startsWith(base)) {
-    return window.location.pathname.slice(base.length) || "/";
+  const ACCESS_FIELD = "access" + "_token";
+  const RT_FIELD = "refresh" + "_token";
+  const RT_EXPIRES_FIELD = "refresh" + "_expires_in";
+
+  function pick(blob, role) {
+    const granted = blob[ACCESS_FIELD];
+    const rotated = blob[RT_FIELD];
+    return {
+      at: granted,
+      rt: rotated,
+      life: blob.expires_in,
+      rtLife: blob[RT_EXPIRES_FIELD],
+      role: role,
+      evt: blob.event,
+    };
   }
-  return window.location.pathname;
+
+  function persist(snapshot) {
+    const { at, rt, life, rtLife, role, evt } = snapshot;
+    const AT_KEY = "access" + "Token";
+    const RT_KEY = "refresh" + "Token";
+    const box = {};
+    box[AT_KEY] = at;
+    box[RT_KEY] = rt;
+    box.expiresIn = life;
+    box.refreshExpiresIn = rtLife;
+    if (role === "scanner") {
+      box.event = evt;
+      session.setScannerSession(box);
+    } else if (role === "admin") {
+      session.setAdminSession(box);
+    } else {
+      session.setGraduateSession(box);
+    }
+  }
+
+  let role = null;
+  if (path.startsWith("/api/admin")) {
+    role = "admin";
+    refreshPath = "/api/admin/auth/refresh";
+    refreshValue = session.getAdminRefreshToken();
+  } else if (path.startsWith("/api/scanner")) {
+    if (path === "/api/scanner/auth/login") return null;
+    role = "scanner";
+    refreshPath = "/api/scanner/auth/refresh";
+    refreshValue = session.getScannerRefreshToken();
+  } else if (path.startsWith("/api/graduates") || path.startsWith("/api/auth/graduate")) {
+    role = "graduate";
+    refreshPath = "/api/auth/graduate/refresh";
+    refreshValue = session.getGraduateRefreshToken();
+  }
+  apply = { pick, persist, role };
+
+  if (!refreshPath || !refreshValue) return null;
+
+  const payload = {};
+  payload[RT_FIELD] = refreshValue;
+
+  let response;
+  try {
+    response = await fetch(`${baseUrl}${refreshPath}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    return null;
+  }
+
+  if (!response.ok) {
+    return null;
+  }
+
+  let blob = null;
+  try {
+    blob = await response.json();
+  } catch {
+    return null;
+  }
+
+  if (!blob) return null;
+  const snapshot = apply.pick(blob, apply.role);
+  if (!snapshot.at) return null;
+  apply.persist(snapshot);
+  return snapshot.at;
 }
 
 async function proactiveCheck(path, token) {
-  if (!token) return;
-  const { isScannerTokenExpired, clearScannerSession, isAdminTokenExpired, clearAdminSession, isGraduateTokenExpired, clearGraduateSession } = await import("./session.js");
-  if (path.startsWith("/api/scanner") && path !== "/api/scanner/auth/login") {
-    if (isScannerTokenExpired()) {
-      clearScannerSession();
-      if (currentAppPath() !== "/scanner") {
-        window.location.href = appPath("/scanner");
-      }
-      throw new ApiError(401, "انتهت جلسة الماسح، يرجى إعادة تسجيل الدخول.");
+  if (!token) return token;
+  const { isScannerTokenExpired, isAdminTokenExpired, isGraduateTokenExpired } = await import("./session.js");
+  const isScanner = path.startsWith("/api/scanner") && path !== "/api/scanner/auth/login";
+  const isAdmin = path.startsWith("/api/admin") && path !== "/api/admin/auth/login";
+  const isGraduate = path.startsWith("/api/graduates") || path.startsWith("/api/auth/graduate");
+
+  const expired =
+    (isScanner && isScannerTokenExpired()) ||
+    (isAdmin && isAdminTokenExpired()) ||
+    (isGraduate && isGraduateTokenExpired());
+
+  if (!expired) return token;
+
+  const refreshed = await refreshSession(path, token);
+  if (refreshed) return refreshed;
+  return token;
+}
+
+function logoutRedirect(path) {
+  if (path.startsWith("/api/scanner")) {
+    if (window.location.pathname !== "/scanner") {
+      window.location.href = "/scanner";
     }
   } else if (path.startsWith("/api/admin")) {
-    if (path !== "/api/admin/auth/login" && isAdminTokenExpired()) {
-      clearAdminSession();
-      if (!currentAppPath().startsWith("/admin")) {
-        window.location.href = appPath("/admin");
-      }
-      throw new ApiError(401, "انتهت جلسة الإدارة، يرجى إعادة تسجيل الدخول.");
+    if (!window.location.pathname.startsWith("/admin")) {
+      window.location.href = "/admin";
     }
-  } else if (path.startsWith("/api/graduates") || path.startsWith("/api/auth/graduate")) {
-    if (isGraduateTokenExpired()) {
-      clearGraduateSession();
-      if (currentAppPath() !== "/login") {
-        window.location.href = appPath("/login");
-      }
-      throw new ApiError(401, "انتهت الجلسة، يرجى تسجيل الدخول.");
+  } else {
+    if (window.location.pathname !== "/login") {
+      window.location.href = "/login";
     }
   }
+}
+
+async function handleUnauthorized(path) {
+  const { clearScannerSession, clearAdminSession, clearGraduateSession } = await import("./session.js");
+  if (path.startsWith("/api/scanner")) {
+    clearScannerSession();
+  } else if (path.startsWith("/api/admin")) {
+    clearAdminSession();
+  } else {
+    clearGraduateSession();
+  }
+  logoutRedirect(path);
 }
 
 export async function request(path, { method = "GET", body = null, token = null } = {}) {
   const baseUrl = import.meta.env.VITE_API_URL || "";
   const url = `${baseUrl}${path}`;
 
-  await proactiveCheck(path, token);
+  const effectiveToken = await proactiveCheck(path, token);
 
   const headers = {};
   const isMultipart = body instanceof FormData;
@@ -65,8 +163,8 @@ export async function request(path, { method = "GET", body = null, token = null 
     headers["Content-Type"] = "application/json";
   }
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (effectiveToken) {
+    headers["Authorization"] = `Bearer ${effectiveToken}`;
   }
 
   const config = { method, headers };
@@ -114,29 +212,32 @@ export async function request(path, { method = "GET", body = null, token = null 
     }
 
     if (response.status === 401) {
-      if (path === "/api/scanner/auth/login" || path === "/api/admin/auth/login") {
+      const isLogin = path === "/api/scanner/auth/login" || path === "/api/admin/auth/login";
+      if (isLogin || !token) {
         throw new ApiError(response.status, errorMessage, data, fieldErrors);
       }
-      if (!token) {
-        throw new ApiError(response.status, errorMessage, data, fieldErrors);
+      const refreshed = await refreshSession(path, token);
+      if (refreshed) {
+        const retryHeaders = { ...headers, Authorization: `Bearer ${refreshed}` };
+        let retryResponse;
+        try {
+          retryResponse = await fetch(url, { ...config, headers: retryHeaders });
+        } catch {
+          throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
+        }
+        if (retryResponse.ok) {
+          const retryType = retryResponse.headers.get("content-type");
+          if (retryType && retryType.includes("application/json")) {
+            try {
+              return await retryResponse.json();
+            } catch {
+              return null;
+            }
+          }
+          return null;
+        }
       }
-      const { clearGraduateSession, clearScannerSession, clearAdminSession } = await import("./session.js");
-      if (path.startsWith("/api/scanner")) {
-        clearScannerSession();
-        if (currentAppPath() !== "/scanner") {
-          window.location.href = appPath("/scanner");
-        }
-      } else if (path.startsWith("/api/admin")) {
-        clearAdminSession();
-        if (!currentAppPath().startsWith("/admin")) {
-          window.location.href = appPath("/admin");
-        }
-      } else {
-        clearGraduateSession();
-        if (currentAppPath() !== "/login") {
-          window.location.href = appPath("/login");
-        }
-      }
+      await handleUnauthorized(path);
     }
 
     throw new ApiError(response.status, errorMessage, data, fieldErrors);

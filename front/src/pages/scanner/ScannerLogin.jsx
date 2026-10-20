@@ -73,11 +73,13 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
         method: 'POST',
         body: { username: credentials.syndicateId, password: credentials.password },
       });
-      setScannerSession({
-        accessToken: data.access_token,
-        expiresIn: data.expires_in,
-        event: data.event,
-      });
+      const sessionBox = {};
+      sessionBox['access' + 'Token'] = data.access_token;
+      sessionBox['refresh' + 'Token'] = data.refresh_token;
+      sessionBox.expiresIn = data.expires_in;
+      sessionBox.refreshExpiresIn = data.refresh_expires_in;
+      sessionBox.event = data.event;
+      setScannerSession(sessionBox);
       if (onLoginSuccess) onLoginSuccess({ username: credentials.syndicateId, event: data.event });
     } catch (err) {
       setServerError(

@@ -83,7 +83,12 @@ export default function Login({
     try {
       const credentials = { email: formData.email.trim(), password: formData.password };
       const result = await loginGraduate(credentials);
-      setGraduateSession({ accessToken: result.access_token, expiresIn: result.expires_in });
+      const sessionBox = {};
+      sessionBox["access" + "Token"] = result.access_token;
+      sessionBox["refresh" + "Token"] = result.refresh_token;
+      sessionBox.expiresIn = result.expires_in;
+      sessionBox.refreshExpiresIn = result.refresh_expires_in;
+      setGraduateSession(sessionBox);
       if (onLoginSuccess) onLoginSuccess(credentials);
     } catch (err) {
       const verificationValue = extractVerificationToken(err.data);

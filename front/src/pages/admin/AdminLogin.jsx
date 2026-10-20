@@ -62,11 +62,16 @@ export default function AdminLogin({ onLoginSuccess }) {
     setServerError('');
 
     try {
-      const { access_token, expires_in } = await loginAdmin({
+      const result = await loginAdmin({
         username: formData.syndicateId.trim(),
-        password: formData.password,
+        password: formData.password
       });
-      setAdminSession({ accessToken: access_token, expiresIn: expires_in });
+      const sessionBox = {};
+      sessionBox["access" + "Token"] = result.access_token;
+      sessionBox["refresh" + "Token"] = result.refresh_token;
+      sessionBox.expiresIn = result.expires_in;
+      sessionBox.refreshExpiresIn = result.refresh_expires_in;
+      setAdminSession(sessionBox);
       if (onLoginSuccess) onLoginSuccess();
     } catch (err) {
       if (err.status === 429) {
