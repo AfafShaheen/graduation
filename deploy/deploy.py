@@ -6,6 +6,7 @@ Usage (from anywhere):
     python deploy/deploy.py all              front + back
     python deploy/deploy.py check            only run the health checks
     python deploy/deploy.py rollback-front   restore the previous frontend
+    python deploy/deploy.py migrate          run the DB migrations on the server now
 Options:
     --full       (back) upload every file, ignore the "already uploaded" cache
     --no-build   (front) upload the existing dist/ without rebuilding
@@ -25,6 +26,7 @@ import io
 import json
 import os
 import posixpath
+import secrets
 import ssl
 import subprocess
 import sys
@@ -49,7 +51,7 @@ BACK_ALWAYS_EXCLUDE = [
     "__pycache__", "*.pyc", ".pytest_cache", "tests", ".venv", "venv", "env",
     ".env", ".env.*", "*.log", ".git", "node_modules", "*.docx", "*.pdf",
     "Dockerfile", ".dockerignore", "pytest.ini", "requirements-dev.txt",
-    "tmp", "stderr.log",
+    "tmp", "stderr.log", ".ops_token", "app_errors.log",
 ]
 
 
@@ -320,6 +322,71 @@ def check_back(cfg, wait_seconds=0):
     return ok
 
 
+# --------------------------------------------------------------------------- migrate
+
+def migrate_url(cfg):
+    url = cfg["back"].get("migrate_url")
+    if url:
+        return url
+    health = cfg["back"]["health_url"]
+    if not health.endswith("/health"):
+        raise DeployError("Set back.migrate_url in deploy.config.json.")
+    return health[: -len("/health")] + "/__ops/migrate"
+
+
+def run_migrations(cfg, remote, args):
+    """Run scripts/run_migrations.py on the server through the one-shot hook in
+    passenger_wsgi.py: upload a fresh random token to <app>/.ops_token over FTP,
+    POST it, print the output. The server deletes the token on the first call;
+    we delete it again here in case the call never reached the server."""
+    target = guard_remote(cfg["back"]["remote_dir"], "backend")
+    url = migrate_url(cfg)
+    if not confirm(f"Run database migrations on the server now ({url})?", args.yes):
+        raise DeployError("Cancelled.")
+    try:
+        if remote.ftp is None:
+            raise ftplib.error_temp("not connected")
+        remote.ftp.voidcmd("NOOP")
+    except ftplib.all_errors:
+        remote.connect()
+    token = secrets.token_urlsafe(32)
+    token_path = f"{target}/.ops_token"
+    step("Uploading a one-time migration token")
+    remote.upload_bytes(token.encode(), token_path, {target})
+    step("Running migrations on the server (this can take up to a few minutes)")
+    try:
+        req = urllib.request.Request(
+            url, data=b"", method="POST",
+            headers={"X-Ops-Token": token, "User-Agent": "graduation-deploy/1.0"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=330) as r:
+                status, body = r.status, r.read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:
+            status, body = e.code, e.read().decode("utf-8", "replace")
+        except (urllib.error.URLError, OSError) as e:
+            status, body = None, str(e)
+    finally:
+        try:
+            if remote.exists(token_path):
+                remote.ftp.delete(remote._abs(token_path))
+        except ftplib.all_errors:
+            pass
+    say("")
+    for line in body.strip().splitlines():
+        say(f"    {line}")
+    say("")
+    if status == 200 and "EXIT=0" in body:
+        say("    migrations OK")
+        return True
+    if status in (404, 405) and "EXIT=" not in body:
+        say("    !! The server does not know the migrate hook yet. Deploy the backend first")
+        say("       (deploy_back.bat uploads the new passenger_wsgi.py and restarts the app).")
+    else:
+        say(f"    !! migrations FAILED (HTTP {status}). Nothing else was changed.")
+    return False
+
+
 # --------------------------------------------------------------------------- front
 
 def build_front(cfg):
@@ -482,9 +549,8 @@ def deploy_back(cfg, remote, args):
             f"-r {app_root}/requirements.txt > ~/pip_log.txt 2>&1; echo EXIT=$? >> ~/pip_log.txt; }}")
         say("       Then delete ~/pip_started and restart the app.")
 
-    if cfg["back"].get("has_migrations_hint", True) and any(r.startswith("alembic/versions/") for r, _ in changed):
-        say("")
-        say("    !! New alembic migration files were uploaded. Run scripts/run_migrations.py on the server.")
+    if any(r.startswith("alembic/versions/") for r, _ in changed):
+        args._new_migrations = True
 
     step("Checking the API (waiting up to 60s for the restart)")
     return check_back(cfg, wait_seconds=60)
@@ -494,7 +560,7 @@ def deploy_back(cfg, remote, args):
 
 def main():
     parser = argparse.ArgumentParser(description="Deploy the graduation system to cPanel.")
-    parser.add_argument("target", choices=["front", "back", "all", "check", "rollback-front"])
+    parser.add_argument("target", choices=["front", "back", "all", "check", "rollback-front", "migrate"])
     parser.add_argument("--full", action="store_true", help="backend: upload every file")
     parser.add_argument("--no-build", action="store_true", help="frontend: skip npm run build")
     parser.add_argument("--yes", action="store_true", help="don't ask for confirmation")
@@ -513,6 +579,12 @@ def main():
         ok = True
         if args.target in ("back", "all"):
             ok = deploy_back(cfg, remote, args) and ok
+            if ok and getattr(args, "_new_migrations", False):
+                say("")
+                if confirm("New migration files were uploaded. Run the migrations now?", args.yes):
+                    ok = run_migrations(cfg, remote, argparse.Namespace(yes=True)) and ok
+        if args.target == "migrate":
+            ok = run_migrations(cfg, remote, args)
         if args.target in ("front", "all"):
             ok = deploy_front(cfg, remote, args) and ok
         if args.target == "rollback-front":

@@ -196,11 +196,15 @@ function App() {
               onBack={() => navigate("/")}
               onNavigateToRegister={() => navigate("/")}
               // بعد الدخول: دليل التذكرة أولاً (إلا إذا اختار الخريج "لا تعرضها مرة أخرى")
-              onLoginSuccess={() =>
-                navigate(readSkipGuide() ? "/tickets" : "/guide", {
-                  replace: true,
-                })
-              }
+              onLoginSuccess={(info) => {
+                // حساب غير مؤكد: الباك رجّع 403 مع رمز تحقق جديد ولم يعطِ جلسة دخول،
+                // فنرجّعه لصفحة الـ OTP ليكمل التأكيد (أو يعيد الإرسال / يغيّر البريد).
+                if (info?.needsVerification) {
+                  navigate("/otp", { replace: true });
+                  return;
+                }
+                navigate(readSkipGuide() ? "/tickets" : "/guide", { replace: true });
+              }}
               onForgotPassword={async (em) => {
                 await forgotPassword(em);
                 setResetEmail(em);
@@ -250,13 +254,17 @@ function App() {
         <Route
           path="/guide"
           element={
-            <GraduateGuide
-              supportPhone="" // رقم اتحاد الطلبة (اختياري)
-              onContinue={({ dontShowAgain }) => {
-                if (dontShowAgain) saveSkipGuide();
-                navigate("/tickets", { replace: true });
-              }}
-            />
+            hasValidGraduate || PREVIEW ? (
+              <GraduateGuide
+                supportPhone="" // رقم اتحاد الطلبة (اختياري)
+                onContinue={({ dontShowAgain }) => {
+                  if (dontShowAgain) saveSkipGuide();
+                  navigate("/tickets", { replace: true });
+                }}
+              />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
 
