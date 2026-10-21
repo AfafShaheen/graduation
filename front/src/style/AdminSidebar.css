@@ -184,34 +184,6 @@
   font-weight: 700;
 }
 
-.adm-sidebar-cta {
-  margin-top: 24px;
-  padding: 0 4px;
-}
-
-.adm-btn-add {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: 9999px;
-  background-color: #ca4b00;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
-  transition: transform 0.15s ease;
-  font-family: inherit;
-}
-
-.adm-btn-add:active {
-  transform: scale(0.97);
-}
-
 .adm-sidebar-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 16px;

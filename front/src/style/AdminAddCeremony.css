@@ -334,8 +334,7 @@
   flex-shrink: 0;
 }
 
-.add-cer-grid-3,
-.add-cer-grid-2 {
+.add-cer-grid-3 {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
@@ -527,20 +526,27 @@
 }
 
 /* الباقات */
+.add-cer-pkg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .add-cer-pkg-card {
-  padding: 16px;
-  border-radius: 20px;
+  padding: 14px 16px;
+  border-radius: 18px;
   background-color: #fcf6ed;
   border: 1px solid #eedebd;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .add-cer-pkg-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -550,6 +556,66 @@
   gap: 8px;
   font-weight: 800;
   font-size: 14px;
+}
+
+.add-cer-pkg-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.add-cer-pkg-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  border: 1px solid #eedebd;
+  background-color: #ffffff;
+  color: #8d7166;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.add-cer-pkg-icon-btn:hover:not(:disabled) {
+  border-color: #e2bfb2;
+  color: #ba1a1a;
+}
+
+.add-cer-pkg-icon-btn.add {
+  background-color: #124d44;
+  border-color: #124d44;
+  color: #ffffff;
+}
+
+.add-cer-pkg-icon-btn.add:hover:not(:disabled) {
+  background-color: #1d6358;
+  border-color: #1d6358;
+  color: #ffffff;
+}
+
+.add-cer-pkg-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-cer-pkg-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.add-cer-count-input {
+  font-size: 18px;
+  font-weight: 800;
+  color: #124d44;
+  font-variant-numeric: tabular-nums;
 }
 
 .add-cer-pkg-badge {
@@ -563,11 +629,6 @@
 .add-cer-pkg-badge.green {
   background-color: rgba(18, 77, 68, 0.12);
   color: #124d44;
-}
-
-.add-cer-pkg-badge.orange {
-  background-color: rgba(202, 75, 0, 0.12);
-  color: #ca4b00;
 }
 
 .add-cer-price-input {
@@ -598,36 +659,7 @@
   font-weight: 700;
 }
 
-/* مفتاح التبديل */
-.add-cer-toggle-box {
-  padding: 16px;
-  border-radius: 20px;
-  background-color: #fcf6ed;
-  border: 1px solid #eedebd;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.add-cer-toggle-main {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.add-cer-toggle-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 800;
-  font-size: 14px;
-}
-
-.add-cer-toggle-title .add-cer-symbol {
-  font-size: 16px;
-  color: #8d7166;
-}
-
+/* تنبيه قفل الباقات */
 .add-cer-warn-pill {
   display: inline-flex;
   align-items: center;
@@ -644,53 +676,6 @@
 
 .add-cer-warn-pill .add-cer-symbol {
   font-size: 16px;
-}
-
-.add-cer-switch {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 26px;
-  flex-shrink: 0;
-}
-
-.add-cer-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.add-cer-slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background-color: #d9c9bd;
-  transition: 0.2s;
-  border-radius: 9999px;
-}
-
-.add-cer-slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  right: 3px;
-  bottom: 3px;
-  background-color: #ffffff;
-  transition: 0.2s;
-  border-radius: 50%;
-}
-
-.add-cer-switch input:checked + .add-cer-slider {
-  background-color: #124d44;
-}
-
-.add-cer-switch input:checked + .add-cer-slider:before {
-  transform: translateX(-22px);
-}
-
-.add-cer-switch input:focus-visible + .add-cer-slider {
-  box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.25);
 }
 
 /* الأزرار */
@@ -785,16 +770,11 @@
   .add-cer-help-text {
     display: none;
   }
-  .add-cer-grid-2 {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .add-cer-grid-3 {
     grid-template-columns: repeat(2, 1fr);
   }
-  .add-cer-toggle-box {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+  .add-cer-pkg-fields {
+    grid-template-columns: minmax(0, 140px) minmax(0, 1fr);
   }
   .add-cer-form-footer {
     flex-direction: row;

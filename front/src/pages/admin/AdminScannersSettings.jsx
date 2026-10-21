@@ -22,7 +22,6 @@ function formatDate(value) {
 export default function AdminScannersSettings({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
-  onAddTicket,
   onNavigate,
   onLogout,
 }) {
@@ -111,7 +110,6 @@ export default function AdminScannersSettings({
       {/* الشريط الجانبي (كومبوننت مشترك) */}
       <AdminSidebar
         activeId="scanners"
-        onAddTicket={onAddTicket}
         open={navOpen}
         onClose={() => setNavOpen(false)}
         onNavigate={onNavigate}

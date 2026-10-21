@@ -39,7 +39,6 @@ export default function AdminPaymentRequests({
   adminRole = 'الاتحاد الوطني لطلبة سورية',
   onNavigate,
   onLogout,
-  onAddTicket,
   onPendingChanged,
 }) {
   const { events, loading: eventsLoading, error: eventsError } = useAdminEvents({ limit: 100 });
@@ -317,7 +316,6 @@ export default function AdminPaymentRequests({
       {/* الشريط الجانبي (كومبوننت مشترك) */}
       <AdminSidebar
         activeId="payments"
-        onAddTicket={onAddTicket}
         open={navOpen}
         onClose={() => setNavOpen(false)}
         onNavigate={onNavigate}

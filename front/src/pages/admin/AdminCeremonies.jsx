@@ -51,11 +51,9 @@ export default function AdminCeremonies({
       const location = e.location || "-";
       const form = e.form || null;
       const whatsappLink = e.whatsapp_group_link || e.whatsappLink || "";
-      const pricePkg2 = e.price_2_companions ?? e.pricePkg2 ?? "";
-      const pricePkg3 = e.price_3_companions ?? e.pricePkg3 ?? "";
-      const enablePkg3 = e.is_3companions_enabled ?? e.enablePkg3 ?? true;
+      const packages = Array.isArray(e.packages) ? e.packages : [];
       const icon = e.icon || "celebration";
-      return { ...e, id: e.id, title, date: dateStr, period, status, faculties, location, form, booked, total: totalGrad, whatsappLink, pricePkg2, pricePkg3, enablePkg3, icon };
+      return { ...e, id: e.id, title, date: dateStr, period, status, faculties, location, form, booked, total: totalGrad, whatsappLink, packages, icon };
     });
   }, [ceremoniesProp, events, perEvent]);
 
@@ -89,7 +87,6 @@ export default function AdminCeremonies({
       {/* الشريط الجانبي (كومبوننت مشترك) */}
       <AdminSidebar
         activeId="ceremonies"
-        onAddTicket={onAddCeremony}
         open={navOpen}
         onClose={() => setNavOpen(false)}
         onNavigate={onNavigate}
