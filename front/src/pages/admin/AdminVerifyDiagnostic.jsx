@@ -20,7 +20,6 @@ export default function AdminVerifyDiagnostic({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
   onNavigate,
-  onAddTicket,
   onLogout,
 }) {
   const [navOpen, setNavOpen] = useState(false);
@@ -154,11 +153,9 @@ export default function AdminVerifyDiagnostic({
       <AdminSidebar
         activeId="verify"
         currentId="verify"
-        showAddButton={false}
         open={navOpen}
         onClose={() => setNavOpen(false)}
         onNavigate={onNavigate}
-        onAddTicket={onAddTicket}
         onLogout={onLogout}
         adminName={adminName}
         adminRole={adminRole}

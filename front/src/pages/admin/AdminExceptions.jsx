@@ -61,7 +61,6 @@ const initialsOf = (name) => {
 export default function AdminExceptions({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
-  onAddTicket,
   onNavigate,
   onLogout,
 }) {
@@ -184,7 +183,6 @@ export default function AdminExceptions({
       {/* الشريط الجانبي (كومبوننت مشترك) */}
       <AdminSidebar
         activeId="actions"
-        onAddTicket={onAddTicket}
         open={navOpen}
         onClose={() => setNavOpen(false)}
         onNavigate={onNavigate}

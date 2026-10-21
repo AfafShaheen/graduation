@@ -18,7 +18,6 @@ export default function AdminColleges({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
   onNavigate,
-  onAddTicket,
   onLogout,
 }) {
   const [navOpen, setNavOpen] = useState(false);
@@ -158,11 +157,9 @@ export default function AdminColleges({
       <AdminSidebar
         activeId="colleges"
         currentId="colleges"
-        showAddButton={false}
         open={navOpen}
         onClose={() => setNavOpen(false)}
         onNavigate={onNavigate}
-        onAddTicket={onAddTicket}
         onLogout={onLogout}
         adminName={adminName}
         adminRole={adminRole}

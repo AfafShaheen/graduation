@@ -33,18 +33,15 @@ const NAV_ITEMS = [
   - activeId: العنصر المفعّل (المظلّل) بالقائمة (مثلاً "payments")
   - currentId: الصفحة الحالية فعلياً (الافتراضي = activeId). الضغط عليها ما بيعمل تنقل.
     بتفيد للصفحات الفرعية، مثلاً قائمة المتطوعين: activeId="dashboard" و currentId="volunteers"
-  - showAddButton: إظهار زر "إضافة تذكرة جديدة" (الافتراضي true)
   - open / onClose: فتح وإغلاق القائمة على الشاشات الصغيرة (الصفحة بتمسك الحالة)
   - شارة "طلبات الدفع" بتنقرأ تلقائياً من AdminStatsProvider (بـ App.jsx)، فما في رقم داخل الكومبوننت
 */
 export default function AdminSidebar({
   activeId,
   currentId = activeId,
-  showAddButton = true,
   open = false,
   onClose,
   onNavigate,
-  onAddTicket,
   onLogout,
   adminName = 'مسؤول الاتحاد',
 }) {
@@ -140,18 +137,6 @@ export default function AdminSidebar({
                 );
               })}
             </nav>
-
-            {/* زر إضافة تذكرة */}
-            {showAddButton && (
-              <div className="adm-sidebar-cta">
-                <button type="button" className="adm-btn-add" onClick={onAddTicket}>
-                  <span className="adm-symbol" style={{ fontSize: '18px' }}>
-                    add
-                  </span>
-                  <span>إضافة تذكرة جديدة</span>
-                </button>
-              </div>
-            )}
           </div>
 
           {/* معلومات المستخدم وتسجيل الخروج */}

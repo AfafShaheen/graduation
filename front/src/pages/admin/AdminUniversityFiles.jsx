@@ -31,7 +31,6 @@ export default function AdminUniversityFiles({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
   onNavigate,
-  onAddTicket,
   onLogout,
 }) {
   const [navOpen, setNavOpen] = useState(false);
@@ -163,11 +162,9 @@ export default function AdminUniversityFiles({
       <AdminSidebar
         activeId="files"
         currentId="files"
-        showAddButton={false}
         open={navOpen}
         onClose={() => setNavOpen(false)}
         onNavigate={onNavigate}
-        onAddTicket={onAddTicket}
         onLogout={onLogout}
         adminName={adminName}
         adminRole={adminRole}

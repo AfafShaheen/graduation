@@ -91,7 +91,6 @@ export default function AdminVolunteers({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
   onNavigate,
-  onAddTicket,
   onLogout,
   onExportPdf,
 }) {
@@ -247,7 +246,6 @@ export default function AdminVolunteers({
       <AdminSidebar
         activeId="dashboard"
         currentId="volunteers"
-        onAddTicket={onAddTicket}
         open={navOpen}
         onClose={() => setNavOpen(false)}
         onNavigate={onNavigate}

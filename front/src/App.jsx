@@ -394,7 +394,6 @@ function App() {
               <AdminPaymentRequests
                 adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
-                onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onPendingChanged={refreshPendingPayments}
                 onLogout={handleAdminLogout}
               />
@@ -412,7 +411,6 @@ function App() {
               <AdminScannersSettings
                 adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
-                onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onLogout={handleAdminLogout}
               />
             ) : (
@@ -429,7 +427,6 @@ function App() {
               <AdminExceptions
                 adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
-                onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onLogout={handleAdminLogout}
               />
             ) : (
@@ -446,7 +443,6 @@ function App() {
               <AdminColleges
                 adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
-                onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onLogout={handleAdminLogout}
               />
             ) : (
@@ -463,7 +459,6 @@ function App() {
               <AdminVerifyDiagnostic
                 adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
-                onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onLogout={handleAdminLogout}
               />
             ) : (
@@ -480,7 +475,6 @@ function App() {
               <AdminUniversityFiles
                 adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
-                onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onLogout={handleAdminLogout}
               />
             ) : (
@@ -497,7 +491,6 @@ function App() {
               <AdminVolunteers
                 adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
-                onAddTicket={() => navigate("/admin/ceremonies/new")}
                 onLogout={handleAdminLogout}
               />
             ) : (

@@ -83,9 +83,13 @@ export default function AdminEditCeremonyRoute({
     startDate: toDamascusDate(event.registration_start),
     endDate: toDamascusDate(event.registration_end),
     whatsappLink: event.whatsapp_group_link || '',
-    pricePkg2: fmtPrice(event.price_2_companions),
-    pricePkg3: fmtPrice(event.price_3_companions),
-    enablePkg3: event.is_3companions_enabled ?? true,
+    packages: Array.isArray(event.packages)
+      ? event.packages.map((p, index) => ({
+          id: `pkg-${index}`,
+          companions: String(p.companions_count ?? ''),
+          price: fmtPrice(p.price),
+        }))
+      : [],
     collegeNames: Array.isArray(event.colleges)
       ? event.colleges.map((c) => c.name).filter(Boolean)
       : [],

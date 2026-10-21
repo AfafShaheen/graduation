@@ -13,9 +13,7 @@ const CEREMONY_DRAFT_KEYS = [
   'start',
   'end',
   'whatsapp',
-  'price2',
-  'price3',
-  'pkg3',
+  'packages',
   'collegeIds',
 ].map((k) => `adm.cer.${k}`);
 
@@ -26,6 +24,31 @@ function clearCeremonyDrafts() {
     /* التخزين غير متاح، نتجاهل */
   }
 }
+
+/* باقات المرافقين: كل بند = { id, companions (عدد المرافقين), price (السعر كنص) } */
+const newPackageId = () => `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+const makePackage = (companions = '2', price = '') => ({
+  id: newPackageId(),
+  companions,
+  price,
+});
+
+/* باقة بديلة ثابتة: بتضمن وجود بطاقة واحدة على الأقل حتى لو المسودة فاضية */
+const FALLBACK_PACKAGE = { id: 'pkg-fallback', companions: '2', price: '' };
+
+/* تحويل الباقات القادمة من الخادم (أو من المسودة) إلى الشكل المحلي */
+const toLocalPackages = (list) => {
+  const source = Array.isArray(list) ? list : [];
+  const items = source
+    .filter((p) => p && typeof p === 'object')
+    .map((p) => ({
+      id: p.id || newPackageId(),
+      companions: String(p.companions ?? p.companions_count ?? ''),
+      price: p.price != null && p.price !== '' ? String(p.price) : '',
+    }));
+  return items.length ? items : [makePackage()];
+};
 
 export default function AdminAddCeremony({
   adminName = 'مسؤول الاتحاد',
@@ -67,21 +90,15 @@ export default function AdminAddCeremony({
     ceremony?.whatsappLink || '',
     { storage: 'local' },
   );
-  const [pricePkg2, setPricePkg2] = useFormDraft(
-    draftKey('price2'),
-    ceremony?.pricePkg2 || '',
+  const [packages, setPackages] = useFormDraft(
+    draftKey('packages'),
+    toLocalPackages(ceremony?.packages),
     { storage: 'local' },
   );
-  const [pricePkg3, setPricePkg3] = useFormDraft(
-    draftKey('price3'),
-    ceremony?.pricePkg3 || '',
-    { storage: 'local' },
-  );
-  const [enablePkg3, setEnablePkg3] = useFormDraft(
-    draftKey('pkg3'),
-    ceremony?.enablePkg3 ?? true,
-    { storage: 'local' },
-  );
+
+  // قائمة الباقات المعروضة (دايماً فيها بند واحد على الأقل)
+  const packageList =
+    Array.isArray(packages) && packages.length > 0 ? packages : [FALLBACK_PACKAGE];
   const [fieldErrors, setFieldErrors] = useState({});
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
 
@@ -141,9 +158,7 @@ export default function AdminAddCeremony({
     setStartDate('');
     setEndDate('');
     setWhatsappLink('');
-    setPricePkg2('');
-    setPricePkg3('');
-    setEnablePkg3(true);
+    setPackages([makePackage()]);
     setSelectedCollegeIds([]);
     setFieldErrors({});
     setSubmitError('');
@@ -163,6 +178,64 @@ export default function AdminAddCeremony({
 
   const errFor = (key) => fieldErrors[key];
 
+  // الباقات مقفلة بعد بدء التسجيل (نفس قيد الخادم FR-16)
+  const packagesLocked = isEdit && registrationStarted;
+
+  const addPackage = () => {
+    setPackages((prev) => {
+      const list = Array.isArray(prev) && prev.length > 0 ? prev : [FALLBACK_PACKAGE];
+      const used = new Set(list.map((p) => Number(p.companions)));
+      let next = 2;
+      while (used.has(next) && next < 10) next += 1;
+      return [...list, makePackage(String(Math.min(next, 10)))];
+    });
+  };
+
+  const removePackage = (id) => {
+    setPackages((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      if (list.length <= 1) return list;
+      return list.filter((p) => p.id !== id);
+    });
+  };
+
+  const updatePackage = (id, key, value) => {
+    setPackages((prev) => {
+      const list = Array.isArray(prev) && prev.length > 0 ? prev : [FALLBACK_PACKAGE];
+      return list.map((p) => (p.id === id ? { ...p, [key]: value } : p));
+    });
+  };
+
+  // التحقق من الباقات قبل الإرسال (نفس قيود الخادم: من ٢ إلى ١٠ مرافقين بدون تكرار)
+  const packagesPayload = () => {
+    const list = packageList;
+    const errors = [];
+    const seen = new Set();
+    if (list.length === 0) {
+      errors.push('لازم تضيف باقة مرافقين واحدة على الأقل.');
+    }
+    list.forEach((p, index) => {
+      const count = Number(p.companions);
+      if (!Number.isInteger(count) || count < 2 || count > 10) {
+        errors.push(`الباقة ${index + 1}: عدد المرافقين لازم يكون بين ٢ و ١٠.`);
+      } else if (seen.has(count)) {
+        errors.push(`الباقة ${index + 1}: عدد المرافقين مكرّر (${count}).`);
+      } else {
+        seen.add(count);
+      }
+      if (priceToNum(p.price) < 0) {
+        errors.push(`الباقة ${index + 1}: السعر ما بيقبل قيمة سالبة.`);
+      }
+    });
+    return {
+      errors,
+      payload: list.map((p) => ({
+        companions_count: Number(p.companions),
+        price: priceToNum(p.price),
+      })),
+    };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
@@ -170,6 +243,12 @@ export default function AdminAddCeremony({
 
     if (!isEdit && selectedCollegeNames().length === 0) {
       setSubmitError('اختر كلية واحدة على الأقل لهذا الحفل');
+      return;
+    }
+
+    const { errors: pkgErrors, payload: pkgPayload } = packagesPayload();
+    if (pkgErrors.length > 0) {
+      setSubmitError(pkgErrors.join(' '));
       return;
     }
 
@@ -185,8 +264,6 @@ export default function AdminAddCeremony({
       registration_start: startDate ? `${startDate}T00:00:00+03:00` : startDate,
       registration_end: endDate ? `${endDate}T23:59:59+03:00` : endDate,
       whatsapp_group_link: whatsappLink,
-      price_2_companions: priceToNum(pricePkg2),
-      price_3_companions: priceToNum(pricePkg3),
     };
 
     try {
@@ -194,13 +271,14 @@ export default function AdminAddCeremony({
       let result;
       if (isEdit) {
         const payload = { ...base };
-        if (!registrationStarted) payload.is_3companions_enabled = enablePkg3;
+        // الباقات ما بتتعدّل بعد بدء التسجيل (الخادم بيرفض الطلب عندها)
+        if (!packagesLocked) payload.packages = pkgPayload;
         result = await updateAdminEvent(eventId, payload);
       } else {
         const collegeNames = selectedCollegeNames();
         result = await createAdminEvent({
           ...base,
-          is_3companions_enabled: enablePkg3,
+          packages: pkgPayload,
           college_names: collegeNames,
         });
       }
@@ -233,7 +311,6 @@ export default function AdminAddCeremony({
       {/* الشريط الجانبي (كومبوننت مشترك) */}
       <AdminSidebar
         activeId="ceremonies"
-        showAddButton={false}
         open={navOpen}
         onClose={() => setNavOpen(false)}
         onNavigate={onNavigate}
@@ -462,97 +539,106 @@ export default function AdminAddCeremony({
                     <span>تسعير باقات التذاكر</span>
                   </h4>
                   <p className="add-cer-hint" style={{ marginTop: '2px' }}>
-                    تحديد الرسوم المعتمدة مع محاسبة الكلية
+                    حدّد عدد المرافقين وسعر كل باقة، والباقة تطلع للطالب أثناء الحجز.
                   </p>
                 </div>
                 <span className="add-cer-currency">العملة: ليرة سورية (ل.س)</span>
               </div>
 
-              <div className="add-cer-grid-2">
-                <div className="add-cer-pkg-card">
-                  <div className="add-cer-pkg-head">
-                    <div className="add-cer-pkg-title">
-                      <span className="add-cer-symbol" style={{ color: '#124d44' }}>confirmation_number</span>
-                      <span>باقة "خريج + ٢ مرافقين"</span>
+              <div className="add-cer-pkg-list">
+                {packageList.map((pkg, index) => (
+                  <div className="add-cer-pkg-card" key={pkg.id}>
+                    <div className="add-cer-pkg-head">
+                      <div className="add-cer-pkg-title">
+                        <span className="add-cer-symbol" style={{ color: '#124d44' }}>confirmation_number</span>
+                        <span>مرافقين</span>
+                      </div>
+                      <div className="add-cer-pkg-actions">
+                        <span className="add-cer-pkg-badge green">{`باقة ${index + 1}`}</span>
+                        {packageList.length > 1 && (
+                          <button
+                            type="button"
+                            className="add-cer-pkg-icon-btn"
+                            onClick={() => removePackage(pkg.id)}
+                            aria-label="حذف الباقة"
+                            title="حذف الباقة"
+                            disabled={packagesLocked}
+                          >
+                            <span className="add-cer-symbol" style={{ fontSize: '16px' }}>close</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="add-cer-pkg-icon-btn add"
+                          onClick={addPackage}
+                          aria-label="إضافة باقة مرافقين"
+                          title="إضافة باقة مرافقين"
+                          disabled={packagesLocked}
+                        >
+                          <span className="add-cer-symbol" style={{ fontSize: '16px' }}>add</span>
+                        </button>
+                      </div>
                     </div>
-                    <span className="add-cer-pkg-badge green">الأساسية</span>
-                  </div>
-                  <div className="add-cer-input-wrap">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      aria-label="سعر باقة خريج + ٢ مرافقين"
-                      className="add-cer-input add-cer-price-input"
-                      value={pricePkg2}
-                      onChange={(e) => setPricePkg2(e.target.value)}
-                      placeholder="مثال: 125,000"
-                      required
-                    />
-                    <span className="add-cer-price-unit">ل.س</span>
-                  </div>
-                  {errFor('price_2_companions') && (
-                    <p className="add-cer-file-error" role="alert">{errFor('price_2_companions')}</p>
-                  )}
-                  <p className="add-cer-hint">تشمل روب التخرج + شهادة الحفل + مقعدين للمرافقين بالمدرج.</p>
-                </div>
 
-                <div className="add-cer-pkg-card">
-                  <div className="add-cer-pkg-head">
-                    <div className="add-cer-pkg-title">
-                      <span className="add-cer-symbol" style={{ color: '#ca4b00' }}>confirmation_number</span>
-                      <span>باقة "خريج + ٣ مرافقين"</span>
+                    <div className="add-cer-pkg-fields">
+                      <div className="add-cer-field-group">
+                        <label className="add-cer-label" htmlFor={`pkg-companions-${pkg.id}`}>
+                          عدد المرافقين
+                        </label>
+                        <input
+                          id={`pkg-companions-${pkg.id}`}
+                          type="number"
+                          min="2"
+                          max="10"
+                          step="1"
+                          inputMode="numeric"
+                          className="add-cer-input add-cer-count-input"
+                          value={pkg.companions}
+                          onChange={(e) => updatePackage(pkg.id, 'companions', e.target.value)}
+                          placeholder="2"
+                          disabled={packagesLocked}
+                          required
+                        />
+                      </div>
+
+                      <div className="add-cer-field-group">
+                        <label className="add-cer-label" htmlFor={`pkg-price-${pkg.id}`}>
+                          سعر الباقة
+                        </label>
+                        <div className="add-cer-input-wrap">
+                          <input
+                            id={`pkg-price-${pkg.id}`}
+                            type="text"
+                            inputMode="numeric"
+                            className="add-cer-input add-cer-price-input"
+                            value={pkg.price}
+                            onChange={(e) => updatePackage(pkg.id, 'price', e.target.value)}
+                            placeholder="مثال: 125,000"
+                            disabled={packagesLocked}
+                            required
+                          />
+                          <span className="add-cer-price-unit">ل.س</span>
+                        </div>
+                      </div>
                     </div>
-                    <span className="add-cer-pkg-badge orange">مقعد إضافي</span>
+
+                    <p className="add-cer-hint">تشمل روب التخرج + شهادة الحفل + مقاعد المرافقين بالمدرج.</p>
                   </div>
-                  <div className="add-cer-input-wrap">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      aria-label="سعر باقة خريج + ٣ مرافقين"
-                      className="add-cer-input add-cer-price-input"
-                      value={pricePkg3}
-                      onChange={(e) => setPricePkg3(e.target.value)}
-                      placeholder="مثال: 160,000"
-                      disabled={!enablePkg3}
-                      required={enablePkg3}
-                    />
-                    <span className="add-cer-price-unit">ل.س</span>
-                  </div>
-                  {errFor('price_3_companions') && (
-                    <p className="add-cer-file-error" role="alert">{errFor('price_3_companions')}</p>
-                  )}
-                  <p className="add-cer-hint">حسب الطاقة الاستيعابية لمدرج الباسل الكبير.</p>
-                </div>
+                ))}
               </div>
 
-              <div className="add-cer-toggle-box">
-                <div className="add-cer-toggle-main">
-                  <label className="add-cer-switch">
-                    <input
-                      type="checkbox"
-                      checked={enablePkg3}
-                      onChange={() => setEnablePkg3(!enablePkg3)}
-                      disabled={isEdit && registrationStarted}
-                      aria-label='تفعيل نوع "خريج + ٣ مرافقين"'
-                    />
-                    <span className="add-cer-slider"></span>
-                  </label>
-                  <div>
-                    <div className="add-cer-toggle-title">
-                      <span>تفعيل نوع "خريج + ٣ مرافقين"</span>
-                      <span className="add-cer-symbol" title="محمي بنظام القفل">lock</span>
-                    </div>
-                    <span className="add-cer-hint">
-                      إتاحة خيار المقعد الثالث لطلاب هذا الفوج أثناء استمارة الحجز.
-                    </span>
-                  </div>
-                </div>
-
+              {packagesLocked && (
                 <span className="add-cer-warn-pill">
                   <span className="add-cer-symbol">warning</span>
                   <span>ملاحظة: ما بيتغيّر بعد بدء التسجيل</span>
                 </span>
-              </div>
+              )}
+
+              {(errFor('packages') || errFor('companions_count') || errFor('price')) && (
+                <p className="add-cer-file-error" role="alert">
+                  {errFor('packages') || errFor('companions_count') || errFor('price')}
+                </p>
+              )}
             </div>
 
             <div className="add-cer-divider"></div>
