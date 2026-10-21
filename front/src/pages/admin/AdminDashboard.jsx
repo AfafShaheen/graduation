@@ -5,7 +5,7 @@ import { useAdminStats } from './hooks/useAdminStats.js';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
 import { useAdminVolunteers } from './hooks/useAdminVolunteers.js';
 import { fetchRecentPayments } from './hooks/useAdminPayments.js';
-import { ApiError } from '../../api/admin.js';
+import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
 
 const PAY_STATUS_UI = {
   CONFIRMED: 'confirmed',
@@ -59,6 +59,8 @@ export default function AdminDashboard({
   const [payments, setPayments] = useState([]);
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState('');
+  const [exportError, setExportError] = useState('');
+  const [exportBusy, setExportBusy] = useState(false);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -146,6 +148,21 @@ export default function AdminDashboard({
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
+  };
+
+  // تصدير أسماء الخريجين المسجّلين (كل الأسماء أو حسب الحفل المختار) إلى Excel
+  const handleExportExcel = async () => {
+    setExportError('');
+    setExportBusy(true);
+    try {
+      const query = eventId ? { event_id: eventId } : {};
+      const { blob, filename } = await adminBlob('/api/admin/export', query);
+      downloadBlob(blob, filename);
+    } catch (e) {
+      setExportError(e instanceof ApiError ? e.message : 'تعذّر تصدير الملف، حاول لاحقاً.');
+    } finally {
+      setExportBusy(false);
+    }
   };
 
   return (
@@ -246,7 +263,25 @@ export default function AdminDashboard({
               </select>
             </div>
 
+            <div className="adm-export-cluster">
+              <button
+                className="adm-export-btn"
+                type="button"
+                onClick={handleExportExcel}
+                disabled={exportBusy}
+                title="تنزيل أسماء الخريجين المسجّلين في ملف Excel"
+              >
+                <span className="adm-symbol" style={{ fontSize: '18px' }}>
+                  table_chart
+                </span>
+                <span>{exportBusy ? 'جارٍ التصدير...' : 'Excel'}</span>
+              </button>
+            </div>
           </div>
+
+          {exportError && (
+            <p className="adm-bento-sub" style={{ color: '#b3261e' }}>{exportError}</p>
+          )}
         </section>
 
         {/* البطاقة الرئيسية: إجمالي الحضور المتوقع */}

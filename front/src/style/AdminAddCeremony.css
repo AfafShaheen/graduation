@@ -282,6 +282,42 @@
   background-color: rgba(202, 75, 0, 0.08);
 }
 
+/* زر تصدير Excel (أسماء الخريجين المسجّلين) */
+.add-cer-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  border: 1px solid rgba(18, 77, 68, 0.35);
+  color: #124d44;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-cer-export-btn:hover:not(:disabled) {
+  background-color: rgba(18, 77, 68, 0.07);
+}
+
+.add-cer-export-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* قائمة اختيار ملف بيانات الخريجين */
+.add-cer-select {
+  cursor: pointer;
+}
+
+.add-cer-select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .add-cer-form {
   padding: 20px 16px;
   display: flex;

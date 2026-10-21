@@ -32,7 +32,6 @@ import AdminScannersSettings from "./pages/admin/AdminScannersSettings";
 import AdminExceptions from "./pages/admin/AdminExceptions";
 import AdminColleges from "./pages/admin/AdminColleges";
 import AdminUniversityFiles from "./pages/admin/AdminUniversityFiles";
-import AdminVerifyDiagnostic from "./pages/admin/AdminVerifyDiagnostic";
 import AdminVolunteers from "./pages/admin/AdminVolunteers";
 import { AdminStatsProvider } from "./context/AdminStatsContext";
 import ScannerLogin from "./pages/scanner/ScannerLogin";
@@ -449,22 +448,6 @@ function App() {
           element={
             hasValidAdmin || PREVIEW ? (
               <AdminColleges
-                adminName={adminName}
-                onNavigate={(section) => navigate(`/admin/${section}`)}
-                onLogout={handleAdminLogout}
-              />
-            ) : (
-              <Navigate to="/admin" replace />
-            )
-          }
-        />
-
-        {/* ===== تشخيص المطابقة ===== */}
-        <Route
-          path="/admin/verify"
-          element={
-            hasValidAdmin || PREVIEW ? (
-              <AdminVerifyDiagnostic
                 adminName={adminName}
                 onNavigate={(section) => navigate(`/admin/${section}`)}
                 onLogout={handleAdminLogout}

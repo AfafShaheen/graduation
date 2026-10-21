@@ -2,7 +2,7 @@
 import '../../style/AdminAddCeremony.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import { createAdminEvent, updateAdminEvent } from './hooks/useAdminEvents.js';
-import { ApiError, listColleges } from '../../api/admin.js';
+import { ApiError, listColleges, listUniversityFiles, linkUniversityFile, adminBlob, downloadBlob } from '../../api/admin.js';
 import useFormDraft from '../../hooks/useFormDraft';
 import CollegeCatalogField from '../../components/CollegeCatalogField';
 
@@ -101,6 +101,43 @@ export default function AdminAddCeremony({
     Array.isArray(packages) && packages.length > 0 ? packages : [FALLBACK_PACKAGE];
   const [fieldErrors, setFieldErrors] = useState({});
   const [navOpen, setNavOpen] = useState(false); // القائمة الجانبية على الشاشات الصغيرة
+
+  // ملفات بيانات الخريجين المرفوعة سابقاً (لربط أحدها بالحفل)
+  const [dataFiles, setDataFiles] = useState([]);
+  const [filesLoading, setFilesLoading] = useState(true);
+  const [filesError, setFilesError] = useState('');
+  const [selectedFileId, setSelectedFileId] = useState('');
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkNotice, setLinkNotice] = useState('');
+
+  // تصدير الأسماء المسجّلة إلى Excel
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState('');
+
+  // تحميل قائمة ملفات بيانات الخريجين
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await listUniversityFiles();
+        const items = Array.isArray(res) ? res : res?.items || [];
+        if (!alive) return;
+        setDataFiles(items);
+        // في وضع التعديل: preselect الملف المرتبط بهذا الحفل
+        if (isEdit && eventId != null) {
+          const linked = items.find((f) => String(f.event_id) === String(eventId));
+          if (linked) setSelectedFileId(String(linked.id));
+        }
+      } catch {
+        if (alive) setFilesError('تعذّر تحميل ملفات بيانات الخريجين.');
+      } finally {
+        if (alive) setFilesLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [isEdit, eventId]);
 
   // كتالوج الكليات المركزي (يُحمّل مرة واحدة عند فتح النموذج)
   const [catalogColleges, setCatalogColleges] = useState([]);
@@ -236,6 +273,75 @@ export default function AdminAddCeremony({
     };
   };
 
+  // ربط ملف بيانات خريجين بالحفل: الملف ممكن يكون مرتبط بحفل تاني، فبنأكد قبل النقل
+  const confirmReassign = (file) => {
+    if (!file || file.event_id == null) return true;
+    if (isEdit && String(file.event_id) === String(eventId)) return true;
+    return window.confirm(
+      `الملف «${file.original_name}» مرتبط حالياً بحفل تاني. ربطه بهاد الحفل بينقل بيانات الخريجين ويلغي ارتباطه بالحفل السابق.\nهل تريد المتابعة؟`,
+    );
+  };
+
+  const linkSelectedFile = async (fileId, targetEventId, { skipConfirm = false } = {}) => {
+    const file = dataFiles.find((f) => String(f.id) === String(fileId));
+    if (!file || targetEventId == null) return false;
+    if (!skipConfirm && !confirmReassign(file)) return false;
+
+    setLinkBusy(true);
+    setFilesError('');
+    setLinkNotice('');
+    try {
+      await linkUniversityFile(Number(fileId), Number(targetEventId));
+      setDataFiles((prev) =>
+        prev.map((f) =>
+          String(f.id) === String(fileId)
+            ? { ...f, event_id: Number(targetEventId), status: 'imported' }
+            : f,
+        ),
+      );
+      setLinkNotice(`تم ربط الملف «${file.original_name}» بالحفل واستيراد بيانات الخريجين تبعا له.`);
+      return true;
+    } catch (err) {
+      setFilesError(err instanceof ApiError ? err.message : 'تعذّر ربط الملف بالحفل.');
+      return false;
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
+  // اختيار الملف من القائمة: بالحفل الجديد بينربط بعد الحفظ، وبالتعديل بينربط فوراً
+  const handleFileSelect = async (e) => {
+    const value = e.target.value;
+    if (!value) return;
+    const previous = selectedFileId;
+    setSelectedFileId(value);
+    if (isEdit && eventId != null) {
+      const ok = await linkSelectedFile(value, eventId);
+      if (!ok) setSelectedFileId(previous);
+      return;
+    }
+    // الحفل الجديد: نتأكد هون إن الملف مش مرتبط بحفل تاني، والربط بيصير بعد الحفظ
+    const file = dataFiles.find((f) => String(f.id) === String(value));
+    if (file && file.event_id != null && !confirmReassign(file)) {
+      setSelectedFileId(previous);
+    }
+  };
+
+  // تصدير الأسماء المسجّلة على الموقع إلى Excel
+  const handleExportExcel = async () => {
+    setExportError('');
+    setExportBusy(true);
+    try {
+      const query = isEdit && eventId != null ? { event_id: eventId } : {};
+      const { blob, filename } = await adminBlob('/api/admin/export', query);
+      downloadBlob(blob, filename);
+    } catch (err) {
+      setExportError(err instanceof ApiError ? err.message : 'تعذّر تصدير الملف، حاول لاحقاً.');
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
@@ -284,6 +390,11 @@ export default function AdminAddCeremony({
       }
 
       const id = eventId ?? result?.id ?? result?.event_id;
+
+      // ربط ملف بيانات الخريجين بالحفل الجديد (بعد ما ينشأ الحفل ويصير له رقم)
+      if (!isEdit && selectedFileId && id != null) {
+        await linkSelectedFile(selectedFileId, id, { skipConfirm: true });
+      }
 
       clearCeremonyDrafts();
       if (onSubmitSuccess) {
@@ -365,6 +476,21 @@ export default function AdminAddCeremony({
                 <span className="add-cer-tag-dot"></span>
                 <span>مسودة غير منشورة</span>
               </span>
+
+              <button
+                type="button"
+                className="add-cer-export-btn"
+                onClick={handleExportExcel}
+                disabled={exportBusy}
+                title={
+                  isEdit
+                    ? 'تنزيل أسماء الخريجين المسجّلين في هذا الحفل (Excel)'
+                    : 'تنزيل كل الأسماء المسجّلة على الموقع (Excel)'
+                }
+              >
+                <span className="add-cer-symbol" style={{ fontSize: '16px' }}>table_chart</span>
+                <span>{exportBusy ? 'جارٍ التصدير...' : 'تصدير Excel'}</span>
+              </button>
 
               {!isEdit && (
                 <button type="button" className="add-cer-draft-clear" onClick={handleClearDraft}>
@@ -643,25 +769,60 @@ export default function AdminAddCeremony({
 
             <div className="add-cer-divider"></div>
 
-            {/* ملف بيانات الجامعة */}
+            {/* ملف بيانات الخريجين */}
             <div className="add-cer-field-group" style={{ gap: '12px' }}>
               <div className="add-cer-section-head">
-                <h4 className="add-cer-section-title">
-                  <span className="add-cer-symbol">upload_file</span>
-                  <span>ملف بيانات الخريجين</span>
-                </h4>
+                <div>
+                  <h4 className="add-cer-section-title">
+                    <span className="add-cer-symbol">upload_file</span>
+                    <span>ملف بيانات الخريجين</span>
+                  </h4>
+                  <p className="add-cer-hint" style={{ marginTop: '2px' }}>
+                    اختار الملف يلي رفعته بصفحة «ملفات البيانات» وربطو بهاد الحفل، وبتتم استيراد أسماء الخريجين تبعا لو فوراً.
+                  </p>
+                </div>
               </div>
-              <p className="add-cer-hint">
-                صار رفع ملفات بيانات الخريجين وربطها بالحفلات من صفحة «ملفات البيانات» المركزية. أنشئ الحفل هنا ثم ارفع الملف واربطه بالحفل من هناك.
-              </p>
-              <button
-                type="button"
-                className="add-cer-extend-btn"
-                onClick={() => onNavigate && onNavigate('files')}
+
+              <select
+                className="add-cer-input add-cer-select"
+                value={selectedFileId}
+                onChange={handleFileSelect}
+                disabled={linkBusy || filesLoading}
+                aria-label="ملف بيانات الخريجين"
               >
-                <span className="add-cer-symbol" style={{ fontSize: '16px' }}>folder_shared</span>
-                <span>الانتقال إلى ملفات البيانات</span>
-              </button>
+                <option value="">
+                  {filesLoading ? 'جارٍ تحميل الملفات...' : 'بدون ملف بيانات'}
+                </option>
+                {dataFiles.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {`${f.original_name} · ${f.rows_total} صف${f.event_id ? ' · مرتبط بحفل' : ''}`}
+                  </option>
+                ))}
+              </select>
+
+              {linkNotice && (
+                <p className="add-cer-hint with-icon" style={{ color: '#1b7a4b' }}>
+                  <span className="add-cer-symbol">check_circle</span>
+                  <span>{linkNotice}</span>
+                </p>
+              )}
+
+              {filesError && (
+                <p className="add-cer-file-error" role="alert">{filesError}</p>
+              )}
+
+              {exportError && (
+                <p className="add-cer-file-error" role="alert">{exportError}</p>
+              )}
+
+              <p className="add-cer-hint with-icon">
+                <span className="add-cer-symbol">info</span>
+                <span>
+                  {isEdit
+                    ? 'الملف بيتربط بالحفل مباشرة وبتستورد بياناتو فوراً.'
+                    : 'الحفل الجديد بينحفظ أولاً، وبعدها بينربط الملف المختار، أو بينحفظ بدون ملف بيانات.'}
+                </span>
+              </p>
             </div>
 
             <div className="add-cer-divider"></div>
