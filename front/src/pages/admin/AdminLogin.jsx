@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import '../../style/AdminLogin.css';
-import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { loginAdmin } from '../../api/admin';
 import { setAdminSession } from '../../api/session';
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
-  syndicateId: (v) => (v.trim() ? '' : 'يرجى إدخال اسم المستخدم أو الرقم النقابي'),
+  syndicateId: (v) => (v.trim() ? '' : 'يرجى إدخال اسم المستخدم'),
   password: (v) => (v ? '' : 'يرجى إدخال كلمة السر'),
 };
 
@@ -103,7 +102,6 @@ export default function AdminLogin({ onLoginSuccess }) {
           </div>
 
           <div className="ad-header-subband">
-            <span className="ad-subband-title">بوابة المصادقة الإدارية</span>
             <span className="ad-badge-auth">
               <span className="ad-symbol" style={{ fontSize: '14px' }}>
                 verified_user
@@ -120,7 +118,7 @@ export default function AdminLogin({ onLoginSuccess }) {
             <div className="ad-crest-wrapper">
               <div className="ad-logo-ring">
                 <div className="ad-logo-frame">
-                  <img src={universityLogo} alt="شعار جامعة حمص" className="ad-logo-img" />
+                  <img src={unionLogo} alt="شعار اتحاد الطلبة" className="ad-logo-img" />
                 </div>
                 <div className="ad-accent-node">
                   <span className="ad-symbol fill" style={{ fontSize: '12px' }}>
@@ -146,10 +144,10 @@ export default function AdminLogin({ onLoginSuccess }) {
                 </div>
               )}
 
-              {/* حقل اسم المستخدم أو الرقم النقابي */}
+              {/* حقل اسم المستخدم */}
               <div className="ad-field-group">
                 <label className="ad-label" htmlFor="admin-username">
-                  اسم المستخدم أو الرقم النقابي
+                  اسم المستخدم
                 </label>
                 <div className={`ad-input-wrapper ${errors.syndicateId ? 'error' : ''}`}>
                   <input
@@ -161,7 +159,7 @@ export default function AdminLogin({ onLoginSuccess }) {
                     spellCheck="false"
                     dir="ltr"
                     className="ad-input"
-                    placeholder="مثال: 948201 أو اسم المستخدم"
+                    placeholder="مثال: admin"
                     value={formData.syndicateId}
                     onChange={handleInputChange}
                     aria-invalid={!!errors.syndicateId}
@@ -217,7 +215,7 @@ export default function AdminLogin({ onLoginSuccess }) {
 
               {/* زر التقديم */}
               <button className="ad-submit-btn" type="submit" disabled={loading}>
-                <span>{loading ? 'جارٍ تسجيل الدخول…' : 'تسجيل الدخول إلى اللوحة'}</span>
+                <span>{loading ? 'جارٍ تسجيل الدخول…' : 'تسجيل الدخول'}</span>
                 {!loading && <span className="ad-symbol">arrow_back</span>}
               </button>
             </form>

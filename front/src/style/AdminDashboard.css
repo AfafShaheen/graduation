@@ -1283,7 +1283,7 @@
   .adm-bento-col:first-child { padding-right: 0; border-right: none; }
 
   .adm-lower-grid { grid-template-columns: repeat(12, 1fr); gap: 24px; }
-  .adm-chart-col { grid-column: span 8; }
+  .adm-chart-col { grid-column: 1 / -1; }
   .adm-verif-col { grid-column: span 4; }
   .adm-bento-head.bordered { flex-direction: row; }
 }

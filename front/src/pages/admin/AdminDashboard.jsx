@@ -5,7 +5,7 @@ import { useAdminStats } from './hooks/useAdminStats.js';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
 import { useAdminVolunteers } from './hooks/useAdminVolunteers.js';
 import { fetchRecentPayments } from './hooks/useAdminPayments.js';
-import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
+import { ApiError } from '../../api/admin.js';
 
 const PAY_STATUS_UI = {
   CONFIRMED: 'confirmed',
@@ -50,7 +50,6 @@ export default function AdminDashboard({
   onLogout,
   onAddTicket,
   onNavigate,
-  onExportPdf,
 }) {
   const [eventId, setEventId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,7 +60,6 @@ export default function AdminDashboard({
   const [payments, setPayments] = useState([]);
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState('');
-  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     const onKey = (e) => {
@@ -151,22 +149,6 @@ export default function AdminDashboard({
     setPage(1);
   };
 
-  const handleExportExcel = async () => {
-    setActionError('');
-    try {
-      const query = eventId ? { event_id: eventId } : {};
-      const { blob, filename } = await adminBlob('/api/admin/export', query);
-      downloadBlob(blob, filename);
-    } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : 'تعذّر تصدير الملف، حاول لاحقاً.');
-    }
-  };
-
-  const handleExportPdf = () => {
-    if (onExportPdf) onExportPdf();
-    else window.print();
-  };
-
   return (
     <div className="adm-app-container">
       {/* الخط التزييني العلوي */}
@@ -232,11 +214,6 @@ export default function AdminDashboard({
             <p className="adm-bento-sub" style={{ color: '#b3261e' }}>{error}</p>
           </div>
         )}
-        {actionError && (
-          <div className="adm-bento-card" role="alert">
-            <p className="adm-bento-sub" style={{ color: '#b3261e' }}>{actionError}</p>
-          </div>
-        )}
 
         {/* الترحيب والفلتر */}
         <section className="adm-hero-row">
@@ -271,21 +248,6 @@ export default function AdminDashboard({
               </select>
             </div>
 
-            <div className="adm-export-cluster">
-              <button className="adm-export-btn" type="button" onClick={handleExportPdf}>
-                <span className="adm-symbol" style={{ fontSize: '18px' }}>
-                  picture_as_pdf
-                </span>
-                <span>تقرير PDF</span>
-              </button>
-              <span className="adm-export-sep"></span>
-              <button className="adm-export-btn" type="button" onClick={handleExportExcel}>
-                <span className="adm-symbol" style={{ fontSize: '18px' }}>
-                  table_chart
-                </span>
-                <span>Excel</span>
-              </button>
-            </div>
           </div>
         </section>
 
