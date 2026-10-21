@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Time, Boolean, Numeric, CheckConstraint
+from sqlalchemy import Column, Integer, String, Date, DateTime, Time, CheckConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.models.base import Base
@@ -14,9 +14,6 @@ class EventModel(Base):
     registration_start = Column(DateTime(timezone=True), nullable=False)
     registration_end = Column(DateTime(timezone=True), nullable=False)
     whatsapp_group_link = Column(String, nullable=False)
-    is_3companions_enabled = Column(Boolean, nullable=False, default=True)
-    price_2_companions = Column(Numeric(10, 2), nullable=False)
-    price_3_companions = Column(Numeric(10, 2), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     college_links = relationship(
@@ -31,8 +28,14 @@ class EventModel(Base):
         viewonly=True,
         back_populates="events",
     )
+    packages = relationship(
+        "EventTicketPackageModel",
+        back_populates="event",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="EventTicketPackageModel.companions_count",
+    )
 
     __table_args__ = (
         CheckConstraint("registration_start <= registration_end", name="chk_event_registration_period"),
-        CheckConstraint("price_2_companions >= 0 AND price_3_companions >= 0", name="chk_event_prices_positive"),
     )

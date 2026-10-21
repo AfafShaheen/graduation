@@ -100,7 +100,7 @@ async def list_event_payments_service(
                     "university_id": graduate.university_id,
                     "college_name": college_name,
                 },
-                "ticket_type": ticket.ticket_type,
+                "companions_count": ticket.companions_count,
                 "price": str(ticket.price),
                 "status": ticket.status,
                 "payment": (
@@ -156,7 +156,6 @@ async def get_admin_ticket_service(db: AsyncSession, ticket_id: int) -> dict:
     return {
         "id": ticket.id,
         "status": ticket.status,
-        "ticket_type": ticket.ticket_type,
         "companions_count": ticket.companions_count,
         "price": str(ticket.price),
         "created_at": ticket.created_at,

@@ -8,7 +8,7 @@ from app.models.event import EventModel
 from app.models.event_college import EventCollegeModel
 from app.models.graduate import GraduateModel
 from app.models.payment import PaymentModel
-from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketModel, TicketStatusEnum
 from app.models.university_record import UniversityRecordModel
 
 
@@ -62,8 +62,8 @@ def _payment_submitted_stmt(event_id):
 
 def _ticket_types_stmt(event_id):
     stmt = (
-        select(TicketModel.ticket_type, TicketModel.status, func.count())
-        .group_by(TicketModel.ticket_type, TicketModel.status)
+        select(TicketModel.companions_count, TicketModel.status, func.count())
+        .group_by(TicketModel.companions_count, TicketModel.status)
     )
     if event_id is not None:
         stmt = stmt.where(TicketModel.event_id == event_id)
@@ -158,14 +158,10 @@ async def _build_block(db: AsyncSession, event_id, event_name) -> dict:
     registered_without_ticket = await _scalar(db, _registered_without_ticket_stmt(event_id))
     not_paid_yet = registered_without_ticket + awaiting
 
-    ticket_types = {
-        TicketTypeEnum.TWO_COMPANIONS.value: {"total": 0, "confirmed": 0},
-        TicketTypeEnum.THREE_COMPANIONS.value: {"total": 0, "confirmed": 0},
-    }
-    for ttype, tstatus, count in (await db.execute(_ticket_types_stmt(event_id))).all():
-        bucket = ticket_types.get(ttype.value)
-        if bucket is None:
-            continue
+    ticket_types = {}
+    for companions_count, tstatus, count in (await db.execute(_ticket_types_stmt(event_id))).all():
+        key = str(companions_count)
+        bucket = ticket_types.setdefault(key, {"total": 0, "confirmed": 0})
         bucket["total"] += int(count)
         if tstatus == TicketStatusEnum.CONFIRMED:
             bucket["confirmed"] += int(count)

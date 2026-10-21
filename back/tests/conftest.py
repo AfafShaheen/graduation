@@ -235,10 +235,10 @@ def make_event(db):
         registration_start=None,
         registration_end=None,
         whatsapp_group_link="https://chat.whatsapp.com/test",
-        is_3companions_enabled=True,
-        price_2_companions=100000,
-        price_3_companions=150000,
+        packages=None,
     ):
+        from app.models.event_ticket_package import EventTicketPackageModel
+
         event = EventModel(
             name=name,
             event_date=event_date,
@@ -249,11 +249,17 @@ def make_event(db):
             registration_end=registration_end
             or datetime.combine(date(2035, 1, 1), time(0, 0), tzinfo=timezone.utc),
             whatsapp_group_link=whatsapp_group_link,
-            is_3companions_enabled=is_3companions_enabled,
-            price_2_companions=price_2_companions,
-            price_3_companions=price_3_companions,
         )
         db.add(event)
+        await db.flush()
+        for companions_count, price in (packages or [(2, 100000), (3, 150000)]):
+            db.add(
+                EventTicketPackageModel(
+                    event_id=event.id,
+                    companions_count=companions_count,
+                    price=price,
+                )
+            )
         await db.commit()
         await db.refresh(event)
         return event
@@ -437,20 +443,21 @@ def make_scanner(db):
 def make_ticket(db):
     from datetime import UTC, datetime
 
-    from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
+    from app.models.ticket import TicketModel, TicketStatusEnum
 
     async def _make(
         graduate_id,
         event_id,
-        ticket_type=TicketTypeEnum.TWO_COMPANIONS,
+        companions_count=2,
         status=TicketStatusEnum.CONFIRMED,
         price=100000,
+        ticket_type=None,
     ):
-        companions_count = 2 if ticket_type == TicketTypeEnum.TWO_COMPANIONS else 3
+        if ticket_type is not None:
+            companions_count = 3 if str(ticket_type).endswith("THREE_COMPANIONS") else 2
         ticket = TicketModel(
             graduate_id=graduate_id,
             event_id=event_id,
-            ticket_type=ticket_type,
             companions_count=companions_count,
             price=price,
             status=status,

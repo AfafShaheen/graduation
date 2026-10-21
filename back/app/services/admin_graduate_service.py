@@ -207,7 +207,6 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
                 "event_id": t.event_id,
                 "status": t.status,
                 "price": str(t.price),
-                "ticket_type": t.ticket_type,
                 "companions_count": t.companions_count,
                 "rejection_reason": t.rejection_reason,
                 "confirmed_at": t.confirmed_at.isoformat() if t.confirmed_at else None,

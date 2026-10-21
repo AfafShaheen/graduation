@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.models.event import EventModel
 from app.models.college import CollegeModel
 from app.models.event_college import EventCollegeModel
+from app.models.event_ticket_package import EventTicketPackageModel
 from app.models.graduate import GraduateModel
 from app.models.ticket import TicketModel
 from app.models.university_record import UniversityRecordModel
@@ -96,13 +97,21 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
         registration_start=data.registration_start,
         registration_end=data.registration_end,
         whatsapp_group_link=data.whatsapp_group_link,
-        is_3companions_enabled=data.is_3companions_enabled,
-        price_2_companions=data.price_2_companions,
-        price_3_companions=data.price_3_companions
     )
     db.add(new_event)
     await db.flush()
     await db.refresh(new_event)
+
+    # 2. Create the dynamic ticket packages for this event (P9).
+    for package in data.packages:
+        db.add(
+            EventTicketPackageModel(
+                event_id=new_event.id,
+                companions_count=package.companions_count,
+                price=package.price,
+            )
+        )
+    await db.flush()
 
     # 2. Link catalog colleges (creating missing ones by name)
     for college in colleges:
@@ -145,7 +154,10 @@ async def list_events_service(
     except Exception:
         pass
 
-    stmt = select(EventModel).options(selectinload(EventModel.colleges))
+    stmt = select(EventModel).options(
+        selectinload(EventModel.colleges),
+        selectinload(EventModel.packages),
+    )
     if search:
         stmt = stmt.where(EventModel.name.ilike(f"%{search}%"))
 
@@ -178,9 +190,10 @@ async def list_events_service(
             "registration_start": ev.registration_start.isoformat(),
             "registration_end": ev.registration_end.isoformat(),
             "whatsapp_group_link": ev.whatsapp_group_link,
-            "is_3companions_enabled": ev.is_3companions_enabled,
-            "price_2_companions": str(ev.price_2_companions),
-            "price_3_companions": str(ev.price_3_companions),
+            "packages": [
+                {"companions_count": p.companions_count, "price": str(p.price)}
+                for p in ev.packages
+            ],
             "created_at": ev.created_at.isoformat() if ev.created_at else None,
             "colleges": [{"id": c.id, "name": c.name} for c in colleges]
         })
@@ -204,7 +217,14 @@ async def get_event_details_service(db: AsyncSession, event_id: int) -> dict:
     except Exception:
         pass
 
-    ev = await db.get(EventModel, event_id, options=(selectinload(EventModel.colleges),))
+    ev = await db.get(
+        EventModel,
+        event_id,
+        options=(
+            selectinload(EventModel.colleges),
+            selectinload(EventModel.packages),
+        ),
+    )
     if not ev:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الحفل.")
 
@@ -219,9 +239,10 @@ async def get_event_details_service(db: AsyncSession, event_id: int) -> dict:
         "registration_start": ev.registration_start.isoformat(),
         "registration_end": ev.registration_end.isoformat(),
         "whatsapp_group_link": ev.whatsapp_group_link,
-        "is_3companions_enabled": ev.is_3companions_enabled,
-        "price_2_companions": str(ev.price_2_companions),
-        "price_3_companions": str(ev.price_3_companions),
+        "packages": [
+            {"companions_count": p.companions_count, "price": str(p.price)}
+            for p in ev.packages
+        ],
         "created_at": ev.created_at.isoformat() if ev.created_at else None,
         "colleges": [{"id": c.id, "name": c.name} for c in colleges]
     }
@@ -241,18 +262,19 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
 
     update_data = data.model_dump(exclude_unset=True)
 
-    # FR-16: Check if is_3companions_enabled is being modified
-    if "is_3companions_enabled" in update_data and update_data["is_3companions_enabled"] != ev.is_3companions_enabled:
+    packages = update_data.pop("packages", None)
+
+    # FR-16: Package definitions are frozen once registration starts.
+    if packages is not None:
         now = datetime.now(UTC)
         reg_start = ev.registration_start
         if reg_start.tzinfo is None:
             reg_start = reg_start.replace(tzinfo=UTC)
 
-        # Once registration starts, modifying this flag is strictly forbidden
         if now >= reg_start:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="لا يمكن تفعيل/تعطيل نوع التذكرة بعد بدء التسجيل."
+                detail="لا يمكن تعديل باقات التذاكر بعد بدء التسجيل."
             )
 
     # Seat prefix is locked once the event has any allocated seat (FR-24 extension).
@@ -293,6 +315,21 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
 
     for key, value in update_data.items():
         setattr(ev, key, value)
+
+    if packages is not None:
+        await db.execute(
+            delete(EventTicketPackageModel).where(
+                EventTicketPackageModel.event_id == event_id
+            )
+        )
+        for package in packages:
+            db.add(
+                EventTicketPackageModel(
+                    event_id=event_id,
+                    companions_count=package["companions_count"],
+                    price=package["price"],
+                )
+            )
 
     db.add(ev)
 

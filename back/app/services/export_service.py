@@ -46,7 +46,7 @@ _HEADERS = (
     "البريد الإلكتروني",
     "الهاتف",
     "البريد موثّق",
-    "نوع التذكرة",
+    "باقة المرافقين",
     "عدد المرافقين",
     "السعر",
     "حالة التذكرة",
@@ -207,7 +207,7 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
         _string_cell(ws, row_idx, 8, graduate.email)
         _string_cell(ws, row_idx, 9, graduate.phone)
         _string_cell(ws, row_idx, 10, "نعم" if graduate.email_verified else "لا")
-        _string_cell(ws, row_idx, 11, _enum_value(ticket.ticket_type) if ticket else "")
+        _string_cell(ws, row_idx, 11, f"{ticket.companions_count} مرافقين" if ticket else "")
         _number_cell(ws, row_idx, 12, ticket.companions_count if ticket else None)
         _number_cell(ws, row_idx, 13, ticket.price if ticket else None)
         _string_cell(ws, row_idx, 14, _enum_value(ticket.status) if ticket else "")

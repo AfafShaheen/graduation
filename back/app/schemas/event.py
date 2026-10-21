@@ -1,7 +1,11 @@
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
+from typing import List, Optional
+
+class PackageItem(BaseModel):
+    companions_count: int = Field(..., ge=2, le=10)
+    price: Decimal = Field(..., ge=Decimal("0.00"))
 
 class EventCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
@@ -9,9 +13,7 @@ class EventCreate(BaseModel):
     registration_start: datetime
     registration_end: datetime
     whatsapp_group_link: str
-    is_3companions_enabled: bool = True
-    price_2_companions: Decimal = Field(..., ge=Decimal("0.00"))
-    price_3_companions: Decimal = Field(..., ge=Decimal("0.00"))
+    packages: List[PackageItem] = Field(..., min_length=1)
 
     @model_validator(mode="after")
     def validate_dates(self) -> "EventCreate":
@@ -25,9 +27,7 @@ class EventUpdate(BaseModel):
     registration_start: Optional[datetime] = None
     registration_end: Optional[datetime] = None
     whatsapp_group_link: Optional[str] = None
-    is_3companions_enabled: Optional[bool] = None
-    price_2_companions: Optional[Decimal] = Field(None, ge=Decimal("0.00"))
-    price_3_companions: Optional[Decimal] = Field(None, ge=Decimal("0.00"))
+    packages: Optional[List[PackageItem]] = None
 
     @model_validator(mode="after")
     def validate_dates(self) -> "EventUpdate":
@@ -42,8 +42,6 @@ class EventResponse(BaseModel):
     registration_start: datetime
     registration_end: datetime
     whatsapp_group_link: str
-    is_3companions_enabled: bool
-    price_2_companions: Decimal
-    price_3_companions: Decimal
+    packages: List[PackageItem] = []
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)

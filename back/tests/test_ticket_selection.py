@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.core import messages
 from app.core.security import create_access_token
 from app.models.event import EventModel
+from app.models.event_ticket_package import EventTicketPackageModel
 from app.models.ticket import TicketModel, TicketStatusEnum
 
 _PW_FIELD = "pass" + "word"
@@ -38,10 +39,10 @@ async def _verified_graduate(
     return event, college, graduate, access_value
 
 
-_SELECT_BODY = {"ticket_type": "TWO_COMPANIONS", "confirm": True}
+_SELECT_BODY = {"companions_count": 2, "confirm": True}
 
 
-async def test_ticket_options_includes_both_types(
+async def test_ticket_options_lists_packages(
     client, make_event, make_college, make_graduate
 ):
     event, _college, _grad, access_value = await _verified_graduate(
@@ -58,19 +59,21 @@ async def test_ticket_options_includes_both_types(
     assert body["has_ticket"] is False
     assert body["info_text"] == messages.TICKET_INFO_TEXT
     assert body["registration"]["is_open"] is True
-    options = {item["ticket_type"]: item for item in body["options"]}
-    assert set(options) == {"TWO_COMPANIONS", "THREE_COMPANIONS"}
-    assert options["TWO_COMPANIONS"]["companions_count"] == 2
-    assert options["TWO_COMPANIONS"]["price"] == "100000.00"
-    assert options["THREE_COMPANIONS"]["companions_count"] == 3
-    assert options["THREE_COMPANIONS"]["price"] == "150000.00"
+    options = {item["companions_count"]: item for item in body["options"]}
+    assert set(options) == {2, 3}
+    assert options[2]["price"] == "100000.00"
+    assert options[3]["price"] == "150000.00"
 
 
-async def test_ticket_options_hides_three_companions_when_disabled(
+async def test_ticket_options_reflects_custom_packages(
     client, make_event, make_college, make_graduate
 ):
     _event, _college, _grad, access_value = await _verified_graduate(
-        client, make_event, make_college, make_graduate, is_3companions_enabled=False
+        client,
+        make_event,
+        make_college,
+        make_graduate,
+        packages=[(2, 50000), (4, 90000)],
     )
 
     response = await client.get(
@@ -78,9 +81,7 @@ async def test_ticket_options_hides_three_companions_when_disabled(
     )
 
     assert response.status_code == 200, response.text
-    assert [item["ticket_type"] for item in response.json()["options"]] == [
-        "TWO_COMPANIONS"
-    ]
+    assert [item["companions_count"] for item in response.json()["options"]] == [2, 4]
 
 
 async def test_select_requires_confirm(client, make_event, make_college, make_graduate):
@@ -91,7 +92,7 @@ async def test_select_requires_confirm(client, make_event, make_college, make_gr
     response = await client.post(
         "/api/graduates/me/ticket",
         headers=_auth(access_value),
-        json={"ticket_type": "TWO_COMPANIONS", "confirm": False},
+        json={"companions_count": 2, "confirm": False},
     )
 
     assert response.status_code == 400
@@ -118,21 +119,21 @@ async def test_select_when_window_closed(
     assert response.json()["detail"] == messages.REGISTRATION_CLOSED
 
 
-async def test_select_three_companions_disabled(
+async def test_select_unavailable_package(
     client, make_event, make_college, make_graduate
 ):
     _event, _college, _grad, access_value = await _verified_graduate(
-        client, make_event, make_college, make_graduate, is_3companions_enabled=False
+        client, make_event, make_college, make_graduate, packages=[(2, 50000)]
     )
 
     response = await client.post(
         "/api/graduates/me/ticket",
         headers=_auth(access_value),
-        json={"ticket_type": "THREE_COMPANIONS", "confirm": True},
+        json={"companions_count": 5, "confirm": True},
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == messages.THREE_COMPANIONS_DISABLED
+    assert response.json()["detail"] == messages.TICKET_PACKAGE_UNAVAILABLE
 
 
 async def test_select_success(
@@ -213,8 +214,17 @@ async def test_price_snapshot_survives_event_price_change(
     assert created.status_code == 201, created.text
 
     event_row = await db.get(EventModel, event.id)
-    event_row.price_2_companions = Decimal("200000")
+    package = (
+        await db.execute(
+            select(EventTicketPackageModel).where(
+                EventTicketPackageModel.event_id == event.id,
+                EventTicketPackageModel.companions_count == 2,
+            )
+        )
+    ).scalar_one()
+    package.price = Decimal("200000")
     db.add(event_row)
+    db.add(package)
     await db.commit()
 
     ticket = await db.get(TicketModel, created.json()["id"])

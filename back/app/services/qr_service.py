@@ -39,7 +39,7 @@ from app.core.messages import (
 )
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.scanner import ScannerModel
-from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketModel, TicketStatusEnum
 from app.services.audit_log import ActorType, record_audit
 
 
@@ -95,10 +95,7 @@ class ScannerNotFoundError(QrServiceError):
         super().__init__(f"scanner {scanner_id} not found")
 
 
-_COMPANION_COUNTS = {
-    TicketTypeEnum.TWO_COMPANIONS: 2,
-    TicketTypeEnum.THREE_COMPANIONS: 3,
-}
+_COMPANION_COUNTS = {}
 
 
 async def _audit_scan(
@@ -166,7 +163,7 @@ async def issue_qr_codes_for_ticket(
     if existing:
         return list(existing)
 
-    companion_count = _COMPANION_COUNTS.get(ticket.ticket_type, 0)
+    companion_count = ticket.companions_count or 0
     codes = [
         QrCodeModel(
             ticket_id=ticket_id,

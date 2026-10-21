@@ -24,10 +24,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import messages
 from app.models.event import EventModel
+from app.models.event_ticket_package import EventTicketPackageModel
 from app.models.graduate import GraduateModel
 from app.models.payment import PaymentModel
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
-from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketModel, TicketStatusEnum
 from app.schemas.ticket import PaymentSubmitRequest, TicketSelectRequest
 from app.services.admin_graduate_service import invalidate_admin_cache
 from app.services.registration_window import (
@@ -96,21 +97,18 @@ async def get_ticket_options_service(db: AsyncSession, graduate: GraduateModel) 
 
     ticket = await _get_graduate_ticket(db, graduate.id)
 
-    options = [
-        {
-            "ticket_type": TicketTypeEnum.TWO_COMPANIONS,
-            "companions_count": 2,
-            "price": event.price_2_companions,
-        }
-    ]
-    if event.is_3companions_enabled:
-        options.append(
-            {
-                "ticket_type": TicketTypeEnum.THREE_COMPANIONS,
-                "companions_count": 3,
-                "price": event.price_3_companions,
-            }
+    packages = (
+        await db.execute(
+            select(EventTicketPackageModel)
+            .where(EventTicketPackageModel.event_id == event.id)
+            .order_by(EventTicketPackageModel.companions_count)
         )
+    ).scalars().all()
+
+    options = [
+        {"companions_count": pkg.companions_count, "price": pkg.price}
+        for pkg in packages
+    ]
 
     return {
         "event": event,
@@ -138,13 +136,18 @@ async def select_ticket_service(
         )
     await ensure_registration_open(event)
 
-    if (
-        data.ticket_type == TicketTypeEnum.THREE_COMPANIONS
-        and not event.is_3companions_enabled
-    ):
+    package = (
+        await db.execute(
+            select(EventTicketPackageModel).where(
+                EventTicketPackageModel.event_id == event.id,
+                EventTicketPackageModel.companions_count == data.companions_count,
+            )
+        )
+    ).scalar_one_or_none()
+    if package is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=messages.THREE_COMPANIONS_DISABLED,
+            detail=messages.TICKET_PACKAGE_UNAVAILABLE,
         )
 
     existing = await _get_graduate_ticket(db, graduate.id)
@@ -154,19 +157,11 @@ async def select_ticket_service(
             detail=messages.TICKET_ALREADY_EXISTS,
         )
 
-    if data.ticket_type == TicketTypeEnum.TWO_COMPANIONS:
-        companions_count = 2
-        price = event.price_2_companions
-    else:
-        companions_count = 3
-        price = event.price_3_companions
-
     ticket = TicketModel(
         graduate_id=graduate.id,
         event_id=event.id,
-        ticket_type=data.ticket_type,
-        companions_count=companions_count,
-        price=price,
+        companions_count=package.companions_count,
+        price=package.price,
         status=TicketStatusEnum.AWAITING_PAYMENT,
     )
     db.add(ticket)

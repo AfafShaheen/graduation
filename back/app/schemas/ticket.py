@@ -6,7 +6,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.qr_code import QrCodeTypeEnum
-from app.models.ticket import TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketStatusEnum
 
 
 class EventBrief(BaseModel):
@@ -24,7 +24,6 @@ class RegistrationInfo(BaseModel):
 
 
 class TicketOption(BaseModel):
-    ticket_type: TicketTypeEnum
     companions_count: int
     price: Decimal
 
@@ -38,7 +37,7 @@ class TicketOptionsResponse(BaseModel):
 
 
 class TicketSelectRequest(BaseModel):
-    ticket_type: TicketTypeEnum
+    companions_count: int = Field(..., ge=2, le=10)
     confirm: bool = False
     model_config = ConfigDict(extra="forbid")
 
@@ -46,7 +45,6 @@ class TicketSelectRequest(BaseModel):
 class TicketSummary(BaseModel):
     id: int
     status: TicketStatusEnum
-    ticket_type: TicketTypeEnum
     companions_count: int
     price: Decimal
     created_at: datetime

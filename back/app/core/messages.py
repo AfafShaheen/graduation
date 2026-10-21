@@ -54,6 +54,7 @@ COLLEGE_LINKED_TO_EVENT = "لا يمكن حذف الكلية لارتباطها 
 COLLEGE_DELETED = "تم حذف الكلية بنجاح."
 TICKET_ALREADY_EXISTS = "لديك تذكرة مسجلة مسبقاً"
 THREE_COMPANIONS_DISABLED = "هذا النوع من التذاكر غير متاح لحفلك"
+TICKET_PACKAGE_UNAVAILABLE = "الباقة المختارة غير متاحة لهذا الحفل"
 TICKET_CHOICE_NOT_CONFIRMED = "يجب تأكيد اختيار التذكرة قبل المتابعة"
 NO_TICKET = "لا توجد تذكرة لهذا الحساب"
 PAYMENT_NOT_ALLOWED = "لا يمكن إرسال بيانات الدفع في حالة التذكرة الحالية"
