@@ -82,9 +82,7 @@ function App() {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  usePageMeta({
-    robots: pathname === "/" ? "index, follow" : "noindex, nofollow",
-  });
+  usePageMeta({ path: pathname });
 
   const refreshPendingPayments = useCallback(async () => {
     try {
