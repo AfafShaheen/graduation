@@ -190,7 +190,9 @@ async def upload_university_file(
         )
 
     os.makedirs(STORAGE_DIR, exist_ok=True)
-    stored_name = f"{uuid.uuid4().hex}_{original_name}"
+    # ASCII-only name on disk: the server's Python may use an ASCII filesystem
+    # encoding, so Arabic file names crash open(). original_name stays in the DB.
+    stored_name = f"{uuid.uuid4().hex}{os.path.splitext(original_name)[1].lower()}"
     path = _storage_path(stored_name)
     with open(path, "wb") as handle:
         handle.write(raw)

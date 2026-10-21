@@ -13,7 +13,31 @@ if os.path.exists(env_file):
 
 # Importing the app here is safe: it starts no threads.
 from app.main import app  # noqa: E402
+import logging
 
+_err_log = logging.getLogger("graduation.errors")
+if not _err_log.handlers:
+    _fh = logging.FileHandler(os.path.join(APP_DIR, "app_errors.log"), encoding="utf-8")
+    _fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    _err_log.addHandler(_fh)
+    _err_log.addHandler(logging.StreamHandler(sys.stderr))
+    _err_log.setLevel(logging.INFO)
+
+
+class _LogErrors:
+    """Write the full traceback of any unhandled error (a2wsgi logs nothing)."""
+
+    def __init__(self, inner):
+        self.inner = inner
+
+    async def __call__(self, scope, receive, send):
+        try:
+            await self.inner(scope, receive, send)
+        except Exception:
+            _err_log.exception(
+                "Unhandled error on %s %s", scope.get("method"), scope.get("path")
+            )
+            raise
 _PREFIX = os.getenv("APP_URL_PREFIX", "/gradapi").rstrip("/")
 
 # a2wsgi starts a background event-loop thread when ASGIMiddleware is created.
@@ -32,7 +56,7 @@ def _get_asgi():
         with _lock:
             if _asgi is None or _asgi_pid != pid:
                 from a2wsgi import ASGIMiddleware
-                _asgi = ASGIMiddleware(app)
+                _asgi = ASGIMiddleware(_LogErrors(app))
                 _asgi_pid = pid
     return _asgi
 
