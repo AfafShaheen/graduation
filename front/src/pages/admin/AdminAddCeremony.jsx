@@ -37,7 +37,6 @@ export default function AdminAddCeremony({
   onSubmitSuccess,
   onNavigate,
   onLogout,
-  children,
 }) {
   const isEdit = !!ceremony;
   // الحفل الجديد يحفظ مسودة في localStorage؛ التعديل لا يحفظ مسودة.
@@ -605,8 +604,6 @@ export default function AdminAddCeremony({
             </div>
           </form>
         </div>
-
-        {children}
 
         <p className="add-cer-footer-note">
           <span className="add-cer-symbol">verified_user</span>

@@ -245,7 +245,7 @@ export default function AdminDashboard({
               <span className="adm-mini-dot"></span>
               <span className="adm-pulse-label">{selectedEvent ? selectedEvent.name : 'كل الحفلات'}</span>
             </div>
-            <h3>مرحباً زميلنا، إليك ملخص حجوزات الحفلات وإحصائياته</h3>
+            <h3>ملخص حجوزات الحفلات وإحصائياته</h3>
             <p>
               تحديث مباشر لبيانات الدفع، وتدقيق بطاقات الخريجين والمرافقين المعتمدين.
             </p>

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AdminAddCeremony from './AdminAddCeremony';
-import MajorsManager from './MajorsManager';
 import { getAdminEvent } from './hooks/useAdminEvents.js';
 import { ApiError } from '../../api/admin.js';
 
@@ -109,8 +108,6 @@ export default function AdminEditCeremonyRoute({
       onCancel={() => navigate('/admin/ceremonies')}
       onSubmitSuccess={() => navigate('/admin/ceremonies')}
       onLogout={onLogout}
-    >
-      <MajorsManager colleges={Array.isArray(event.colleges) ? event.colleges : []} />
-    </AdminAddCeremony>
+    />
   );
 }

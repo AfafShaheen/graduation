@@ -4,6 +4,9 @@ import unionLogo from '../assets/only-logo.png';
 import { useAdminStats } from '../context/AdminStatsContext';
 
 const COLLAPSE_KEY = 'adm.sidebar.collapsed';
+/* عرض الشريط الجانبي مطوياً (شريط ضيّق يحوي زر التوسيع) — لا يختفي تماماً
+   حتى لا تزحلق الصفحات تحت الزر العائم وتغطي عناوينها */
+const COLLAPSED_WIDTH = '56px';
 
 function readCollapsed() {
   try {
@@ -51,7 +54,7 @@ export default function AdminSidebar({
 
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty('--adm-sb-width', collapsed ? '0px' : '288px');
+    root.style.setProperty('--adm-sb-width', collapsed ? COLLAPSED_WIDTH : '288px');
     try {
       window.localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
     } catch {
@@ -84,6 +87,18 @@ export default function AdminSidebar({
         className={`adm-sidebar ${open ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}
         aria-label="القائمة الجانبية"
       >
+        {/* زر توسيع الشريط بعد طيّه — داخل الشريط نفسه حتى لا يغطّي عنوان الصفحة */}
+        {collapsed && (
+          <button
+            type="button"
+            className="adm-expand-btn"
+            aria-label="توسيع القائمة الجانبية"
+            onClick={() => setCollapsed(false)}
+          >
+            <span className="adm-symbol">menu_open</span>
+          </button>
+        )}
+
         <div className="adm-sidebar-inner">
           <div>
             {/* الشعار */}
@@ -157,18 +172,6 @@ export default function AdminSidebar({
           </div>
         </div>
       </aside>
-
-      {/* زر توسيع الشريط على الديسكتوب بعد طيّه */}
-      {collapsed && (
-        <button
-          type="button"
-          className="adm-expand-btn"
-          aria-label="توسيع القائمة الجانبية"
-          onClick={() => setCollapsed(false)}
-        >
-          <span className="adm-symbol">menu_open</span>
-        </button>
-      )}
     </>
   );
 }
