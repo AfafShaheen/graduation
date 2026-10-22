@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { defineConfig } from 'vite'
 
 function escapeAttr(value) {
@@ -171,11 +172,16 @@ function seoPlugin({ base = '/' } = {}) {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   // cPanel sub-path deploy: VITE_BASE_PATH=/graduation/ (default '/' = unchanged)
   base: globalThis.process?.env?.VITE_BASE_PATH || '/',
-  plugins: [react(), seoPlugin({ base: globalThis.process?.env?.VITE_BASE_PATH || '/' })],
+  plugins: [
+    react(),
+    seoPlugin({ base: globalThis.process?.env?.VITE_BASE_PATH || '/' }),
+    ...(mode === 'development' ? [basicSsl()] : []),
+  ],
   server: {
+    host: true,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
@@ -183,4 +189,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))
