@@ -87,6 +87,8 @@ async def assert_windows_do_not_overlap(
     registration_start: datetime | None,
     registration_end: datetime | None,
     exclude_event_id: int | None = None,
+    *,
+    status_code: int = status.HTTP_400_BAD_REQUEST,
 ) -> None:
     """P5.3: no college may be linked to two events with overlapping windows."""
     if registration_start is None or registration_end is None or not college_ids:
@@ -104,7 +106,7 @@ async def assert_windows_do_not_overlap(
         other_end = other.registration_end or datetime.max.replace(tzinfo=UTC)
         if registration_start <= other_end and other_start <= registration_end:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status_code,
                 detail=f"{messages.COLLEGE_WINDOW_OVERLAP} (الحفل: {other.name})",
             )
 
