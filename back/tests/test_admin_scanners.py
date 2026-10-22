@@ -73,6 +73,31 @@ async def test_create_scanner_duplicate_username_409(client, make_admin, make_ev
     assert second.json()["detail"] == messages.SCANNER_USERNAME_TAKEN
 
 
+async def test_create_scanner_same_username_in_different_events(
+    client, make_admin, make_event
+):
+    headers, _ = await _admin_headers(client, make_admin)
+    event_one = await make_event(name="حفل 1")
+    event_two = await make_event(name="حفل 2")
+
+    first = await client.post(
+        "/api/admin/scanners",
+        json=_create_body(event_one.id, username="shared_scanner"),
+        headers=headers,
+    )
+    second = await client.post(
+        "/api/admin/scanners",
+        json=_create_body(event_two.id, username="shared_scanner"),
+        headers=headers,
+    )
+
+    assert first.status_code == 201, first.text
+    assert second.status_code == 201, second.text
+    assert first.json()["event_id"] == event_one.id
+    assert second.json()["event_id"] == event_two.id
+    assert first.json()["id"] != second.json()["id"]
+
+
 async def test_create_scanner_concurrent_duplicate_gives_one_success(
     client, make_admin, make_event
 ):

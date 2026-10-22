@@ -54,7 +54,6 @@ async def test_enriched_details_expose_seat_payment_and_codes(
     assert details["status"] == "CONFIRMED"
     assert "price" in details
     # B3 additions.
-    assert details["ticket_type"] == "TWO_COMPANIONS"
     assert details["companions_count"] == 2
     assert details["rejection_reason"] is None
     assert details["confirmed_at"] is not None

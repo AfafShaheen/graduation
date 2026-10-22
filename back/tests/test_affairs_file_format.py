@@ -201,11 +201,10 @@ async def test_missing_names_column_reports_error(
         ["اسم الأب", "اسم الأم", "الكلية", "الجنس", "المعدل"],
         [("خالد", "سعاد", _COLLEGE, "ذكر", "80.00")],
     )
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["added"] == 0
-    assert any("الاسم" in err for err in body["errors"])
-    assert body["summary"]["error_count"] == len(body["errors"])
+    assert resp.status_code == 400
+    detail = resp.json()["detail"]
+    assert "الاسم" in detail
+    assert "الكنية" in detail
 
 
 async def test_upload_summary_counts_rows_and_errors(
@@ -219,8 +218,8 @@ async def test_upload_summary_counts_rows_and_errors(
         client,
         token,
         event.id,
-        ["university_id", "full_name", "father_name", "mother_name", "college", "gender"],
-        [("400003", "محمد أحمد", "خالد", "سعاد", _COLLEGE, "ذكر")],
+        ["university_id", "full_name", "father_name", "mother_name", "college", "gender", "gpa"],
+        [("400003", "محمد أحمد", "خالد", "سعاد", "كلية غير موجودة", "ذكر", "80.00")],
     )
     assert resp.status_code == 200
     body = resp.json()

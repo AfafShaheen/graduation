@@ -92,11 +92,12 @@ def create_scanner_access_token(scanner: ScannerModel) -> str:
 async def login_scanner(data: ScannerLoginRequest, db: AsyncSession) -> dict:
     await check_scanner_login_rate_limit(data.username)
 
-    scanner = (
-        await db.execute(select(ScannerModel).where(ScannerModel.username == data.username))
-    ).scalar_one_or_none()
+    result = await db.execute(
+        select(ScannerModel).where(ScannerModel.username == data.username)
+    )
+    candidates = list(result.scalars().all())
 
-    if not scanner:
+    if not candidates:
         verify_password(data.password, _DUMMY_HASH)
         await increment_scanner_login_failure(data.username)
         raise HTTPException(
@@ -104,12 +105,48 @@ async def login_scanner(data: ScannerLoginRequest, db: AsyncSession) -> dict:
             detail=messages.SCANNER_LOGIN_FAILED,
         )
 
-    if not verify_password(data.password, scanner.password_hash):
+    matches = [
+        scanner
+        for scanner in candidates
+        if verify_password(data.password, scanner.password_hash)
+    ]
+
+    if data.event_id is not None:
+        matches = [scanner for scanner in matches if scanner.event_id == data.event_id]
+
+    if not matches:
         await increment_scanner_login_failure(data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=messages.SCANNER_LOGIN_FAILED,
         )
+
+    if len(matches) > 1:
+        matching_event_ids = [scanner.event_id for scanner in matches]
+        events = (
+            await db.execute(
+                select(EventModel)
+                .where(EventModel.id.in_(matching_event_ids))
+                .order_by(EventModel.event_date, EventModel.id)
+            )
+        ).scalars().all()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": messages.SCANNER_EVENT_REQUIRED,
+                "code": "SCANNER_EVENT_REQUIRED",
+                "events": [
+                    {
+                        "id": event.id,
+                        "name": event.name,
+                        "event_date": event.event_date.isoformat(),
+                    }
+                    for event in events
+                ],
+            },
+        )
+
+    scanner = matches[0]
 
     await reset_scanner_login_failure(data.username)
 

@@ -371,9 +371,9 @@ async def test_seat_backfill_assigns_consecutive_blocks(
     second = await make_graduate(college.id, university_id="920002")
     third = await make_graduate(college.id, university_id="920003")
 
-    await make_ticket(first.id, event.id2)
-    await make_ticket(second.id, event.id3)
-    await make_ticket(third.id, event.id2)
+    await make_ticket(first.id, event.id, companions_count=2)
+    await make_ticket(second.id, event.id, companions_count=3)
+    await make_ticket(third.id, event.id, companions_count=2)
     # Release the transaction so the schema DDL below is not blocked by locks.
     await db.commit()
 

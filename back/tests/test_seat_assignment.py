@@ -64,8 +64,8 @@ async def test_assign_seat_block_is_sequential_and_idempotent(
     college = await make_college(event.id)
     first = await make_graduate(college.id, university_id="930001")
     second = await make_graduate(college.id, university_id="930002")
-    first_ticket = await make_ticket(first.id, event.id2)
-    second_ticket = await make_ticket(second.id, event.id3)
+    first_ticket = await make_ticket(first.id, event.id, companions_count=2)
+    second_ticket = await make_ticket(second.id, event.id, companions_count=3)
 
     await assign_seat_block(db, first_ticket)
     await assign_seat_block(db, second_ticket)
