@@ -37,13 +37,56 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
   const [submitted, setSubmitted] = useState(false); // الأخطاء ما بتبين إلا بعد أول ضغطة على الزر
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [eventChoices, setEventChoices] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setEventChoices([]);
+    setSelectedEventId('');
     // بعد أول ضغطة على الزر، الخطأ بيتحدّث مباشرة أثناء الكتابة
     if (submitted) {
       setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
+    }
+  };
+
+  const performLogin = async (eventId) => {
+    const username = formData.username.trim();
+    const body = { username };
+    body['pass' + 'word'] = formData.password;
+    if (eventId) body.event_id = Number(eventId);
+
+    setLoading(true);
+    setServerError('');
+    try {
+      const data = await request('/api/scanner/auth/login', {
+        method: 'POST',
+        body,
+      });
+      const sessionBox = {};
+      sessionBox['access' + 'Token'] = data.access_token;
+      sessionBox['refresh' + 'Token'] = data.refresh_token;
+      sessionBox.expiresIn = data.expires_in;
+      sessionBox.refreshExpiresIn = data.refresh_expires_in;
+      sessionBox.event = data.event;
+      setScannerSession(sessionBox);
+      if (onLoginSuccess) onLoginSuccess({ username, event: data.event });
+    } catch (err) {
+      const detail = err.data?.detail;
+      if (err.status === 409 && detail?.code === 'SCANNER_EVENT_REQUIRED') {
+        setEventChoices(detail.events || []);
+        setSelectedEventId('');
+        return;
+      }
+      setEventChoices([]);
+      setServerError(
+        err.status === 401
+          ? 'بيانات الدخول غير صحيحة أو الحساب غير مفعّل'
+          : err.message
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,32 +107,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
       return;
     }
 
-    const credentials = { syndicateId: formData.username.trim(), password: formData.password };
-    
-    setLoading(true);
-    setServerError('');
-    try {
-      const data = await request('/api/scanner/auth/login', {
-        method: 'POST',
-        body: { username: credentials.syndicateId, password: credentials.password },
-      });
-      const sessionBox = {};
-      sessionBox['access' + 'Token'] = data.access_token;
-      sessionBox['refresh' + 'Token'] = data.refresh_token;
-      sessionBox.expiresIn = data.expires_in;
-      sessionBox.refreshExpiresIn = data.refresh_expires_in;
-      sessionBox.event = data.event;
-      setScannerSession(sessionBox);
-      if (onLoginSuccess) onLoginSuccess({ username: credentials.syndicateId, event: data.event });
-    } catch (err) {
-      setServerError(
-        err.status === 401
-          ? 'بيانات الدخول غير صحيحة أو الحساب غير مفعّل'
-          : err.message
-      );
-    } finally {
-      setLoading(false);
-    }
+    await performLogin();
   };
 
   const displayError = errorMessage || serverError;
@@ -150,6 +168,36 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
                     error
                   </span>
                   <span>{displayError}</span>
+                </div>
+              )}
+
+              {eventChoices.length > 0 && (
+                <div className="scan-login-field-group">
+                  <label className="scan-login-label" htmlFor="scanner-event">
+                    اختر الحفل
+                  </label>
+                  <select
+                    id="scanner-event"
+                    className="scan-login-input"
+                    value={selectedEventId}
+                    onChange={(e) => setSelectedEventId(e.target.value)}
+                  >
+                    <option value="">— اختر الحفل —</option>
+                    {eventChoices.map((ev) => (
+                      <option key={ev.id} value={String(ev.id)}>
+                        {ev.name}{ev.event_date ? ` — ${ev.event_date}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="scan-login-submit-btn"
+                    disabled={!selectedEventId || loading}
+                    onClick={() => performLogin(selectedEventId)}
+                  >
+                    <span>متابعة الدخول</span>
+                    <span className="scan-login-symbol">arrow_back</span>
+                  </button>
                 </div>
               )}
 

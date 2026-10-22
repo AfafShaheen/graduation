@@ -34,12 +34,12 @@ async def _seed_event_one(make_event, make_college, make_university_record, make
     grad_3 = await make_graduate(college_a.id, university_id="1002", email_verified=True)
     grad_4 = await make_graduate(college_b.id, university_id="2002", email_verified=True)
 
-    ticket_1 = await make_ticket(grad_1.id, event.id, ticket_type=2, status=TicketStatusEnum.CONFIRMED)
+    ticket_1 = await make_ticket(grad_1.id, event.id, companions_count=2, status=TicketStatusEnum.CONFIRMED)
     await make_payment(ticket_1.id, transaction_number="TXN-1")
-    ticket_2 = await make_ticket(grad_2.id, event.id, ticket_type=3, status=TicketStatusEnum.PROCESSING)
+    ticket_2 = await make_ticket(grad_2.id, event.id, companions_count=3, status=TicketStatusEnum.PROCESSING)
     await make_payment(ticket_2.id, transaction_number="TXN-2")
-    await make_ticket(grad_3.id, event.id, ticket_type=2, status=TicketStatusEnum.AWAITING_PAYMENT)
-    ticket_4 = await make_ticket(grad_4.id, event.id, ticket_type=3, status=TicketStatusEnum.REJECTED)
+    await make_ticket(grad_3.id, event.id, companions_count=2, status=TicketStatusEnum.AWAITING_PAYMENT)
+    ticket_4 = await make_ticket(grad_4.id, event.id, companions_count=3, status=TicketStatusEnum.REJECTED)
     await make_payment(ticket_4.id, transaction_number="TXN-3")
 
     return event, college_a, college_b
@@ -69,8 +69,8 @@ async def test_stats_single_event_numbers(
         "not_paid_yet": 1,
     }
     assert data["ticket_types"] == {
-        "TWO_COMPANIONS": {"total": 2, "confirmed": 1},
-        "THREE_COMPANIONS": {"total": 2, "confirmed": 0},
+        "2": {"total": 2, "confirmed": 1},
+        "3": {"total": 2, "confirmed": 0},
     }
     assert data["expected_attendance"] == {"confirmed": 3, "processing": 4}
     assert data["by_college"] == [
@@ -100,8 +100,8 @@ async def test_stats_all_events_aggregates_and_per_event(
     assert data["tickets"]["payment_submitted"] == 3
     assert data["tickets"]["not_paid_yet"] == 1
     assert data["ticket_types"] == {
-        "TWO_COMPANIONS": {"total": 2, "confirmed": 1},
-        "THREE_COMPANIONS": {"total": 2, "confirmed": 0},
+        "2": {"total": 2, "confirmed": 1},
+        "3": {"total": 2, "confirmed": 0},
     }
     assert data["expected_attendance"] == {"confirmed": 3, "processing": 4}
     assert data["by_college"] == [
@@ -139,10 +139,7 @@ async def test_stats_empty_event_returns_zeros(client, make_admin, make_event):
         "awaiting_payment": 0,
         "not_paid_yet": 0,
     }
-    assert data["ticket_types"] == {
-        "TWO_COMPANIONS": {"total": 0, "confirmed": 0},
-        "THREE_COMPANIONS": {"total": 0, "confirmed": 0},
-    }
+    assert data["ticket_types"] == {}
     assert data["expected_attendance"] == {"confirmed": 0, "processing": 0}
     assert data["by_college"] == []
 

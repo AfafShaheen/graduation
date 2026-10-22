@@ -150,7 +150,6 @@ async def test_select_success(
     assert response.status_code == 201, response.text
     body = response.json()
     assert body["status"] == "AWAITING_PAYMENT"
-    assert body["ticket_type"] == "TWO_COMPANIONS"
     assert body["companions_count"] == 2
     assert body["price"] == "100000.00"
     assert body["confirmed_at"] is None

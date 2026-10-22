@@ -451,10 +451,7 @@ def make_ticket(db):
         companions_count=2,
         status=TicketStatusEnum.CONFIRMED,
         price=100000,
-        ticket_type=None,
     ):
-        if ticket_type is not None:
-            companions_count = 3 if str(ticket_type).endswith("THREE_COMPANIONS") else 2
         ticket = TicketModel(
             graduate_id=graduate_id,
             event_id=event_id,

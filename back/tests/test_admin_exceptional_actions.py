@@ -41,7 +41,7 @@ async def _ticket_with_codes(
     make_graduate,
     make_ticket,
     *,
-    ticket_type=2,
+    companions_count=2,
     status=TicketStatusEnum.CONFIRMED,
     issue=True,
 ):
@@ -49,7 +49,7 @@ async def _ticket_with_codes(
     college = await make_college(event.id)
     grad = await make_graduate(college.id, university_id=str(100000 + event.id))
     ticket = await make_ticket(
-        grad.id, event.id, ticket_type=ticket_type, status=status
+        grad.id, event.id, companions_count=companions_count, status=status
     )
     if issue:
         await issue_qr_codes_for_ticket(db, ticket.id)
@@ -92,7 +92,7 @@ async def test_revert_scan_nothing_then_reset(
 ):
     _event, grad, ticket = await _ticket_with_codes(
         db, make_event, make_college, make_graduate, make_ticket,
-        ticket_type=3,
+        companions_count=3,
     )
     token = await _token(client, make_admin)
     path = f"/api/admin/graduates/{grad.id}/revert-scan"
@@ -136,7 +136,7 @@ async def test_revert_scan_keeps_graduate_activated(
 ):
     event, grad, ticket = await _ticket_with_codes(
         db, make_event, make_college, make_graduate, make_ticket,
-        ticket_type=2,
+        companions_count=2,
     )
     admin = await make_admin()
     scanner = await make_scanner(admin.id, event.id)

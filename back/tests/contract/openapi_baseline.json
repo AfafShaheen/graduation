@@ -280,7 +280,7 @@
       "Body_update_shamcash_qr_api_admin_settings_shamcash_qr_put": {
         "properties": {
           "file": {
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "type": "string"
           }
@@ -305,7 +305,7 @@
             "title": "Event Id"
           },
           "file": {
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "type": "string"
           }
@@ -319,7 +319,7 @@
       "Body_upload_records_api_admin_events__event_id__university_records_post": {
         "properties": {
           "file": {
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "type": "string"
           }
@@ -1703,6 +1703,18 @@
       "ScannerLoginRequest": {
         "additionalProperties": false,
         "properties": {
+          "event_id": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
           "password": {
             "minLength": 1,
             "title": "Password",
@@ -2575,6 +2587,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [

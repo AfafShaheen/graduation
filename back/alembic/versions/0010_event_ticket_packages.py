@@ -134,10 +134,10 @@ def downgrade() -> None:
     op.add_column("tickets", sa.Column("ticket_type", ticket_type, nullable=True))
     op.execute(
         """
-        UPDATE tickets SET ticket_type = CASE
+        UPDATE tickets SET ticket_type = (CASE
             WHEN companions_count <= 2 THEN 'TWO_COMPANIONS'
             ELSE 'THREE_COMPANIONS'
-        END
+        END)::ticket_type
         """
     )
     op.alter_column("tickets", "ticket_type", nullable=False)

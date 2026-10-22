@@ -60,9 +60,10 @@ def _create_event_payload(college_names):
         "registration_start": "2025-01-01T00:00:00+00:00",
         "registration_end": "2031-01-01T00:00:00+00:00",
         "whatsapp_group_link": "https://chat.whatsapp.com/test",
-        "is_3companions_enabled": True,
-        "price_2_companions": "100000",
-        "price_3_companions": "150000",
+        "packages": [
+            {"companions_count": 2, "price": "100000"},
+            {"companions_count": 3, "price": "150000"},
+        ],
         "college_names": college_names,
     }
 

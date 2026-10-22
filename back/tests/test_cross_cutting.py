@@ -103,7 +103,10 @@ _PUBLIC_ROUTES = {
     ("POST", "/api/auth/reset-password"),
     ("POST", "/api/auth/change-email"),
     ("POST", "/api/auth/graduate/login"),
+    ("POST", "/api/auth/graduate/refresh"),
     ("POST", "/api/auth/graduate/logout"),
+    ("POST", "/api/admin/auth/refresh"),
+    ("POST", "/api/scanner/auth/refresh"),
     ("POST", "/api/admin/auth/login"),
     ("POST", "/api/scanner/auth/login"),
 }
@@ -215,9 +218,10 @@ async def test_end_to_end_flow(client, db, make_admin, sent_otps):
             "registration_start": "2025-01-01T00:00:00Z",
             "registration_end": "2031-01-01T00:00:00Z",
             "whatsapp_group_link": "https://chat.whatsapp.com/e2e",
-            "is_3companions_enabled": True,
-            "price_2_companions": "100000",
-            "price_3_companions": "150000",
+            "packages": [
+                {"companions_count": 2, "price": "100000"},
+                {"companions_count": 3, "price": "150000"},
+            ],
             "college_names": ["كلية الهندسة"],
         },
         headers=admin_headers,
@@ -321,7 +325,7 @@ async def test_end_to_end_flow(client, db, make_admin, sent_otps):
 
     select = await client.post(
         "/api/graduates/me/ticket",
-        json={"ticket_type": "TWO_COMPANIONS", "confirm": True},
+        json={"companions_count": 2, "confirm": True},
         headers=graduate_headers,
     )
     assert select.status_code == 201, select.text

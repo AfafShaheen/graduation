@@ -44,7 +44,7 @@ async def _processing_ticket(
     amount=100000,
     price=100000,
     submitted_at=None,
-    ticket_type=2,
+    companions_count=2,
 ):
     if event is None:
         event = await make_event()
@@ -55,7 +55,7 @@ async def _processing_ticket(
     ticket = await make_ticket(
         graduate.id,
         event.id,
-        ticket_type=ticket_type,
+        companions_count=companions_count,
         status=TicketStatusEnum.PROCESSING,
         price=price,
     )

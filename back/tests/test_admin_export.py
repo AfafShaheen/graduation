@@ -23,7 +23,7 @@ _HEADERS = [
     "البريد الإلكتروني",
     "الهاتف",
     "البريد موثّق",
-    "نوع التذكرة",
+    "باقة المرافقين",
     "عدد المرافقين",
     "السعر",
     "حالة التذكرة",
@@ -117,7 +117,7 @@ async def test_export_single_event_headers_and_values(
     assert first[6] == "سعاد"
     assert first[7] == "grad1001" + _AT + _DOMAIN
     assert first[9] == "نعم"
-    assert first[10] == "TWO_COMPANIONS"
+    assert first[10] == "2 مرافقين"
     assert first[11] == 2
     assert first[12] == 100000.0
     assert first[13] == "PROCESSING"

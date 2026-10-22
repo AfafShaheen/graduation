@@ -14,7 +14,7 @@ function formatDate(value) {
       month: '2-digit',
       day: '2-digit',
     });
-  } catch (e) {
+  } catch {
     return '—';
   }
 }
@@ -77,7 +77,7 @@ export default function AdminScannersSettings({
     try {
       setCreating(true);
       await createScanner(payload);
-      setNotice(`تمت إضافة الماسح الميداني: ${username}`);
+      setNotice(`تمت إضافة الماسح الميداني: ${username} — ${eventName(scannerEventId)}`);
       setNewScannerUser('');
       setNewScannerPass('');
       await refetchScanners();
@@ -90,11 +90,11 @@ export default function AdminScannersSettings({
 
   const handleDeleteScanner = async (item) => {
     setActionError('');
-    if (!window.confirm(`هل تريد إلغاء حساب الماسح "${item.username}"؟ لا يمكن التراجع.`)) return;
+    if (!window.confirm(`هل تريد إلغاء حساب الماسح "${item.username}" في ${eventName(item.event_id)}؟ لا يمكن التراجع.`)) return;
     try {
       setDeletingId(item.id);
       await deleteScanner(item.id);
-      setNotice(`تم إلغاء حساب ${item.username}`);
+      setNotice(`تم إلغاء حساب ${item.username} — ${eventName(item.event_id)}`);
       await refetchScanners();
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
@@ -191,6 +191,9 @@ export default function AdminScannersSettings({
                     />
                     <span className="scan-set-symbol scan-set-input-icon right">account_circle</span>
                   </div>
+                  <p className="scan-set-hint">
+                    يمكن تكرار اسم المستخدم بين الحفلات، لكن ليس داخل الحفل نفسه.
+                  </p>
                 </div>
 
                 <div className="scan-set-field">

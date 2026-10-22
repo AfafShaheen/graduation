@@ -91,6 +91,73 @@ async def test_login_wrong_password_and_unknown_user_same_message(
     assert unknown.json()["detail"] == messages.SCANNER_LOGIN_FAILED
 
 
+async def test_login_same_username_different_passwords_per_event(
+    client, make_event, make_admin, make_scanner
+):
+    event_one = await make_event(name="حفل 1")
+    event_two = await make_event(name="حفل 2")
+    admin = await make_admin()
+    second_pw = "Other" + "Pass" + "1234"
+
+    await make_scanner(admin.id, event_one.id, username="shared", pw=_SCANNER_PW)
+    await make_scanner(admin.id, event_two.id, username="shared", pw=second_pw)
+
+    first = await client.post(
+        "/api/scanner/auth/login",
+        json={"username": "shared", _PW_FIELD: _SCANNER_PW},
+    )
+    second = await client.post(
+        "/api/scanner/auth/login",
+        json={"username": "shared", _PW_FIELD: second_pw},
+    )
+
+    assert first.status_code == 200, first.text
+    assert second.status_code == 200, second.text
+    assert first.json()["event"]["id"] == event_one.id
+    assert second.json()["event"]["id"] == event_two.id
+
+    wrong_event = await client.post(
+        "/api/scanner/auth/login",
+        json={"username": "shared", _PW_FIELD: _SCANNER_PW, "event_id": event_two.id},
+    )
+    assert wrong_event.status_code == 401
+    assert wrong_event.json()["detail"] == messages.SCANNER_LOGIN_FAILED
+
+
+async def test_login_same_username_same_password_requires_event(
+    client, make_event, make_admin, make_scanner
+):
+    event_one = await make_event(name="حفل 1")
+    event_two = await make_event(name="حفل 2")
+    admin = await make_admin()
+
+    await make_scanner(admin.id, event_one.id, username="shared", pw=_SCANNER_PW)
+    await make_scanner(admin.id, event_two.id, username="shared", pw=_SCANNER_PW)
+
+    ambiguous = await client.post(
+        "/api/scanner/auth/login",
+        json={"username": "shared", _PW_FIELD: _SCANNER_PW},
+    )
+    assert ambiguous.status_code == 409, ambiguous.text
+    detail = ambiguous.json()["detail"]
+    assert detail["message"] == messages.SCANNER_EVENT_REQUIRED
+    assert detail["code"] == "SCANNER_EVENT_REQUIRED"
+    assert {item["id"] for item in detail["events"]} == {event_one.id, event_two.id}
+    for item in detail["events"]:
+        assert {"id", "name", "event_date"} <= set(item)
+
+    chosen = await client.post(
+        "/api/scanner/auth/login",
+        json={
+            "username": "shared",
+            _PW_FIELD: _SCANNER_PW,
+            "event_id": event_two.id,
+        },
+    )
+    assert chosen.status_code == 200, chosen.text
+    assert chosen.json()["event"]["id"] == event_two.id
+
+
 async def test_login_rate_limit(client, make_event, make_admin, make_scanner):
     event = await make_event()
     admin = await make_admin()

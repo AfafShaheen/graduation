@@ -12,7 +12,7 @@ from app.models.ticket import TicketModel, TicketStatusEnum
 
 _PW_FIELD = "pass" + "word"
 _GRAD_PW = "Grad" + "Pass" + "1234"
-_SELECT_BODY = {"ticket_type": "TWO_COMPANIONS", "confirm": True}
+_SELECT_BODY = {"companions_count": 2, "confirm": True}
 _PAYMENT_BODY = {
     "transaction_number": "ABC-1234",
     "amount": 100000,
