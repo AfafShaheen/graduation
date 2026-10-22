@@ -78,7 +78,7 @@ export default function SelectTicket({ onBack }) {
       navigate('/payment');
     } catch (err) {
       if (err?.status === 409) {
-        setActionError(err?.data?.detail || err?.message || 'تعذّر تأكيد الاختيار.');
+        setActionError(err?.message || 'تعذّر تأكيد الاختيار.');
         await load();
       } else {
         setActionError(err?.message || 'تعذّر تأكيد الاختيار، حاول لاحقاً.');

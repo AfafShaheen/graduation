@@ -5,6 +5,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { loginGraduate } from '../../api/graduate';
 import { setGraduateSession, setVerificationToken, setGraduateEmail } from '../../api/session';
 import { extractVerificationToken } from '../../utils/extractVerificationToken.js';
+import ContactPhoneLink from '../../components/ContactPhoneLink';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -96,10 +97,8 @@ export default function Login({
         setVerificationToken(verificationValue);
         setGraduateEmail(formData.email.trim());
         if (onLoginSuccess) onLoginSuccess({ email: formData.email.trim(), needsVerification: true });
-      } else if (err.status === 401) {
-        setServerError('البريد الإلكتروني أو كلمة السر غير صحيحة');
-      } else if (err.status === 429) {
-        setServerError(err.message);
+      } else if (err.status === 0) {
+        setServerError('تعذّر الاتصال بالخادم، حاول لاحقاً');
       } else {
         setServerError(err.message || 'حدث خطأ غير متوقع');
       }
@@ -296,6 +295,7 @@ export default function Login({
 
           {/* تذييل الصفحة */}
           <footer className="lg-footer">
+            <ContactPhoneLink style={{ margin: '0 0 8px', fontWeight: 600 }} />
             <p className="lg-footer-org">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
             <p className="lg-footer-copy">منظومة الحجز والتحقق الإلكتروني لتذاكر التخرج © 2026</p>
           </footer>

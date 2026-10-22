@@ -172,6 +172,35 @@ async def test_register_step2_rechecks_window_and_closes(
     assert resp.json()["detail"] == messages.REGISTRATION_CLOSED
 
 
+async def test_register_step2_email_already_used_message(
+    client, make_event, make_college, make_graduate
+):
+    event = await make_event()
+    college = await make_college(event.id)
+    existing_email = _email("already-used")
+    await make_graduate(college.id, university_id="800006", email=existing_email)
+
+    signup_value = create_registration_token(_payload(college.id, "800007"))
+    resp = await client.post(
+        "/api/graduates/register",
+        json=_register_body(signup_value, existing_email),
+    )
+
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == messages.EMAIL_ALREADY_USED
+
+
+async def test_register_step2_no_event_for_college_message(client):
+    signup_value = create_registration_token(_payload(999999, "800008"))
+    resp = await client.post(
+        "/api/graduates/register",
+        json=_register_body(signup_value, _email("no-event")),
+    )
+
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == messages.NO_EVENT_FOR_COLLEGE
+
+
 async def test_public_colleges_returns_all_names(client, make_event, make_college):
     event = await make_event()
     await make_college(event.id, name="كلية الأ")

@@ -40,6 +40,16 @@ async def _register_fail(db: AsyncSession) -> str:
     return messages.append_contact_phone(messages.REGISTER_FAIL, phone)
 
 
+async def _email_already_used(db: AsyncSession) -> str:
+    phone = await get_setting(db, CONTACT_PHONE)
+    return messages.append_contact_phone(messages.EMAIL_ALREADY_USED, phone)
+
+
+async def _no_event_for_college(db: AsyncSession) -> str:
+    phone = await get_setting(db, CONTACT_PHONE)
+    return messages.append_contact_phone(messages.NO_EVENT_FOR_COLLEGE, phone)
+
+
 def normalize_arabic(text: str) -> str:
     if not text:
         return ""
@@ -95,7 +105,7 @@ def decode_registration_token(token: str) -> dict:
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Registration session expired. Please redo Step 1 (انتهت جلسة التسجيل. يرجى إعادة الخطوة الأولى.)"
+            detail="انتهت جلسة التسجيل. يرجى إعادة الخطوة الأولى."
         )
 
 
@@ -264,14 +274,14 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
     if not university_id or not college_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Registration session expired. Please redo Step 1 (انتهت جلسة التسجيل. يرجى إعادة الخطوة الأولى.)"
+            detail="انتهت جلسة التسجيل. يرجى إعادة الخطوة الأولى."
         )
 
     event = await get_college_event(db, college_id)
     if event is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=await _register_fail(db)
+            detail=await _no_event_for_college(db)
         )
     await ensure_registration_open(event)
 
@@ -281,7 +291,7 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
     if email_check.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=await _register_fail(db)
+            detail=await _email_already_used(db)
         )
 
     password_hash = bcrypt.hashpw(data.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
@@ -318,7 +328,7 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
     sent = await issue_and_send_otp(db, new_graduate, OtpPurpose.EMAIL_VERIFICATION, new_graduate.email)
 
     message = (
-        "تم إنشاء الحساب بنجاح. يرجى إدخال رمز التحقق (OTP) المرسل إلى بريدك الإلكتروني لتفعيله."
+        "تم إنشاء الحساب بنجاح. يرجى إدخال رمز التحقق المرسل إلى بريدك الإلكتروني لتفعيله."
         if sent
         else messages.REGISTER_PARTIAL
     )

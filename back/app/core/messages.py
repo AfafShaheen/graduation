@@ -4,7 +4,10 @@ Keep every new or touched message here so wording stays consistent and no
 endpoint leaks which field mismatched (SRS FR-2, FR-6, NFR privacy).
 """
 
-GENERIC_VERIFY_FAIL = "ما قدرنا نتحقق من بياناتك، يرجى مراجعتها أو التواصل مع الاتحاد"
+GENERIC_VERIFY_FAIL = (
+    "ما قدرنا نتحقق من بياناتك، يرجى التأكد من الرقم الجامعي والاسم والكلية والمعدل "
+    "كما هي مسجلة في سجلات الجامعة، أو التواصل مع الاتحاد"
+)
 
 # D11: the only *specific* verification failure (a top-student mismatch). The
 # real rank is never revealed and the same status as the generic failure is used
@@ -23,6 +26,11 @@ TOP_RANK_MISMATCH = (
 )
 UNIVERSITY_ID_ALREADY_REGISTERED = "رقمك الجامعي مسجل مسبقاً"
 REGISTER_FAIL = "تعذّر إكمال التسجيل، يرجى مراجعة بياناتك أو التواصل مع الاتحاد"
+EMAIL_ALREADY_USED = (
+    "هذا البريد الإلكتروني مستخدم بحساب آخر. إذا كان حسابك، سجّل الدخول أو استخدم "
+    "«نسيت كلمة السر»."
+)
+NO_EVENT_FOR_COLLEGE = "لا يوجد حفل مفتوح لكليتك حالياً"
 OTP_INVALID_GENERIC = "رمز التحقق غير صحيح أو منتهي الصلاحية"
 EMAIL_SEND_FAIL = "تعذّر إرسال رمز التحقق حالياً، يرجى المحاولة بعد قليل"
 REGISTER_PARTIAL = "تم إنشاء الحساب لكن تعذّر إرسال رمز التحقق، يرجى طلب إعادة الإرسال"

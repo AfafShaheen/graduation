@@ -6,6 +6,7 @@ import useMyTicket from '../../hooks/useMyTicket';
 import { getMyProfile } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
+import ContactPhoneLink from '../../components/ContactPhoneLink';
 
 const formatEventDate = (value) => {
   if (!value) return '';
@@ -289,6 +290,7 @@ export default function MyTicket() {
           </div>
 
           <footer className="tk-footer">
+            <ContactPhoneLink style={{ margin: '0 0 6px', fontSize: '13px' }} />
             <p className="tk-footer-main">جامعة حمص • حفل تخرج الدفعة 44</p>
             <p className="tk-footer-sub">بالتعاون مع فرع حمص لاتحاد الطلبة</p>
           </footer>

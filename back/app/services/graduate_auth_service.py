@@ -105,7 +105,7 @@ async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
-                "message": "البريد الإلكتروني غير مؤكد بعد. يرجى تأكيد البريد عبر رمز OTP أولاً.",
+                "message": "البريد الإلكتروني غير مؤكد بعد. يرجى تأكيد البريد عبر رمز التحقق أولاً.",
                 _VERIFICATION_FIELD: verification_value,
             },
         )
