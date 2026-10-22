@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import List, Optional, Dict, Any
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from sqlalchemy.orm import selectinload
 from app.models.event import EventModel
 from app.models.college import CollegeModel
@@ -18,7 +18,10 @@ from app.core.redis import redis_client
 from app.core import messages
 from app.services.graduate_service import normalize_arabic
 from app.services.audit_log import ActorType, record_audit
-from app.services.college_links import assert_windows_do_not_overlap
+from app.services.college_links import (
+    assert_windows_do_not_overlap,
+    colleges_for_event,
+)
 
 
 def _normalize_college_key(name: str) -> str:
@@ -263,6 +266,7 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
     update_data = data.model_dump(exclude_unset=True)
 
     packages = update_data.pop("packages", None)
+    college_names = update_data.pop("college_names", None)
 
     # FR-16: Package definitions are frozen once registration starts.
     if packages is not None:
@@ -290,31 +294,88 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
                 detail=messages.SEAT_PREFIX_LOCKED,
             )
 
-    # P5.3: a changed registration window may not overlap with another event
-    # that shares one of this event's colleges.
-    new_start = update_data.get("registration_start", ev.registration_start)
-    new_end = update_data.get("registration_end", ev.registration_end)
-    existing_college_ids = list(
-        (
-            await db.execute(
-                select(EventCollegeModel.college_id).where(
-                    EventCollegeModel.event_id == event_id
+    # College links are optional on update: when omitted nothing changes. When
+    # sent, the list replaces the current links (additions are always allowed;
+    # removals are blocked while graduates of that college are registered).
+    current_colleges = await colleges_for_event(db, event_id)
+    current_college_ids = {college.id for college in current_colleges}
+    to_add: list[CollegeModel] = []
+    to_remove: list[CollegeModel] = []
+    final_college_ids = list(current_college_ids)
+
+    if college_names is not None:
+        deduped_names = _dedupe_college_names(college_names)
+        if not deduped_names:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="يجب اختيار كلية واحدة على الأقل لهذا الحفل.",
+            )
+
+        desired_colleges = await _resolve_colleges_for_event(db, deduped_names)
+        desired_college_ids = {college.id for college in desired_colleges}
+        to_add = [
+            college
+            for college in desired_colleges
+            if college.id not in current_college_ids
+        ]
+        to_remove = [
+            college
+            for college in current_colleges
+            if college.id not in desired_college_ids
+        ]
+
+        for college in to_remove:
+            registered = await db.scalar(
+                select(func.count(TicketModel.id))
+                .join(GraduateModel, GraduateModel.id == TicketModel.graduate_id)
+                .where(
+                    TicketModel.event_id == event_id,
+                    GraduateModel.college_id == college.id,
                 )
             )
-        )
-        .scalars()
-        .all()
-    )
+            if registered:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=messages.college_removal_blocked(
+                        college.name, int(registered)
+                    ),
+                )
+
+        final_college_ids = [college.id for college in desired_colleges]
+
+    # P5.3: a changed registration window may not overlap with another event
+    # that shares one of the event's colleges (after the change).
+    new_start = update_data.get("registration_start", ev.registration_start)
+    new_end = update_data.get("registration_end", ev.registration_end)
     await assert_windows_do_not_overlap(
         db,
-        existing_college_ids,
+        final_college_ids,
         new_start,
         new_end,
         exclude_event_id=event_id,
+        status_code=(
+            status.HTTP_409_CONFLICT
+            if college_names is not None
+            else status.HTTP_400_BAD_REQUEST
+        ),
     )
 
     for key, value in update_data.items():
         setattr(ev, key, value)
+
+    if college_names is not None:
+        if to_remove:
+            await db.execute(
+                delete(EventCollegeModel).where(
+                    EventCollegeModel.event_id == event_id,
+                    EventCollegeModel.college_id.in_(
+                        [college.id for college in to_remove]
+                    ),
+                )
+            )
+        for college in to_add:
+            db.add(EventCollegeModel(event_id=event_id, college_id=college.id))
+        await db.flush()
 
     if packages is not None:
         await db.execute(
@@ -342,6 +403,19 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
         f"Updated event details for '{ev.name}'",
         event_id=event_id,
     )
+
+    if college_names is not None and (to_add or to_remove):
+        added_names = ", ".join(college.name for college in to_add) or "—"
+        removed_names = ", ".join(college.name for college in to_remove) or "—"
+        await record_audit(
+            db,
+            ActorType.ADMIN,
+            admin["admin_id"],
+            "EVENT_COLLEGES_UPDATED",
+            f"Event ID {event_id}",
+            f"Added colleges: {added_names}; Removed colleges: {removed_names}",
+            event_id=event_id,
+        )
 
     await db.commit()
     await invalidate_events_cache()

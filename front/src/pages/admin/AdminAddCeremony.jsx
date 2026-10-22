@@ -37,6 +37,14 @@ const makePackage = (companions = '2', price = '') => ({
 /* باقة بديلة ثابتة: بتضمن وجود بطاقة واحدة على الأقل حتى لو المسودة فاضية */
 const FALLBACK_PACKAGE = { id: 'pkg-fallback', companions: '2', price: '' };
 
+/* مقارنة مجموعتَي معرّفات بغض النظر عن الترتيب */
+const sameIdSet = (a, b) => {
+  const left = Array.isArray(a) ? a : [];
+  const right = Array.isArray(b) ? b : [];
+  if (left.length !== right.length) return false;
+  return left.every((id) => right.includes(id));
+};
+
 /* تحويل الباقات القادمة من الخادم (أو من المسودة) إلى الشكل المحلي */
 const toLocalPackages = (list) => {
   const source = Array.isArray(list) ? list : [];
@@ -163,9 +171,10 @@ export default function AdminAddCeremony({
 
   const [selectedCollegeIds, setSelectedCollegeIds] = useFormDraft(
     draftKey('collegeIds'),
-    [],
+    isEdit ? ceremony?.collegeIds || [] : [],
     { storage: 'local' },
   );
+  const [collegeError, setCollegeError] = useState('');
 
   // إغلاق القائمة بزر Escape
   useEffect(() => {
@@ -175,9 +184,18 @@ export default function AdminAddCeremony({
   }, []);
 
   const handleCollegeToggle = (id) => {
+    setCollegeError('');
     setSelectedCollegeIds((prev) => {
       const list = Array.isArray(prev) ? prev : [];
       return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+    });
+  };
+
+  const handleCollegeRemove = (id) => {
+    setCollegeError('');
+    setSelectedCollegeIds((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      return list.filter((x) => x !== id);
     });
   };
 
@@ -367,11 +385,21 @@ export default function AdminAddCeremony({
     e.preventDefault();
     setSubmitError('');
     setFieldErrors({});
+    setCollegeError('');
 
-    if (!isEdit && selectedCollegeNames().length === 0) {
+    if (catalogLoading) {
+      setSubmitError('جارٍ تحميل قائمة الكليات، حاول بعد لحظات.');
+      return;
+    }
+
+    const collegeNames = selectedCollegeNames();
+    if (collegeNames.length === 0) {
       setSubmitError('اختر كلية واحدة على الأقل لهذا الحفل');
       return;
     }
+
+    const collegesChanged =
+      isEdit && !sameIdSet(selectedCollegeIds, ceremony?.collegeIds || []);
 
     const { errors: pkgErrors, payload: pkgPayload } = packagesPayload();
     if (pkgErrors.length > 0) {
@@ -400,9 +428,10 @@ export default function AdminAddCeremony({
         const payload = { ...base };
         // الباقات ما بتتعدّل بعد بدء التسجيل (الخادم بيرفض الطلب عندها)
         if (!packagesLocked) payload.packages = pkgPayload;
+        // نرسل الكليات فقط إذا تغيّرت القائمة، حتى ما نلمسها بطلب لا يخصها
+        if (collegesChanged) payload.college_names = collegeNames;
         result = await updateAdminEvent(eventId, payload);
       } else {
-        const collegeNames = selectedCollegeNames();
         result = await createAdminEvent({
           ...base,
           packages: pkgPayload,
@@ -427,6 +456,8 @@ export default function AdminAddCeremony({
       if (err instanceof ApiError && err.status === 422 && err.fieldErrors) {
         setFieldErrors(err.fieldErrors);
         setSubmitError('يرجى تصحيح الحقول المميّزة بالأحمر ثم إعادة المحاولة.');
+      } else if (collegesChanged && err instanceof ApiError && err.status === 409) {
+        setCollegeError(err.message || 'تعذّر تعديل كليات الحفل.');
       } else {
         setSubmitError(
           err instanceof ApiError && err.status >= 500
@@ -492,7 +523,7 @@ export default function AdminAddCeremony({
                 <h3>{isEdit ? 'بيانات حفل التخرج' : 'بيانات حفل التخرج الجديد'}</h3>
                 <p>
                   {isEdit
-                    ? 'عدّل بيانات الحفل، والكليات المرتبطة غير قابلة للتغيير بعد الإنشاء.'
+                    ? 'عدّل بيانات الحفل والكليات المرتبطة به، مع مراعاة شروط الإضافة والإزالة.'
                     : 'عبّي بيانات الفوج الجديد برواق، وبتنزل التذاكر فوراً عالمنظومة للطلاب.'}
                 </p>
               </div>
@@ -639,7 +670,9 @@ export default function AdminAddCeremony({
                   <span>الكليات التابعة لهذا الحفل {!isEdit && <span className="add-cer-req">*</span>}</span>
                 </h4>
                 <span className="add-cer-hint">
-                  {isEdit ? 'الكليات مرتبطة منذ الإنشاء وغير قابلة للتعديل' : 'حدد الكليات المشمولة بهذا الفوج للتوزيع على المدرج'}
+                  {isEdit
+                    ? 'أضف كلية جديدة، أو أزل كلية لا يوجد فيها خريجون مسجّلون بهذا الحفل'
+                    : 'حدد الكليات المشمولة بهذا الفوج للتوزيع على المدرج'}
                 </span>
               </div>
 
@@ -647,9 +680,9 @@ export default function AdminAddCeremony({
                 colleges={catalogColleges}
                 selectedIds={selectedCollegeIds}
                 onToggle={handleCollegeToggle}
-                readOnlyNames={isEdit ? ceremony?.collegeNames || [] : null}
+                onRemove={isEdit ? handleCollegeRemove : undefined}
                 loading={catalogLoading}
-                error={errFor('college_names') || errFor('colleges')}
+                error={collegeError || errFor('college_names') || errFor('colleges')}
               />
             </div>
 

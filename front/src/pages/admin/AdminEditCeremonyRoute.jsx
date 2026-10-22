@@ -93,6 +93,9 @@ export default function AdminEditCeremonyRoute({
     collegeNames: Array.isArray(event.colleges)
       ? event.colleges.map((c) => c.name).filter(Boolean)
       : [],
+    collegeIds: Array.isArray(event.colleges)
+      ? event.colleges.map((c) => c.id).filter((cid) => cid != null)
+      : [],
   };
 
   const registrationStarted = (() => {

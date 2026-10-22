@@ -68,6 +68,7 @@ class EventUpdate(BaseModel):
     registration_end: Optional[datetime] = None
     whatsapp_group_link: Optional[str] = None
     packages: Optional[List[PackageItem]] = None
+    college_names: Optional[List[str]] = Field(None, min_items=1)
 
     @field_validator("seat_prefix")
     @classmethod

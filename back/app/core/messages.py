@@ -74,6 +74,16 @@ SETTINGS_UPDATED = "تم تحديث الإعدادات بنجاح"
 SHAMCASH_QR_UPDATED = "تم تحديث رمز دفع الشام كاش بنجاح"
 SHAMCASH_QR_DELETED = "تم حذف رمز دفع الشام كاش"
 SEAT_PREFIX_LOCKED = "لا يمكن تعديل بادئة المقاعد بعد تخصيص مقاعد لتذاكر هذا الحفل"
+COLLEGE_HAS_REGISTERED_GRADUATES = (
+    "لا يمكن إزالة الكلية «{name}» من الحفل لوجود {count} من الخريجين المسجلين فيها."
+)
+
+
+def college_removal_blocked(college_name: str, registered_count: int) -> str:
+    """409 message for removing a college that still has registered graduates."""
+    return COLLEGE_HAS_REGISTERED_GRADUATES.format(
+        name=college_name, count=registered_count
+    )
 
 TICKET_STATUS_AWAITING_PAYMENT = "تذكرتك بانتظار إتمام الدفع"
 TICKET_STATUS_PROCESSING = "تم استلام بيانات دفعك والاتحاد يراجعها حالياً"
@@ -106,6 +116,7 @@ AUDIT_ROLE_LABELS = {
 AUDIT_ACTION_LABELS = {
     "CREATE_EVENT": "إنشاء حفل",
     "UPDATE_EVENT": "تعديل حفل",
+    "EVENT_COLLEGES_UPDATED": "تعديل كليات الحفل",
     "DELETE_EVENT": "حذف حفل",
     "UPLOAD_UNIVERSITY_RECORDS": "رفع سجلات جامعية",
     "DELETE_UNIVERSITY_RECORD": "حذف سجل جامعي",
