@@ -4,6 +4,7 @@ import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { request } from '../../api/client';
 import { setScannerSession } from '../../api/session';
+import ContactPhoneLink from '../../components/ContactPhoneLink';
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
@@ -80,11 +81,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
         return;
       }
       setEventChoices([]);
-      setServerError(
-        err.status === 401
-          ? 'بيانات الدخول غير صحيحة أو الحساب غير مفعّل'
-          : err.message
-      );
+      setServerError(err.message || 'تعذّر تسجيل الدخول، حاول لاحقاً');
     } finally {
       setLoading(false);
     }
@@ -283,6 +280,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
               </span>
               <p>في حال واجهت مشكلة، تواصل فوراً مع مشرف الاتحاد في الميدان</p>
             </div>
+            <ContactPhoneLink style={{ margin: '8px 0 0', fontSize: '13px' }} />
           </footer>
         </div>
       </main>

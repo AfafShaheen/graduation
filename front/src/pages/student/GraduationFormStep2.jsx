@@ -7,6 +7,7 @@ import useFormDraft from "../../hooks/useFormDraft";
 import { registerStep2 } from "../../api/graduate";
 import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegistrationToken } from "../../api/session";
 import { phoneError, passwordError } from "../../utils/validators";
+import ContactPhoneLink from "../../components/ContactPhoneLink";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -126,7 +127,7 @@ export default function GraduationFormStep2({
         const firstField = Object.keys(err.fieldErrors)[0];
         document.getElementById(fieldIds[firstField])?.focus();
       } else if (err.status === 401) {
-        setErrors({ general: 'انتهت الجلسة، يرجى إعادة الخطوة الأولى' });
+        setErrors({ general: err.message || 'انتهت الجلسة، يرجى إعادة الخطوة الأولى' });
       } else if (err.status === 400 || err.status === 403) {
         setErrors({ general: err.message });
       } else {
@@ -421,6 +422,8 @@ export default function GraduationFormStep2({
             padding: "8px 16px",
           }}
         >
+          <ContactPhoneLink style={{ margin: "0 0 6px", fontSize: "13px" }} />
+
           <p className="footer-copy">
             جامعة حمص — حمص • فرع الاتحاد الوطني لطلبة سورية
           </p>

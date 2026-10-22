@@ -203,7 +203,7 @@ export default function ShamCashPayment({ onBack }) {
       if (err?.status === 409) {
         setErrors((prev) => ({
           ...prev,
-          transactionId: err?.data?.detail || err?.message || 'رقم العملية مستخدم مسبقاً.',
+          transactionId: err?.message || 'رقم العملية مستخدم مسبقاً.',
         }));
       } else if (err?.status === 422 && err?.fieldErrors) {
         setErrors((prev) => ({ ...prev, ...err.fieldErrors }));

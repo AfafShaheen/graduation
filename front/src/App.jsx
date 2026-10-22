@@ -253,7 +253,6 @@ function App() {
           element={
             hasValidGraduate || PREVIEW ? (
               <GraduateGuide
-                supportPhone="" // رقم اتحاد الطلبة (اختياري)
                 onContinue={({ dontShowAgain }) => {
                   if (dontShowAgain) saveSkipGuide();
                   navigate("/tickets", { replace: true });

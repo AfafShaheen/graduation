@@ -4,6 +4,7 @@ import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
 import { setRegistrationToken } from '../../api/session';
+import ContactPhoneLink from '../../components/ContactPhoneLink';
 
 /* حروف عربية ومسافات فقط (بدون أرقام أو رموز) */
 const ARABIC_ONLY = /^[\u0621-\u064A\u064B-\u0652\s]+$/;
@@ -204,7 +205,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
           setErrors({ general: err.message });
         }
       } else if (err.status === 429) {
-        setErrors({ general: 'تم تجاوز الحد المسموح من المحاولات، يرجى الانتظار' });
+        setErrors({ general: err.message });
       } else {
         setErrors({ general: err.message || 'حدث خطأ غير متوقع' });
       }
@@ -525,6 +526,8 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               تسجيل دخول
             </button>
           </p>
+
+          <ContactPhoneLink style={{ margin: '8px 0 0', fontSize: '13px' }} />
 
           <p className="footer-copy">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
         </div>

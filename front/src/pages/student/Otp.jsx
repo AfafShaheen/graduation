@@ -3,6 +3,7 @@ import '../../style/Otp.css';
 import unionLogo from '../../assets/only-logo.png';
 import { verifyOtp, resendOtp, changeEmail, forgotPassword } from '../../api/graduate';
 import { setGraduateSession, clearVerificationToken, setVerificationToken, setGraduateEmail, getVerificationToken, getGraduateEmail, setResetCode, clearResetFlow } from '../../api/session';
+import ContactPhoneLink from '../../components/ContactPhoneLink';
 
 const CODE_LENGTH = 6;
 const CODE_LIFETIME = 600;
@@ -146,7 +147,7 @@ export default function Otp({
         clearVerificationToken();
         setStatus('error');
         setErrorKind('failed');
-        setServerError('انتهت الجلسة، يرجى تسجيل الدخول لإكمال تأكيد البريد');
+        setServerError(err.message || 'انتهت الجلسة، يرجى تسجيل الدخول لإكمال تأكيد البريد');
         return;
       }
 
@@ -240,7 +241,7 @@ export default function Otp({
         setNotice('تم إرسال رمز جديد إلى بريدك الإلكتروني');
         inputRefs.current[0]?.focus();
       } catch (err) {
-        setServerError(err.status === 429 ? err.message : (firstFieldError(err) || 'تعذّر إعادة إرسال الرمز، حاول لاحقاً'));
+        setServerError(firstFieldError(err) || err.message || 'تعذّر إعادة إرسال الرمز، حاول لاحقاً');
       }
       return;
     }
@@ -251,7 +252,7 @@ export default function Otp({
       setNotice('تم إرسال رمز جديد إلى بريدك الإلكتروني');
       inputRefs.current[0]?.focus();
     } catch (err) {
-      setServerError(err.status === 429 ? err.message : 'تعذّر إعادة إرسال الرمز، حاول لاحقاً');
+      setServerError(firstFieldError(err) || err.message || 'تعذّر إعادة إرسال الرمز، حاول لاحقاً');
     }
   };
 
@@ -516,6 +517,7 @@ export default function Otp({
               {status === 'success' ? 'check_circle' : 'arrow_back'}
             </span>
           </button>
+          <ContactPhoneLink style={{ margin: '4px 0', fontSize: '13px' }} />
           <p className="ev-institutional-label">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
         </div>
       </main>

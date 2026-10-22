@@ -3,6 +3,7 @@ import '../../style/GraduationForm.css';
 import '../../style/GraduateGuide.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
+import useContactPhone from '../../hooks/useContactPhone';
 
 /* ==========================================================================
    دليل التذكرة: صفحة إرشادات بتظهر بعد تسجيل الدخول وقبل اختيار التذكرة
@@ -94,6 +95,9 @@ function Warning({ children, tone = 'orange' }) {
   supportPhone: رقم اتحاد الطلبة (اختياري)، إن مررته بيظهر بنهاية الصفحة
 */
 export default function GraduateGuide({ onContinue, supportPhone = '' }) {
+  const cachedContactPhone = useContactPhone();
+  const contactPhone = supportPhone || cachedContactPhone;
+
   const [acknowledged, setAcknowledged] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
@@ -214,15 +218,20 @@ export default function GraduateGuide({ onContinue, supportPhone = '' }) {
           <section className="guide-closing">
             <span className="material-symbols-outlined">support_agent</span>
             <p>
-              لأي استفسار تواصل مع اتحاد الطلبة
-              {supportPhone ? (
+              لأي استفسار تواصل مع اتحاد الطلبة.
+              {contactPhone ? (
                 <>
-                  {' '}على الرقم <strong dir="ltr">{supportPhone}</strong>
+                  <br />
+                  للطوارئ والاستفسار:{' '}
+                  <a
+                    href={`tel:${contactPhone.replace(/\s+/g, '')}`}
+                    dir="ltr"
+                    style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 700 }}
+                  >
+                    {contactPhone}
+                  </a>
                 </>
-              ) : (
-                ' على الرقم الظاهر في الموقع'
-              )}
-              .
+              ) : null}
               <br />
               نتمنى لك حفلاً لا يُنسى! 🎓
             </p>
