@@ -109,6 +109,7 @@ export default function AdminAddCeremony({
   const [selectedFileId, setSelectedFileId] = useState('');
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkNotice, setLinkNotice] = useState('');
+  const [linkErrors, setLinkErrors] = useState([]);
 
   // تصدير الأسماء المسجّلة إلى Excel
   const [exportBusy, setExportBusy] = useState(false);
@@ -290,19 +291,39 @@ export default function AdminAddCeremony({
     setLinkBusy(true);
     setFilesError('');
     setLinkNotice('');
+    setLinkErrors([]);
     try {
-      await linkUniversityFile(Number(fileId), Number(targetEventId));
+      const res = await linkUniversityFile(Number(fileId), Number(targetEventId));
+      const errors = Array.isArray(res?.errors) ? res.errors : [];
       setDataFiles((prev) =>
         prev.map((f) =>
           String(f.id) === String(fileId)
-            ? { ...f, event_id: Number(targetEventId), status: 'imported' }
+            ? { ...f, event_id: Number(targetEventId), status: errors.length ? 'failed' : 'imported' }
             : f,
         ),
       );
-      setLinkNotice(`تم ربط الملف «${file.original_name}» بالحفل واستيراد بيانات الخريجين تبعا له.`);
+      if (errors.length > 0) {
+        setLinkErrors(errors);
+        setFilesError(`لم يتم الاستيراد: ${errors.length} أخطاء`);
+        return false;
+      }
+      const imp = res?.import;
+      if (imp) {
+        setLinkNotice(
+          `أُضيف ${imp.added ?? 0}، حُدّث ${imp.updated ?? 0}، تُجوهل ${imp.skipped ?? 0} من أصل ${imp.total ?? 0}`,
+        );
+      } else {
+        setLinkNotice(`تم ربط الملف «${file.original_name}» بالحفل واستيراد بيانات الخريجين تبعا له.`);
+      }
       return true;
     } catch (err) {
-      setFilesError(err instanceof ApiError ? err.message : 'تعذّر ربط الملف بالحفل.');
+      const msg =
+        err instanceof ApiError && err.status >= 500
+          ? `حدث خطأ في الخادم (${err.status}). أرسل وقت المحاولة للدعم. ${new Date().toISOString()}`
+          : err instanceof ApiError && err.message
+          ? err.message
+          : 'تعذّر ربط الملف بالحفل.';
+      setFilesError(msg);
       return false;
     } finally {
       setLinkBusy(false);
@@ -407,7 +428,13 @@ export default function AdminAddCeremony({
         setFieldErrors(err.fieldErrors);
         setSubmitError('يرجى تصحيح الحقول المميّزة بالأحمر ثم إعادة المحاولة.');
       } else {
-        setSubmitError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
+        setSubmitError(
+          err instanceof ApiError && err.status >= 500
+            ? `حدث خطأ في الخادم (${err.status}). أرسل وقت المحاولة للدعم. ${new Date().toISOString()}`
+            : err instanceof ApiError && err.message
+            ? err.message
+            : 'حدث خطأ غير متوقع.',
+        );
       }
     } finally {
       setSubmitting(false);
@@ -809,6 +836,37 @@ export default function AdminAddCeremony({
 
               {filesError && (
                 <p className="add-cer-file-error" role="alert">{filesError}</p>
+              )}
+
+              {linkErrors.length > 0 && (
+                <div className="add-cer-file-error" role="alert" style={{ marginTop: '8px' }}>
+                  <p style={{ fontWeight: 'bold', margin: '0 0 8px' }}>
+                    لم يتم الاستيراد: {linkErrors.length} أخطاء
+                  </p>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الصف</th>
+                          <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الحقل</th>
+                          <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>المشكلة</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {linkErrors.slice(0, 50).map((e, i) => (
+                          <tr key={i}>
+                            <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.row ?? '—'}</td>
+                            <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.field ?? '—'}</td>
+                            <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.message ?? ''}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {linkErrors.length > 50 && (
+                    <p style={{ margin: '8px 0' }}>و {linkErrors.length - 50} خطأ آخر</p>
+                  )}
+                </div>
               )}
 
               {exportError && (

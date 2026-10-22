@@ -9,6 +9,7 @@ import {
   deleteUniversityFile,
   getEvents,
   ApiError,
+  downloadBlob,
 } from '../../api/admin.js';
 
 const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
@@ -48,6 +49,7 @@ export default function AdminUniversityFiles({
   const [linkingId, setLinkingId] = useState(null);
   const [linkEventId, setLinkEventId] = useState('');
   const [confirmId, setConfirmId] = useState(null);
+  const [report, setReport] = useState(null);
 
   const loadFiles = useCallback(() => {
     setLoading(true);
@@ -57,7 +59,7 @@ export default function AdminUniversityFiles({
         setFiles(items);
       })
       .catch((e) => {
-        setError(e instanceof ApiError ? e.message : 'تعذّر تحميل ملفات البيانات.');
+        setError(apiErrorMessage(e, 'تعذّر تحميل ملفات البيانات.'));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -102,6 +104,48 @@ export default function AdminUniversityFiles({
     return '';
   };
 
+  const apiErrorMessage = (err, fallback) => {
+    if (err instanceof ApiError) {
+      if (err.status >= 500) {
+        return `حدث خطأ في الخادم (${err.status}). أرسل وقت المحاولة للدعم. ${new Date().toISOString()}`;
+      }
+      if (err.message) return err.message;
+    }
+    return fallback;
+  };
+
+  const buildReport = (res) => {
+    const errors = Array.isArray(res?.errors) ? res.errors : [];
+    if (errors.length > 0) {
+      return { type: 'error', errors };
+    }
+    const imp = res?.import;
+    if (imp) {
+      return {
+        type: 'success',
+        added: imp.added ?? 0,
+        updated: imp.updated ?? 0,
+        skipped: imp.skipped ?? 0,
+        total: imp.total ?? 0,
+      };
+    }
+    return null;
+  };
+
+  const downloadErrorsCsv = (errors) => {
+    const rows = [['الصف', 'الحقل', 'المشكلة']];
+    for (const e of errors) {
+      rows.push([e?.row ?? '', e?.field ?? '', e?.message ?? '']);
+    }
+    const csv = rows
+      .map((r) =>
+        r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+      )
+      .join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    downloadBlob(blob, 'upload-errors.csv');
+  };
+
   const handleUpload = async (file) => {
     const invalid = validateFile(file);
     if (invalid) {
@@ -110,12 +154,15 @@ export default function AdminUniversityFiles({
     }
     setBusy(true);
     setUploadError('');
+    setReport(null);
     try {
-      await uploadUniversityFile(file, uploadEventId || null);
+      const res = await uploadUniversityFile(file, uploadEventId || null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       loadFiles();
+      const r = buildReport(res);
+      if (r) setReport(r);
     } catch (err) {
-      setUploadError(err instanceof ApiError ? err.message : 'تعذّر رفع الملف.');
+      setUploadError(apiErrorMessage(err, 'تعذّر رفع الملف.'));
     } finally {
       setBusy(false);
       setDragOver(false);
@@ -129,13 +176,16 @@ export default function AdminUniversityFiles({
     }
     setBusy(true);
     setError('');
+    setReport(null);
     try {
-      await linkUniversityFile(fileId, Number(linkEventId));
+      const res = await linkUniversityFile(fileId, Number(linkEventId));
       setLinkingId(null);
       setLinkEventId('');
       loadFiles();
+      const r = buildReport(res);
+      if (r) setReport(r);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'تعذّر ربط الملف بالحفل.');
+      setError(apiErrorMessage(err, 'تعذّر ربط الملف بالحفل.'));
     } finally {
       setBusy(false);
     }
@@ -149,7 +199,7 @@ export default function AdminUniversityFiles({
       setFiles((prev) => prev.filter((f) => f.id !== fileId));
       setConfirmId(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'تعذّر حذف الملف.');
+      setError(apiErrorMessage(err, 'تعذّر حذف الملف.'));
     } finally {
       setBusy(false);
     }
@@ -267,6 +317,61 @@ export default function AdminUniversityFiles({
 
           {uploadError && (
             <p className="uf-error" role="alert">{uploadError}</p>
+          )}
+
+          {report && report.type === 'error' && (
+            <div className="uf-error" role="alert" style={{ marginTop: '12px' }}>
+              <p style={{ fontWeight: 'bold', margin: '0 0 8px' }}>
+                لم يتم الاستيراد: {report.errors.length} أخطاء
+              </p>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الصف</th>
+                      <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الحقل</th>
+                      <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>المشكلة</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.errors.slice(0, 50).map((e, i) => (
+                      <tr key={i}>
+                        <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.row ?? '—'}</td>
+                        <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.field ?? '—'}</td>
+                        <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.message ?? ''}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {report.errors.length > 50 && (
+                <p style={{ margin: '8px 0' }}>و {report.errors.length - 50} خطأ آخر</p>
+              )}
+              <button
+                type="button"
+                className="uf-btn ghost"
+                onClick={() => downloadErrorsCsv(report.errors)}
+                style={{ marginTop: '8px' }}
+              >
+                تنزيل الأخطاء (CSV)
+              </button>
+            </div>
+          )}
+
+          {report && report.type === 'success' && (
+            <div
+              role="status"
+              style={{
+                marginTop: '12px',
+                padding: '10px 12px',
+                background: '#eaf6ef',
+                color: '#1b7a4b',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+              }}
+            >
+              أُضيف {report.added}، حُدّث {report.updated}، تُجوهل {report.skipped} من أصل {report.total}
+            </div>
           )}
         </section>
 

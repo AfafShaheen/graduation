@@ -38,8 +38,8 @@ async def test_upload_missing_gpa_column_reports_error(client, db, make_event, m
         files={"file": ("rec.xlsx", file_content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
         headers={"Authorization": f"Bearer {token}"}
     )
-    assert resp.status_code == 200
-    assert any("gpa" in err or "المعدل" in err for err in resp.json()["errors"])
+    assert resp.status_code == 400
+    assert "المعدل" in resp.json()["detail"]
 
 
 async def test_upload_arabic_digits_and_comma_gpa(client, db, make_event, make_college, make_admin, make_major):
@@ -77,6 +77,7 @@ async def test_upload_unknown_major_reports_error_and_never_inserts_major(client
     )
     assert resp.status_code == 200
     assert len(resp.json()["errors"]) > 0
+    assert all(isinstance(e, dict) for e in resp.json()["errors"])
 
     majors = (await db.execute(select(MajorModel))).scalars().all()
     assert len(majors) == 0
@@ -96,7 +97,7 @@ async def test_upload_major_under_different_college_reports_error(client, db, ma
         headers={"Authorization": f"Bearer {token}"}
     )
     assert resp.status_code == 200
-    assert any("غير موجود" in err for err in resp.json()["errors"])
+    assert any("غير موجود" in err.get("message", "") for err in resp.json()["errors"])
 
 
 async def test_upload_normalization_matches_hamza_and_taamarbuta(client, db, make_event, make_college, make_admin, make_major):
@@ -164,7 +165,7 @@ async def test_upload_unlinked_college_lists_file_and_event_colleges(
     assert resp.status_code == 200, resp.text
     data = resp.json()
     assert data["added"] == 0
-    joined = "\n".join(data["errors"])
+    joined = "\n".join(e.get("message", "") for e in data["errors"])
     assert "معهد تقاني طب الاسنان" in joined
     assert "كلية الآداب" in joined
     assert "غير مرتبطة بهذا الحفل" in joined

@@ -20,11 +20,16 @@ class UniversityRecordUploadSummary(BaseModel):
     skipped: int
     error_count: int
 
+class UniversityRecordUploadError(BaseModel):
+    row: int
+    field: str
+    message: str
+
 class UniversityRecordUploadResponse(BaseModel):
     added: int
     updated: int
     skipped: int
-    errors: List[str]
+    errors: List[UniversityRecordUploadError]
     summary: Optional[UniversityRecordUploadSummary] = None
 
 class UniversityRecordItem(BaseModel):

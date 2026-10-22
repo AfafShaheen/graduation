@@ -280,7 +280,7 @@
       "Body_update_shamcash_qr_api_admin_settings_shamcash_qr_put": {
         "properties": {
           "file": {
-            "contentMediaType": "application/octet-stream",
+            "format": "binary",
             "title": "File",
             "type": "string"
           }
@@ -305,7 +305,7 @@
             "title": "Event Id"
           },
           "file": {
-            "contentMediaType": "application/octet-stream",
+            "format": "binary",
             "title": "File",
             "type": "string"
           }
@@ -319,7 +319,7 @@
       "Body_upload_records_api_admin_events__event_id__university_records_post": {
         "properties": {
           "file": {
-            "contentMediaType": "application/octet-stream",
+            "format": "binary",
             "title": "File",
             "type": "string"
           }
@@ -712,40 +712,19 @@
             ],
             "title": "Event Time"
           },
-          "is_3companions_enabled": {
-            "default": true,
-            "title": "Is 3Companions Enabled",
-            "type": "boolean"
-          },
           "name": {
             "maxLength": 255,
             "minLength": 2,
             "title": "Name",
             "type": "string"
           },
-          "price_2_companions": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "Price 2 Companions"
-          },
-          "price_3_companions": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "Price 3 Companions"
+          "packages": {
+            "items": {
+              "$ref": "#/components/schemas/PackageItem-Input"
+            },
+            "minItems": 1,
+            "title": "Packages",
+            "type": "array"
           },
           "registration_end": {
             "format": "date-time",
@@ -779,8 +758,7 @@
           "registration_start",
           "registration_end",
           "whatsapp_group_link",
-          "price_2_companions",
-          "price_3_companions",
+          "packages",
           "college_names"
         ],
         "title": "EventCreate",
@@ -843,21 +821,17 @@
             "title": "Id",
             "type": "integer"
           },
-          "is_3companions_enabled": {
-            "title": "Is 3Companions Enabled",
-            "type": "boolean"
-          },
           "name": {
             "title": "Name",
             "type": "string"
           },
-          "price_2_companions": {
-            "title": "Price 2 Companions",
-            "type": "string"
-          },
-          "price_3_companions": {
-            "title": "Price 3 Companions",
-            "type": "string"
+          "packages": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PackageItem-Output"
+            },
+            "title": "Packages",
+            "type": "array"
           },
           "registration_end": {
             "format": "date-time",
@@ -892,9 +866,6 @@
           "registration_start",
           "registration_end",
           "whatsapp_group_link",
-          "is_3companions_enabled",
-          "price_2_companions",
-          "price_3_companions",
           "created_at"
         ],
         "title": "EventResponse",
@@ -926,17 +897,6 @@
             ],
             "title": "Event Time"
           },
-          "is_3companions_enabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is 3Companions Enabled"
-          },
           "name": {
             "anyOf": [
               {
@@ -950,35 +910,19 @@
             ],
             "title": "Name"
           },
-          "price_2_companions": {
+          "packages": {
             "anyOf": [
               {
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "type": "string"
+                "items": {
+                  "$ref": "#/components/schemas/PackageItem-Input"
+                },
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Price 2 Companions"
-          },
-          "price_3_companions": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Price 3 Companions"
+            "title": "Packages"
           },
           "registration_end": {
             "anyOf": [
@@ -1345,6 +1289,54 @@
           "registration"
         ],
         "title": "MyTicketResponse",
+        "type": "object"
+      },
+      "PackageItem-Input": {
+        "properties": {
+          "companions_count": {
+            "maximum": 10.0,
+            "minimum": 2.0,
+            "title": "Companions Count",
+            "type": "integer"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Price"
+          }
+        },
+        "required": [
+          "companions_count",
+          "price"
+        ],
+        "title": "PackageItem",
+        "type": "object"
+      },
+      "PackageItem-Output": {
+        "properties": {
+          "companions_count": {
+            "maximum": 10.0,
+            "minimum": 2.0,
+            "title": "Companions Count",
+            "type": "integer"
+          },
+          "price": {
+            "title": "Price",
+            "type": "string"
+          }
+        },
+        "required": [
+          "companions_count",
+          "price"
+        ],
+        "title": "PackageItem",
         "type": "object"
       },
       "PaymentInfoResponse": {
@@ -1831,13 +1823,9 @@
           "price": {
             "title": "Price",
             "type": "string"
-          },
-          "ticket_type": {
-            "$ref": "#/components/schemas/TicketTypeEnum"
           }
         },
         "required": [
-          "ticket_type",
           "companions_count",
           "price"
         ],
@@ -1881,17 +1869,20 @@
       "TicketSelectRequest": {
         "additionalProperties": false,
         "properties": {
+          "companions_count": {
+            "maximum": 10.0,
+            "minimum": 2.0,
+            "title": "Companions Count",
+            "type": "integer"
+          },
           "confirm": {
             "default": false,
             "title": "Confirm",
             "type": "boolean"
-          },
-          "ticket_type": {
-            "$ref": "#/components/schemas/TicketTypeEnum"
           }
         },
         "required": [
-          "ticket_type"
+          "companions_count"
         ],
         "title": "TicketSelectRequest",
         "type": "object"
@@ -1950,29 +1941,17 @@
           },
           "status": {
             "$ref": "#/components/schemas/TicketStatusEnum"
-          },
-          "ticket_type": {
-            "$ref": "#/components/schemas/TicketTypeEnum"
           }
         },
         "required": [
           "id",
           "status",
-          "ticket_type",
           "companions_count",
           "price",
           "created_at"
         ],
         "title": "TicketSummary",
         "type": "object"
-      },
-      "TicketTypeEnum": {
-        "enum": [
-          "TWO_COMPANIONS",
-          "THREE_COMPANIONS"
-        ],
-        "title": "TicketTypeEnum",
-        "type": "string"
       },
       "UniversityFileCollegeItem": {
         "properties": {
@@ -2379,6 +2358,29 @@
         "title": "UniversityRecordListResponse",
         "type": "object"
       },
+      "UniversityRecordUploadError": {
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "row",
+          "field",
+          "message"
+        ],
+        "title": "UniversityRecordUploadError",
+        "type": "object"
+      },
       "UniversityRecordUploadResponse": {
         "properties": {
           "added": {
@@ -2387,7 +2389,7 @@
           },
           "errors": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/UniversityRecordUploadError"
             },
             "title": "Errors",
             "type": "array"
@@ -2573,13 +2575,6 @@
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [

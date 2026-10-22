@@ -1,5 +1,5 @@
 from app.core.security import create_access_token
-from app.models.ticket import TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketStatusEnum
 
 _PW_FIELD = "pass" + "word"
 _ADMIN_PW = "Admin" + "Pass" + "123!"
@@ -34,12 +34,12 @@ async def _seed_event_one(make_event, make_college, make_university_record, make
     grad_3 = await make_graduate(college_a.id, university_id="1002", email_verified=True)
     grad_4 = await make_graduate(college_b.id, university_id="2002", email_verified=True)
 
-    ticket_1 = await make_ticket(grad_1.id, event.id, ticket_type=TicketTypeEnum.TWO_COMPANIONS, status=TicketStatusEnum.CONFIRMED)
+    ticket_1 = await make_ticket(grad_1.id, event.id, ticket_type=2, status=TicketStatusEnum.CONFIRMED)
     await make_payment(ticket_1.id, transaction_number="TXN-1")
-    ticket_2 = await make_ticket(grad_2.id, event.id, ticket_type=TicketTypeEnum.THREE_COMPANIONS, status=TicketStatusEnum.PROCESSING)
+    ticket_2 = await make_ticket(grad_2.id, event.id, ticket_type=3, status=TicketStatusEnum.PROCESSING)
     await make_payment(ticket_2.id, transaction_number="TXN-2")
-    await make_ticket(grad_3.id, event.id, ticket_type=TicketTypeEnum.TWO_COMPANIONS, status=TicketStatusEnum.AWAITING_PAYMENT)
-    ticket_4 = await make_ticket(grad_4.id, event.id, ticket_type=TicketTypeEnum.THREE_COMPANIONS, status=TicketStatusEnum.REJECTED)
+    await make_ticket(grad_3.id, event.id, ticket_type=2, status=TicketStatusEnum.AWAITING_PAYMENT)
+    ticket_4 = await make_ticket(grad_4.id, event.id, ticket_type=3, status=TicketStatusEnum.REJECTED)
     await make_payment(ticket_4.id, transaction_number="TXN-3")
 
     return event, college_a, college_b

@@ -10,7 +10,7 @@ from app.core import messages
 from app.core.security import create_access_token
 from app.models.audit_log import AuditLogModel
 from app.models.qr_code import QrCodeModel
-from app.models.ticket import TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketStatusEnum
 
 _PW_FIELD = "pass" + "word"
 _ADMIN_PW = "Admin" + "Pass" + "123!"
@@ -44,7 +44,7 @@ async def _processing_ticket(
     amount=100000,
     price=100000,
     submitted_at=None,
-    ticket_type=TicketTypeEnum.TWO_COMPANIONS,
+    ticket_type=2,
 ):
     if event is None:
         event = await make_event()

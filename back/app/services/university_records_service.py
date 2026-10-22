@@ -305,7 +305,7 @@ def _read_csv(contents: bytes) -> "pd.DataFrame":
 
 async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
     contents = await file.read()
-    filename = file.filename.lower()
+    filename = (file.filename or "").lower()
     try:
         if filename.endswith(".csv"):
             df = _read_csv(contents)
@@ -314,29 +314,62 @@ async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="نوع الملف غير مدعوم. يرجى رفع ملف Excel (.xlsx) أو CSV (.csv)."
+                detail="نوع الملف غير مدعوم. يرجى رفع ملف Excel (.xlsx) أو CSV (.csv).",
             )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"فشل في قراءة الملف: {str(e)}"
+            detail=f"فشل في قراءة الملف: {str(e)}",
         )
 
-    df.columns = _canonicalize_columns(df.columns)
-    return df.to_dict(orient="records")
+    try:
+        df.columns = _canonicalize_columns(df.columns)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"فشل في قراءة الملف: {str(e)}",
+        )
+
+    required_cols = {"university_id", "father_name", "mother_name", "college", "gender", "gpa"}
+    file_cols = set(df.columns)
+    missing_cols = required_cols - file_cols
+    has_split_names = {"first_name", "last_name"}.issubset(file_cols)
+    has_full_name = "full_name" in file_cols
+    name_missing = not has_split_names and not has_full_name
+    if missing_cols or name_missing:
+        missing_arabic = [ARABIC_HEADERS[field] for field in ARABIC_HEADERS if field in missing_cols]
+        if name_missing:
+            missing_arabic.extend([ARABIC_HEADERS["first_name"], ARABIC_HEADERS["last_name"]])
+        # de-duplicate while preserving order
+        seen = set()
+        unique_missing = []
+        for item in missing_arabic:
+            if item in seen:
+                continue
+            seen.add(item)
+            unique_missing.append(item)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"الأعمدة التالية مفقودة في الملف: {'، '.join(unique_missing)}",
+        )
+
+    records = df.to_dict(orient="records")
+    return records
 
 
-async def validate_records(records: List[Dict[str, Any]], event_id: int, db: AsyncSession) -> List[str]:
-    errors = []
+async def validate_records(records: List[Dict[str, Any]], event_id: int, db: AsyncSession) -> List[Dict[str, Any]]:
+    errors: List[Dict[str, Any]] = []
     required_cols = {"university_id", "father_name", "mother_name", "college", "gender", "gpa"}
 
     if not records:
-        return ["الملف فارغ أو لا يحتوي على بيانات."]
+        return [{"row": 0, "field": "", "message": "الملف فارغ أو لا يحتوي على بيانات."}]
 
     file_cols = set(records[0].keys())
     missing_cols = required_cols - file_cols
-    # Names may come either as two columns (first_name/last_name, D4) or as the
-    # legacy single "الاسم الكامل" column.
     has_split_names = {"first_name", "last_name"}.issubset(file_cols)
     has_full_name = "full_name" in file_cols
     name_missing = not has_split_names and not has_full_name
@@ -346,7 +379,14 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
         ]
         if name_missing:
             missing_arabic.extend([ARABIC_HEADERS["first_name"], ARABIC_HEADERS["last_name"]])
-        return [f"الأعمدة التالية مفقودة في الملف: {'، '.join(missing_arabic)}"]
+        seen = set()
+        unique_missing = []
+        for item in missing_arabic:
+            if item in seen:
+                continue
+            seen.add(item)
+            unique_missing.append(item)
+        return [{"row": 0, "field": "", "message": f"الأعمدة التالية مفقودة في الملف: {'، '.join(unique_missing)}"}]
 
     # Fetch colleges linked to this event and build normalized lookup dictionary
     colleges = await colleges_for_event(db, event_id)
@@ -375,40 +415,40 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
 
         # Check empty required fields
         if not uni_id:
-            errors.append(f"السطر {idx}: الرقم الجامعي مطلوب.")
+            errors.append({"row": idx, "field": "الرقم الجامعي", "message": "الرقم الجامعي مطلوب."})
         if has_split_names and not has_full_name:
             if not first_name:
-                errors.append(f"السطر {idx}: الاسم مطلوب.")
+                errors.append({"row": idx, "field": "الاسم", "message": "الاسم مطلوب."})
             if not last_name:
-                errors.append(f"السطر {idx}: الكنية مطلوبة.")
+                errors.append({"row": idx, "field": "الكنية", "message": "الكنية مطلوبة."})
         elif not full_name and not (first_name and last_name):
-            errors.append(f"السطر {idx}: الاسم الكامل مطلوب.")
+            errors.append({"row": idx, "field": "الاسم الكامل", "message": "الاسم الكامل مطلوب."})
         if not father_name:
-            errors.append(f"السطر {idx}: اسم الأب مطلوب.")
+            errors.append({"row": idx, "field": "اسم الأب", "message": "اسم الأب مطلوب."})
         if not mother_name:
-            errors.append(f"السطر {idx}: اسم الأم مطلوب.")
+            errors.append({"row": idx, "field": "اسم الأم", "message": "اسم الأم مطلوب."})
         if not college_name:
-            errors.append(f"السطر {idx}: الكلية مطلوبة.")
+            errors.append({"row": idx, "field": "الكلية", "message": "الكلية مطلوبة."})
         if not gender:
-            errors.append(f"السطر {idx}: الجنس مطلوب.")
+            errors.append({"row": idx, "field": "الجنس", "message": "الجنس مطلوب."})
 
         # Check GPA
         if gpa_raw is None or str(gpa_raw).strip() == "" or str(gpa_raw).lower() == "nan":
-            errors.append(f"السطر {idx}: المعدل مطلوب.")
+            errors.append({"row": idx, "field": "المعدل", "message": "المعدل مطلوب."})
         else:
             parsed_gpa = parse_gpa(gpa_raw)
             if parsed_gpa is None:
-                errors.append(f"السطر {idx}: المعدل غير صالح.")
+                errors.append({"row": idx, "field": "المعدل", "message": "المعدل غير صالح."})
 
         # Check duplicate university_id within file
         if uni_id in seen_uni_ids:
-            errors.append(f"السطر {idx}: الرقم الجامعي '{uni_id}' مكرر داخل الملف.")
+            errors.append({"row": idx, "field": "الرقم الجامعي", "message": f"الرقم الجامعي '{uni_id}' مكرر داخل الملف."})
         else:
             seen_uni_ids.add(uni_id)
 
         # Check valid gender (accepts the Affairs spellings, item A2.1)
         if gender and normalize_gender(gender) is None:
-            errors.append(f"السطر {idx}: قيمة الجنس غير صحيحة '{gender}' (يجب أن تكون 'ذكر' أو 'أنثى').")
+            errors.append({"row": idx, "field": "الجنس", "message": f"قيمة الجنس غير صحيحة '{gender}' (يجب أن تكون 'ذكر' أو 'أنثى')."})
 
         # Check non-existent college names using normalized lookup
         if college_name and college_name not in file_colleges:
@@ -416,7 +456,7 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
         normalized_college_name = normalize_arabic(college_name)
         college_id = college_map.get(normalized_college_name)
         if not college_id:
-            errors.append(f'السطر {idx}: الكلية "{college_name}" غير مرتبطة بهذا الحفل.')
+            errors.append({"row": idx, "field": "الكلية", "message": f'الكلية "{college_name}" غير مرتبطة بهذا الحفل.'})
             if college_name not in unmatched_colleges:
                 unmatched_colleges.append(college_name)
         else:
@@ -424,15 +464,21 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
             if major_raw and major_raw.lower() not in ["nan", "none", "لا يوجد", ""]:
                 norm_major = normalize_arabic(major_raw)
                 if (college_id, norm_major) not in major_map:
-                    errors.append(f'السطر {idx}: التخصص "{major_raw}" غير موجود ضمن كلية "{college_name}". يرجى إضافته من إدارة التخصصات أولاً.')
+                    errors.append({"row": idx, "field": "التخصص", "message": f'التخصص "{major_raw}" غير موجود ضمن كلية "{college_name}". يرجى إضافته من إدارة التخصصات أولاً.'})
 
     if unmatched_colleges:
         event_college_names = [c.name for c in colleges]
         errors.append(
-            "كليات وردت في الملف وغير مرتبطة بهذا الحفل: "
-            + "، ".join(unmatched_colleges)
-            + " | الكليات المرتبطة بهذا الحفل: "
-            + ("، ".join(event_college_names) if event_college_names else "لا توجد كليات مرتبطة بهذا الحفل.")
+            {
+                "row": 0,
+                "field": "الكلية",
+                "message": (
+                    "كليات وردت في الملف وغير مرتبطة بهذا الحفل: "
+                    + "، ".join(unmatched_colleges)
+                    + " | الكليات المرتبطة بهذا الحفل: "
+                    + ("، ".join(event_college_names) if event_college_names else "لا توجد كليات مرتبطة بهذا الحفل.")
+                ),
+            }
         )
 
     return errors

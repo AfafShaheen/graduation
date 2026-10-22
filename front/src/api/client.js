@@ -220,9 +220,20 @@ export async function request(path, { method = "GET", body = null, token = null 
     }
   }
 
-  if (!response.ok) {
+    if (!response.ok) {
     let errorMessage = "حدث خطأ غير متوقع.";
     let fieldErrors = null;
+
+    if (!data) {
+      try {
+        const text = await response.text();
+        if (text && text.trim()) {
+          errorMessage = text.trim().slice(0, 500);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
 
     if (data) {
       if (typeof data.detail === "string") {

@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from app.core import messages
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
-from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketModel, TicketStatusEnum
 from app.services.admin_graduate_service import revert_scan_service
 from app.services.qr_service import (
     ScanDecision,
@@ -41,7 +41,7 @@ async def _ticket_with_codes(
     make_graduate,
     make_ticket,
     *,
-    ticket_type=TicketTypeEnum.TWO_COMPANIONS,
+    ticket_type=2,
     status=TicketStatusEnum.CONFIRMED,
     issue=True,
 ):
@@ -92,7 +92,7 @@ async def test_revert_scan_nothing_then_reset(
 ):
     _event, grad, ticket = await _ticket_with_codes(
         db, make_event, make_college, make_graduate, make_ticket,
-        ticket_type=TicketTypeEnum.THREE_COMPANIONS,
+        ticket_type=3,
     )
     token = await _token(client, make_admin)
     path = f"/api/admin/graduates/{grad.id}/revert-scan"
@@ -136,7 +136,7 @@ async def test_revert_scan_keeps_graduate_activated(
 ):
     event, grad, ticket = await _ticket_with_codes(
         db, make_event, make_college, make_graduate, make_ticket,
-        ticket_type=TicketTypeEnum.TWO_COMPANIONS,
+        ticket_type=2,
     )
     admin = await make_admin()
     scanner = await make_scanner(admin.id, event.id)

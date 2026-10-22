@@ -364,17 +364,16 @@ async def _seat_rows():
 async def test_seat_backfill_assigns_consecutive_blocks(
     db, make_event, make_college, make_graduate, make_ticket
 ):
-    from app.models.ticket import TicketTypeEnum
-
+    pass
     event = await make_event()
     college = await make_college(event.id)
     first = await make_graduate(college.id, university_id="920001")
     second = await make_graduate(college.id, university_id="920002")
     third = await make_graduate(college.id, university_id="920003")
 
-    await make_ticket(first.id, event.id, TicketTypeEnum.TWO_COMPANIONS)
-    await make_ticket(second.id, event.id, TicketTypeEnum.THREE_COMPANIONS)
-    await make_ticket(third.id, event.id, TicketTypeEnum.TWO_COMPANIONS)
+    await make_ticket(first.id, event.id2)
+    await make_ticket(second.id, event.id3)
+    await make_ticket(third.id, event.id2)
     # Release the transaction so the schema DDL below is not blocked by locks.
     await db.commit()
 

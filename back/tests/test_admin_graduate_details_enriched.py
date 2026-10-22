@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
-from app.models.ticket import TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketStatusEnum
 
 _PW_FIELD = "pass" + "word"
 _ADMIN_PW = "Admin" + "Pass" + "123!"

@@ -7,7 +7,7 @@ the allocated seat.
 """
 
 from app.core.security import create_access_token
-from app.models.ticket import TicketModel, TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketModel, TicketStatusEnum
 from app.services.seat_service import assign_seat_block, seat_labels
 
 _PW_FIELD = "pass" + "word"
@@ -64,8 +64,8 @@ async def test_assign_seat_block_is_sequential_and_idempotent(
     college = await make_college(event.id)
     first = await make_graduate(college.id, university_id="930001")
     second = await make_graduate(college.id, university_id="930002")
-    first_ticket = await make_ticket(first.id, event.id, TicketTypeEnum.TWO_COMPANIONS)
-    second_ticket = await make_ticket(second.id, event.id, TicketTypeEnum.THREE_COMPANIONS)
+    first_ticket = await make_ticket(first.id, event.id2)
+    second_ticket = await make_ticket(second.id, event.id3)
 
     await assign_seat_block(db, first_ticket)
     await assign_seat_block(db, second_ticket)

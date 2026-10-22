@@ -136,6 +136,7 @@ async def _import_into_event(
             "file": await _build_file_item(db, record),
             "import": None,
             "errors": errors,
+            "status": "failed",
         }
 
     counts = await upsert_records(records, event_id, db)
@@ -166,6 +167,7 @@ async def _import_into_event(
             "error_count": 0,
         },
         "errors": [],
+        "status": "imported",
     }
 
 
@@ -212,7 +214,7 @@ async def upload_university_file(
 
     if event_id is None:
         await db.commit()
-        return {"file": await _build_file_item(db, record), "import": None, "errors": []}
+        return {"file": await _build_file_item(db, record), "import": None, "errors": [], "status": "uploaded"}
 
     upload = _BytesUpload(original_name, record.content_type, raw)
     return await _import_into_event(db, record, upload, event_id, admin)
@@ -239,7 +241,7 @@ async def link_university_file(
     path = record.storage_path
     if not (path and os.path.exists(path)):
         await db.commit()
-        return {"file": await _build_file_item(db, record), "import": None, "errors": []}
+        return {"file": await _build_file_item(db, record), "import": None, "errors": [], "status": "uploaded"}
 
     with open(path, "rb") as handle:
         raw = handle.read()

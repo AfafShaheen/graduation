@@ -230,10 +230,9 @@ async def test_one_missing_column_reports_its_arabic_name(
         client, headers, event.id, "records.csv", _csv_bytes(file_headers, [file_row]), _CSV_CT
     )
 
-    assert response.status_code == 200, response.text
-    body = response.json()
-    assert body["added"] == 0
-    assert body["errors"] == ["الأعمدة التالية مفقودة في الملف: الجنس"]
+    assert response.status_code == 400, response.text
+    detail = response.json()["detail"]
+    assert "الجنس" in detail
 
 
 async def test_several_missing_columns_are_in_canonical_order(
@@ -248,11 +247,9 @@ async def test_several_missing_columns_are_in_canonical_order(
         client, headers, event.id, "records.csv", _csv_bytes(file_headers, [file_row]), _CSV_CT
     )
 
-    assert response.status_code == 200, response.text
-    body = response.json()
-    assert body["errors"] == [
-        "الأعمدة التالية مفقودة في الملف: اسم الأب، اسم الأم، الكلية، الجنس، المعدل"
-    ]
+    assert response.status_code == 400, response.text
+    detail = response.json()["detail"]
+    assert detail == "الأعمدة التالية مفقودة في الملف: اسم الأب، اسم الأم، الكلية، الجنس، المعدل"
 
 
 async def test_duplicate_field_mapping_is_rejected(

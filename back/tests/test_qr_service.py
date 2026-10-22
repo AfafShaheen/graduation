@@ -13,7 +13,7 @@ from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.models.audit_log import AuditLogModel
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
-from app.models.ticket import TicketStatusEnum, TicketTypeEnum
+from app.models.ticket import TicketStatusEnum
 from app.services.qr_service import (
     ScannerNotFoundError,
     ScanDecision,
@@ -49,7 +49,7 @@ async def _setup_ticket(
     make_graduate,
     make_ticket,
     *,
-    ticket_type=TicketTypeEnum.TWO_COMPANIONS,
+    ticket_type=2,
     status=TicketStatusEnum.CONFIRMED,
 ):
     event = await make_event()
@@ -66,7 +66,7 @@ async def test_issue_creates_graduate_and_companion_codes(
 ):
     event, _grad, ticket = await _setup_ticket(
         db, make_event, make_college, make_graduate, make_ticket,
-        ticket_type=TicketTypeEnum.THREE_COMPANIONS,
+        ticket_type=3,
     )
 
     created = await issue_qr_codes_for_ticket(db, ticket.id)
