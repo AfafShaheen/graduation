@@ -1,5 +1,6 @@
 /* ==========================================================================
    شاشة المسح الميدانية (.scan-cam-*)
+   نسخة محسّنة للأداء: بدون backdrop-filter فوق الفيديو، أنيميشن عبر transform فقط
    ========================================================================== */
 
 .scan-cam-app-container {
@@ -170,6 +171,7 @@
   border-radius: 9999px;
   background-color: var(--sc-accent);
   opacity: 0.75;
+  will-change: transform, opacity;
 }
 
 .scan-cam-pulse-core {
@@ -213,8 +215,8 @@
   border: none !important;
 }
 
-#qr-reader video,
-#qr-reader canvas {
+/* الفيديو فقط يملأ المنطقة. لا نلمس الـ canvas الخاص بالمكتبة */
+#qr-reader video {
   width: 100% !important;
   height: 100% !important;
   object-fit: cover !important;
@@ -228,22 +230,7 @@
   display: none !important;
 }
 
-/* نقشة خلفية */
-.scan-cam-viewfinder-zone::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-color: #e6d3a6;
-  opacity: 0.07;
-  -webkit-mask-image: url('../assets/pattern.svg');
-  mask-image: url('../assets/pattern.svg');
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-  -webkit-mask-size: 420px auto;
-  mask-size: 420px auto;
-}
+/* (تم حذف النقشة ::before مع mask-image لأنها كانت مخفية تحت الفيديو وتكلّف رسم إضافي) */
 
 .scan-cam-prompt-card {
   position: relative;
@@ -258,9 +245,8 @@
 }
 
 .scan-cam-prompt-pill {
-  background-color: rgba(18, 77, 68, 0.92);
+  background-color: rgba(18, 77, 68, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
   padding: 10px 16px;
   border-radius: 9999px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
@@ -289,28 +275,31 @@
 
 /* مربع التوجيه والليزر */
 .scan-cam-reticle-box {
+  --reticle-size: min(240px, 64vw);
+
   position: relative;
   z-index: 5;
   pointer-events: none;
-  width: min(240px, 64vw);
+  width: var(--reticle-size);
   aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* توهج ثابت بـ box-shadow، والأنيميشن على opacity فقط (يُعالج على الـGPU) */
 .scan-cam-reticle-glow {
   animation: scanCamPulseGlow 3s ease-in-out infinite;
   position: absolute;
-  inset: -8px;
+  inset: -4px;
   border-radius: 16px;
-  background-color: rgba(255, 122, 47, 0.15);
-  filter: blur(8px);
+  box-shadow: 0 0 20px 6px rgba(255, 122, 47, 0.28);
+  will-change: opacity;
 }
 
 @keyframes scanCamPulseGlow {
-  0%, 100% { opacity: 0.35; transform: scale(0.98); }
-  50% { opacity: 0.85; transform: scale(1.02); }
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.9; }
 }
 
 .scan-cam-reticle-frame {
@@ -319,8 +308,7 @@
   height: 100%;
   border-radius: 12px;
   border: 2px solid rgba(255, 122, 47, 0.3);
-  background-color: rgba(18, 77, 68, 0.2);
-  backdrop-filter: blur(2px);
+  background-color: rgba(18, 77, 68, 0.15);
   overflow: hidden;
 }
 
@@ -353,18 +341,21 @@
   font-size: 140px;
 }
 
+/* الليزر: يتحرك بـ transform فقط (بدون layout ولا repaint) */
 .scan-cam-laser {
   animation: scanCamMotion 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   position: absolute;
+  top: 0;
   left: 8px;
   right: 8px;
   height: 4px;
   background: linear-gradient(to right, transparent, var(--sc-accent), transparent);
-  box-shadow: 0 0 12px var(--sc-accent);
+  box-shadow: 0 0 10px var(--sc-accent);
   z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
+  will-change: transform, opacity;
 }
 
 .scan-cam-laser-dot {
@@ -372,14 +363,13 @@
   height: 12px;
   background-color: var(--sc-accent);
   border-radius: 50%;
-  filter: blur(1px);
 }
 
 @keyframes scanCamMotion {
-  0% { top: 4px; opacity: 0; }
-  15% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { top: calc(100% - 8px); opacity: 0; }
+  0%   { transform: translateY(4px); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateY(calc(var(--reticle-size) - 12px)); opacity: 0; }
 }
 
 .scan-cam-distance {
@@ -554,8 +544,7 @@
   position: absolute;
   inset: 0;
   z-index: 50;
-  background-color: rgba(13, 58, 51, 0.7);
-  backdrop-filter: blur(4px);
+  background-color: rgba(13, 58, 51, 0.75);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -711,7 +700,7 @@
   .scan-cam-laser {
     animation: none;
   }
-  .scan-cam-laser { top: 50%; opacity: 1; }
+  .scan-cam-laser { top: 50%; opacity: 1; transform: none; }
 }
 
 @media (max-width: 359px) {

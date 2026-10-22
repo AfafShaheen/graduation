@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import '../../style/ScannerCamera.css';
 import unionLogo from '../../assets/only-logo.png';
 import { request } from '../../api/client';
@@ -44,9 +44,11 @@ export default function ScannerCamera({ onLogout }) {
   const lastScanTimeRef = useRef(0);
   const isScanningRef = useRef(false);
   const html5QrCodeRef = useRef(null);
-  const startPromiseRef = useRef(null);
-  const isStartingRef = useRef(false);
   const handleScanRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  // يضمن أن أي تشغيل جديد ينتظر انتهاء إيقاف الكاميرا السابقة (مهم مع StrictMode)
+  const cleanupPromiseRef = useRef(Promise.resolve());
+  const errorTimerRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -62,12 +64,25 @@ export default function ScannerCamera({ onLogout }) {
 
   const toggleMute = () => setIsMuted((prev) => !prev);
 
+  /* AudioContext واحد مشترك بدل إنشاء واحد جديد مع كل مسحة */
+  useEffect(() => {
+    return () => {
+      try {
+        audioCtxRef.current?.close?.();
+      } catch {}
+      audioCtxRef.current = null;
+    };
+  }, []);
+
   const playBeep = useCallback((success = true) => {
     if (isMuted) return;
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      const ctx = new AudioContext();
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtxRef.current) audioCtxRef.current = new AC();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') ctx.resume();
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = success ? 'sine' : 'sawtooth';
@@ -78,6 +93,12 @@ export default function ScannerCamera({ onLogout }) {
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.2);
+      osc.onended = () => {
+        try {
+          osc.disconnect();
+          gain.disconnect();
+        } catch {}
+      };
     } catch {}
   }, [isMuted]);
 
@@ -90,7 +111,7 @@ export default function ScannerCamera({ onLogout }) {
       });
       setIsTorchActive(next);
     } catch (err) {
-      console.error("Torch error:", err);
+      console.error('Torch error:', err);
     }
   };
 
@@ -116,6 +137,20 @@ export default function ScannerCamera({ onLogout }) {
     }
   }, [navigate]);
 
+  const pauseCamera = () => {
+    const qr = html5QrCodeRef.current;
+    if (qr && qr.isScanning) {
+      try { qr.pause(true); } catch {}
+    }
+  };
+
+  const resumeCamera = () => {
+    const qr = html5QrCodeRef.current;
+    if (qr) {
+      try { qr.resume(); } catch {}
+    }
+  };
+
   const handleScan = useCallback(async (code) => {
     const trimmed = code?.trim();
     if (!trimmed) return;
@@ -130,6 +165,9 @@ export default function ScannerCamera({ onLogout }) {
     lastCodeRef.current = trimmed;
     lastScanTimeRef.current = now;
 
+    // نوقف الكاميرا فوراً عند اكتشاف الرمز بدل انتظار رد السيرفر
+    pauseCamera();
+
     try {
       const data = await request('/api/scanner/scan', {
         method: 'POST',
@@ -140,21 +178,12 @@ export default function ScannerCamera({ onLogout }) {
       if (data.decision === 'SUCCESS') {
         playBeep(true);
         setScanCount((prev) => prev + 1);
-        if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-          try { html5QrCodeRef.current.pause(true); } catch {}
-        }
         setActiveResult({ result: data, type: 'success' });
       } else if (data.decision === 'WRONG_EVENT') {
         playBeep(false);
-        if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-          try { html5QrCodeRef.current.pause(true); } catch {}
-        }
         setActiveResult({ result: data, type: 'wrong_ceremony' });
       } else {
         playBeep(false);
-        if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-          try { html5QrCodeRef.current.pause(true); } catch {}
-        }
         let errorType = 'generic_error';
         if (data.decision === 'ALREADY_USED') errorType = 'already_used';
         else if (data.decision === 'NOT_ACTIVATED') errorType = 'companion_error';
@@ -164,7 +193,11 @@ export default function ScannerCamera({ onLogout }) {
       }
     } catch (err) {
       playBeep(false);
+      // خطأ اتصال: نعيد تشغيل الكاميرا ليتمكن المستخدم من إعادة المحاولة
+      resumeCamera();
       setCameraError(err.message || 'حدث خطأ في الاتصال بالخادم.');
+      clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => setCameraError(''), 4000);
     } finally {
       isScanningRef.current = false;
     }
@@ -174,62 +207,85 @@ export default function ScannerCamera({ onLogout }) {
     handleScanRef.current = handleScan;
   }, [handleScan]);
 
+  useEffect(() => () => clearTimeout(errorTimerRef.current), []);
+
   /* Camera initialization with safe start/stop */
   useEffect(() => {
     let isMounted = true;
-    const html5QrCode = new Html5Qrcode("qr-reader");
-    html5QrCodeRef.current = html5QrCode;
+    let html5QrCode = null;
+    let startPromise = null;
+
+    const buildConfig = (facingMode) => ({
+      fps: 10,
+      // يطابق حجم المربع المرسوم (min(240px, 64vw))
+      qrbox: (w, h) => {
+        const size = Math.min(240, Math.floor(Math.min(w, h) * 0.64));
+        return { width: size, height: size };
+      },
+      disableFlip: true,
+      videoConstraints: {
+        facingMode,
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+    });
+
+    const runStart = (facingMode) => {
+      startPromise = html5QrCode.start(
+        { facingMode },
+        buildConfig(facingMode),
+        (decodedText) => {
+          if (isMounted && handleScanRef.current) {
+            handleScanRef.current(decodedText);
+          }
+        },
+        () => {}
+      );
+      return startPromise;
+    };
 
     const startScanner = async () => {
-      if (isStartingRef.current) return;
-      isStartingRef.current = true;
+      // ننتظر انتهاء إيقاف الكاميرا السابقة (إن وجدت) قبل إنشاء instance جديد
+      await cleanupPromiseRef.current;
+      if (!isMounted) return;
 
-      const runStart = async (constraints) => {
-        return html5QrCode.start(
-          constraints,
-          { fps: 10, qrbox: { width: 220, height: 220 } },
-          (decodedText) => {
-            if (isMounted && handleScanRef.current) {
-              handleScanRef.current(decodedText);
-            }
-          },
-          () => {}
-        );
-      };
+      html5QrCode = new Html5Qrcode('qr-reader', {
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+        verbose: false,
+      });
+      html5QrCodeRef.current = html5QrCode;
 
       try {
         setCameraError('');
-        startPromiseRef.current = runStart({ facingMode: "environment" });
-        await startPromiseRef.current;
-        
+        await runStart('environment');
+        if (!isMounted) return;
+
         try {
-          const track = html5QrCode.getRunningTrackCapabilities?.();
-          if (track && track.torch) {
+          const caps = html5QrCode.getRunningTrackCapabilities?.();
+          if (caps && caps.torch) {
             setHasTorch(true);
           }
         } catch {}
       } catch (err) {
+        if (!isMounted) return;
         const errName = err?.name || err?.message || '';
         if (errName.includes('OverconstrainedError') || errName.includes('NotFoundError')) {
           try {
-            startPromiseRef.current = runStart({ facingMode: "user" });
-            await startPromiseRef.current;
+            await runStart('user');
           } catch (fallbackErr) {
-            console.error("Camera fallback failed:", fallbackErr);
+            console.error('Camera fallback failed:', fallbackErr);
             if (isMounted) {
               setCameraError('تعذّر تشغيل الكاميرا: ' + (fallbackErr.message || err.message));
             }
           }
         } else if (errName.includes('NotAllowedError')) {
-          if (isMounted) {
-            setCameraError('تم رفض إذن الوصول للكاميرا. يرجى السماح بصلاحيات الكاميرا من إعدادات المتصفح.');
-          }
+          setCameraError('تم رفض إذن الوصول للكاميرا. يرجى السماح بصلاحيات الكاميرا من إعدادات المتصفح.');
         } else if (errName.includes('NotReadableError')) {
           setTimeout(async () => {
             if (!isMounted) return;
             try {
-              startPromiseRef.current = runStart({ facingMode: "environment" });
-              await startPromiseRef.current;
+              await runStart('environment');
             } catch {
               if (isMounted) {
                 setCameraError('الكاميرا قيد الاستخدام من قبل تطبيق آخر.');
@@ -237,12 +293,8 @@ export default function ScannerCamera({ onLogout }) {
             }
           }, 500);
         } else {
-          if (isMounted) {
-            setCameraError('تعذّر تشغيل الكاميرا: ' + (err.message || 'خطأ غير معروف'));
-          }
+          setCameraError('تعذّر تشغيل الكاميرا: ' + (err.message || 'خطأ غير معروف'));
         }
-      } finally {
-        isStartingRef.current = false;
       }
     };
 
@@ -250,22 +302,25 @@ export default function ScannerCamera({ onLogout }) {
 
     return () => {
       isMounted = false;
-      const cleanup = async () => {
-        if (startPromiseRef.current) {
-          try {
-            await startPromiseRef.current;
-          } catch {}
+      const instance = html5QrCode;
+      const pending = startPromise;
+
+      cleanupPromiseRef.current = (async () => {
+        if (pending) {
+          try { await pending; } catch {}
         }
-        if (html5QrCodeRef.current) {
+        if (instance) {
           try {
-            if (html5QrCodeRef.current.isScanning) {
-              await html5QrCodeRef.current.stop();
+            if (instance.isScanning) {
+              await instance.stop();
             }
-            await html5QrCodeRef.current.clear();
+            await instance.clear();
           } catch {}
         }
-      };
-      cleanup();
+        if (html5QrCodeRef.current === instance) {
+          html5QrCodeRef.current = null;
+        }
+      })();
     };
   }, []);
 
@@ -315,11 +370,7 @@ export default function ScannerCamera({ onLogout }) {
   const handleNextScan = () => {
     setActiveResult(null);
     lastCodeRef.current = '';
-    if (html5QrCodeRef.current) {
-      try {
-        html5QrCodeRef.current.resume();
-      } catch {}
-    }
+    resumeCamera();
   };
 
   return (
@@ -460,7 +511,7 @@ export default function ScannerCamera({ onLogout }) {
 
         {/* Result Overlay Sheet */}
         {activeResult && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 40, background: 'var(--sc-cream)' }}>
+          <div style={{ position: 'absolute', inset: 0, zIndex: 40, background: activeResult.type === 'error' ? '#b3261e' : 'var(--sc-cream)' }}>
             {activeResult.type === 'success' && (
               <ScanSuccessResult
                 result={activeResult.result}
