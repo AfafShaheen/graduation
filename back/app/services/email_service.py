@@ -14,6 +14,8 @@ import os
 import secrets
 import smtplib
 from datetime import UTC, datetime
+import email.utils
+from email.headerregistry import Address
 from email.message import EmailMessage
 
 from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, Text, select, update
@@ -129,16 +131,59 @@ def deliver_otp_email(
         subject = "استعادة كلمة السر — رمز التحقق"
     else:
         subject = "تأكيد البريد الإلكتروني — رمز التحقق"
-    body = (
+    body_text = (
         f"رمز التحقق الخاص بك: {code}\n"
         f"الرمز صالح لمدة {OTP_TTL_MINUTES} دقائق ويُستخدم مرة واحدة."
     )
+    body_html = f"""<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+body {{ font-family: Tahoma, Arial, sans-serif; direction: rtl; text-align: right; color: #201b0f; background-color: #fcf6ed; padding: 20px; }}
+.card {{ background: #ffffff; border-radius: 12px; padding: 24px; border: 1px solid #eedebd; max-width: 480px; margin: 0 auto; }}
+.code {{ font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #124d44; background: #f8edd9; padding: 12px 20px; border-radius: 8px; display: inline-block; margin: 16px 0; direction: ltr; text-align: center; }}
+.footer {{ font-size: 12px; color: #725b51; margin-top: 20px; }}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>{subject}</h2>
+  <p>رمز التحقق الخاص بك:</p>
+  <div class="code">{code}</div>
+  <p>الرمز صالح لمدة {OTP_TTL_MINUTES} دقائق ويُستخدم مرة واحدة.</p>
+  <div class="footer">اتحاد الطلبة - حفل التخرج</div>
+</div>
+</body>
+</html>"""
+
+    sender_email = sender
+    if "@" in sender:
+        sender_email = sender.split("@", 1)[1] if "<" not in sender and ">" not in sender else sender
+    # if sender is like "Name <email>", extract email
+    if "<" in sender and ">" in sender:
+        addr_part = sender.split("<", 1)[1].split(">", 1)[0].strip()
+        domain_part = addr_part.split("@")[1] if "@" in addr_part else ""
+    else:
+        domain_part = sender.split("@")[1] if "@" in sender else ""
+
+    if not domain_part and user and "@" in user:
+        domain_part = user.split("@")[1]
 
     message = EmailMessage()
-    message["From"] = sender
+    from_addr = Address(display_name="اتحاد الطلبة - حفل التخرج", username=sender.split("@")[0] if "@" in sender and "<" not in sender else (user.split("@")[0] if "@" in user else "noreply"), domain=domain_part or "example.com")
+    message["From"] = str(from_addr)
     message["To"] = to_email
     message["Subject"] = subject
-    message.set_content(body)
+    message["Date"] = email.utils.formatdate(localtime=True)
+    message["Message-ID"] = email.utils.make_msgid(domain=domain_part or None)
+
+    reply_to = cfg.get("reply_to") or os.environ.get("SMTP_REPLY_TO")
+    if reply_to:
+        message["Reply-To"] = str(reply_to)
+
+    message.set_content(body_text)
+    message.add_alternative(body_html, subtype="html")
 
     try:
         with smtplib.SMTP(host, port, timeout=15) as server:
@@ -147,6 +192,16 @@ def deliver_otp_email(
             server.login(user, auth)
             server.send_message(message)
         return SendOutcome.SENT
+    except (smtplib.SMTPRecipientsRefused, smtplib.SMTPDataError, smtplib.SMTPResponseException) as exc:
+        logger.error(
+            "SMTP server error delivering OTP to %s via %s:%s (Code %s): %s",
+            to_email,
+            host,
+            port,
+            getattr(exc, "smtp_code", "unknown"),
+            getattr(exc, "smtp_error", exc),
+        )
+        return SendOutcome.FAILED
     except (smtplib.SMTPException, OSError) as exc:
         logger.error(
             "Failed to send OTP email to %s via %s:%s (%s): %s",

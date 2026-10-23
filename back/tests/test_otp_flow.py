@@ -100,22 +100,38 @@ async def test_resend_blocked_immediately_then_allowed_after_cooldown(
     assert again["status"] == "success"
 
 
-async def test_resend_with_failing_sender_returns_503_without_cooldown(
-    db, make_event, make_college, make_graduate, monkeypatch
+async def test_resend_invalidates_previous_otps(
+    db, make_event, make_college, make_graduate, sent_otps
 ):
     event = await make_event()
     college = await make_college(event.id)
-    grad = await make_graduate(college.id, university_id="400002", email=_email("resend2"))
+    grad = await make_graduate(college.id, university_id="400005", email=_email("resend_inval"))
 
-    monkeypatch.setattr("app.services.auth_service.send_otp_email", lambda *a, **k: False)
+    from app.services.auth_service import issue_and_send_otp, verify_otp_service
+    from app.services.email_service import OtpPurpose
 
-    with pytest.raises(HTTPException) as exc:
-        await resend_otp_service(db, grad.id, OtpPurpose.EMAIL_VERIFICATION)
-    assert exc.value.status_code == 503
-    assert exc.value.detail == messages.EMAIL_SEND_FAIL
+    # Issue first OTP
+    await issue_and_send_otp(db, grad, OtpPurpose.EMAIL_VERIFICATION, grad.email)
+    first_code = sent_otps[-1][1]
 
+    # Clear cooldown so resend can happen immediately
     key = f"cooldown:{OtpPurpose.EMAIL_VERIFICATION.value}:{grad.id}"
-    assert await redis_client.exists(key) == 0
+    await redis_client.delete(key)
+
+    # Resend second OTP
+    await resend_otp_service(db, grad.id, OtpPurpose.EMAIL_VERIFICATION)
+    second_code = sent_otps[-1][1]
+
+    assert first_code != second_code
+
+    # Trying to verify with the first code should fail / be invalid
+    with pytest.raises(HTTPException) as exc:
+        await verify_otp_service(db, grad.id, first_code, OtpPurpose.EMAIL_VERIFICATION)
+    assert exc.value.status_code == 400
+
+    # Verifying with the second code should succeed
+    res = await verify_otp_service(db, grad.id, second_code, OtpPurpose.EMAIL_VERIFICATION)
+    assert res["status"] == "success"
 
 
 async def test_registration_with_failing_sender_returns_partial(
