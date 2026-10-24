@@ -11,6 +11,7 @@ import {
 } from './hooks/useAdminGraduates.js';
 import { useAdminAudit } from './hooks/useAdminAudit.js';
 import { ApiError } from '../../api/admin.js';
+import { companionsLabel } from '../../utils/companions';
 
 const TICKET_STATUS_LABELS = {
   CONFIRMED: 'مؤكد',
@@ -22,11 +23,6 @@ const TICKET_STATUS_LABELS = {
 const QR_TYPE_LABELS = {
   GRADUATE: 'رمز الخريج',
   COMPANION: 'رمز مرافق',
-};
-
-const TICKET_TYPE_LABELS = {
-  TWO_COMPANIONS: 'خريج + ٢ مرافقان',
-  THREE_COMPANIONS: 'خريج + ٣ مرافقين',
 };
 
 const nowLabel = () =>
@@ -372,7 +368,7 @@ export default function AdminExceptions({
                 <div>
                   <span className="exc-info-label">فئة التذكرة</span>
                   <div className="exc-info-value">
-                    {ticket ? (TICKET_TYPE_LABELS[ticket.ticket_type] || '—') : '—'}
+                    {ticket?.companions_count != null ? companionsLabel(ticket.companions_count) : '—'}
                   </div>
                   <span className="exc-info-sub">عدد المرافقين: {ticket?.companions_count ?? '—'}</span>
                 </div>

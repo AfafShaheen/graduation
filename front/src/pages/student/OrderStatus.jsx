@@ -3,6 +3,7 @@ import '../../style/OrderStatus.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';
+import { companionsLabel } from '../../utils/companions';
 
 /* تنسيق التاريخ والوقت بالعربية مع أرقام إنجليزية */
 const formatDate = (value) => {
@@ -13,11 +14,6 @@ const formatDate = (value) => {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date);
-};
-
-const TICKET_TYPE_LABEL = {
-  TWO_COMPANIONS: 'خريج + مرافقان',
-  THREE_COMPANIONS: 'خريج + ثلاثة مرافقين',
 };
 
 export default function OrderStatus() {
@@ -110,7 +106,7 @@ export default function OrderStatus() {
                       نوع التذكرة:
                     </span>
                     <span className="os-meta-val">
-                      {TICKET_TYPE_LABEL[ticket?.ticket_type] || '—'}
+                      {ticket?.companions_count != null ? companionsLabel(ticket.companions_count) : '—'}
                     </span>
                   </div>
 

@@ -465,3 +465,12 @@
   .scan-login-app-container { padding: 40px 0; }
   .scan-login-mobile-frame { max-width: 640px; }
 }
+/* قائمة اختيار الحفل عند تكرار اسم المستخدم بأكثر من حفل */
+.scan-login-field-group select.scan-login-input {
+  width: 100%;
+  appearance: auto;
+  cursor: pointer;
+}
+.scan-login-field-group .scan-login-submit-btn {
+  margin-top: 8px;
+}

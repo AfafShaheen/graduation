@@ -191,9 +191,6 @@ export default function AdminScannersSettings({
                     />
                     <span className="scan-set-symbol scan-set-input-icon right">account_circle</span>
                   </div>
-                  <p className="scan-set-hint">
-                    يمكن تكرار اسم المستخدم بين الحفلات، لكن ليس داخل الحفل نفسه.
-                  </p>
                 </div>
 
                 <div className="scan-set-field">
@@ -235,6 +232,12 @@ export default function AdminScannersSettings({
                   <span className="scan-set-symbol" style={{ fontSize: '20px' }}>add</span>
                   <span>{creating ? 'جارٍ الإضافة...' : 'إضافة ماسح جديد'}</span>
                 </button>
+
+                {/* ملاحظة بعرض الصف كامل حتى لا تزيح الحقول عن محاذاتها */}
+                <p className="scan-set-hint scan-set-form-note">
+                  <span className="scan-set-symbol" aria-hidden="true">info</span>
+                  يمكن تكرار اسم المستخدم بين الحفلات، لكن ليس داخل الحفل نفسه.
+                </p>
               </form>
             </div>
 

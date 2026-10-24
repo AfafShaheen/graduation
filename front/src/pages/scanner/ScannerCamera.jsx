@@ -8,13 +8,15 @@ import { getScannerToken, isScannerTokenExpired, clearScannerSession, getScanner
 import ScanSuccessResult from './ScanSuccessResult';
 import ScanErrorResult from './ScanErrorResult';
 import WrongCeremoniesWarning from './WrongCeremoniesWarning';
+import { eventTitle, formatEventDate } from '../../utils/eventLabel';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function ScannerCamera({ onLogout }) {
   const navigate = useNavigate();
   const eventInfo = getScannerEvent();
-  const eventName = eventInfo?.name || 'ماسح التذاكر';
+  const eventName = eventTitle(eventInfo) || 'بوابة المسح الميداني';
+  const eventDate = formatEventDate(eventInfo?.event_date);
 
   const [isTorchActive, setIsTorchActive] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
@@ -383,6 +385,7 @@ export default function ScannerCamera({ onLogout }) {
             <div>
               <h1 className="scan-cam-header-title">ماسح التذاكر — جامعة حمص</h1>
               <p className="scan-cam-header-sub">{eventName}</p>
+              {eventDate && <p className="scan-cam-header-sub scan-cam-header-date" dir="ltr">{eventDate}</p>}
             </div>
           </div>
 
@@ -416,7 +419,7 @@ export default function ScannerCamera({ onLogout }) {
               <span className="scan-cam-pulse-ring"></span>
               <span className="scan-cam-pulse-core"></span>
             </span>
-            <span className="scan-cam-status-text">{eventInfo?.name ? `حفل: ${eventInfo.name}` : 'جاهز للمسح'}</span>
+            <span className="scan-cam-status-text">{eventInfo?.name ? eventName : 'جاهز للمسح'}</span>
           </div>
 
           <div className="scan-cam-sync-badge">
@@ -506,7 +509,7 @@ export default function ScannerCamera({ onLogout }) {
             </button>
           </div>
 
-          <p className="scan-cam-supervisor">{eventInfo?.name ? `حفل تخرج جامعة حمص — ${eventInfo.name}` : 'بوابة المسح الميداني'}</p>
+          <p className="scan-cam-supervisor">{eventInfo?.name ? `حفل تخرج جامعة حمص — ${eventName}` : 'بوابة المسح الميداني'}</p>
         </footer>
 
         {/* Result Overlay Sheet */}

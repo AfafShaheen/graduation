@@ -311,3 +311,53 @@ async def test_create_event_allows_disjoint_window_for_shared_college(
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 201, resp.text
+
+
+async def test_register_step2_same_token_twice_with_other_email_is_rejected(
+    client, db, make_event, make_college
+):
+    """One account per graduate: reusing the step-1 token with a different
+    email must not create a second account (the token stays in the browser)."""
+    from app.models.graduate import GraduateModel
+
+    event = await make_event()
+    college = await make_college(event.id)
+    signup_value = create_registration_token(_payload(college.id, "800010"))
+
+    first = await client.post(
+        "/api/graduates/register",
+        json=_register_body(signup_value, _email("first-account")),
+    )
+    assert first.status_code == 201, first.text
+
+    second = await client.post(
+        "/api/graduates/register",
+        json=_register_body(signup_value, _email("second-account")),
+    )
+    assert second.status_code == 400
+    assert second.json()["detail"] == messages.UNIVERSITY_ID_ALREADY_REGISTERED
+
+    rows = (
+        await db.execute(
+            select(GraduateModel.id).where(GraduateModel.university_id == "800010")
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+
+
+async def test_register_step2_rejects_university_id_registered_in_other_college(
+    client, make_event, make_college, make_graduate
+):
+    """The check matches the university id in any college, like step 1."""
+    event = await make_event()
+    college_a = await make_college(event.id)
+    college_b = await make_college(event.id)
+    await make_graduate(college_a.id, university_id="800011", email=_email("in-college-a"))
+
+    signup_value = create_registration_token(_payload(college_b.id, "800011"))
+    resp = await client.post(
+        "/api/graduates/register",
+        json=_register_body(signup_value, _email("in-college-b")),
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == messages.UNIVERSITY_ID_ALREADY_REGISTERED

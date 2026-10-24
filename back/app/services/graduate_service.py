@@ -277,6 +277,18 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
             detail="انتهت جلسة التسجيل. يرجى إعادة الخطوة الأولى."
         )
 
+    # One account per graduate: a step-1 token can be reused (it stays in the
+    # browser), so re-check here that no account exists for this university id
+    # (any college) before creating one with a different email.
+    existing_grad = await db.execute(
+        select(GraduateModel.id).where(GraduateModel.university_id == university_id)
+    )
+    if existing_grad.scalars().first() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=messages.UNIVERSITY_ID_ALREADY_REGISTERED,
+        )
+
     event = await get_college_event(db, college_id)
     if event is None:
         raise HTTPException(

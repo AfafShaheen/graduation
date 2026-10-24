@@ -71,7 +71,10 @@ function seoPlugin({ base = '/' } = {}) {
       `<meta name="twitter:title" content="${escapeAttr(title)}" />`,
       `<meta name="twitter:description" content="${escapeAttr(description)}" />`,
       `<meta name="twitter:image" content="${escapeAttr(ogImage)}" />`,
-      `<link rel="icon" type="image/svg+xml" href="${escapeAttr(`${base}favicon.svg`)}" />`,
+      `<link rel="icon" href="${escapeAttr(`${base}favicon.ico`)}" sizes="any" />`,
+      `<link rel="icon" type="image/png" sizes="32x32" href="${escapeAttr(`${base}favicon-32.png`)}" />`,
+      `<link rel="icon" type="image/png" sizes="192x192" href="${escapeAttr(`${base}favicon-192.png`)}" />`,
+      `<link rel="apple-touch-icon" href="${escapeAttr(`${base}apple-touch-icon.png`)}" />`,
       `<link rel="preconnect" href="https://fonts.googleapis.com" />`,
       `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />`,
     ].filter(Boolean)

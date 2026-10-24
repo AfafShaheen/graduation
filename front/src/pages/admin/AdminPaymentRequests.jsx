@@ -217,7 +217,7 @@ export default function AdminPaymentRequests({
       items.map((it) => {
         const g = it.graduate || {};
         const p = it.payment || {};
-        const guests = it.ticket_type === 'THREE_COMPANIONS' ? 3 : 2;
+        const guests = Number(it.companions_count ?? 0);
         const required = Number(it.price || 0);
         const paid = Number(p.amount || 0);
         return {

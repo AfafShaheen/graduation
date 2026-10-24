@@ -610,3 +610,91 @@
   .ev-mobile-shell { max-width: 640px; }
   .ev-ticket-card { padding: 32px 28px; }
 }
+/* ===== نموذج تعديل البريد الإلكتروني ===== */
+.ev-change-email {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 16px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8faf9;
+  text-align: right;
+  box-sizing: border-box;
+}
+.ev-change-email-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #124d44;
+}
+.ev-change-email-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid #d6dee0;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 16px; /* 16px يمنع التكبير التلقائي على iOS */
+  text-align: left;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ev-change-email-input:focus {
+  border-color: #124d44;
+  box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
+}
+.ev-change-email-input.has-error {
+  border-color: #c62828;
+}
+.ev-change-email-error {
+  margin: 0;
+  font-size: 13px;
+  color: #c62828;
+}
+.ev-change-email-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ev-change-email-save,
+.ev-change-email-cancel {
+  height: 46px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ev-change-email-save {
+  border: none;
+  background: #124d44;
+  color: #fff;
+}
+.ev-change-email-save:hover:not(:disabled) {
+  background: #0e3d36;
+}
+.ev-change-email-cancel {
+  border: 1.5px solid #d6dee0;
+  background: #fff;
+  color: #475569;
+}
+.ev-change-email-save:disabled,
+.ev-change-email-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+@media (min-width: 600px) {
+  .ev-change-email-actions {
+    flex-direction: row;
+  }
+  .ev-change-email-save {
+    flex: 2;
+  }
+  .ev-change-email-cancel {
+    flex: 1;
+  }
+}

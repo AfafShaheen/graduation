@@ -6,6 +6,7 @@ import { useAdminEvents } from './hooks/useAdminEvents.js';
 import { useAdminVolunteers } from './hooks/useAdminVolunteers.js';
 import { fetchRecentPayments } from './hooks/useAdminPayments.js';
 import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
+import { companionsLabel } from '../../utils/companions';
 
 const PAY_STATUS_UI = {
   CONFIRMED: 'confirmed',
@@ -17,7 +18,6 @@ const PAY_STATUS_UI = {
 const PAY_LABELS = { confirmed: 'مؤكدة', review: 'قيد التدقيق', rejected: 'مرفوضة' };
 const PAY_ICONS = { confirmed: 'check', review: 'schedule', rejected: 'close' };
 
-const COMPANIONS_LABEL = { TWO_COMPANIONS: 'خريج + ٢ مرافقان', THREE_COMPANIONS: 'خريج + ٣ مرافقين' };
 
 /* الأعمدة القابلة للإخفاء (اسم الخريج وعمود الإجراءات ثابتان) */
 const OPTIONAL_COLUMNS = [
@@ -125,7 +125,7 @@ export default function AdminDashboard({
         name: p.graduate?.full_name || '—',
         uniId: p.graduate?.university_id || '—',
         college: p.graduate?.college_name || '—',
-        ticketType: COMPANIONS_LABEL[p.ticket_type] || '—',
+        ticketType: p.companions_count != null ? companionsLabel(p.companions_count) : '—',
         status: PAY_STATUS_UI[p.status] || 'review',
       }))
       .filter((r) => !q || r.name.includes(q) || String(r.uniId).includes(q));
@@ -437,14 +437,22 @@ export default function AdminDashboard({
                 </span>
               </div>
               <div className="adm-ticket-types">
-                <div className="adm-ticket-type-row">
-                  <span>خريج + مرافقان</span>
-                  <strong className="green">{fmt(ticketTypes.TWO_COMPANIONS?.total)}</strong>
-                </div>
-                <div className="adm-ticket-type-row">
-                  <span>خريج + ثلاثة مرافقين</span>
-                  <strong className="orange">{fmt(ticketTypes.THREE_COMPANIONS?.total)}</strong>
-                </div>
+                {/* ticket_types مفتاحه عدد المرافقين كنص: { "2": {total, confirmed}, "3": … } */}
+                {Object.keys(ticketTypes).length === 0 ? (
+                  <div className="adm-ticket-type-row">
+                    <span>لا توجد تذاكر محجوزة بعد</span>
+                    <strong className="green">{fmt(0)}</strong>
+                  </div>
+                ) : (
+                  Object.entries(ticketTypes)
+                    .sort(([a], [b]) => Number(a) - Number(b))
+                    .map(([count, bucket], i) => (
+                      <div className="adm-ticket-type-row" key={count}>
+                        <span>{companionsLabel(count)}</span>
+                        <strong className={i % 2 === 0 ? 'green' : 'orange'}>{fmt(bucket?.total)}</strong>
+                      </div>
+                    ))
+                )}
               </div>
             </div>
           </div>

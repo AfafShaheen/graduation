@@ -30,6 +30,14 @@ export function hasValidGraduateSession() {
  *   (فلو فتح رابطاً خاطئاً بالخطأ يُعاد توجيهه تلقائياً للصفحة الصحيحة).
  */
 export default function TicketGuard({ children }) {
+  // React reuses the same TicketGuard instance when moving between ticket routes
+  // (/tickets -> /payment ...), so its ticket data would be stale and bounce the
+  // graduate back. Keying by path remounts it and re-fetches the ticket.
+  const location = useLocation();
+  return <TicketGuardInner key={location.pathname}>{children}</TicketGuardInner>;
+}
+
+function TicketGuardInner({ children }) {
   const location = useLocation();
   const { data, loading, error } = useMyTicket();
 

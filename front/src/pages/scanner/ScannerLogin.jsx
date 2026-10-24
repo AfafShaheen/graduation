@@ -5,6 +5,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { request } from '../../api/client';
 import { setScannerSession } from '../../api/session';
 import ContactPhoneLink from '../../components/ContactPhoneLink';
+import { eventTitle, formatEventDate } from '../../utils/eventLabel';
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
@@ -182,7 +183,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
                     <option value="">— اختر الحفل —</option>
                     {eventChoices.map((ev) => (
                       <option key={ev.id} value={String(ev.id)}>
-                        {ev.name}{ev.event_date ? ` — ${ev.event_date}` : ''}
+                        {eventTitle(ev)}{ev.event_date ? ` — ${formatEventDate(ev.event_date)}` : ''}
                       </option>
                     ))}
                   </select>
@@ -192,7 +193,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
                     disabled={!selectedEventId || loading}
                     onClick={() => performLogin(selectedEventId)}
                   >
-                    <span>متابعة الدخول</span>
+                    <span>دخول إلى هذا الحفل</span>
                     <span className="scan-login-symbol">arrow_back</span>
                   </button>
                 </div>

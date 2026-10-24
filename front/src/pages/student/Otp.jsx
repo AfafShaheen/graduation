@@ -59,6 +59,8 @@ export default function Otp({
   const [notice, setNotice] = useState('');
   const [serverError, setServerError] = useState('');
   const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [changeEmailError, setChangeEmailError] = useState('');
+  const [changingEmail, setChangingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [email, setEmail] = useState(emailProp || getGraduateEmail() || '');
 
@@ -267,9 +269,27 @@ export default function Otp({
 
   const handleChangeEmail = async (e) => {
     e.preventDefault();
+    if (changingEmail) return;
     const trimmed = newEmail.trim();
-    if (!trimmed || !verificationToken) return;
+    setChangeEmailError('');
+    if (!trimmed) {
+      setChangeEmailError('يرجى إدخال البريد الإلكتروني الجديد');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setChangeEmailError('صيغة البريد الإلكتروني غير صحيحة');
+      return;
+    }
+    if (trimmed.toLowerCase() === (email || '').toLowerCase()) {
+      setChangeEmailError('هذا هو البريد الحالي نفسه');
+      return;
+    }
+    if (!verificationToken) {
+      setChangeEmailError('انتهت جلسة التحقق، سجّل الدخول من جديد');
+      return;
+    }
 
+    setChangingEmail(true);
     try {
       await changeEmail(trimmed, verificationToken);
       setEmail(trimmed);
@@ -280,8 +300,16 @@ export default function Otp({
       resetOtpState();
       inputRefs.current[0]?.focus();
     } catch (err) {
-      setServerError(firstFieldError(err) || err.message || 'تعذّر تغيير البريد');
+      setChangeEmailError(firstFieldError(err) || err.message || 'تعذّر تغيير البريد');
+    } finally {
+      setChangingEmail(false);
     }
+  };
+
+  const closeChangeEmail = () => {
+    setShowChangeEmail(false);
+    setNewEmail('');
+    setChangeEmailError('');
   };
 
   const handleSubmit = (e) => {
@@ -382,7 +410,7 @@ export default function Otp({
               <span className="ev-email-address" dir="ltr">{email}</span>
               <span className="ev-pill-dot">•</span>
               {!isResetMode && (
-                <button className="ev-edit-btn" type="button" onClick={() => setShowChangeEmail(!showChangeEmail)}>
+                <button className="ev-edit-btn" type="button" onClick={() => (showChangeEmail ? closeChangeEmail() : setShowChangeEmail(true))}>
                   <span>تعديل البريد</span>
                   <span className="ev-symbol" style={{ fontSize: '13px' }}>edit</span>
                 </button>
@@ -396,19 +424,45 @@ export default function Otp({
             </div>
 
             {showChangeEmail && !isResetMode && (
-              <form onSubmit={handleChangeEmail} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <form className="ev-change-email" onSubmit={handleChangeEmail} noValidate>
+                <label className="ev-change-email-label" htmlFor="ev-new-email">
+                  البريد الإلكتروني الجديد
+                </label>
                 <input
+                  id="ev-new-email"
                   type="email"
-                  className="ev-otp-field"
-                  style={{ flex: 1, textAlign: 'left', direction: 'ltr' }}
-                  placeholder="البريد الجديد"
+                  className={`ev-change-email-input ${changeEmailError ? 'has-error' : ''}`}
+                  placeholder="name@example.com"
                   value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
+                  onChange={(e) => {
+                    setNewEmail(e.target.value);
+                    if (changeEmailError) setChangeEmailError('');
+                  }}
                   dir="ltr"
+                  autoComplete="email"
+                  autoFocus
+                  disabled={changingEmail}
+                  aria-invalid={!!changeEmailError}
+                  aria-describedby={changeEmailError ? 'ev-new-email-error' : undefined}
                 />
-                <button type="submit" className="ev-resend-btn active" style={{ padding: '8px 16px' }}>
-                  حفظ
-                </button>
+                {changeEmailError && (
+                  <p id="ev-new-email-error" className="ev-change-email-error" role="alert">
+                    {changeEmailError}
+                  </p>
+                )}
+                <div className="ev-change-email-actions">
+                  <button type="submit" className="ev-change-email-save" disabled={changingEmail}>
+                    {changingEmail ? 'جارٍ الإرسال...' : 'حفظ وإرسال الرمز'}
+                  </button>
+                  <button
+                    type="button"
+                    className="ev-change-email-cancel"
+                    onClick={closeChangeEmail}
+                    disabled={changingEmail}
+                  >
+                    إلغاء
+                  </button>
+                </div>
               </form>
             )}
 

@@ -6,23 +6,34 @@ import unionLogo from '../../assets/only-logo.png';
 import { getTicketOptions, selectTicket } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 
-/* نبني بطاقة العرض من نوع التذكرة القادم من الـ API */
-const buildOption = (o) => {
-  const three = o.ticket_type === 'THREE_COMPANIONS';
+/* صيغة العدد بالعربي: 1 مرافق، 2 مرافقان، 3-10 مرافقين، 11+ مرافقاً */
+const companionsText = (n) => {
+  if (n === 1) return 'مرافق واحد';
+  if (n === 2) return 'مرافقان';
+  if (n >= 3 && n <= 10) return `${n.toLocaleString('ar-SY')} مرافقين`;
+  return `${n.toLocaleString('ar-SY')} مرافقاً`;
+};
+
+/* الباك يرجّع باقات الحفل: [{ companions_count, price }].
+   عدد المرافقين فريد ضمن الحفل، فنستخدمه كمعرّف للبطاقة وكقيمة الإرسال. */
+const buildOption = (o, index, all) => {
+  const n = Number(o.companions_count);
+  const isLargest = all.length > 1 && n === Math.max(...all.map((x) => Number(x.companions_count)));
   return {
-    id: o.ticket_type,
-    title: three ? 'خريج + ثلاثة مرافقين' : 'خريج + مرافقان',
-    guestsCount: o.companions_count,
+    id: n,
+    title: `خريج + ${companionsText(n)}`,
+    guestsCount: n,
     price: o.price,
     features: [
       { icon: 'chair', text: 'مقعد مخصص للخريج في المنصة الرئيسية' },
-      three
-        ? { icon: 'groups', text: 'ثلاثة مقاعد للمرافقين في الصالة الشرفية' }
-        : { icon: 'group', text: 'مقعدان مخصصان للمرافقين في الصالة الشرفية' },
+      { icon: n > 2 ? 'groups' : 'group', text: `${companionsText(n)} في الصالة الشرفية` },
     ],
-    badge: three
-      ? { className: 'st-badge-family', icon: 'family_restroom', text: 'باقة العائلة الموسعة' }
-      : { className: 'st-badge-popular', dot: true, text: 'الأكثر اختياراً' },
+    badge:
+      index === 0
+        ? { className: 'st-badge-popular', dot: true, text: 'الأكثر اختياراً' }
+        : isLargest
+          ? { className: 'st-badge-family', icon: 'family_restroom', text: 'باقة العائلة الموسعة' }
+          : null,
   };
 };
 
@@ -52,7 +63,11 @@ export default function SelectTicket({ onBack }) {
     try {
       const result = await getTicketOptions(accessValue);
       setData(result);
-      setSelectedType((prev) => prev || (result.options || [])[0]?.ticket_type || null);
+      setSelectedType((prev) => {
+        const counts = (result.options || []).map((o) => Number(o.companions_count));
+        if (prev != null && counts.includes(prev)) return prev;
+        return counts.length ? counts[0] : null;
+      });
     } catch (err) {
       setError(err?.message || 'تعذّر تحميل باقات التذاكر، حاول لاحقاً.');
     } finally {
@@ -65,7 +80,7 @@ export default function SelectTicket({ onBack }) {
   }, [load]);
 
   const handleContinue = async () => {
-    if (!registrationOpen || !selectedType) return;
+    if (!registrationOpen || selectedType == null) return;
     const accessValue = getGraduateToken();
     if (!accessValue) {
       navigate('/login');
@@ -74,7 +89,7 @@ export default function SelectTicket({ onBack }) {
     setSubmitting(true);
     setActionError('');
     try {
-      await selectTicket({ ticket_type: selectedType, confirm: true }, accessValue);
+      await selectTicket({ companions_count: selectedType, confirm: true }, accessValue);
       navigate('/payment');
     } catch (err) {
       if (err?.status === 409) {
@@ -210,6 +225,7 @@ export default function SelectTicket({ onBack }) {
                     ))}
                   </ul>
 
+                  {option.badge && (
                   <div className="st-option-footer">
                     <span className={option.badge.className}>
                       {option.badge.dot && (
@@ -223,6 +239,7 @@ export default function SelectTicket({ onBack }) {
                       {option.badge.text}
                     </span>
                   </div>
+                  )}
                 </div>
               ))}
             </section>
@@ -256,7 +273,7 @@ export default function SelectTicket({ onBack }) {
             className="st-action-btn"
             type="button"
             onClick={handleContinue}
-            disabled={!registrationOpen || !selectedType || submitting}
+            disabled={!registrationOpen || selectedType == null || submitting}
           >
             <span>{submitting ? 'جارٍ التأكيد...' : 'تأكيد الاختيار ومتابعة الدفع'}</span>
             <span className="st-symbol" style={{ fontSize: '20px' }}>
