@@ -6,7 +6,6 @@ import {
   listUniversityFiles,
   uploadUniversityFile,
   linkUniversityFile,
-  deleteUniversityFile,
   getEvents,
   ApiError,
   downloadBlob,
@@ -48,7 +47,6 @@ export default function AdminUniversityFiles({
 
   const [linkingId, setLinkingId] = useState(null);
   const [linkEventId, setLinkEventId] = useState('');
-  const [confirmId, setConfirmId] = useState(null);
   const [report, setReport] = useState(null);
 
   const loadFiles = useCallback(() => {
@@ -186,20 +184,6 @@ export default function AdminUniversityFiles({
       if (r) setReport(r);
     } catch (err) {
       setError(apiErrorMessage(err, 'تعذّر ربط الملف بالحفل.'));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleDelete = async (fileId) => {
-    setBusy(true);
-    setError('');
-    try {
-      await deleteUniversityFile(fileId);
-      setFiles((prev) => prev.filter((f) => f.id !== fileId));
-      setConfirmId(null);
-    } catch (err) {
-      setError(apiErrorMessage(err, 'تعذّر حذف الملف.'));
     } finally {
       setBusy(false);
     }
@@ -467,39 +451,10 @@ export default function AdminUniversityFiles({
                         onClick={() => {
                           setLinkingId(f.id);
                           setLinkEventId(f.event_id ? String(f.event_id) : '');
-                          setConfirmId(null);
                         }}
                       >
                         {f.event_id ? 'إعادة الربط' : 'ربط بحفل'}
                       </button>
-                      {confirmId === f.id ? (
-                        <>
-                          <span className="uf-confirm-text">تأكيد الحذف؟</span>
-                          <button
-                            type="button"
-                            className="uf-btn danger"
-                            disabled={busy}
-                            onClick={() => handleDelete(f.id)}
-                          >
-                            حذف
-                          </button>
-                          <button
-                            type="button"
-                            className="uf-btn ghost"
-                            onClick={() => setConfirmId(null)}
-                          >
-                            إلغاء
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          className="uf-btn danger"
-                          onClick={() => setConfirmId(f.id)}
-                        >
-                          حذف
-                        </button>
-                      )}
                     </div>
                   )}
                 </article>

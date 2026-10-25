@@ -7,7 +7,6 @@ import {
   listColleges,
   createCollege,
   updateCollege,
-  deleteCollege,
   ApiError,
 } from '../../api/admin.js';
 
@@ -29,7 +28,6 @@ export default function AdminColleges({
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
-  const [confirmId, setConfirmId] = useState(null);
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && setNavOpen(false);
@@ -100,7 +98,6 @@ export default function AdminColleges({
   const startEdit = (college) => {
     setEditingId(college.id);
     setEditingName(college.name);
-    setConfirmId(null);
   };
 
   const handleUpdate = async (college) => {
@@ -123,26 +120,6 @@ export default function AdminColleges({
       setEditingName('');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'تعذّر تحديث الكلية.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    setBusy(true);
-    setError('');
-    try {
-      await deleteCollege(id);
-      setColleges((prev) => {
-        const next = prev.filter((c) => c.id !== id);
-        setSelectedId((cur) =>
-          String(cur) === String(id) ? (next[0] ? String(next[0].id) : '') : cur
-        );
-        return next;
-      });
-      setConfirmId(null);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'تعذّر حذف الكلية.');
     } finally {
       setBusy(false);
     }
@@ -270,41 +247,9 @@ export default function AdminColleges({
                           <span className="col-count">{(c.majors || []).length} تخصص</span>
                         </button>
                         <div className="col-item-actions">
-                          {confirmId === c.id ? (
-                            <>
-                              <span className="col-confirm-text">تأكيد الحذف؟</span>
-                              <button
-                                type="button"
-                                className="col-btn danger"
-                                disabled={busy}
-                                onClick={() => handleDelete(c.id)}
-                              >
-                                نعم
-                              </button>
-                              <button
-                                type="button"
-                                className="col-btn ghost"
-                                disabled={busy}
-                                onClick={() => setConfirmId(null)}
-                              >
-                                لا
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button type="button" className="col-btn ghost" onClick={() => startEdit(c)}>
-                                تعديل
-                              </button>
-                              <button
-                                type="button"
-                                className="col-btn danger"
-                                disabled={busy}
-                                onClick={() => setConfirmId(c.id)}
-                              >
-                                حذف
-                              </button>
-                            </>
-                          )}
+                          <button type="button" className="col-btn ghost" onClick={() => startEdit(c)}>
+                            تعديل
+                          </button>
                         </div>
                       </>
                     )}
