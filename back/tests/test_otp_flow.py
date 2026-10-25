@@ -100,6 +100,34 @@ async def test_resend_blocked_immediately_then_allowed_after_cooldown(
     assert again["status"] == "success"
 
 
+async def test_resend_invalidates_older_otp_codes(
+    db, make_event, make_college, make_graduate, sent_otps, monkeypatch
+):
+    event = await make_event()
+    college = await make_college(event.id)
+    grad = await make_graduate(college.id, university_id="400004", email=_email("oldotp"))
+
+    from app.services.auth_service import issue_and_send_otp, verify_otp_service
+
+    codes = iter(["111111", "222222"])
+    monkeypatch.setattr("app.services.auth_service.generate_otp", lambda: next(codes))
+
+    await issue_and_send_otp(db, grad, OtpPurpose.EMAIL_VERIFICATION, grad.email)
+    assert sent_otps[-1][1] == "111111"
+
+    key = f"cooldown:{OtpPurpose.EMAIL_VERIFICATION.value}:{grad.id}"
+    await redis_client.delete(key)
+    await issue_and_send_otp(db, grad, OtpPurpose.EMAIL_VERIFICATION, grad.email)
+    assert sent_otps[-1][1] == "222222"
+
+    with pytest.raises(HTTPException) as exc:
+        await verify_otp_service(db, grad.id, "111111", OtpPurpose.EMAIL_VERIFICATION)
+    assert exc.value.status_code == 400
+
+    result = await verify_otp_service(db, grad.id, "222222", OtpPurpose.EMAIL_VERIFICATION)
+    assert result["status"] == "success"
+
+
 async def test_resend_with_failing_sender_returns_503_without_cooldown(
     db, make_event, make_college, make_graduate, monkeypatch
 ):

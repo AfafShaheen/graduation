@@ -9,12 +9,15 @@ Constraints:
 
 import enum
 import hashlib
+import html
 import logging
 import os
 import secrets
 import smtplib
 from datetime import UTC, datetime
+from email.headerregistry import Address
 from email.message import EmailMessage
+from email.utils import formatdate, make_msgid, parseaddr
 
 from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, Text, select, update
 from sqlalchemy.orm import Session
@@ -23,6 +26,7 @@ OTP_LENGTH = 6
 OTP_TTL_MINUTES = 10
 MAX_FAILED_ATTEMPTS = 5
 RESEND_COOLDOWN_SECONDS = 60
+FROM_DISPLAY_NAME = "اتحاد الطلبة - حفل التخرج"
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +94,58 @@ def hash_otp(code: str) -> str:
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
 
+def _address_part(value: str) -> str:
+    """Return the bare address from ``value``, preserving a bare local part."""
+    _, address = parseaddr(value or "")
+    return (address or (value or "")).strip()
+
+
+def _address_domain(value: str) -> str:
+    """Return the domain of ``value``, or an empty string when it has none."""
+    address = _address_part(value)
+    if "@" in address:
+        return address.rsplit("@", 1)[1].strip()
+    return ""
+
+
+def _build_from_address(sender_value: str, user: str) -> tuple[str, str]:
+    """Return ``(address, domain)`` for the From header and Message-ID.
+
+    ``SMTP_FROM`` wins. When it is empty or has no domain, the SMTP user's
+    domain is used so the Message-ID always carries a plausible domain.
+    """
+    user_address = _address_part(user)
+    address = _address_part(sender_value) or user_address
+    domain = _address_domain(sender_value) or _address_domain(user_address)
+    if "@" not in address:
+        address = f"{address or 'noreply'}@{domain or 'localhost'}"
+    if not domain:
+        domain = _address_domain(address) or "localhost"
+    return address, domain
+
+
+def _otp_html_body(code: str) -> str:
+    """Return a minimal RTL HTML alternative with no external assets."""
+    safe_code = html.escape(code)
+    return (
+        '<!DOCTYPE html>\n'
+        '<html dir="rtl" lang="ar">\n'
+        "<body style=\"margin:0;padding:24px;background:#f5f5f5;"
+        'font-family:Tahoma,Arial,sans-serif;direction:rtl;text-align:right;">\n'
+        '<div style="max-width:480px;margin:0 auto;padding:24px;'
+        'background:#ffffff;border-radius:8px;">\n'
+        "<p style=\"margin:0 0 12px;font-size:16px;\">رمز التحقق الخاص بك:</p>\n"
+        '<p style="margin:0 0 12px;font-size:32px;font-weight:bold;'
+        'letter-spacing:6px;text-align:center;direction:ltr;">'
+        f"{safe_code}</p>\n"
+        '<p style="margin:0;font-size:14px;color:#555555;">'
+        f"الرمز صالح لمدة {OTP_TTL_MINUTES} دقائق ويُستخدم مرة واحدة.</p>\n"
+        "</div>\n"
+        "</body>\n"
+        "</html>"
+    )
+
+
 def deliver_otp_email(
     to_email: str,
     code: str,
@@ -109,7 +165,8 @@ def deliver_otp_email(
     port = int(cfg.get("port") or os.environ.get("SMTP_PORT") or "587")
     user = str(cfg.get("user") or os.environ.get("SMTP_USER", ""))
     auth = str(cfg.get("auth") or os.environ.get("SMTP_PASSWORD", ""))
-    sender = str(cfg.get("from") or os.environ.get("SMTP_FROM", user))
+    sender_value = str(cfg.get("from") or os.environ.get("SMTP_FROM", "")).strip()
+    reply_to = str(cfg.get("reply_to") or os.environ.get("SMTP_REPLY_TO", "")).strip()
     use_tls = bool(cfg.get("tls", True))
 
     if not host or not user:
@@ -134,11 +191,18 @@ def deliver_otp_email(
         f"الرمز صالح لمدة {OTP_TTL_MINUTES} دقائق ويُستخدم مرة واحدة."
     )
 
+    sender_address, sender_domain = _build_from_address(sender_value, user)
+
     message = EmailMessage()
-    message["From"] = sender
+    message["From"] = Address(display_name=FROM_DISPLAY_NAME, addr_spec=sender_address)
     message["To"] = to_email
     message["Subject"] = subject
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid(domain=sender_domain)
+    if reply_to:
+        message["Reply-To"] = reply_to
     message.set_content(body)
+    message.add_alternative(_otp_html_body(code), subtype="html")
 
     try:
         with smtplib.SMTP(host, port, timeout=15) as server:
@@ -147,6 +211,26 @@ def deliver_otp_email(
             server.login(user, auth)
             server.send_message(message)
         return SendOutcome.SENT
+    except smtplib.SMTPRecipientsRefused as exc:
+        logger.error(
+            "SMTP refused OTP recipients for %s via %s:%s: %s",
+            to_email,
+            host,
+            port,
+            exc.recipients,
+        )
+        return SendOutcome.FAILED
+    except (smtplib.SMTPDataError, smtplib.SMTPResponseException) as exc:
+        logger.error(
+            "SMTP rejected OTP email for %s via %s:%s (%s): code=%s reply=%s",
+            to_email,
+            host,
+            port,
+            type(exc).__name__,
+            getattr(exc, "smtp_code", None),
+            getattr(exc, "smtp_error", None),
+        )
+        return SendOutcome.FAILED
     except (smtplib.SMTPException, OSError) as exc:
         logger.error(
             "Failed to send OTP email to %s via %s:%s (%s): %s",
