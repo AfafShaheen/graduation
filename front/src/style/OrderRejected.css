@@ -1,0 +1,403 @@
+/* ==========================================================================
+   صفحة رفض الطلب (.or-*): بنفس هوية بقية الصفحات
+   ========================================================================== */
+
+/* حاوية الصفحة */
+.or-app-container {
+  display: flex;
+  justify-content: center;
+  background-color: #fcf6ed;
+  color: #201b0f;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Ghroob', 'Cairo', sans-serif;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+.or-mobile-shell {
+  width: 100%;
+  max-width: 100%;
+  background-color: #fcf6ed;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: none;
+  box-sizing: border-box;
+  isolation: isolate;
+  overflow: clip; /* بيقص النقشة الدوّارة بدون ما يكسر الهيدر والفوتر الثابتين */
+}
+
+/* نقشة SVG دوّارة خلف الصفحة (نفس بقية الصفحات) */
+.or-mobile-shell::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(300%, 1800px);
+  aspect-ratio: 1;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #e6d3a6;
+  opacity: 0.5;
+  -webkit-mask-image: url('../assets/pattern.svg');
+  mask-image: url('../assets/pattern.svg');
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 520px auto;
+  mask-size: 520px auto;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: or-pattern-spin 180s linear infinite;
+  will-change: transform;
+}
+
+@keyframes or-pattern-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .or-mobile-shell::before { animation: none; }
+}
+
+/* الهيدر العلوي */
+.or-header-main {
+  width: 100%;
+  background-color: #124d44;
+  color: #ffffff;
+  border-top: 3px solid #ca4b00;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.or-header-top {
+  width: 100%;
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.or-header-title {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  text-align: center;
+}
+
+.or-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: transparent;
+  border: none;
+}
+
+/* عناصر غير قابلة للضغط (اللوغو والمساحة الفارغة) */
+.or-icon-btn.static {
+  cursor: default;
+}
+
+.or-header-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+}
+
+.or-header-subband {
+  background-color: rgba(18, 77, 68, 0.95);
+  padding: 6px 16px 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.or-subband-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff8f1;
+}
+
+.or-badge-batch {
+  background-color: #d94e00;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* المحتوى */
+.or-content-body {
+  flex: 1;
+  margin: 0 clamp(12px, 4vw, 16px);
+  padding: 16px 0 12px 0;
+  box-sizing: border-box;
+}
+
+/* البطاقة البيضاء */
+.or-card-box {
+  background-color: #ffffff;
+  border-radius: 24px;
+  padding: 24px 16px;
+  border: 1px solid #eedebd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* أيقونة الرفض */
+.or-error-outer-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  background-color: rgba(255, 218, 214, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.or-error-inner-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background-color: #ba1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+/* شارة الرفض */
+.or-badge-rejected {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background-color: rgba(255, 218, 214, 0.6);
+  border: 1px solid rgba(186, 26, 26, 0.3);
+  margin-bottom: 12px;
+}
+
+.or-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: #ba1a1a;
+}
+
+.or-badge-text {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: #ba1a1a;
+}
+
+/* العنوان والنص */
+.or-card-headline {
+  font-size: 19px;
+  line-height: 28px;
+  font-weight: 800;
+  color: #201b0f;
+  margin: 0 0 8px 0;
+}
+
+.or-card-subtext {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #594138;
+  max-width: 300px;
+  margin: 0 0 20px 0;
+}
+
+/* صندوق سبب الرفض */
+.or-reason-box {
+  width: 100%;
+  background-color: #f8edd9;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #eedebd;
+  box-sizing: border-box;
+}
+
+.or-reason-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.or-reason-title {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+  color: #201b0f;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.or-reason-desc {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #594138;
+  margin: 0;
+}
+
+.or-reason-divider {
+  border-top: 1px solid #e2bfb2;
+  padding-top: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* الشريط السفلي والإجراءات */
+.or-bottom-dock {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  margin-top: auto;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
+  background-color: rgba(252, 246, 237, 0.95);
+  backdrop-filter: blur(4px);
+  z-index: 20;
+  border-top: 1px solid #eedebd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.or-resubmit-btn {
+  width: 100%;
+  height: 52px;
+  border-radius: 9999px;
+  background-color: #124d44;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(202, 75, 0, 0.2);
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 8px;
+  transition: transform 0.15s, background-color 0.15s;
+  font-family: inherit;
+}
+
+.or-resubmit-btn:hover {
+  background-color: #1d6358;
+}
+
+.or-resubmit-btn:active {
+  transform: scale(0.98);
+}
+
+.or-support-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  color: #594138;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  transition: color 0.15s ease;
+}
+
+.or-support-link:hover {
+  color: #124d44;
+}
+
+.or-support-text {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(202, 75, 0, 0.4);
+}
+
+.or-support-link:hover .or-support-text {
+  text-decoration-color: #ca4b00;
+}
+
+.or-footer {
+  text-align: center;
+}
+
+.or-footer-text {
+  font-size: 11px;
+  line-height: 14px;
+  color: #725b51;
+  margin: 0;
+}
+
+/* أيقونات Material Symbols */
+.or-symbol {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+}
+
+/* ===== Responsive ===== */
+
+/* شاشات صغيرة جداً */
+@media (max-width: 359px) {
+  .or-header-title { font-size: 15px; }
+  .or-card-box { padding: 20px 12px; }
+  .or-card-headline { font-size: 17px; }
+}
+
+/* تابلت ولابتوب */
+@media (min-width: 600px) {
+  .or-app-container { padding: 24px 0; }
+  .or-mobile-shell {
+    max-width: 560px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-radius: 24px;
+  }
+  .or-header-top,
+  .or-header-subband { padding-left: 24px; padding-right: 24px; }
+  .or-content-body { margin: 0 24px; }
+  .or-card-box { padding: 28px 24px; }
+  .or-bottom-dock { padding: 12px 24px 16px; }
+}
+
+@media (min-width: 1024px) {
+  .or-app-container { padding: 40px 0; }
+  .or-mobile-shell { max-width: 640px; }
+}

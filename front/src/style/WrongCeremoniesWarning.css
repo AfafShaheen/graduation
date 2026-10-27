@@ -1,0 +1,414 @@
+/* ==========================================================================
+   شاشة تنبيه: التذكرة تابعة لحفل ثاني (.wrong-cer-*)
+   بنفس ألوان وخط وهيدر شاشة المسح وباقي الواجهات
+   ========================================================================== */
+
+.wrong-cer-app-container {
+  --wc-green: #124d44;
+  --wc-orange: #ca4b00;
+  --wc-accent: #ff7a2f;
+  --wc-cream: #fcf6ed;
+  --wc-sand: #f8edd9;
+  --wc-line: #eedebd;
+  --wc-text: #201b0f;
+  --wc-muted: #725b51;
+
+  display: flex;
+  justify-content: center;
+  background-color: var(--wc-cream);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  font-family: "Ghroob", sans-serif;
+  color: var(--wc-text);
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrong-cer-mobile-frame {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  background-color: var(--wc-cream);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+/* ===== الهيدر ===== */
+.wrong-cer-header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 16px;
+  background-color: var(--wc-green);
+  color: #ffffff;
+  border-top: 3px solid var(--wc-orange);
+  box-sizing: border-box;
+}
+
+.wrong-cer-header-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.wrong-cer-header-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+.wrong-cer-header-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+.wrong-cer-header-sub {
+  font-size: 11px;
+  color: #b5d6cf;
+  margin: 2px 0 0 0;
+}
+
+/* ===== شريط الحفل الجاري ===== */
+.wrong-cer-subbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background-color: var(--wc-sand);
+  border-bottom: 1px solid var(--wc-line);
+  box-sizing: border-box;
+}
+
+.wrong-cer-subbar-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--wc-green);
+}
+
+.wrong-cer-pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background-color: var(--wc-orange);
+  animation: wrongCerPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes wrongCerPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.5;
+  }
+}
+
+/* ===== المحتوى ===== */
+.wrong-cer-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.wrong-cer-card {
+  background-color: #ffffff;
+  border: 3px solid var(--wc-orange);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 10px 20px -8px rgba(18, 77, 68, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.wrong-cer-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 9999px;
+  background-color: rgba(202, 75, 0, 0.1);
+  border: 2px solid rgba(202, 75, 0, 0.3);
+  color: var(--wc-orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.wrong-cer-pill {
+  padding: 4px 14px;
+  border-radius: 9999px;
+  background-color: rgba(202, 75, 0, 0.1);
+  border: 1px solid rgba(202, 75, 0, 0.3);
+  color: var(--wc-orange);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wrong-cer-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--wc-orange);
+  line-height: 1.3;
+}
+
+.wrong-cer-desc {
+  margin: 0 0 8px 0;
+  max-width: 300px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--wc-muted);
+}
+
+.wrong-cer-info-panel {
+  width: 100%;
+  background-color: var(--wc-cream);
+  border: 1px solid var(--wc-line);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.wrong-cer-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--wc-line);
+}
+
+.wrong-cer-compare-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.wrong-cer-compare-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--wc-muted);
+}
+
+.wrong-cer-compare-value {
+  text-align: left;
+  font-size: 14px;
+  font-weight: 700;
+}
+.wrong-cer-compare-value.orange {
+  color: var(--wc-orange);
+}
+.wrong-cer-compare-value.green {
+  color: var(--wc-green);
+}
+.wrong-cer-compare-value small {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.wrong-cer-orange {
+  color: var(--wc-orange);
+  font-size: 18px;
+}
+.wrong-cer-green {
+  color: var(--wc-green);
+  font-size: 18px;
+}
+.wrong-cer-muted {
+  color: var(--wc-muted);
+}
+
+.wrong-cer-grad {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wrong-cer-grad-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.wrong-cer-grad-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--wc-text);
+}
+.wrong-cer-grad-faculty {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--wc-green);
+}
+
+.wrong-cer-guide {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  color: var(--wc-muted);
+}
+
+.wrong-cer-guide p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+/* ===== الزر السفلي ===== */
+.wrong-cer-footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--wc-cream);
+  border-top: 1px solid var(--wc-line);
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
+  box-sizing: border-box;
+}
+
+.wrong-cer-next-btn {
+  width: 100%;
+  height: 52px;
+  border-radius: 9999px;
+  background-color: var(--wc-green);
+  color: #ffffff;
+  border: 1px solid rgba(202, 75, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    background-color 0.15s ease;
+}
+
+.wrong-cer-next-btn:hover {
+  background-color: #0d3a33;
+}
+.wrong-cer-next-btn:active {
+  transform: scale(0.98);
+}
+
+.wrong-cer-ready {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--wc-muted);
+}
+
+.wrong-cer-ready-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: var(--wc-green);
+}
+
+/* ===== أيقونات Material Symbols ===== */
+.wrong-cer-symbol {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrong-cer-symbol.fill {
+  font-variation-settings: "FILL" 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrong-cer-pulse-dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 359px) {
+  .wrong-cer-header-title {
+    font-size: 14px;
+  }
+  .wrong-cer-title {
+    font-size: 21px;
+  }
+}
+
+@media (min-width: 600px) {
+  .wrong-cer-app-container {
+    padding: 24px 0;
+  }
+  .wrong-cer-mobile-frame {
+    max-width: 560px;
+    height: calc(100dvh - 48px);
+    min-height: 640px;
+    border-radius: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  .wrong-cer-header,
+  .wrong-cer-subbar,
+  .wrong-cer-main,
+  .wrong-cer-footer {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .wrong-cer-app-container {
+    padding: 40px 0;
+  }
+  .wrong-cer-mobile-frame {
+    max-width: 640px;
+    height: calc(100dvh - 80px);
+  }
+}

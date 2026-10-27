@@ -1,0 +1,33 @@
+{
+  "repo_root": "..",
+
+  "ftp": {
+    "host": "sunion-homs-uni.sy",
+    "port": 21,
+    "user": "PUT_FTP_USERNAME_HERE",
+    "tls": true,
+    "verify_tls": false
+  },
+
+  "front": {
+    "dir": "front",
+    "remote_dir": "public_html/graduation",
+    "site_url": "https://sunion-homs-uni.sy/graduation/",
+    "npm_ci": false,
+    "env": {
+      "VITE_BASE_PATH": "/graduation/",
+      "VITE_API_URL": "/gradapi",
+      "VITE_SITE_URL": "https://sunion-homs-uni.sy/graduation",
+      "VITE_PREVIEW": "false"
+    }
+  },
+
+  "back": {
+    "dir": "back",
+    "remote_dir": "graduation_back",
+    "health_url": "https://sunion-homs-uni.sy/gradapi/health",
+    "skip": ["passenger_wsgi_real.py"],
+    "venv_python": "/home/sunionhomsuni/virtualenv/graduation_back/3.11/bin/python",
+    "app_root_abs": "/home/sunionhomsuni/graduation_back"
+  }
+}

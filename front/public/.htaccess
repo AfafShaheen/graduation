@@ -1,0 +1,8 @@
+# For the cPanel sub-path deploy only (frontend served from /graduation/).
+# Harmless elsewhere: nginx ignores .htaccess files.
+RewriteEngine On
+RewriteBase /graduation/
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /graduation/index.html [L]

@@ -1,0 +1,39 @@
+{
+  "siteName": "حفل تخرج جامعة حمص",
+  "siteUrl": "https://sunion-homs-uni.sy/graduation",
+  "basePath": "/graduation/",
+  "defaultTitle": "حفل تخرج جامعة حمص 2026 - تسجيل الخريجين",
+  "titleTemplate": "%s | حفل تخرج جامعة حمص",
+  "defaultDescription": "الموقع الرسمي لتسجيل حضور حفل تخرج جامعة حمص: تحقّق من بياناتك، اختر تذكرتك، وأكمل الدفع إلكترونياً.",
+  "keywords": "حفل تخرج، جامعة حمص، اتحاد الطلبة، تسجيل الخريجين، تذكرة تخرج",
+  "locale": "ar_SY",
+  "lang": "ar",
+  "dir": "rtl",
+  "themeColor": "#124d44",
+  "ogImage": "og-image.png",
+  "publisher": {
+    "name": "حفل تخرج جامعة حمص",
+    "logo": "og-image.png"
+  },
+  "publicRoutes": [
+    {
+      "path": "/",
+      "title": "حفل تخرج جامعة حمص 2026 - تسجيل الخريجين",
+      "description": "الموقع الرسمي لتسجيل حضور حفل تخرج جامعة حمص: تحقّق من بياناتك، اختر تذكرتك، وأكمل الدفع إلكترونياً.",
+      "changefreq": "weekly",
+      "priority": "1.0"
+    }
+  ],
+  "disallowPaths": [
+    "/admin",
+    "/scanner",
+    "/tickets",
+    "/payment",
+    "/payment-submitted",
+    "/payment-rejected",
+    "/my-ticket",
+    "/otp",
+    "/reset-otp",
+    "/reset-password"
+  ]
+}

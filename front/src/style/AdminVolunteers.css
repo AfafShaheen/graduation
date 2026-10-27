@@ -1,0 +1,411 @@
+/* ==========================================================================
+   قائمة الخريجين الراغبين بتولّي مسؤولية (.vol-*)
+   بتعتمد على تخطيط الإدارة (AdminDashboard.css): الشريط الجانبي والشريط العلوي
+   ========================================================================== */
+
+/* زر العودة بالشريط العلوي */
+.vol-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 9999px;
+  border: 1px solid #124d44;
+  background: transparent;
+  color: #124d44;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.vol-back-btn:hover {
+  background-color: #124d44;
+  color: #ffffff;
+}
+
+.vol-back-text {
+  display: none;
+}
+
+/* الملخص */
+.vol-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.vol-stat {
+  background-color: #ffffff;
+  border: 1px solid #eedebd;
+  border-radius: 20px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.vol-stat.highlight {
+  border: 2px solid #ca4b00;
+}
+
+.vol-stat-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #594138;
+}
+
+.vol-stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: #201b0f;
+  font-variant-numeric: tabular-nums;
+}
+
+.vol-stat-value.green {
+  color: #124d44;
+}
+
+.vol-stat-value.orange {
+  color: #ca4b00;
+}
+
+/* التصفية */
+.vol-filters {
+  background-color: #ffffff;
+  border: 1px solid #eedebd;
+  border-radius: 24px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: end;
+}
+
+.vol-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.vol-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #201b0f;
+}
+
+.vol-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid #e2bfb2;
+  background-color: #fffdfa;
+  color: #201b0f;
+  /* 16px تمنع الآيفون من عمل زوم عند الضغط على الحقل */
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.vol-input:focus {
+  border-color: #124d44;
+  box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
+}
+
+.vol-search-wrap {
+  position: relative;
+}
+
+.vol-search-wrap .vol-input {
+  padding-right: 40px;
+}
+
+.vol-search-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8d7166;
+  pointer-events: none;
+}
+
+.vol-reset-btn {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  border: 1px solid #e2bfb2;
+  background: transparent;
+  color: #594138;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.vol-reset-btn:hover {
+  background-color: #f8edd9;
+}
+
+/* بطاقة القائمة */
+.vol-list-card {
+  background-color: #ffffff;
+  border: 1px solid #eedebd;
+  border-radius: 24px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.vol-list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vol-count {
+  margin: 0;
+  font-size: 13px;
+  color: #594138;
+}
+
+.vol-count strong {
+  color: #124d44;
+  font-size: 16px;
+}
+
+/* الجدول: على الشاشات الصغيرة بيصير بطاقات */
+.vol-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.vol-table thead {
+  display: none;
+}
+
+.vol-table tbody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vol-table tr {
+  display: block;
+  background-color: #f8edd9;
+  border: 1px solid #eedebd;
+  border-radius: 16px;
+  padding: 10px 14px;
+}
+
+.vol-table td {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  text-align: left;
+  color: #201b0f;
+}
+
+.vol-table td::before {
+  content: attr(data-label);
+  font-size: 11px;
+  font-weight: 700;
+  color: #8d7166;
+  flex-shrink: 0;
+}
+
+.vol-name {
+  display: block;
+  font-weight: 800;
+  color: #201b0f;
+  text-align: left;
+}
+
+.vol-sub {
+  display: block;
+  font-size: 11px;
+  color: #8d7166;
+  text-align: left;
+}
+
+.vol-phone {
+  direction: ltr;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+.vol-chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vol-chip.yes {
+  color: #124d44;
+  background-color: rgba(18, 77, 68, 0.12);
+}
+
+.vol-chip.no {
+  color: #725b51;
+  background-color: rgba(141, 113, 102, 0.15);
+}
+
+/* لا توجد نتائج */
+.vol-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 12px;
+  text-align: center;
+  color: #594138;
+  font-size: 14px;
+}
+
+.vol-empty p {
+  margin: 0;
+}
+
+/* التنقل بين الصفحات */
+.vol-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #f2e7d3;
+}
+
+.vol-page-info {
+  font-size: 12px;
+  color: #594138;
+}
+
+.vol-page-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vol-page-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  border: 1px solid #124d44;
+  background: transparent;
+  color: #124d44;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.vol-page-btn:hover:not(:disabled) {
+  background-color: #124d44;
+  color: #ffffff;
+}
+
+.vol-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vol-page-current {
+  font-size: 13px;
+  font-weight: 700;
+  color: #201b0f;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 359px) {
+  .vol-stat-value { font-size: 22px; }
+  .vol-filters,
+  .vol-list-card { padding: 12px; }
+}
+
+/* تابلت */
+@media (min-width: 640px) {
+  .vol-back-text { display: inline; }
+  .vol-summary-grid { grid-template-columns: repeat(4, 1fr); }
+  .vol-filters {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 20px;
+  }
+  .vol-field-search { grid-column: 1 / -1; }
+  .vol-list-card { padding: 20px; }
+}
+
+/* لابتوب: الجدول الكامل */
+@media (min-width: 1024px) {
+  .vol-filters {
+    grid-template-columns: 2fr 1.4fr 1fr 1fr 1fr auto;
+  }
+  .vol-field-search { grid-column: auto; }
+  .vol-input { font-size: 14px; }
+
+  .vol-table thead {
+    display: table-header-group;
+  }
+  .vol-table tbody {
+    display: table-row-group;
+  }
+  .vol-table th {
+    text-align: right;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8d7166;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eedebd;
+    white-space: nowrap;
+  }
+  .vol-table tr {
+    display: table-row;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+  .vol-table tbody tr:hover {
+    background-color: #fcf6ed;
+  }
+  .vol-table td {
+    display: table-cell;
+    padding: 12px;
+    border-bottom: 1px solid #f2e7d3;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .vol-table td::before {
+    content: none;
+  }
+  .vol-name,
+  .vol-sub {
+    text-align: right;
+  }
+}

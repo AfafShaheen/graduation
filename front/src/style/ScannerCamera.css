@@ -1,0 +1,739 @@
+/* ==========================================================================
+   شاشة المسح الميدانية (.scan-cam-*)
+   نسخة محسّنة للأداء: بدون backdrop-filter فوق الفيديو، أنيميشن عبر transform فقط
+   ========================================================================== */
+
+   .scan-cam-app-container {
+    --sc-green: #124d44;
+    --sc-green-deep: #0d3a33;
+    --sc-orange: #ca4b00;
+    --sc-accent: #ff7a2f;
+    --sc-cream: #fcf6ed;
+    --sc-sand: #f8edd9;
+    --sc-line: #eedebd;
+    --sc-text: #201b0f;
+    --sc-muted: #725b51;
+  
+    display: flex;
+    justify-content: center;
+    background-color: var(--sc-cream);
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    font-family: 'Ghroob', sans-serif;
+    color: var(--sc-text);
+    direction: rtl;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  .scan-cam-mobile-frame {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    background-color: var(--sc-cream);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    isolation: isolate;
+    box-sizing: border-box;
+    user-select: none;
+  }
+  
+  /* ===== الهيدر ===== */
+  .scan-cam-header {
+    position: relative;
+    z-index: 30;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    height: 56px;
+    padding: 0 16px;
+    background-color: var(--sc-green);
+    color: #ffffff;
+    border-top: 3px solid var(--sc-orange);
+    box-sizing: border-box;
+  }
+  
+  .scan-cam-header-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  
+  .scan-cam-header-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
+  }
+  
+  .scan-cam-header-title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+  }
+  
+  .scan-cam-header-sub {
+    font-size: 11px;
+    color: #b5d6cf;
+    margin: 2px 0 0 0;
+  }
+  
+  .scan-cam-header-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .scan-cam-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+  }
+  
+  .scan-cam-icon-btn:hover {
+    background-color: rgba(255, 255, 255, 0.22);
+  }
+  
+  .scan-cam-icon-btn:active {
+    transform: scale(0.95);
+  }
+  
+  .scan-cam-icon-btn.active {
+    background-color: var(--sc-orange);
+  }
+  
+  /* ===== شريط الحالة ===== */
+  .scan-cam-status-bar {
+    position: relative;
+    z-index: 20;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 6px 16px 8px 16px;
+    background-color: rgba(18, 77, 68, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
+  }
+  
+  .scan-cam-status-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .scan-cam-status-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff8f1;
+  }
+  
+  .scan-cam-sync-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    background-color: var(--sc-orange);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  
+  .scan-cam-pulse-dot {
+    position: relative;
+    display: flex;
+    height: 10px;
+    width: 10px;
+  }
+  
+  .scan-cam-pulse-ring {
+    animation: scanCamPing 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+    position: absolute;
+    display: inline-flex;
+    height: 100%;
+    width: 100%;
+    border-radius: 9999px;
+    background-color: var(--sc-accent);
+    opacity: 0.75;
+    will-change: transform, opacity;
+  }
+  
+  .scan-cam-pulse-core {
+    position: relative;
+    display: inline-flex;
+    border-radius: 9999px;
+    height: 10px;
+    width: 10px;
+    background-color: var(--sc-accent);
+  }
+  
+  @keyframes scanCamPing {
+    75%, 100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  
+  /* ===== منطقة الكاميرا ===== */
+  .scan-cam-viewfinder-zone {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    background-color: #000000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  #qr-reader {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 1 !important;
+    overflow: hidden !important;
+    background: transparent !important;
+    border: none !important;
+  }
+  
+  /* الفيديو فقط يملأ المنطقة. لا نلمس الـ canvas الخاص بالمكتبة */
+  #qr-reader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    position: absolute !important;
+    inset: 0 !important;
+  }
+  
+  #qr-reader__dashboard_section,
+  #qr-reader__header_message,
+  #qr-reader__status_span {
+    display: none !important;
+  }
+  
+  /* (تم حذف النقشة ::before مع mask-image لأنها كانت مخفية تحت الفيديو وتكلّف رسم إضافي) */
+  
+  .scan-cam-prompt-card {
+    position: relative;
+    z-index: 5;
+    pointer-events: none;
+    margin-bottom: 16px;
+    padding: 0 16px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+  
+  .scan-cam-prompt-pill {
+    background-color: rgba(18, 77, 68, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 10px 16px;
+    border-radius: 9999px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 340px;
+  }
+  
+  .scan-cam-prompt-pill p {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: center;
+    line-height: 1.5;
+  }
+  
+  .scan-cam-accent {
+    color: var(--sc-accent);
+  }
+  
+  .scan-cam-orange {
+    color: var(--sc-orange);
+  }
+  
+  /* مربع التوجيه والليزر */
+  .scan-cam-reticle-box {
+    --reticle-size: min(240px, 64vw);
+  
+    position: relative;
+    z-index: 5;
+    pointer-events: none;
+    width: var(--reticle-size);
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* توهج ثابت بـ box-shadow، والأنيميشن على opacity فقط (يُعالج على الـGPU) */
+  .scan-cam-reticle-glow {
+    animation: scanCamPulseGlow 3s ease-in-out infinite;
+    position: absolute;
+    inset: -4px;
+    border-radius: 16px;
+    box-shadow: 0 0 20px 6px rgba(255, 122, 47, 0.28);
+    will-change: opacity;
+  }
+  
+  @keyframes scanCamPulseGlow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.9; }
+  }
+  
+  .scan-cam-reticle-frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 122, 47, 0.3);
+    background-color: rgba(18, 77, 68, 0.15);
+    overflow: hidden;
+  }
+  
+  .scan-cam-corner {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-color: var(--sc-accent);
+    border-style: solid;
+    border-width: 0;
+  }
+  
+  .scan-cam-corner-tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 10px; }
+  .scan-cam-corner-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 10px; }
+  .scan-cam-corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 10px; }
+  .scan-cam-corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 10px; }
+  
+  .scan-cam-reticle-watermark {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.15;
+    pointer-events: none;
+    color: #ffffff;
+  }
+  
+  .scan-cam-reticle-watermark .scan-cam-symbol {
+    font-size: 140px;
+  }
+  
+  /* الليزر: يتحرك بـ transform فقط (بدون layout ولا repaint) */
+  .scan-cam-laser {
+    animation: scanCamMotion 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    position: absolute;
+    top: 0;
+    left: 8px;
+    right: 8px;
+    height: 4px;
+    background: linear-gradient(to right, transparent, var(--sc-accent), transparent);
+    box-shadow: 0 0 10px var(--sc-accent);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    will-change: transform, opacity;
+  }
+  
+  .scan-cam-laser-dot {
+    width: 12px;
+    height: 12px;
+    background-color: var(--sc-accent);
+    border-radius: 50%;
+  }
+  
+  @keyframes scanCamMotion {
+    0%   { transform: translateY(4px); opacity: 0; }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { transform: translateY(calc(var(--reticle-size) - 12px)); opacity: 0; }
+  }
+  
+  .scan-cam-distance {
+    position: relative;
+    z-index: 5;
+    pointer-events: none;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #b5d6cf;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  
+  /* ===== الشريط السفلي ===== */
+  .scan-cam-footer {
+    position: relative;
+    z-index: 30;
+    flex-shrink: 0;
+    background-color: var(--sc-cream);
+    border-top: 1px solid var(--sc-line);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
+    box-shadow: 0 -8px 24px -4px rgba(18, 77, 68, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+  }
+  
+  .scan-cam-sheet-handle {
+    width: 40px;
+    height: 4px;
+    background-color: #e2cfa8;
+    border-radius: 9999px;
+    margin: 0 auto;
+  }
+  
+  .scan-cam-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  
+  .scan-cam-summary-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .scan-cam-summary-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(18, 77, 68, 0.12);
+    color: var(--sc-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .scan-cam-summary-text {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sc-text);
+  }
+  
+  .scan-cam-count {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 14px;
+    border-radius: 9999px;
+    background-color: var(--sc-orange);
+    color: #ffffff;
+  }
+  
+  .scan-cam-count-num {
+    font-size: 18px;
+    font-weight: 800;
+  }
+  
+  .scan-cam-count-unit {
+    font-size: 12px;
+    opacity: 0.9;
+  }
+  
+  .scan-cam-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .scan-cam-manual-btn {
+    flex: 1;
+    min-height: 48px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    border: 1px solid var(--sc-line);
+    background-color: var(--sc-sand);
+    color: var(--sc-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+  }
+  
+  .scan-cam-manual-btn:hover {
+    background-color: #f2e3c4;
+  }
+  
+  .scan-cam-manual-btn:active {
+    transform: scale(0.98);
+  }
+  
+  .scan-cam-round-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+  
+  .scan-cam-round-btn:active {
+    transform: scale(0.95);
+  }
+  
+  .scan-cam-round-btn.primary {
+    background-color: var(--sc-green);
+    color: #ffffff;
+    border: 1px solid rgba(202, 75, 0, 0.2);
+  }
+  
+  .scan-cam-round-btn.on {
+    background-color: var(--sc-orange);
+    color: #ffffff;
+    border: 1px solid var(--sc-orange);
+  }
+  
+  .scan-cam-round-btn.soft {
+    background-color: var(--sc-sand);
+    color: #594138;
+    border: 1px solid var(--sc-line);
+  }
+  
+  .scan-cam-supervisor {
+    text-align: center;
+    font-size: 11px;
+    color: var(--sc-muted);
+    margin: 0;
+  }
+  
+  /* ===== نافذة الإدخال اليدوي ===== */
+  .scan-cam-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background-color: rgba(13, 58, 51, 0.75);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  
+  .scan-cam-modal-sheet {
+    background-color: #ffffff;
+    border-top: 1px solid var(--sc-line);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)) 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+  
+  .scan-cam-modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f2e7d3;
+  }
+  
+  .scan-cam-modal-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .scan-cam-modal-title-row h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--sc-green);
+  }
+  
+  .scan-cam-modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--sc-sand);
+    border: none;
+    color: #594138;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  
+  .scan-cam-modal-desc {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #594138;
+  }
+  
+  .scan-cam-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 14px;
+    border-radius: 12px;
+    background-color: #fffdfa;
+    border: 1px solid #e2bfb2;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--sc-text);
+    outline: none;
+    box-sizing: border-box;
+    user-select: text;
+    transition: border-color 0.2s;
+  }
+  
+  .scan-cam-input:focus {
+    border-color: var(--sc-green);
+  }
+  
+  .scan-cam-input.error {
+    border-color: #ba1a1a;
+  }
+  
+  .scan-cam-error-text {
+    color: #ba1a1a;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 4px 0 0 0;
+    line-height: 1.4;
+  }
+  
+  .scan-cam-modal-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  
+  .scan-cam-btn-primary,
+  .scan-cam-btn-soft {
+    height: 48px;
+    border-radius: 9999px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+  
+  .scan-cam-btn-primary {
+    background-color: var(--sc-green);
+    color: #ffffff;
+    border: 1px solid rgba(202, 75, 0, 0.2);
+  }
+  
+  .scan-cam-btn-soft {
+    background-color: var(--sc-sand);
+    color: var(--sc-text);
+    border: 1px solid var(--sc-line);
+  }
+  
+  .scan-cam-btn-primary:active,
+  .scan-cam-btn-soft:active {
+    transform: scale(0.98);
+  }
+  
+  /* ===== أيقونات Material Symbols ===== */
+  .scan-cam-symbol {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 20px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  .scan-cam-symbol.fill {
+    font-variation-settings: 'FILL' 1;
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .scan-cam-pulse-ring,
+    .scan-cam-reticle-glow,
+    .scan-cam-laser {
+      animation: none;
+    }
+    .scan-cam-laser { top: 50%; opacity: 1; transform: none; }
+  }
+  
+  @media (max-width: 359px) {
+    .scan-cam-header-title { font-size: 14px; }
+    .scan-cam-prompt-pill p { font-size: 13px; }
+  }
+  
+  @media (min-width: 600px) {
+    .scan-cam-app-container { padding: 24px 0; }
+    .scan-cam-mobile-frame {
+      max-width: 560px;
+      height: calc(100dvh - 48px);
+      min-height: 640px;
+      border-radius: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .scan-cam-header,
+    .scan-cam-status-bar { padding-left: 24px; padding-right: 24px; }
+    .scan-cam-footer { padding-left: 24px; padding-right: 24px; }
+    .scan-cam-modal-sheet { padding-left: 24px; padding-right: 24px; }
+  }
+  
+  @media (min-width: 1024px) {
+    .scan-cam-app-container { padding: 40px 0; }
+    .scan-cam-mobile-frame {
+      max-width: 640px;
+      height: calc(100dvh - 80px);
+    }
+  }
+  /* سطر تاريخ الحفل تحت اسمه في رأس شاشة المسح */
+  .scan-cam-header-date {
+    opacity: 0.75;
+    font-size: 11px;
+    margin-top: 1px;
+  }
+  

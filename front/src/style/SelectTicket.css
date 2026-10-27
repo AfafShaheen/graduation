@@ -1,0 +1,579 @@
+/* ==========================================================================
+   صفحة اختيار التذكرة (.st-*): بنفس هوية بقية الصفحات
+   ========================================================================== */
+
+/* حاوية الصفحة */
+.st-app-container {
+  display: flex;
+  justify-content: center;
+  background-color: #fcf6ed;
+  color: #201b0f;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Ghroob', 'Cairo', sans-serif;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+.st-mobile-shell {
+  width: 100%;
+  max-width: 100%;
+  background-color: #fcf6ed;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: none;
+  box-sizing: border-box;
+  isolation: isolate;
+  overflow: clip; /* بيقص النقشة الدوّارة بدون ما يكسر الهيدر والفوتر الثابتين */
+}
+
+/* نقشة SVG دوّارة خلف الصفحة (نفس بقية الصفحات) */
+.st-mobile-shell::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(300%, 1800px);
+  aspect-ratio: 1;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #e6d3a6;
+  opacity: 0.5;
+  -webkit-mask-image: url('../assets/pattern.svg');
+  mask-image: url('../assets/pattern.svg');
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 520px auto;
+  mask-size: 520px auto;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: st-pattern-spin 180s linear infinite;
+  will-change: transform;
+}
+
+@keyframes st-pattern-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-mobile-shell::before { animation: none; }
+}
+
+/* الهيدر العلوي */
+.st-header-main {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  width: 100%;
+  background-color: #124d44;
+  border-top: 3px solid #ca4b00;
+  color: #ffffff;
+}
+
+.st-header-top {
+  width: 100%;
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.st-header-title {
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  text-align: center;
+}
+
+.st-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.st-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.st-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* لوغو اتحاد الطلبة (عنصر غير قابل للضغط) */
+.st-icon-btn.static {
+  cursor: default;
+}
+
+.st-icon-btn.static:hover {
+  background-color: transparent;
+}
+
+.st-icon-btn.static:active {
+  transform: none;
+}
+
+.st-header-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+}
+
+.st-header-subband {
+  background-color: rgba(18, 77, 68, 0.95);
+  padding: 6px 16px 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.st-subband-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff8f1;
+}
+
+.st-badge-batch {
+  background-color: #d94e00;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* المحتوى الرئيسي */
+.st-main-stage {
+  flex: 1;
+  margin: 0 clamp(12px, 4vw, 16px);
+  padding: 16px 0 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+/* قسم الترحيب */
+.st-hero-card {
+  background-color: #ffffff;
+  border-radius: 24px;
+  padding: 16px;
+  border: 1px solid #eedebd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.st-hero-content {
+  flex: 1;
+}
+
+.st-hero-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.st-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: #ca4b00;
+}
+
+.st-tag-text {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 700;
+  color: #124d44;
+}
+
+.st-hero-headline {
+  font-size: 17px;
+  line-height: 26px;
+  font-weight: 800;
+  color: #124d44;
+  margin: 0;
+}
+
+.st-hero-subtext {
+  font-size: 12px;
+  line-height: 18px;
+  color: #725b51;
+  margin: 4px 0 0 0;
+}
+
+/* لوغو الجامعة أبيض، فالخلفية خضرا غامقة ليبين */
+.st-hero-logo-box {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  padding: 10px;
+  background-color: #124d44;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.st-hero-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* بطاقات الباقات */
+.st-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.st-ticket-option {
+  cursor: pointer;
+  background-color: #ffffff;
+  border-radius: 24px;
+  padding: 16px;
+  border: 1px solid #eedebd;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.st-ticket-option:hover {
+  border-color: rgba(18, 77, 68, 0.5);
+}
+
+.st-ticket-option:focus-visible {
+  outline: 3px solid rgba(18, 77, 68, 0.3);
+  outline-offset: 2px;
+}
+
+.st-ticket-option.st-selected {
+  border-color: #124d44;
+  box-shadow: 0 0 0 2px #124d44, 0 8px 20px -6px rgba(18, 77, 68, 0.25);
+}
+
+.st-option-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f2e7d3;
+}
+
+.st-option-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* أيقونة التذكرة: كريمي عند عدم الاختيار، وخضراء عند الاختيار */
+.st-option-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: #f8edd9;
+  color: #725b51;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.st-selected .st-option-icon-wrapper {
+  background-color: #124d44;
+  color: #ffffff;
+}
+
+.st-option-title {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  color: #201b0f;
+  margin: 0;
+}
+
+.st-selected .st-option-title {
+  color: #124d44;
+}
+
+.st-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.st-price-label {
+  font-size: 12px;
+  line-height: 18px;
+  color: #725b51;
+  font-weight: 600;
+}
+
+.st-price-val {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 800;
+  color: #201b0f;
+  font-variant-numeric: tabular-nums;
+}
+
+.st-selected .st-price-val {
+  color: #ca4b00;
+}
+
+.st-price-currency {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 700;
+  color: #594138;
+}
+
+.st-radio-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  border: 2px solid #e2bfb2;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  flex-shrink: 0;
+  margin-top: 4px;
+  transition: all 0.2s ease;
+}
+
+.st-selected .st-radio-circle {
+  background-color: #124d44;
+  border-color: #124d44;
+  color: #ffffff;
+}
+
+/* قائمة المزايا */
+.st-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #594138;
+}
+
+.st-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.st-feature-icon {
+  color: #8d7166;
+  font-size: 18px;
+}
+
+.st-selected .st-feature-icon {
+  color: #124d44;
+}
+
+/* شارة أسفل البطاقة */
+.st-option-footer {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f2e7d3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.st-badge-popular {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background-color: #f8edd9;
+  border: 1px solid rgba(202, 75, 0, 0.25);
+  font-size: 11px;
+  line-height: 14px;
+  color: #124d44;
+  font-weight: 700;
+}
+
+.st-badge-family {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background-color: #f8edd9;
+  border: 1px solid #eedebd;
+  font-size: 11px;
+  line-height: 14px;
+  color: #594138;
+  font-weight: 700;
+}
+
+/* التنبيه */
+.st-notice-card {
+  border-radius: 16px;
+  padding: 12px;
+  background-color: #f8edd9;
+  border: 1px solid #eedebd;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.st-notice-icon-bg {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background-color: rgba(202, 75, 0, 0.12);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ca4b00;
+}
+
+.st-notice-headline {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 800;
+  color: #201b0f;
+  margin: 0 0 2px 0;
+}
+
+.st-notice-body {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #594138;
+  margin: 0;
+}
+
+/* الشريط السفلي والزر */
+.st-bottom-dock {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  margin-top: auto;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
+  background-color: rgba(252, 246, 237, 0.95);
+  backdrop-filter: blur(4px);
+  z-index: 30;
+  border-top: 1px solid #eedebd;
+  box-sizing: border-box;
+}
+
+.st-action-btn {
+  width: 100%;
+  height: 52px;
+  border-radius: 9999px;
+  background-color: #124d44;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(202, 75, 0, 0.2);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s, background-color 0.15s;
+  font-family: inherit;
+}
+
+.st-action-btn:hover {
+  background-color: #1d6358;
+}
+
+.st-action-btn:active {
+  transform: scale(0.98);
+}
+
+.st-dock-caption {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #725b51;
+}
+
+/* أيقونات Material Symbols */
+.st-symbol {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+}
+
+/* ===== Responsive ===== */
+
+/* شاشات صغيرة جداً */
+@media (max-width: 359px) {
+  .st-header-title { font-size: 15px; }
+  .st-hero-card { padding: 12px; gap: 10px; }
+  .st-hero-headline { font-size: 15px; }
+  .st-ticket-option { padding: 12px; }
+  .st-price-val { font-size: 21px; }
+  .st-option-title { font-size: 15px; }
+}
+
+/* تابلت ولابتوب */
+@media (min-width: 600px) {
+  .st-app-container { padding: 24px 0; }
+  .st-mobile-shell {
+    max-width: 560px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-radius: 24px;
+  }
+  .st-header-top,
+  .st-header-subband { padding-left: 24px; padding-right: 24px; }
+  .st-main-stage { margin: 0 24px; }
+  .st-hero-card { padding: 20px; }
+  .st-ticket-option { padding: 20px; }
+  .st-bottom-dock { padding: 12px 24px 16px; }
+}
+
+@media (min-width: 1024px) {
+  .st-app-container { padding: 40px 0; }
+  .st-mobile-shell { max-width: 640px; }
+}

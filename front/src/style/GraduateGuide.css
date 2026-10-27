@@ -1,0 +1,338 @@
+/* ==========================================================================
+   دليل التذكرة (.guide-*): بيعتمد على GraduationForm.css (الهيدر والبطاقة والشريط السفلي)
+   ========================================================================== */
+
+.guide-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 8px;
+}
+
+/* المقدمة: نفس .form-card لكن بصف أفقي */
+.guide-intro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* بطاقة كل قسم */
+.guide-section {
+  margin: 0 clamp(12px, 4vw, 16px);
+  background-color: #ffffff;
+  border: 1px solid #eedebd;
+  border-radius: 24px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.guide-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #f2e7d3;
+}
+
+.guide-number {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  background-color: #124d44;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.guide-section-title {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  color: #124d44;
+}
+
+.guide-section-icon {
+  color: #ca4b00;
+  font-size: 22px;
+}
+
+/* قائمة بنقاط */
+.guide-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-list li {
+  position: relative;
+  padding-right: 18px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #594138;
+}
+
+.guide-list li::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 11px;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background-color: #ca4b00;
+}
+
+/* خطوات مرقمة */
+.guide-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  counter-reset: guide-step;
+}
+
+.guide-steps li {
+  counter-increment: guide-step;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #594138;
+}
+
+.guide-steps li::before {
+  content: counter(guide-step);
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 3px;
+  border-radius: 9999px;
+  background-color: #f8edd9;
+  border: 1px solid #eedebd;
+  color: #124d44;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* حالات التذكرة */
+.guide-status-block {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  background-color: #f8edd9;
+  border: 1px solid #eedebd;
+}
+
+.guide-status-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #201b0f;
+  margin-bottom: 8px;
+}
+
+.guide-status-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.guide-status-arrow {
+  font-size: 16px;
+  color: #8d7166;
+}
+
+.guide-status-chip {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.guide-status-chip.neutral {
+  background-color: #ffffff;
+  border: 1px solid #e2bfb2;
+  color: #594138;
+}
+
+.guide-status-chip.orange {
+  background-color: rgba(202, 75, 0, 0.12);
+  color: #ca4b00;
+}
+
+.guide-status-chip.green {
+  background-color: #124d44;
+  color: #ffffff;
+}
+
+.guide-status-note {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #594138;
+}
+
+/* تحذير */
+.guide-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.guide-warning p {
+  margin: 0;
+}
+
+.guide-warning .material-symbols-outlined {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.guide-warning.orange {
+  background-color: #fff0e6;
+  border: 1px solid rgba(202, 75, 0, 0.35);
+  color: #7a2f00;
+}
+
+.guide-warning.orange .material-symbols-outlined {
+  color: #ca4b00;
+}
+
+.guide-warning.red {
+  background-color: #fdecec;
+  border: 1px solid rgba(186, 26, 26, 0.3);
+  color: #8c1414;
+}
+
+.guide-warning.red .material-symbols-outlined {
+  color: #ba1a1a;
+}
+
+/* أسئلة سريعة */
+.guide-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-faq-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background-color: #fcf6ed;
+  border: 1px solid #f2e7d3;
+}
+
+.guide-faq-q {
+  margin: 0 0 2px 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #124d44;
+}
+
+.guide-faq-a {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #594138;
+}
+
+/* الختام */
+.guide-closing {
+  margin: 0 clamp(12px, 4vw, 16px);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 20px;
+  background-color: #124d44;
+  color: #ffffff;
+}
+
+.guide-closing .material-symbols-outlined {
+  color: #ffb598;
+  flex-shrink: 0;
+}
+
+.guide-closing p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.9;
+  font-weight: 600;
+}
+
+/* الشريط السفلي: الموافقة والمتابعة */
+.guide-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guide-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #201b0f;
+  cursor: pointer;
+  user-select: none;
+}
+
+.guide-check.muted {
+  font-size: 12px;
+  font-weight: 600;
+  color: #725b51;
+}
+
+.guide-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #124d44;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.guide-dock .submit-btn {
+  margin-top: 4px;
+}
+
+.guide-dock .submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 359px) {
+  .guide-section { padding: 12px; }
+  .guide-section-title { font-size: 15px; }
+}
+
+@media (min-width: 600px) {
+  .guide-section,
+  .guide-closing { margin: 0 24px; }
+  .guide-section { padding: 20px; }
+}

@@ -1,0 +1,32 @@
+# --- Opencode runtime ---
+.opencode/warden/
+
+# --- Node ---
+node_modules/
+
+# --- Secrets / env ---
+.env
+.env.*
+!.env.example
+
+# --- Logs ---
+*.log
+npm-debug.log*
+
+# --- Build output ---
+dist/
+public/sitemap.xml
+public/robots.txt
+build/
+.next/
+out/
+coverage/
+
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+.vite
+!.env.cpanel.example
