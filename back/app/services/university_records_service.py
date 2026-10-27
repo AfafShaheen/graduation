@@ -484,7 +484,18 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
     return errors
 
 
-async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: AsyncSession) -> Dict[str, int]:
+async def upsert_records(
+    records: List[Dict[str, Any]],
+    event_id: int,
+    db: AsyncSession,
+    file_id: int | None = None,
+) -> Dict[str, int]:
+    """Insert or update the records of an event.
+
+    ``file_id`` (optional) remembers which uploaded file the record came from.
+    It is only written when given, so an import that has no file never erases
+    the provenance of an existing record.
+    """
     colleges = await colleges_for_event(db, event_id)
     college_map = {normalize_arabic(c.name): c.id for c in colleges}
 
@@ -553,6 +564,8 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
             existing.gpa = gpa_val
             existing.top_rank_from_file = top_rank_from_file
             existing.phone = phone
+            if file_id is not None:
+                existing.file_id = file_id
             existing.imported_at = now
             db.add(existing)
             updated += 1
@@ -571,6 +584,7 @@ async def upsert_records(records: List[Dict[str, Any]], event_id: int, db: Async
                 gpa=gpa_val,
                 top_rank_from_file=top_rank_from_file,
                 phone=phone,
+                file_id=file_id,
                 imported_at=now
             )
             db.add(new_rec)

@@ -1638,6 +1638,373 @@
         "title": "ResetPasswordRequest",
         "type": "object"
       },
+      "RosterActions": {
+        "description": "Which exceptional actions are allowed right now (rules live in the API).",
+        "properties": {
+          "cancel_scan": {
+            "title": "Cancel Scan",
+            "type": "boolean"
+          },
+          "manual_entry": {
+            "title": "Manual Entry",
+            "type": "boolean"
+          },
+          "revert_payment": {
+            "title": "Revert Payment",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revert_payment",
+          "manual_entry",
+          "cancel_scan"
+        ],
+        "title": "RosterActions",
+        "type": "object"
+      },
+      "RosterEntry": {
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "entered": {
+            "title": "Entered",
+            "type": "boolean"
+          },
+          "manual": {
+            "default": false,
+            "title": "Manual",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "entered"
+        ],
+        "title": "RosterEntry",
+        "type": "object"
+      },
+      "RosterItem": {
+        "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/RosterActions"
+          },
+          "college_id": {
+            "title": "College Id",
+            "type": "integer"
+          },
+          "college_name": {
+            "title": "College Name",
+            "type": "string"
+          },
+          "entry": {
+            "$ref": "#/components/schemas/RosterEntry"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "integer"
+          },
+          "event_name": {
+            "title": "Event Name",
+            "type": "string"
+          },
+          "father_name": {
+            "title": "Father Name",
+            "type": "string"
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "gender": {
+            "title": "Gender",
+            "type": "string"
+          },
+          "gpa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpa"
+          },
+          "is_top": {
+            "title": "Is Top",
+            "type": "boolean"
+          },
+          "major_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Id"
+          },
+          "major_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Name"
+          },
+          "mother_name": {
+            "title": "Mother Name",
+            "type": "string"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/RosterPayment"
+          },
+          "record_id": {
+            "title": "Record Id",
+            "type": "integer"
+          },
+          "registration": {
+            "$ref": "#/components/schemas/RosterRegistration"
+          },
+          "ticket": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RosterTicket"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "top_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Rank"
+          },
+          "university_id": {
+            "title": "University Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id",
+          "event_id",
+          "event_name",
+          "university_id",
+          "full_name",
+          "father_name",
+          "mother_name",
+          "gender",
+          "college_id",
+          "college_name",
+          "is_top",
+          "registration",
+          "payment",
+          "entry",
+          "actions"
+        ],
+        "title": "RosterItem",
+        "type": "object"
+      },
+      "RosterPayment": {
+        "description": "Payment state: ``none`` | ``pending`` | ``confirmed`` | ``rejected``.",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "mismatch": {
+            "default": false,
+            "title": "Mismatch",
+            "type": "boolean"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "RosterPayment",
+        "type": "object"
+      },
+      "RosterRegistration": {
+        "description": "Account state: ``not_registered`` | ``unverified`` | ``verified``.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "email_verified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Verified"
+          },
+          "graduate_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graduate Id"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "RosterRegistration",
+        "type": "object"
+      },
+      "RosterResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RosterItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "RosterResponse",
+        "type": "object"
+      },
+      "RosterTicket": {
+        "properties": {
+          "companions_count": {
+            "title": "Companions Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "seat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seat"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "companions_count",
+          "type"
+        ],
+        "title": "RosterTicket",
+        "type": "object"
+      },
       "ScanRequest": {
         "additionalProperties": false,
         "properties": {
@@ -4612,6 +4979,493 @@
         "summary": "Update Major",
         "tags": [
           "Admin Majors Management"
+        ]
+      }
+    },
+    "/api/admin/roster": {
+      "get": {
+        "operationId": "get_roster_api_admin_roster_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "file_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "File Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "college_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "College Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "registration",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "not_registered",
+                    "unverified",
+                    "verified"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Registration"
+            }
+          },
+          {
+            "in": "query",
+            "name": "top_rank",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "1",
+                    "2",
+                    "3",
+                    "any",
+                    "none"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Top Rank"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ticket",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "awaiting_payment",
+                    "processing",
+                    "confirmed",
+                    "rejected"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ticket"
+            }
+          },
+          {
+            "in": "query",
+            "name": "payment",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "pending",
+                    "confirmed",
+                    "rejected",
+                    "mismatch"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Payment"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entry",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "entered",
+                    "not_entered"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entry"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ticket_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "two",
+                    "three"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ticket Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "skip",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Skip",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Roster",
+        "tags": [
+          "Admin Roster"
+        ]
+      }
+    },
+    "/api/admin/roster/export": {
+      "get": {
+        "operationId": "export_roster_xlsx_api_admin_roster_export_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "file_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "File Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "college_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "College Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "registration",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "not_registered",
+                    "unverified",
+                    "verified"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Registration"
+            }
+          },
+          {
+            "in": "query",
+            "name": "top_rank",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "1",
+                    "2",
+                    "3",
+                    "any",
+                    "none"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Top Rank"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ticket",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "awaiting_payment",
+                    "processing",
+                    "confirmed",
+                    "rejected"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ticket"
+            }
+          },
+          {
+            "in": "query",
+            "name": "payment",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "pending",
+                    "confirmed",
+                    "rejected",
+                    "mismatch"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Payment"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entry",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "entered",
+                    "not_entered"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entry"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ticket_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "two",
+                    "three"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ticket Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Export Roster Xlsx",
+        "tags": [
+          "Admin Roster"
         ]
       }
     },

@@ -20,6 +20,12 @@ class UniversityRecordModel(Base):
     gpa = Column(Numeric(precision=5, scale=2), nullable=True)
     top_rank_from_file = Column(SmallInteger, nullable=True)
     phone = Column(String(50), nullable=True)
+    file_id = Column(
+        Integer,
+        ForeignKey("university_files.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     imported_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     event = relationship("EventModel", backref="university_records")

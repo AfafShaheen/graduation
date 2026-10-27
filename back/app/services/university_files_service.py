@@ -139,7 +139,7 @@ async def _import_into_event(
             "status": "failed",
         }
 
-    counts = await upsert_records(records, event_id, db)
+    counts = await upsert_records(records, event_id, db, file_id=record.id)
     record.rows_imported = counts["added"]
     record.rows_updated = counts["updated"]
     record.rows_skipped = counts["skipped"]

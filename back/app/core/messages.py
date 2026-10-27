@@ -143,6 +143,7 @@ AUDIT_ACTION_LABELS = {
     "UPDATE_MAJOR": "تعديل تخصص",
     "DELETE_MAJOR": "حذف تخصص",
     "DATA_EXPORTED": "تصدير بيانات",
+    "ROSTER_EXPORTED": "تصدير قائمة الخريجين",
     "qr_scanned": "محاولة مسح",
 }
 
@@ -162,3 +163,5 @@ def audit_role_label(actor_type: str) -> str:
 VOLUNTEER_ANSWER_SAVED = "تم حفظ إجاباتك بنجاح."
 VOLUNTEER_YES = "نعم"
 VOLUNTEER_NO = "لا"
+
+ROSTER_EXPORT_TOO_LARGE = "عدد النتائج كبير جداً للتصدير، يرجى تضييق الفلاتر ثم المحاولة مجدداً."
