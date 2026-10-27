@@ -621,3 +621,70 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 
 - لم يُعدَّل ملف SRS الأصلي (docx/pdf)؛ النص أعلاه مقترح.
 - ملاحظة عملية (S16): حُدِّث ملف المهام `docs/TASKS_affairs-format.md` في التزام أدلّة واحد في نهاية الجزء A (لأن كثيرًا من البنود تلمس الملفات نفسها) بدل تحديثه مع كل بند.
+
+
+---
+
+## القائمة الشاملة للخريجين (Roster)
+
+صفحة «الخريجون» بالأدمن بتعرض **كل شخص موجود بملفات الجامعة المرفوعة** (مسجّل أو لا) مع حالة التسجيل والتذكرة والدفع والدخول.
+
+### نقاط جديدة (للأدمن فقط، إضافية بدون كسر)
+
+| النقطة | الوظيفة |
+|---|---|
+| `GET /api/admin/roster` | القائمة مع الفلاتر والترقيم |
+| `GET /api/admin/roster/export` | ملف Excel بنفس الفلاتر (بدون ترقيم، بحد أعلى 20,000 صف) |
+
+**الفلاتر** (كلها اختيارية وبتشتغل مع بعضها): `search` (اسم أو رقم جامعي)، `file_id`، `event_id`، `college_id`، `registration`، `top_rank`، `ticket`، `payment`، `entry`، `ticket_type`، و`skip` / `limit` (الافتراضي 50، الأقصى 200).
+
+| الفلتر | القيم |
+|---|---|
+| `registration` | `not_registered` (لم يسجّل بعد) · `unverified` (سجّل — بانتظار تأكيد البريد) · `verified` (سجّل — تم تأكيد البريد بالـ OTP) |
+| `top_rank` | `none` · `any` · `1` · `2` · `3` |
+| `ticket` | `none` · `awaiting_payment` · `processing` · `confirmed` · `rejected` |
+| `payment` | `none` · `pending` · `confirmed` · `rejected` · `mismatch` (مبلغ الدفعة لا يطابق سعر التذكرة) |
+| `entry` | `entered` · `not_entered` |
+| `ticket_type` | `two` (مرافقان) · `three` (ثلاثة مرافقين) |
+
+**الرد (لكل صف):**
+
+```json
+{
+  "total": 237,
+  "items": [{
+    "record_id": 12, "event_id": 1, "event_name": "حفل 2026",
+    "university_id": "1005", "full_name": "ريم حسن",
+    "father_name": "حسن", "mother_name": "سعاد", "gender": "أنثى",
+    "college_id": 1, "college_name": "كلية الهندسة",
+    "major_id": null, "major_name": null, "gpa": "71.00",
+    "top_rank": null, "is_top": false,
+    "file_id": 3, "file_name": "graduates.xlsx",
+    "registration": {"state": "verified", "graduate_id": 9, "email": "a@b.com", "email_verified": true},
+    "ticket": {"id": 5, "status": "CONFIRMED", "companions_count": 2, "type": "two", "price": "100000.00", "seat": "E-1 → E-3"},
+    "payment": {"state": "confirmed", "amount": "100000.00", "submitted_at": "2026-10-20T10:00:00+00:00", "mismatch": false},
+    "entry": {"entered": false, "at": null, "manual": false},
+    "actions": {"revert_payment": true, "manual_entry": true, "cancel_scan": false}
+  }]
+}
+```
+
+### قواعد مهمة
+
+- **صف لكل سجل جامعي (لكل حفل):** الشخص الموجود بحفلين بيظهر بصفّين، وكل صف بتذكرة حفله.
+- **«الأوائل»** بتنحسب مثل التسجيل بالضبط: قيمة الملف إذا كان فيه عمود الأوائل، وإلا الترتيب (dense) من المعدل. `is_top` يشمل «من الأوائل بدون ترتيب معروف».
+- **حالة الدفع** مشتقة من آخر دفعة وحالة التذكرة. `mismatch` مستقلة عنها.
+- **`actions`**: هل الإجراء الاستثنائي مسموح الآن؟ القواعد تبقى بالباك (`admin_graduate_service`)، والواجهة بس بتعرض. `revert_payment`: التذكرة مؤكدة. `manual_entry`: مؤكدة والخريج لم يدخل. `cancel_scan`: الخريج دخل. التنفيذ بالنقاط الموجودة: `POST /api/admin/tickets/{id}/revert-payment` و`POST /api/admin/graduates/{id}/manual-check-in` و`POST /api/admin/graduates/{id}/revert-scan`.
+- **التصدير** بيسجّل `ROSTER_EXPORTED` بسجل التدقيق مع أسماء الفلاتر المفعّلة فقط (بدون قيمها، لأن كلمة البحث ممكن تكون اسم شخص). وإذا زادت النتائج عن الحد: 400 مع رسالة بتطلب تضييق الفلاتر.
+- خلايا النصوص بالتصدير نصوص صريحة (لا تتحول لمعادلات)، والأرقام أرقام.
+
+### تغيير بقاعدة البيانات (ترقية `0012_university_record_file`)
+
+- عمود جديد `university_records.file_id` (يقبل NULL، `ON DELETE SET NULL`، مفهرس).
+- بيتعبّى عند ربط ملف بحفل (الاستيراد من «ملفات البيانات»). **السجلات القديمة** (والمرفوعة مباشرة بدون ملف) بتبقى `NULL` وبتظهر «—» بعمود الملف.
+- حذف الملف **ما بيحذف الأشخاص**، بس بيمسح معرفة مصدرهم.
+
+### حدود معروفة
+
+- **ملف مرفوع وغير مربوط بحفل ما بيظهر بالقائمة**: لأنو ما بينقرا لقاعدة البيانات إلا عند الربط. بيظهر أشخاصه مباشرة بعد ما ينربط.
+- فلتر «الملف» يعتمد على `file_id`، فأشخاص السجلات القديمة ما بيطلعوا عند اختيار ملف.

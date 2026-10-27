@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { id: 'files', icon: 'folder_shared', label: 'ملفات البيانات' },
   { id: 'payments', icon: 'receipt_long', label: 'طلبات الدفع' },
   { id: 'scanners', icon: 'qr_code_scanner', label: 'الماسحون' },
-  { id: 'actions', icon: 'admin_panel_settings', label: 'إجراءات استثنائية' },
+  { id: 'actions', icon: 'groups', label: 'الخريجون والإجراءات' },
 ];
 
 /*
