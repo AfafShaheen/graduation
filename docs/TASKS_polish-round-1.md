@@ -21,11 +21,11 @@
 
 | ID | المهمة | الحالة | Commit | الدليل |
 |----|--------|--------|--------|-------|
-| B1.1 | front/src/config/brand.js بثوابت D7 و D8 | ⬜ | | |
-| B1.2 | استبدال كل الصياغات القديمة في الجرد (عناوين، شارات، تذييلات، fallbacks، placeholder، عنوان المشاركة) بالثوابت | ⬜ | | |
-| B1.3 | SEO: index.html title وكل حقول seo.config.json | ⬜ | | |
-| B1.4 | أمان التخطيط لعنوان الطويل (التفاف سطرين، بلا nowrap/ellipsis/ارتفاع ثابت) | ⬜ | | |
-| B1.5 | اختبار front/tests/brandConsistency.test.mjs | ⬜ | | |
+| B1.1 | front/src/config/brand.js بثوابت D7 و D8 | ✅ | f25865e | ملف الثوابت موجود ويُستورد في كل الصفحات |
+| B1.2 | استبدال كل الصياغات القديمة في الجرد (عناوين، شارات، تذييلات، fallbacks، placeholder، عنوان المشاركة) بالثوابت | ✅ | e0841fb, 9a2f8e7 | grep: لا عبارة قديمة متبقية في src/index.html/seo.config.json |
+| B1.3 | SEO: index.html title وكل حقول seo.config.json | ✅ | 44d2320 | brandConsistency يتحقق من الجملة الجديدة؛ build مع generate-seo أخضر |
+| B1.4 | أمان التخطيط لعنوان الطويل (التفاف سطرين، بلا nowrap/ellipsis/ارتفاع ثابت) | ✅ | 1433bb8 | BrandHeader.css مستورد في 16 ملفاً؛ لا صفحة missing |
+| B1.5 | اختبار front/tests/brandConsistency.test.mjs | ✅ | (هذا الكوميت) | node --test: 3/3 pass — العبارات القديمة غائبة، SEO يحوي الجملة الجديدة، كل الصفحات تستورد brand |
 | B2.1 | مكوّن HelpFooter.jsx + نمط مشترك صغير | ⬜ | | |
 | B2.2 | استخدام HelpFooter مرة واحدة في كل صفحات الخريجين وإزالة النسخ اليدوية | ⬜ | | |
 | B2.3 | اختبار: كل ملف student/*.jsx يستورد ويرندر HelpFooter مرة واحدة بالضبط + سطر/سطران حسب الهاتف | ⬜ | | |
