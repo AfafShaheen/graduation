@@ -302,14 +302,16 @@
   color: #725b51;
 }
 
-.sc-account-number {
-  font-size: 17px;
-  line-height: 24px;
-  font-weight: 800;
-  color: #124d44;
-  letter-spacing: 0.05em;
+.sc-account-strip--primary {
+  border: 2px solid #124d44;
+  background: #f1f8f6;
+}
+.sc-account-strip .sc-account-number {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
   direction: ltr;
-  text-align: right;
+  unicode-bidi: plaintext;
 }
 
 .sc-copy-btn {
