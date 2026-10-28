@@ -1,4 +1,4 @@
-import { request, requestBlob } from "./client.js";
+import { request } from "./client.js";
 
 export async function getColleges() {
   return request("/api/colleges");
@@ -134,14 +134,11 @@ export async function saveVolunteerAnswers(data, token) {
   });
 }
 
+/* GET /api/settings/shamcash-qr returns JSON (not an image):
+   { shamcash_qr_image: "data:image/...;base64,...", shamcash_receiver_name, shamcash_account_number }.
+   Return the data URI to use directly as <img src>, or null when there is no valid image. */
 export async function getShamcashQr() {
-  try {
-    const { blob } = await requestBlob("/api/settings/shamcash-qr");
-    return URL.createObjectURL(blob);
-  } catch (error) {
-    if (error.status === 404) {
-      return null;
-    }
-    throw error;
-  }
+  const data = await request("/api/settings/shamcash-qr");
+  const src = data?.shamcash_qr_image;
+  return typeof src === "string" && src.startsWith("data:image/") ? src : null;
 }

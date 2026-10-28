@@ -80,7 +80,6 @@ export default function ShamCashPayment({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [qrSrc, setQrSrc] = useState(null);
-  const [objectUrl, setObjectUrl] = useState(null);
 
   const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({ transactionId: '', transferAmount: '', senderName: '' });
@@ -99,10 +98,8 @@ export default function ShamCashPayment({ onBack }) {
 
   const amountValue = info ? parseAmount(info.amount) : 0;
   const validators = makeValidators(amountValue);
-  const apiBase = import.meta.env.VITE_API_URL || '';
 
   useEffect(() => {
-    let revoked = null;
     const load = async () => {
       const accessValue = getGraduateToken();
       if (!accessValue) {
@@ -119,20 +116,12 @@ export default function ShamCashPayment({ onBack }) {
           ...prev,
           transferAmount: prev.transferAmount || formatAmount(result.amount),
         }));
-        if (result.qr_image_url) {
-          const url = String(result.qr_image_url);
-          setQrSrc(url.startsWith('http') ? url : `${apiBase}${url}`);
-        } else {
-          const objUrl = await getShamcashQr();
-          if (!mounted.current) {
-            if (objUrl) URL.revokeObjectURL(objUrl);
-            return;
-          }
-          if (objUrl) {
-            setQrSrc(objUrl);
-            setObjectUrl(objUrl);
-            revoked = objUrl;
-          }
+        // The QR is a data URI from the JSON endpoint; never use qr_image_url as <img src>.
+        try {
+          const dataUri = await getShamcashQr();
+          if (mounted.current) setQrSrc(dataUri);
+        } catch {
+          if (mounted.current) setQrSrc(null); // the account number below is still shown
         }
       } catch (err) {
         if (mounted.current) setLoadError(err?.message || 'تعذّر تحميل معلومات الدفع، حاول لاحقاً.');
@@ -141,9 +130,6 @@ export default function ShamCashPayment({ onBack }) {
       }
     };
     load();
-    return () => {
-      if (revoked) URL.revokeObjectURL(revoked);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -304,10 +290,15 @@ export default function ShamCashPayment({ onBack }) {
               <div className="sc-qr-section">
                 <div className="sc-qr-box">
                   {qrSrc ? (
-                    <img className="sc-qr-svg" src={qrSrc} alt="رمز QR للتحويل عبر شام كاش" />
+                    <img
+                      className="sc-qr-svg"
+                      src={qrSrc}
+                      alt="رمز QR للتحويل عبر شام كاش"
+                      onError={() => setQrSrc(null)}
+                    />
                   ) : (
                     <span className="sc-qr-caption" style={{ textAlign: 'center' }}>
-                      رمز الاستجابة السريعة غير متوفر حالياً، يمكنك التحويل يدوياً إلى رقم الحساب الظاهر أدناه.
+                      رمز QR غير متوفر حالياً. حوّل المبلغ يدوياً إلى رقم الحساب الظاهر أدناه عبر تطبيق شام كاش.
                     </span>
                   )}
                 </div>
@@ -319,21 +310,29 @@ export default function ShamCashPayment({ onBack }) {
                 </span>
               </div>
 
-              <div className="sc-account-strip">
+              <div className={`sc-account-strip ${!qrSrc ? 'sc-account-strip--primary' : ''}`}>
                 <div className="sc-account-details">
                   <span className="sc-account-label">رقم الحساب المستلم</span>
-                  <span className="sc-account-number">{info.account_number}</span>
+                  {info.account_number ? (
+                    <span className="sc-account-number">{info.account_number}</span>
+                  ) : (
+                    <span className="sc-account-number" style={{ fontSize: '14px', fontWeight: 'normal', color: '#725b51' }}>
+                      «لم يُحدَّد رقم حساب شام كاش بعد. يرجى التواصل مع الاتحاد.»
+                    </span>
+                  )}
                 </div>
-                <button
-                  className={`sc-copy-btn ${copied ? 'copied' : ''}`}
-                  type="button"
-                  onClick={handleCopy}
-                >
-                  <span className="sc-symbol" style={{ fontSize: '18px', color: copied ? '#124d44' : '#ca4b00' }}>
-                    {copied ? 'check' : 'content_copy'}
-                  </span>
-                  <span>{copied ? 'تم النسخ' : 'نسخ الرقم'}</span>
-                </button>
+                {info.account_number && (
+                  <button
+                    className={`sc-copy-btn ${copied ? 'copied' : ''}`}
+                    type="button"
+                    onClick={handleCopy}
+                  >
+                    <span className="sc-symbol" style={{ fontSize: '18px', color: copied ? '#124d44' : '#ca4b00' }}>
+                      {copied ? 'check' : 'content_copy'}
+                    </span>
+                    <span>{copied ? 'تم النسخ' : 'نسخ الرقم'}</span>
+                  </button>
+                )}
               </div>
 
               <div className="sc-amount-banner">
