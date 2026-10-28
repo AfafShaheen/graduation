@@ -6,6 +6,7 @@ import { request } from '../../api/client';
 import { setScannerSession } from '../../api/session';
 import ContactPhoneLink from '../../components/ContactPhoneLink';
 import { eventTitle, formatEventDate } from '../../utils/eventLabel';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
@@ -119,7 +120,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
             {/* مساحة فارغة لتبقى العنوان بالمنتصف */}
             <div className="scan-login-icon-slot" aria-hidden="true"></div>
 
-            <h1 className="scan-login-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="scan-login-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="scan-login-icon-slot">
               <img className="scan-login-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -133,7 +134,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
               </span>
               ماسح التذاكر
             </span>
-            <span className="scan-login-badge-batch">دفعة 2026</span>
+            <span className="scan-login-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -143,7 +144,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
           <div className="scan-login-top-pill">
             <div className="scan-login-status-indicator">
               <span className="scan-login-dot"></span>
-              <span className="scan-login-pill-main">فرع حمص لاتحاد الطلبة</span>
+              <span className="scan-login-pill-main">{CEREMONY_TITLE}</span>
             </div>
             <span className="scan-login-pill-sub">بوابة الخريجين</span>
           </div>

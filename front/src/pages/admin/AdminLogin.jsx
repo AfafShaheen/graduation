@@ -3,6 +3,7 @@ import '../../style/AdminLogin.css';
 import unionLogo from '../../assets/only-logo.png';
 import { loginAdmin } from '../../api/admin';
 import { setAdminSession } from '../../api/session';
+import { CEREMONY_TITLE } from '../../config/brand';
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const validators = {
@@ -94,7 +95,7 @@ export default function AdminLogin({ onLoginSuccess }) {
             {/* مساحة فارغة لتبقى العنوان بالمنتصف */}
             <div className="ad-icon-btn static" aria-hidden="true"></div>
 
-            <h1 className="ad-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="ad-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="ad-icon-btn static">
               <img className="ad-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -129,7 +130,7 @@ export default function AdminLogin({ onLoginSuccess }) {
 
               <h2 className="ad-headline">لوحة تحكم الإدارة</h2>
               <p className="ad-subtext">
-                منظومة تذاكر حفل تخرج جامعة حمص
+                {`منظومة تذاكر ${CEREMONY_TITLE}`}
               </p>
             </div>
 
@@ -237,7 +238,7 @@ export default function AdminLogin({ onLoginSuccess }) {
         {/* التذييل المؤسسي */}
         <footer className="ad-footer">
           <div className="ad-footer-info">
-            <span>جامعة حمص • فرع حمص لاتحاد الطلبة</span>
+            <span>{CEREMONY_TITLE}</span>
             <span className="ad-dot-sep"></span>
             <span>نظام إدارة تذاكر التخرج الرقمي © 2026</span>
             <span className="ad-dot-sep"></span>

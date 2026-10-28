@@ -4,6 +4,7 @@ import '../../style/GraduateGuide.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import useContactPhone from '../../hooks/useContactPhone';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 /* ==========================================================================
    دليل التذكرة: صفحة إرشادات بتظهر بعد تسجيل الدخول وقبل اختيار التذكرة
@@ -113,14 +114,14 @@ export default function GraduateGuide({ onContinue, supportPhone = '' }) {
         <header className="header-main">
           <div className="header-top">
             <div className="icon-btn" aria-hidden="true"></div>
-            <h1 className="header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="header-title">{CEREMONY_TITLE}</h1>
             <div className="icon-btn">
               <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
             </div>
           </div>
           <div className="header-subband">
             <span className="subband-title">دليل التذكرة</span>
-            <span className="badge-batch">دفعة 2026</span>
+            <span className="badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 

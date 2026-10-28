@@ -5,6 +5,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { resetPassword } from '../../api/graduate';
 import { clearResetFlow, getResetEmail, getResetCode } from '../../api/session';
 import { passwordError } from '../../utils/validators';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 /* نفس شروط كلمة السر عند إنشاء الحساب (مطابقة للخلفية، D5) */
 const PWD_FIELD = 'pass' + 'word';
@@ -199,14 +200,14 @@ export default function ResetPassword({ onBack, onDone }) {
             >
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>
-            <h1 className="header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="header-title">{CEREMONY_TITLE}</h1>
             <div className="icon-btn">
               <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
             </div>
           </div>
           <div className="header-subband">
             <span className="subband-title">استعادة كلمة السر</span>
-            <span className="badge-batch">دفعة 2026</span>
+            <span className="badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -270,7 +271,7 @@ export default function ResetPassword({ onBack, onDone }) {
 
         {/* التذييل */}
         <div style={{ textAlign: 'center', marginTop: 'auto', padding: '16px 16px 8px' }}>
-          <p className="footer-copy">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+          <p className="footer-copy">{CEREMONY_TITLE}</p>
         </div>
       </main>
     </div>

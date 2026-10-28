@@ -4,6 +4,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { verifyOtp, resendOtp, changeEmail, forgotPassword } from '../../api/graduate';
 import { setGraduateSession, clearVerificationToken, setVerificationToken, setGraduateEmail, getVerificationToken, getGraduateEmail, setResetCode, clearResetFlow } from '../../api/session';
 import ContactPhoneLink from '../../components/ContactPhoneLink';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 const CODE_LENGTH = 6;
 const CODE_LIFETIME = 600;
@@ -359,7 +360,7 @@ export default function Otp({
               <span className="ev-symbol" style={{ fontSize: '22px' }}>arrow_forward</span>
             </button>
 
-            <h1 className="ev-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="ev-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="ev-icon-btn static">
               <img className="ev-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -368,7 +369,7 @@ export default function Otp({
 
           <div className="ev-header-subband">
             <span className="ev-subband-title">{flow.subtitle}</span>
-            <span className="ev-badge-batch">دفعة 2026</span>
+            <span className="ev-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -572,7 +573,7 @@ export default function Otp({
             </span>
           </button>
           <ContactPhoneLink style={{ margin: '4px 0', fontSize: '13px' }} />
-          <p className="ev-institutional-label">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+          <p className="ev-institutional-label">{CEREMONY_TITLE}</p>
         </div>
       </main>
     </div>

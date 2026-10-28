@@ -4,6 +4,7 @@ import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { getVolunteerAnswers, saveVolunteerAnswers } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 /* نص السؤالين: عدّلهما من هنا */
 const QUESTIONS = [
@@ -112,14 +113,14 @@ export default function GraduateQuestions({ onDone }) {
         <header className="header-main">
           <div className="header-top">
             <div className="icon-btn" aria-hidden="true"></div>
-            <h1 className="header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="header-title">{CEREMONY_TITLE}</h1>
             <div className="icon-btn">
               <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
             </div>
           </div>
           <div className="header-subband">
             <span className="subband-title">إنشاء حساب</span>
-            <span className="badge-batch">دفعة 2026</span>
+            <span className="badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -211,7 +212,7 @@ export default function GraduateQuestions({ onDone }) {
 
         {/* التذييل */}
         <div style={{ textAlign: 'center', marginTop: 'auto', padding: '16px 16px 8px' }}>
-          <p className="footer-copy">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+          <p className="footer-copy">{CEREMONY_TITLE}</p>
         </div>
       </main>
     </div>

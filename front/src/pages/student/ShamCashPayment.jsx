@@ -5,6 +5,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { getPaymentInfo, submitPayment, getShamcashQr } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import { parseAmount, formatAmount } from '../../utils/amount.js';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 const LETTERS = /^[\p{L}\s]+$/u; // حروف (عربية أو لاتينية) ومسافات فقط
 const TX_ID = /^[A-Za-z0-9-]+$/; // أرقام وحروف وشرطة، بدون مسافات
@@ -233,7 +234,7 @@ export default function ShamCashPayment({ onBack }) {
               </span>
             </button>
 
-            <h1 className="sc-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="sc-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="sc-icon-btn static">
               <img className="sc-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -242,7 +243,7 @@ export default function ShamCashPayment({ onBack }) {
 
           <div className="sc-header-subband">
             <span className="sc-subband-title">الدفع عبر شام كاش</span>
-            <span className="sc-badge-batch">دفعة 2026</span>
+            <span className="sc-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -416,7 +417,7 @@ export default function ShamCashPayment({ onBack }) {
           )}
 
           <footer className="sc-footer">
-            <p className="sc-footer-main">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+            <p className="sc-footer-main">{CEREMONY_TITLE}</p>
             <p className="sc-footer-sub">إصدار البطاقة الإلكترونية مؤمَّن ومعتمد رسمياً</p>
           </footer>
         </div>

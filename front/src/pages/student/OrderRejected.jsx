@@ -4,6 +4,7 @@ import '../../style/OrderRejected.css';
 import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { getPublicSettings } from '../../api/graduate';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 export default function OrderRejected() {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ export default function OrderRejected() {
           <div className="or-header-top">
             <div className="or-icon-btn static" aria-hidden="true"></div>
 
-            <h1 className="or-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="or-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="or-icon-btn static">
               <img className="or-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -43,7 +44,7 @@ export default function OrderRejected() {
 
           <div className="or-header-subband">
             <span className="or-subband-title">حالة الطلب</span>
-            <span className="or-badge-batch">دفعة 2026</span>
+            <span className="or-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -142,7 +143,7 @@ export default function OrderRejected() {
           </a>
 
           <footer className="or-footer">
-            <p className="or-footer-text">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+            <p className="or-footer-text">{CEREMONY_TITLE}</p>
           </footer>
         </div>
       </main>

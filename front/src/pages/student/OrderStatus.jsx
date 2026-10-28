@@ -4,6 +4,7 @@ import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { companionsLabel } from '../../utils/companions';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 /* تنسيق التاريخ والوقت بالعربية مع أرقام إنجليزية */
 const formatDate = (value) => {
@@ -40,7 +41,7 @@ export default function OrderStatus() {
           <div className="os-header-top">
             <div className="os-icon-btn static" aria-hidden="true"></div>
 
-            <h1 className="os-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="os-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="os-icon-btn static">
               <img className="os-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -49,7 +50,7 @@ export default function OrderStatus() {
 
           <div className="os-header-subband">
             <span className="os-subband-title">حالة الطلب</span>
-            <span className="os-badge-batch">دفعة 2026</span>
+            <span className="os-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -178,7 +179,7 @@ export default function OrderStatus() {
         </div>
 
         <footer className="os-footer">
-          <p className="os-footer-main">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+          <p className="os-footer-main">{CEREMONY_TITLE}</p>
           <p className="os-footer-sub">لجنة تنظيم وتنسيق حفلات التخرج المركزية</p>
         </footer>
       </main>

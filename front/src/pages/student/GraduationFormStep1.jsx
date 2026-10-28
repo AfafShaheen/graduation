@@ -5,6 +5,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
 import { setRegistrationToken } from '../../api/session';
 import ContactPhoneLink from '../../components/ContactPhoneLink';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 /* حروف عربية ومسافات فقط (بدون أرقام أو رموز) */
 const ARABIC_ONLY = /^[\u0621-\u064A\u064B-\u0652\s]+$/;
@@ -223,14 +224,14 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             <button className="icon-btn" aria-label="الرجوع للخلف" type="button">
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>
-            <h1 className="header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="header-title">{CEREMONY_TITLE}</h1>
             <div className="icon-btn">
               <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
             </div>
           </div>
           <div className="header-subband">
             <span className="subband-title">إنشاء حساب</span>
-            <span className="badge-batch">دفعة 2026</span>
+            <span className="badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -529,7 +530,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
           <ContactPhoneLink style={{ margin: '8px 0 0', fontSize: '13px' }} />
 
-          <p className="footer-copy">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+          <p className="footer-copy">{CEREMONY_TITLE}</p>
         </div>
       </main>
     </div>
