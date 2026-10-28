@@ -6,16 +6,16 @@
 
 | ID | المهمة | الحالة | Commit | الدليل |
 |----|--------|--------|--------|-------|
-| A1.1 | مدقّقات حقول إعدادات الشام كاش الثلاثة في AdminSettingsUpdate (D1, D2, D3) مع رسائل عربية في core/messages.py | ⬜ | | |
-| A1.2 | اختبار جديد tests/test_admin_settings_validation.py + تحديث اختبارات الإعدادات القديمة فقط إن استخدمت قيمًا لم تعد صالحة | ⬜ | | |
-| A2.1 | مدقّق رقم العملية: trim فقط، الحفاظ على حالة الأحرف، [A-Za-z0-9-]{4,100} | ⬜ | | |
-| A2.2 | الموديل: استبدال UniqueConstraint بفهرس وظيفي فريد upper(transaction_number) باسم uq_payments_transaction_number_ci | ⬜ | | |
-| A2.3 | هجرة 0013_transaction_number_ci_unique (down_revision = 0012_university_record_file) مع downgrade عامل | ⬜ | | |
-| A2.4 | ticket_service: بحث مكرر غير حساس لحالة الأحرف؛ إعادة الإرسال لنفس التذكرة تحدّث النص المحفوظ؛ مسار IntegrityError يبقى عاملًا | ⬜ | | |
-| A2.5 | اختبارات A2.5 (التخزين كما كُتب، 409 عبر تذكرتين، تحديث النص عند إعادة الإرسال، رفض DB لسطرين يختلفان بالحالة فقط، العرض في الإدارة/الخريج/Excel، up/down للهجرة) | ⬜ | | |
-| A2.6 | تحديث test_submit_normalizes_transaction_number إلى السلوك الجديد (مدرج في التقرير مع السبب) | ⬜ | | |
-| A3.1 | فاحص العقد + الحزمة الكاملة + docs/BACKEND_CHANGES.md بالعربية | ⬜ | | |
-| A3.2 | تقرير Part A وبوابة الدفع | ⬜ | | |
+| A1.1 | مدقّقات حقول إعدادات الشام كاش الثلاثة في AdminSettingsUpdate (D1, D2, D3) مع رسائل عربية في core/messages.py | ✅ | b7bde76 | pytest tests/test_admin_settings_validation.py → 23 passed (مع A1.2) |
+| A1.2 | اختبار جديد tests/test_admin_settings_validation.py + تحديث اختبارات الإعدادات القديمة فقط إن استخدمت قيمًا لم تعد صالحة | ✅ | 8d3e4a5→b7bde76 | test_admin_settings_validation.py: 23 passed؛ اختبارات الإعدادات القديمة لم تحتاج تعديلاً |
+| A2.1 | مدقّق رقم العملية: trim فقط، الحفاظ على حالة الأحرف، [A-Za-z0-9-]{4,100} | ✅ | ab004ff | test_payment_submission.py::test_submit_keeps_transaction_number_as_typed + test_submit_validation_cases |
+| A2.2 | الموديل: استبدال UniqueConstraint بفهرس وظيفي فريد upper(transaction_number) باسم uq_payments_transaction_number_ci | ✅ | 8919ce6 | models/payment.py: Index(uq_payments_transaction_number_ci, func.upper(...), unique=True) + فحص بنية في test_migrations |
+| A2.3 | هجرة 0013_transaction_number_ci_unique (down_revision = 0012_university_record_file) مع downgrade عامل | ✅ | 8919ce6 | test_migrations.py::test_transaction_ci_migration_round_trip + applies_expected_schema (up/down يعملان فعلياً على PG) |
+| A2.4 | ticket_service: بحث مكرر غير حساس لحالة الأحرف؛ إعادة الإرسال لنفس التذكرة تحدّث النص المحفوظ؛ مسار IntegrityError يبقى عاملًا | ✅ | 8919ce6 | ticket_service: func.upper lookup + تحديث النص؛ IntegrityError محفوظ |
+| A2.5 | اختبارات A2.5 (التخزين كما كُتب، 409 عبر تذكرتين، تحديث النص عند إعادة الإرسال، رفض DB لسطرين يختلفان بالحالة فقط، العرض في الإدارة/الخريج/Excel، up/down للهجرة) | ✅ | 8919ce6 + ab004ff | payment_submission 17 passed، migrations 3 new passed، admin_export::test_export_shows_transaction_number_as_typed (11 passed) |
+| A2.6 | تحديث test_submit_normalizes_transaction_number إلى السلوك الجديد (مدرج في التقرير مع السبب) | ✅ | ab004ff | test_submit_normalizes_transaction_number عدّل ليتوقع "ab-1234" بدل "AB-1234" (السبب موثق في BACKEND_CHANGES §15.3) |
+| A3.1 | فاحص العقد + الحزمة الكاملة + docs/BACKEND_CHANGES.md بالعربية | ✅ | (هذا الكوميت) | check_openapi_additive: الفرق على الفرع = الفرق على dev بالضبط (117 سابقاً لا جديد)؛ الحزمة الكاملة: 430 passed / 3 failed (نفس فشل dev السابق — لا انحدار)؛ docs/BACKEND_CHANGES.md §15 أُضيف |
+| A3.2 | تقرير Part A وبوابة الدفع | ⛔ |  | بوابة الدفع الكاملة (push إلى origin) غير ممكنة من هذه البيئة: remote عاملا مشفر بالـ token وانتهت صلاحيته؛ الفروع الدافعة تتم محلياً والـ push يُنفَّذ من عند المالك |
 
 ## PART B — الواجهة (Frontend)
 

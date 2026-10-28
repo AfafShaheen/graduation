@@ -625,6 +625,51 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 
 ---
 
+## 15. جولة التحسينات polish-round-1 — الجزء A (الخلفية)
+
+هذا القسم يوثّق تغييرات فرع `fix/polish-round-1` (الجزء A فقط). لا تغيير في أي مسار API ولا في أي عقد (فاحص العقد أظهر العدد نفسه من الفروقات قبل وبعد التعديل — وهي فروقات سابقة منشؤها إصدار FastAPI/pydantic الذي وُلّد به `openapi_baseline.json`).
+
+### 15.1 مدقّقات حقول إعدادات الشام كاش الثلاثة (`PUT /api/admin/settings`)
+
+أُضيفت field validators إلى `AdminSettingsUpdate` في `app/schemas/settings_admin.py`. القواعد:
+
+| الحقل | القاعدة | أمثلة مقبولة | أمثلة مرفوضة (422) | رسالة الخطأ العربية |
+|---|---|---|---|---|
+| `shamcash_account_number` | حروف إنجليزية وأرقام فقط، بلا مسافات أو رموز، من 4 إلى 100 خانة (D1) | `AB12cd34`، `7f3a9c1e0b` | `AB 12`، `12-34`، `abc`، 101 خانة، `حساب1` | `SETTINGS_ACCOUNT_INVALID` = «رقم الحساب يقبل أحرفاً وأرقاماً إنجليزية فقط (من 4 إلى 100 خانة) بدون مسافات أو رموز» |
+| `shamcash_receiver_name` | حروف عربية أو إنجليزية ومسافات والنقاط والشرطة والفصلة العليا، بلا أرقام، من 2 إلى 200 بعد trim (D2) | `محمد أحمد`، `Mohammad Ahmad`، `O'Brien-Smith Jr.` | `محمد 123`، `A`، 201 حرفاً، `<script>` | `SETTINGS_RECEIVER_INVALID` = «اسم المستفيد يقبل حروفاً عربية أو إنجليزية ومسافات فقط (من حرفين إلى 200)» |
+| `contact_phone` | نفس قاعدة هاتف الخريج `PHONE_REGEX` (مستوردة من `schemas/graduate.py`، غير منسوخة): + اختيارية ثم 7 إلى 15 رقماً (D3) | `0933123456`، `+963933123456` | `12345`، `abc1234567`، `0933-123-456`، 16 رقماً | `SETTINGS_PHONE_INVALID` = «رقم الهاتف يجب أن يتكون من أرقام فقط (من 7 إلى 15 رقماً) ويمكن أن يبدأ بعلامة +» |
+
+سلوك محفوظ كما هو: الحقل الغائب أو `null` = «بدون تغيير»، والسلسلة الفارغة أو المسافات فقط = «مسح القيمة». القيمة المُرسلة تُخزَّن بعد trim. الرسائل الجديدة في `app/core/messages.py`. لم يُضف أي `pattern=` إلى الحقول كي لا يتغير مخطط OpenAPI.
+
+اختبارات: ملف جديد `tests/test_admin_settings_validation.py` (جدول صدق كامل + فحص عدم تغيّر قاعدة البيانات عند الرفض). لم تحتاج اختبارات الإعدادات القديمة أي تعديل (كل قيمها كانت صالحة تحت القواعد الجديدة).
+
+### 15.2 رقم العملية يُخزَّن ويُعرض كما كتبه الخريج تماماً (D4)
+
+- **المدقّق** (`schemas/ticket.py` → `_normalize_transaction_number`): الآن `strip()` فقط مع الحفاظ على حالة الأحرف، والمسموح `[A-Za-z0-9-]{4,100}`، والخطأ `رقم العملية غير صالح`. السلوك القديم كان `.strip().upper()`.
+- **الفهرس الفريد**: أُزيل `UniqueConstraint("transaction_number", name="unique_transaction_number")` من نموذج `payments` واستُبدل بفهرس وظيفي فريد على `upper(transaction_number)` باسم `uq_payments_transaction_number_ci`؛ بقي الفهرس العادي للعمود. النتيجة: التفرد عالمي لكنه غير حساس لحالة الأحرف (`abc-1` و`ABC-1` رقم واحد)، بينما يُعرض النص كما خُزّن.
+- **الهجرة**: `alembic/versions/0013_transaction_number_ci_unique.py` بـ `down_revision = 0012_university_record_file`. upgrade: إسقاط القيد `unique_transaction_number` وإنشاء الفهرس الفريد على `upper(...)` (الصفوف القديمة كلها uppercase فلا تصادم). downgrade: إسقاط الفهرس وإعادة إنشاء القيد (آمن لأن السجل الصحيح لا يحتمل سطرين متطابقين تجاهلاً الحالة). تعمل بالاتجاهين (مختبَرة).
+- **خدمة الدفع** (`services/ticket_service.py`): البحث عن تكرار صار `func.upper(PaymentModel.transaction_number) == data.transaction_number.upper()`؛ إعادة إرسال الرقم نفسه (بأي حالة) لنفس التذكرة تحدّث النص المحفوظ بما كُتب للتو؛ باقي المنطق (409 `TRANSACTION_ALREADY_USED`، قواعد الحالات، نافذة الدفع، `IntegrityError` عند التسابق) كما هو حرفياً.
+- **العرض**: لا كود في الخلفية يحوّل حالة الرقم — `payment_review_service` و`admin_graduate_service` و`export_service` يعيدون النص المخزّن كما هو (`roster_service` لا يتناول رقم العملية أصلاً).
+
+اختبارات Part A2:
+- `tests/test_payment_submission.py`: التخزين كما كُتب مع trim (`"  ab-1234  "` → `"ab-1234"`)، تكرار بحالة مختلفة عبر تذكرتين = 409 بالرسالة المطابقة، إعادة الإرسال لنفس التذكرة بحالة مختلفة يحدّث النص، العرض في صفحة الإدارة وتفاصيل الخريج كما خُزّن، حالات المدقّق.
+- `tests/test_migrations.py`: بنية الهجرة (drop constraint / create index) + round trip up/down + فرض التفرد غير الحساس للحالة من قاعدة البيانات نفسها (سطران يختلفان بالحالة فقط يُرفضان).
+- `tests/test_admin_export.py::test_export_shows_transaction_number_as_typed`: خلية Excel تحوي `ab-Cd12` كما هي.
+
+### 15.3 الاختبار الموجود الذي عُدّل (S5)
+
+| الاختبار | التعديل | السبب |
+|---|---|---|
+| `tests/test_payment_submission.py::test_submit_normalizes_transaction_number` | أصبح يتوقع تخزين `"  ab-1234  "` كما هي (`"ab-1234"`) بدل `"AB-1234"` | المهمة A2.6 تغيّر هذا السلوك صراحةً (D4: حفظ الرقم كما كُتب مع trim فقط). لم تُخفَّف أي assertion أخرى. |
+
+### 15.4 نتائج الفحوص (Part A)
+
+- الحزمة الكاملة: `pytest -q` → **430 passed, 3 failed**. الفشل الثلاثة موجود على `dev` نفسه قبل أي تعديل (اثنان بسبب اختلاف بيئة HTTP 403/401، وواحد من كسر baseline العقد السابق) — لا انحدار جديد من هذه الحزمة.
+- فاحص العقد `python -m scripts.check_openapi_additive`: عدد الفروقات على الفرع = عددها على `dev` بالضبط (117 تغييراً توثيقياً سابقاً + 3 إضافات مسموحة من عمل roster) — لم تضف هذه الحزمة أي فرق.
+- migrations tests + payment submission + admin settings validation + admin export: **73 passed** مجتمعة.
+
+---
+
 ## القائمة الشاملة للخريجين (Roster)
 
 صفحة «الخريجون» بالأدمن بتعرض **كل شخص موجود بملفات الجامعة المرفوعة** (مسجّل أو لا) مع حالة التسجيل والتذكرة والدفع والدخول.
