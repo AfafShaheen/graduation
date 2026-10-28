@@ -245,7 +245,6 @@ export default function GraduationFormStep2({
                   placeholder="09xxxxxxxx"
                   style={{
                     paddingRight: "40px",
-                    paddingLeft: "56px",
                     textAlign: "left",
                   }}
                   value={formData.phone}
@@ -257,21 +256,6 @@ export default function GraduationFormStep2({
                   style={{ left: "auto", right: "12px" }}
                 >
                   phone_iphone
-                </span>
-                <span
-                  style={{
-                    position: "absolute",
-                    left: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    fontSize: "13px",
-                    fontWeight: "bold",
-                    color: "#725b51",
-                    borderRight: "1px solid #e2bfb2",
-                    paddingRight: "8px",
-                  }}
-                >
-                  +963
                 </span>
               </div>
               <FieldError message={errors.phone} />

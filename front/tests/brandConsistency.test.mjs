@@ -67,3 +67,9 @@ test('every page that showed the old header now imports the brand constants', ()
     assert.ok(/CEREMONY_TITLE|BATCH_BADGE/.test(text), `${rel} does not use brand constants`);
   }
 });
+
+// B3.1: the graduate phone field has no country-code chip (D5)
+test('no +963 country-code chip anywhere in front/src', () => {
+  const hits = walk(srcDir).filter((f) => readFileSync(f, 'utf8').includes('+963'));
+  assert.deepEqual(hits, [], `found +963 in: ${hits.join(', ')}`);
+});
