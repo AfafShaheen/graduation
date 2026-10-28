@@ -7,6 +7,7 @@ import { getPaymentInfo, submitPayment, getShamcashQr } from '../../api/graduate
 import { getGraduateToken } from '../../api/session';
 import { parseAmount, formatAmount } from '../../utils/amount.js';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 const LETTERS = /^[\p{L}\s]+$/u; // حروف (عربية أو لاتينية) ومسافات فقط
 const TX_ID = /^[A-Za-z0-9-]+$/; // أرقام وحروف وشرطة، بدون مسافات
@@ -418,6 +419,7 @@ export default function ShamCashPayment({ onBack }) {
           )}
 
           <footer className="sc-footer">
+            <HelpFooter />
             <p className="sc-footer-main">{CEREMONY_TITLE}</p>
             <p className="sc-footer-sub">إصدار البطاقة الإلكترونية مؤمَّن ومعتمد رسمياً</p>
           </footer>

@@ -6,6 +6,7 @@ import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { companionsLabel } from '../../utils/companions';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 /* تنسيق التاريخ والوقت بالعربية مع أرقام إنجليزية */
 const formatDate = (value) => {
@@ -180,6 +181,7 @@ export default function OrderStatus() {
         </div>
 
         <footer className="os-footer">
+          <HelpFooter />
           <p className="os-footer-main">{CEREMONY_TITLE}</p>
           <p className="os-footer-sub">لجنة تنظيم وتنسيق حفلات التخرج المركزية</p>
         </footer>

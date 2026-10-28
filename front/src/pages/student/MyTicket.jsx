@@ -7,8 +7,8 @@ import useMyTicket from '../../hooks/useMyTicket';
 import { getMyProfile } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
-import ContactPhoneLink from '../../components/ContactPhoneLink';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 const formatEventDate = (value) => {
   if (!value) return '';
@@ -292,7 +292,7 @@ export default function MyTicket() {
           </div>
 
           <footer className="tk-footer">
-            <ContactPhoneLink style={{ margin: '0 0 6px', fontSize: '13px' }} />
+            <HelpFooter />
             <p className="tk-footer-main">{CEREMONY_TITLE}</p>
           </footer>
         </div>

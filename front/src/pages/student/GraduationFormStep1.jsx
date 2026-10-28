@@ -5,8 +5,8 @@ import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
 import { setRegistrationToken } from '../../api/session';
-import ContactPhoneLink from '../../components/ContactPhoneLink';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 /* حروف عربية ومسافات فقط (بدون أرقام أو رموز) */
 const ARABIC_ONLY = /^[\u0621-\u064A\u064B-\u0652\s]+$/;
@@ -529,7 +529,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             </button>
           </p>
 
-          <ContactPhoneLink style={{ margin: '8px 0 0', fontSize: '13px' }} />
+          <HelpFooter />
 
           <p className="footer-copy">{CEREMONY_TITLE}</p>
         </div>

@@ -6,6 +6,7 @@ import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { getPublicSettings } from '../../api/graduate';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 export default function OrderRejected() {
   const navigate = useNavigate();
@@ -26,7 +27,6 @@ export default function OrderRejected() {
 
   const rejectionReason =
     data?.ticket?.rejection_reason || 'لم يُرفق سبب الرفض. يرجى التواصل مع الدعم للاستفسار.';
-  const supportHref = contactPhone ? `tel:${contactPhone}` : undefined;
   const registrationOpen = Boolean(data?.registration?.is_open);
 
   return (
@@ -127,21 +127,7 @@ export default function OrderRejected() {
             </button>
           )}
 
-          <a
-            href={supportHref || undefined}
-            className="or-support-link"
-            {...(contactPhone ? {} : { 'aria-disabled': true })}
-            onClick={(e) => {
-              if (!supportHref) e.preventDefault();
-            }}
-          >
-            <span className="or-symbol" style={{ color: '#ca4b00', fontSize: '18px' }}>
-              support_agent
-            </span>
-            <span className="or-support-text">
-              {contactPhone ? `للتواصل مع الدعم: ${contactPhone}` : 'هل تواجه مشكلة؟ تواصل مع الدعم الفني للاتحاد'}
-            </span>
-          </a>
+          <HelpFooter phone={contactPhone} />
 
           <footer className="or-footer">
             <p className="or-footer-text">{CEREMONY_TITLE}</p>

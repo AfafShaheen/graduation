@@ -6,6 +6,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { getVolunteerAnswers, saveVolunteerAnswers } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 /* نص السؤالين: عدّلهما من هنا */
 const QUESTIONS = [
@@ -213,6 +214,7 @@ export default function GraduateQuestions({ onDone }) {
 
         {/* التذييل */}
         <div style={{ textAlign: 'center', marginTop: 'auto', padding: '16px 16px 8px' }}>
+          <HelpFooter />
           <p className="footer-copy">{CEREMONY_TITLE}</p>
         </div>
       </main>

@@ -6,8 +6,8 @@ import unionLogo from '../../assets/only-logo.png';
 import { loginGraduate } from '../../api/graduate';
 import { setGraduateSession, setVerificationToken, setGraduateEmail } from '../../api/session';
 import { extractVerificationToken } from '../../utils/extractVerificationToken.js';
-import ContactPhoneLink from '../../components/ContactPhoneLink';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -297,7 +297,7 @@ export default function Login({
 
           {/* تذييل الصفحة */}
           <footer className="lg-footer">
-            <ContactPhoneLink style={{ margin: '0 0 8px', fontWeight: 600 }} />
+            <HelpFooter />
             <p className="lg-footer-org">{CEREMONY_TITLE}</p>
             <p className="lg-footer-copy">منظومة الحجز والتحقق الإلكتروني لتذاكر التخرج © 2026</p>
           </footer>

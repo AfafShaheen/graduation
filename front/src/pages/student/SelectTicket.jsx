@@ -7,6 +7,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { getTicketOptions, selectTicket } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 /* صيغة العدد بالعربي: 1 مرافق، 2 مرافقان، 3-10 مرافقين، 11+ مرافقاً */
 const companionsText = (n) => {
@@ -271,6 +272,7 @@ export default function SelectTicket({ onBack }) {
         </main>
 
         <div className="st-bottom-dock">
+          <HelpFooter />
           <button
             className="st-action-btn"
             type="button"

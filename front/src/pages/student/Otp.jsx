@@ -4,7 +4,7 @@ import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
 import { verifyOtp, resendOtp, changeEmail, forgotPassword } from '../../api/graduate';
 import { setGraduateSession, clearVerificationToken, setVerificationToken, setGraduateEmail, getVerificationToken, getGraduateEmail, setResetCode, clearResetFlow } from '../../api/session';
-import ContactPhoneLink from '../../components/ContactPhoneLink';
+import HelpFooter from '../../components/HelpFooter';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 const CODE_LENGTH = 6;
@@ -553,11 +553,7 @@ export default function Otp({
             </form>
           </div>
 
-          <div className="ev-support-link-wrapper">
-            <a href="#support" className="ev-support-link">
-              هل تواجه مشكلة؟ تواصل مع الدعم الفني
-            </a>
-          </div>
+          <HelpFooter />
         </div>
 
         {/* الشريط السفلي والزر */}
@@ -573,7 +569,6 @@ export default function Otp({
               {status === 'success' ? 'check_circle' : 'arrow_back'}
             </span>
           </button>
-          <ContactPhoneLink style={{ margin: '4px 0', fontSize: '13px' }} />
           <p className="ev-institutional-label">{CEREMONY_TITLE}</p>
         </div>
       </main>

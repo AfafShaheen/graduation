@@ -7,6 +7,7 @@ import { resetPassword } from '../../api/graduate';
 import { clearResetFlow, getResetEmail, getResetCode } from '../../api/session';
 import { passwordError } from '../../utils/validators';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 /* نفس شروط كلمة السر عند إنشاء الحساب (مطابقة للخلفية، D5) */
 const PWD_FIELD = 'pass' + 'word';
@@ -272,6 +273,7 @@ export default function ResetPassword({ onBack, onDone }) {
 
         {/* التذييل */}
         <div style={{ textAlign: 'center', marginTop: 'auto', padding: '16px 16px 8px' }}>
+          <HelpFooter />
           <p className="footer-copy">{CEREMONY_TITLE}</p>
         </div>
       </main>

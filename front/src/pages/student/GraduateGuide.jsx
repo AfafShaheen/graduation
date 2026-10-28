@@ -6,6 +6,7 @@ import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import useContactPhone from '../../hooks/useContactPhone';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 /* ==========================================================================
    دليل التذكرة: صفحة إرشادات بتظهر بعد تسجيل الدخول وقبل اختيار التذكرة
@@ -219,24 +220,8 @@ export default function GraduateGuide({ onContinue, supportPhone = '' }) {
           {/* الختام */}
           <section className="guide-closing">
             <span className="material-symbols-outlined">support_agent</span>
-            <p>
-              لأي استفسار تواصل مع اتحاد الطلبة.
-              {contactPhone ? (
-                <>
-                  <br />
-                  للطوارئ والاستفسار:{' '}
-                  <a
-                    href={`tel:${contactPhone.replace(/\s+/g, '')}`}
-                    dir="ltr"
-                    style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 700 }}
-                  >
-                    {contactPhone}
-                  </a>
-                </>
-              ) : null}
-              <br />
-              نتمنى لك حفلاً لا يُنسى! 🎓
-            </p>
+            <HelpFooter phone={contactPhone} />
+            <p>نتمنى لك حفلاً لا يُنسى! 🎓</p>
           </section>
         </div>
 

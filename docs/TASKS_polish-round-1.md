@@ -26,9 +26,9 @@
 | B1.3 | SEO: index.html title وكل حقول seo.config.json | ✅ | 44d2320 | brandConsistency يتحقق من الجملة الجديدة؛ build مع generate-seo أخضر |
 | B1.4 | أمان التخطيط لعنوان الطويل (التفاف سطرين، بلا nowrap/ellipsis/ارتفاع ثابت) | ✅ | 1433bb8 | BrandHeader.css مستورد في 16 ملفاً؛ لا صفحة missing |
 | B1.5 | اختبار front/tests/brandConsistency.test.mjs | ✅ | (هذا الكوميت) | node --test: 3/3 pass — العبارات القديمة غائبة، SEO يحوي الجملة الجديدة، كل الصفحات تستورد brand |
-| B2.1 | مكوّن HelpFooter.jsx + نمط مشترك صغير | ⬜ | | |
-| B2.2 | استخدام HelpFooter مرة واحدة في كل صفحات الخريجين وإزالة النسخ اليدوية | ⬜ | | |
-| B2.3 | اختبار: كل ملف student/*.jsx يستورد ويرندر HelpFooter مرة واحدة بالضبط + سطر/سطران حسب الهاتف | ⬜ | | |
+| B2.1 | مكوّن HelpFooter.jsx + نمط مشترك صغير | ✅ | (هذا الكوميت) | front/src/components/HelpFooter.jsx + style/HelpFooter.css |
+| B2.2 | استخدام HelpFooter مرة واحدة في كل صفحات الخريجين وإزالة النسخ اليدوية | ✅ | (هذا الكوميت) | grep -L "HelpFooter" pages/student/*.jsx → فارغ (12/12 صفحة)؛ أزيلت نسخ Otp/OrderRejected/GraduateGuide وContactPhoneLink من Step1/Step2/Login/MyTicket |
+| B2.3 | اختبار: كل ملف student/*.jsx يستورد ويرندر HelpFooter مرة واحدة بالضبط + سطر/سطران حسب الهاتف | ✅ | (هذا الكوميت) | node --test tests/helpFooter.test.mjs → 8 pass؛ والحزمة 50 pass / 0 fail |
 | B3.1 | إزالة رقاقة +963 والحشو التعويضي في GraduationFormStep2 + اختبار غياب +963 في front/src | ⬜ | | |
 | B3.2 | إزالة remember me من AdminLogin و CSS + اختبار | ⬜ | | |
 | B3.3 | إزالة بحث رأس لوحة التحكم وحالته ومرشحه ومعالجه و CSS + اختبار | ⬜ | | |

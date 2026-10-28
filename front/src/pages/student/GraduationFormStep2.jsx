@@ -8,8 +8,8 @@ import useFormDraft from "../../hooks/useFormDraft";
 import { registerStep2 } from "../../api/graduate";
 import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegistrationToken } from "../../api/session";
 import { phoneError, passwordError } from "../../utils/validators";
-import ContactPhoneLink from "../../components/ContactPhoneLink";
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -424,10 +424,10 @@ export default function GraduationFormStep2({
             padding: "8px 16px",
           }}
         >
-          <ContactPhoneLink style={{ margin: "0 0 6px", fontSize: "13px" }} />
+          <HelpFooter />
 
           <p className="footer-copy">
-            جامعة حمص — حمص • فرع الاتحاد الوطني لطلبة سورية
+            {CEREMONY_TITLE}
           </p>
           <p
             style={{ fontSize: "10px", color: "#8d7166", margin: "2px 0 0 0" }}
