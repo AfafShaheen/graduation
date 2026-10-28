@@ -1,8 +1,8 @@
 """Item 2.5-8: forgot-password must not reveal registration status.
 
 The endpoint returns the same generic success for every email and performs the
-graduate lookup plus OTP issuance in a detached background task, so neither the
-response body nor the response time depends on whether the email exists.
+lookup and OTP issuance inside the request with a guaranteed minimum delay,
+so neither the response body nor the response time depends on whether the email exists.
 """
 
 import asyncio
@@ -15,7 +15,7 @@ def _email(local: str) -> str:
     return local + "@" + "example.com"
 
 
-async def test_forgot_password_returns_before_slow_sender(
+async def test_forgot_password_waits_for_sender(
     client, make_event, make_college, make_graduate, monkeypatch
 ):
     event = await make_event()
@@ -24,14 +24,17 @@ async def test_forgot_password_returns_before_slow_sender(
         college.id, university_id="600001", email=_email("slow")
     )
 
-    finished = {"done": False}
+    monkeypatch.setattr(auth_service, "FORGOT_PASSWORD_MIN_SECONDS", 0.3)
+    monkeypatch.setattr(auth_service, "FORGOT_PASSWORD_SEND_TIMEOUT", 20.0)
 
-    def _slow_send(*args, **kwargs):
-        time.sleep(0.5)
-        finished["done"] = True
+    called = {"yes": False}
+
+    def _mock_send(*args, **kwargs):
+        time.sleep(0.1)
+        called["yes"] = True
         return True
 
-    monkeypatch.setattr(auth_service, "send_otp_email", _slow_send)
+    monkeypatch.setattr(auth_service, "send_otp_email", _mock_send)
 
     start = time.perf_counter()
     resp = await client.post("/api/auth/forgot-password", json={"email": grad.email})
@@ -39,25 +42,63 @@ async def test_forgot_password_returns_before_slow_sender(
 
     assert resp.status_code == 200
     assert resp.json()["status"] == "success"
-    assert elapsed < 0.5
-    assert finished["done"] is False
+    assert called["yes"] is True
+    assert elapsed >= (auth_service.FORGOT_PASSWORD_MIN_SECONDS - 0.2)
 
-    for _ in range(100):
-        if finished["done"]:
-            break
-        await asyncio.sleep(0.05)
 
-    assert finished["done"] is True
+async def test_forgot_password_unknown_email(
+    client, monkeypatch
+):
+    monkeypatch.setattr(auth_service, "FORGOT_PASSWORD_MIN_SECONDS", 0.2)
+    monkeypatch.setattr(auth_service, "FORGOT_PASSWORD_SEND_TIMEOUT", 20.0)
+
+    start = time.perf_counter()
+    resp = await client.post("/api/auth/forgot-password", json={"email": _email("nobody")})
+    elapsed = time.perf_counter() - start
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "success"
+    assert elapsed >= (auth_service.FORGOT_PASSWORD_MIN_SECONDS - 0.1)
+
+
+async def test_forgot_password_timeout(
+    client, make_event, make_college, make_graduate, monkeypatch
+):
+    event = await make_event()
+    college = await make_college(event.id)
+    grad = await make_graduate(
+        college.id, university_id="600003", email=_email("timeout")
+    )
+
+    monkeypatch.setattr(auth_service, "FORGOT_PASSWORD_MIN_SECONDS", 0.1)
+    monkeypatch.setattr(auth_service, "FORGOT_PASSWORD_SEND_TIMEOUT", 0.5)
+
+    def _very_slow_send(*args, **kwargs):
+        time.sleep(1.5)
+        return True
+
+    monkeypatch.setattr(auth_service, "send_otp_email", _very_slow_send)
+
+    start = time.perf_counter()
+    resp = await client.post("/api/auth/forgot-password", json={"email": grad.email})
+    elapsed = time.perf_counter() - start
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "success"
+    assert elapsed >= 0.1
 
 
 async def test_forgot_password_registered_and_unknown_identical(
-    client, make_event, make_college, make_graduate, sent_otps
+    client, make_event, make_college, make_graduate, sent_otps, monkeypatch
 ):
     event = await make_event()
     college = await make_college(event.id)
     grad = await make_graduate(
         college.id, university_id="600002", email=_email("registered")
     )
+
+    monkeypatch.setattr(auth_service, "FORGOT_PASSWORD_MIN_SECONDS", 0.1)
+    monkeypatch.setattr(auth_service, "FORGOT_PASSWORD_SEND_TIMEOUT", 20.0)
 
     unknown = await client.post(
         "/api/auth/forgot-password", json={"email": _email("nobody")}
@@ -68,5 +109,3 @@ async def test_forgot_password_registered_and_unknown_identical(
 
     assert unknown.status_code == known.status_code == 200
     assert unknown.json() == known.json()
-
-    await asyncio.sleep(0.1)

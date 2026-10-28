@@ -24,10 +24,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Strong references to fire-and-forget tasks. asyncio only keeps a weak
-# reference to running tasks, so without this the event loop could garbage
-# collect the password-reset task mid-flight.
-_background_tasks: set[asyncio.Task] = set()
+# forgot-password: send inside the request, but always take at least this long
+# so the response time doesn't reveal whether the email is registered (item 2.5-8).
+FORGOT_PASSWORD_MIN_SECONDS = 3.0
+FORGOT_PASSWORD_SEND_TIMEOUT = 20.0
 
 
 async def check_redis_cooldown(identifier: str, action: str) -> None:
@@ -286,30 +286,30 @@ async def change_email_service(db: AsyncSession, graduate_id: int, new_email: st
     }
 
 
-async def _send_password_reset_otp(email: str) -> None:
-    """Look up the graduate and send a reset OTP, detached from the request.
+async def _send_password_reset_otp(email: str) -> str:
+    """Look up the graduate and send a reset OTP. Never raises.
 
-    Runs as a background task so the HTTP response time never reveals whether
-    the email is registered. It opens its own ``AsyncSessionLocal`` session
-    because the request-scoped session is closed once the response is sent.
-    This coroutine never raises; failures are logged without the OTP code.
+    Returns an outcome tag for logging only (never sent to the client):
+    'no_account' | 'cooldown' | 'sent' | 'send_failed' | 'error'.
     """
     try:
         async with AsyncSessionLocal() as session:
             grad = await fetch_graduate_by_email(session, email)
             if not grad:
-                return
-
+                return "no_account"
             try:
                 await check_redis_cooldown(str(grad.id), OtpPurpose.PASSWORD_RESET.value)
             except HTTPException:
-                return
-
-            await issue_and_send_otp(session, grad, OtpPurpose.PASSWORD_RESET, grad.email)
+                return "cooldown"
+            sent = await issue_and_send_otp(session, grad, OtpPurpose.PASSWORD_RESET, grad.email)
+            if not sent:
+                logger.warning("Password-reset OTP send failed for graduate id=%s", grad.id)
+                return "send_failed"
+            return "sent"
     except Exception as exc:
-        logger.error(
-            "Background password-reset OTP task failed (%s)", type(exc).__name__
-        )
+        logger.warning("Password-reset OTP failed (%s): %s", type(exc).__name__, exc)
+        logger.error("Password-reset OTP failed (%s): %s", type(exc).__name__, exc)
+        return "error"
 
 
 async def forgot_password_service(db: AsyncSession, email: str) -> dict:
@@ -317,10 +317,19 @@ async def forgot_password_service(db: AsyncSession, email: str) -> dict:
         "status": "success",
         "message": "إذا كان هذا البريد مسجلاً، فقد تم إرسال رمز استعادة كلمة المرور."
     }
-
-    task = asyncio.create_task(_send_password_reset_otp(email))
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
+    started = time.monotonic()
+    try:
+        outcome = await asyncio.wait_for(
+            _send_password_reset_otp(email), timeout=FORGOT_PASSWORD_SEND_TIMEOUT
+        )
+    except asyncio.TimeoutError:
+        logger.warning("Password-reset OTP timed out after %s seconds", FORGOT_PASSWORD_SEND_TIMEOUT)
+        outcome = "timeout"
+    # Log the outcome without the email address or the code.
+    logger.info("forgot-password processed: outcome=%s", outcome)
+    elapsed = time.monotonic() - started
+    if elapsed < FORGOT_PASSWORD_MIN_SECONDS:
+        await asyncio.sleep(FORGOT_PASSWORD_MIN_SECONDS - elapsed)
     return success_response
 
 
