@@ -6,33 +6,53 @@ import { getPaymentInfo, submitPayment, getShamcashQr } from '../../api/graduate
 import { getGraduateToken } from '../../api/session';
 import { parseAmount, formatAmount } from '../../utils/amount.js';
 
-const LETTERS = /^[\p{L}\s]+$/u; // حروف (عربية أو لاتينية) ومسافات فقط
-const TX_ID = /^[A-Za-z0-9-]+$/; // أرقام وحروف وشرطة، بدون مسافات
-
-const formatMoney = (value) => Number(value).toLocaleString('en-US');
-
 /* تحويل الأرقام العربية لإنجليزية وإزالة أي رمز غير رقمي */
 const toDigits = (value) =>
   value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, '');
 
+/* Arabic-Indic digits → Latin, then uppercase: same normalisation as the backend */
+const normalizeTx = (value) =>
+  value
+    .trim()
+    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .toUpperCase();
+
+/* backend field name → this form's field name */
+const SERVER_FIELD_MAP = {
+  transaction_number: 'transactionId',
+  amount: 'transferAmount',
+  sender_name: 'senderName',
+};
+
+/* pydantic prefixes messages with "Value error, " */
+const cleanServerMessage = (msg) => String(msg || '').replace(/^Value error,\s*/i, '');
+
+const formatMoney = (value) => Number(value).toLocaleString('en-US');
+
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const makeValidators = () => ({
   transactionId: (v) => {
-    const t = v.trim();
+    const t = normalizeTx(v);
     if (!t) return 'يرجى إدخال رقم العملية';
-    if (!TX_ID.test(t)) return 'رقم العملية يجب ألا يحتوي على مسافات أو رموز';
+    if (/\s/.test(t)) return 'رقم العملية يجب ألا يحتوي على مسافات';
+    if (!/^[A-Z0-9-]+$/.test(t)) return 'رقم العملية يقبل أحرفاً إنجليزية وأرقاماً وشرطة (-) فقط';
+    if (t.length < 4) return 'رقم العملية يجب أن يكون 4 خانات على الأقل';
+    if (t.length > 100) return 'رقم العملية طويل جداً (100 خانة كحد أقصى)';
     return '';
   },
   transferAmount: (v) => {
     const t = toDigits(v);
     if (!t) return 'يرجى إدخال المبلغ المحوّل';
-    if (Number(t) <= 0) return 'يرجى إدخال مبلغ صحيح';
+    const n = Number(t);
+    if (!Number.isFinite(n) || n <= 0) return 'يرجى إدخال مبلغ صحيح';
+    if (n >= 100000000) return 'المبلغ كبير جداً';
     return '';
   },
   senderName: (v) => {
     const t = v.trim().replace(/\s+/g, ' ');
     if (!t) return 'يرجى إدخال اسم المرسل';
-    if (!/^[\p{L}\s]+$/u.test(t)) return 'يجب أن يتكون الاسم من حروف فقط';
+    if (!/^[؀-ۿa-zA-Z\s]+$/.test(t)) return 'يجب أن يتكون الاسم من حروف عربية أو إنجليزية فقط';
+    if (t.length < 2) return 'الاسم قصير جداً';
     if (t.split(' ').length < 2) return 'يرجى كتابة الاسم والكنية (كلمتان على الأقل)';
     return '';
   },
@@ -192,7 +212,7 @@ export default function ShamCashPayment({ onBack }) {
     try {
       await submitPayment(
         {
-          transaction_number: formData.transactionId.trim(),
+          transaction_number: normalizeTx(formData.transactionId),
           amount: parseAmount(formData.transferAmount),
           sender_name: formData.senderName.trim().replace(/\s+/g, ' '),
         },
@@ -205,8 +225,20 @@ export default function ShamCashPayment({ onBack }) {
           ...prev,
           transactionId: err?.message || 'رقم العملية مستخدم مسبقاً.',
         }));
+        document.getElementById(fieldIds.transactionId)?.focus();
       } else if (err?.status === 422 && err?.fieldErrors) {
-        setErrors((prev) => ({ ...prev, ...err.fieldErrors }));
+        const mapped = {};
+        const unmapped = [];
+        Object.entries(err.fieldErrors).forEach(([key, msg]) => {
+          const local = SERVER_FIELD_MAP[key];
+          if (local) mapped[local] = cleanServerMessage(msg);
+          else unmapped.push(cleanServerMessage(msg));
+        });
+        setErrors((prev) => ({ ...prev, ...mapped }));
+        if (unmapped.length) setSubmitError(unmapped.join(' — '));
+        const first = Object.keys(mapped)[0];
+        if (first) document.getElementById(fieldIds[first])?.focus();
+        if (!first && !unmapped.length) setSubmitError('يرجى التحقق من البيانات المدخلة.');
       } else if (err?.status === 403) {
         setSubmitError(err?.message || 'التسجيل مغلق حالياً.');
       } else {
@@ -397,7 +429,9 @@ export default function ShamCashPayment({ onBack }) {
                   </div>
 
                   {submitError && (
-                    <p className="sc-error-text" role="alert">
+                    <p className="sc-error-text" role="alert" ref={(node) => {
+                      if (node) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}>
                       {submitError}
                     </p>
                   )}
