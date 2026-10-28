@@ -30,8 +30,8 @@
 | B2.2 | استخدام HelpFooter مرة واحدة في كل صفحات الخريجين وإزالة النسخ اليدوية | ✅ | (هذا الكوميت) | grep -L "HelpFooter" pages/student/*.jsx → فارغ (12/12 صفحة)؛ أزيلت نسخ Otp/OrderRejected/GraduateGuide وContactPhoneLink من Step1/Step2/Login/MyTicket |
 | B2.3 | اختبار: كل ملف student/*.jsx يستورد ويرندر HelpFooter مرة واحدة بالضبط + سطر/سطران حسب الهاتف | ✅ | (هذا الكوميت) | node --test tests/helpFooter.test.mjs → 8 pass؛ والحزمة 50 pass / 0 fail |
 | B3.1 | إزالة رقاقة +963 والحشو التعويضي في GraduationFormStep2 + اختبار غياب +963 في front/src | ✅ | (هذا الكوميت) | node --test tests/brandConsistency.test.mjs → 4 pass (اختبار جديد: لا +963 في src) |
-| B3.2 | إزالة remember me من AdminLogin و CSS + اختبار | ⬜ | | |
-| B3.3 | إزالة بحث رأس لوحة التحكم وحالته ومرشحه ومعالجه و CSS + اختبار | ⬜ | | |
+| B3.2 | إزالة remember me من AdminLogin و CSS + اختبار | ✅ | (هذا الكوميت) | adminUxRemovals.test.mjs: لا rememberMe/ad-remember-row/ad-checkbox في JSX/CSS |
+| B3.3 | إزالة بحث رأس لوحة التحكم وحالته ومرشحه ومعالجه و CSS + اختبار | ✅ | (هذا الكوميت) | adminUxRemovals.test.mjs: لا adm-search/searchQuery/handleSearch؛ الجدول والترقيم وقائمة الأعمدة لم تُمس؛ الحزمة 53 pass |
 | B4.1 | utils/payments.js — validateTransactionId نقيّة بالرسائل العربية واستخدامها في ShamCashPayment | ⬜ | | |
 | B4.2 | خصائص حقل رقم العملية (inputMode=text، autoCapitalize=off، dir=ltr، maxLength=100، placeholder مثال، تلميح) بلا تuppercase قسري | ⬜ | | |
 | B4.3 | عرض رقم العملية كما ورد تمامًا في كل الواجهة (إزالة أي toUpperCase/text-transform uppercase) | ⬜ | | |

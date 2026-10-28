@@ -29,7 +29,6 @@ function FieldError({ message }) {
 
 export default function AdminLogin({ onLoginSuccess }) {
   const [formData, setFormData] = useState({ syndicateId: '', password: '' });
-  const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState('');
@@ -200,19 +199,6 @@ export default function AdminLogin({ onLoginSuccess }) {
                   </div>
                 </div>
                 <FieldError message={errors.password} />
-              </div>
-
-              {/* خيار تذكرني */}
-              <div className="ad-remember-row">
-                <label className="ad-checkbox-label">
-                  <input
-                    type="checkbox"
-                    className="ad-checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <span>تذكّر تسجيل دخولي على هذا الجهاز</span>
-                </label>
               </div>
 
               {/* زر التقديم */}
