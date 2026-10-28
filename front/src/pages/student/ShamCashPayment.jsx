@@ -8,9 +8,10 @@ import { getGraduateToken } from '../../api/session';
 import { parseAmount, formatAmount } from '../../utils/amount.js';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import { validateTransactionId } from '../../utils/payments';
 
 const LETTERS = /^[\p{L}\s]+$/u; // حروف (عربية أو لاتينية) ومسافات فقط
-const TX_ID = /^[A-Za-z0-9-]+$/; // أرقام وحروف وشرطة، بدون مسافات
+
 
 const formatMoney = (value) => Number(value).toLocaleString('en-US');
 
@@ -20,12 +21,7 @@ const toDigits = (value) =>
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const makeValidators = () => ({
-  transactionId: (v) => {
-    const t = v.trim();
-    if (!t) return 'يرجى إدخال رقم العملية';
-    if (!TX_ID.test(t)) return 'رقم العملية يجب ألا يحتوي على مسافات أو رموز';
-    return '';
-  },
+  transactionId: (v) => validateTransactionId(v),
   transferAmount: (v) => {
     const t = toDigits(v);
     if (!t) return 'يرجى إدخال المبلغ المحوّل';
@@ -335,16 +331,24 @@ export default function ShamCashPayment({ onBack }) {
                         id="transactionId"
                         name="transactionId"
                         type="text"
-                        inputMode="numeric"
+                        inputMode="text"
+                        autoCapitalize="off"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        dir="ltr"
+                        maxLength={100}
                         autoComplete="off"
                         className={`sc-input ${errors.transactionId ? 'error' : ''}`}
-                        placeholder="مثال: 948271503"
+                        placeholder="مثال: Ab12-9x"
                         value={formData.transactionId}
                         onChange={handleInputChange}
                         aria-invalid={!!errors.transactionId}
                       />
                       <span className="sc-symbol sc-input-icon-left">pin</span>
                     </div>
+                    <p className="sc-field-hint" style={{ margin: '4px 0 0', fontSize: '12px', color: '#725b51' }}>
+                      اكتب رقم العملية كما ظهر في تطبيق شام كاش بالضبط (حروف إنجليزية وأرقام وشرطة، بدون مسافات).
+                    </p>
                     <FieldError message={errors.transactionId} />
                   </div>
 

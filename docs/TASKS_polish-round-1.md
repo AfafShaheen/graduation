@@ -32,10 +32,10 @@
 | B3.1 | إزالة رقاقة +963 والحشو التعويضي في GraduationFormStep2 + اختبار غياب +963 في front/src | ✅ | (هذا الكوميت) | node --test tests/brandConsistency.test.mjs → 4 pass (اختبار جديد: لا +963 في src) |
 | B3.2 | إزالة remember me من AdminLogin و CSS + اختبار | ✅ | (هذا الكوميت) | adminUxRemovals.test.mjs: لا rememberMe/ad-remember-row/ad-checkbox في JSX/CSS |
 | B3.3 | إزالة بحث رأس لوحة التحكم وحالته ومرشحه ومعالجه و CSS + اختبار | ✅ | (هذا الكوميت) | adminUxRemovals.test.mjs: لا adm-search/searchQuery/handleSearch؛ الجدول والترقيم وقائمة الأعمدة لم تُمس؛ الحزمة 53 pass |
-| B4.1 | utils/payments.js — validateTransactionId نقيّة بالرسائل العربية واستخدامها في ShamCashPayment | ⬜ | | |
-| B4.2 | خصائص حقل رقم العملية (inputMode=text، autoCapitalize=off، dir=ltr، maxLength=100، placeholder مثال، تلميح) بلا تuppercase قسري | ⬜ | | |
-| B4.3 | عرض رقم العملية كما ورد تمامًا في كل الواجهة (إزالة أي toUpperCase/text-transform uppercase) | ⬜ | | |
-| B4.4 | اختبارات B4.1 (جدول القيم) + فحص ثابت بلا تحويل حالة في الملفات المعدّلة | ⬜ | | |
+| B4.1 | utils/payments.js — validateTransactionId نقيّة بالرسائل العربية واستخدامها في ShamCashPayment | ✅ | (كوميت B4) | node --test tests/transactionDisplay.test.mjs → 12 pass |
+| B4.2 | خصائص حقل رقم العملية (inputMode=text، autoCapitalize=off، dir=ltr، maxLength=100، placeholder مثال، تلميح) بلا uppercase قسري | ✅ | (كوميت B4) | نفس الاختبار: فحص الخصائص + الإرسال trim() فقط |
+| B4.3 | عرض رقم العملية كما ورد تمامًا في كل الواجهة (لا toUpperCase/text-transform uppercase) | ✅ | (كوميت B4) | grep: لا .toUpperCase ولا uppercase في src؛ AdminPaymentRequests يعرض p.transaction_number خامًا؛ الروستر محمي S12 ولا يعرض رقم العملية أصلًا |
+| B4.4 | اختبارات B4.1 (جدول القيم) + فحص ثابت بلا تحويل حالة في الملفات المعدّلة | ✅ | (كوميت B4) | A1B2-9x ✓، ab-1234 ✓، 123 ✗ قصير، abc def ✗، ١٢٣٤٥ ✗، 101 ✗/100 ✓، فارغ ✗ — كلها في transactionDisplay.test.mjs |
 | B5.1 | مدقّقات إعدادات الإدارة في validators.js مطابقة حرفيًا لرسائل Backend + ربطها بتبويب الإعدادات | ⬜ | | |
 | B5.2 | اختبارات B5.1 بجدول صدق مطابق لـ A1.2 | ⬜ | | |
 | B6.1 | تسجيل دخول الماسح: زر واحد تسجيل الدخول، إزالة زر المنتقي، تعطيل حتى اختيار فعالية، مسح الاختيار عند تعديل الحقول | ⬜ | | |
