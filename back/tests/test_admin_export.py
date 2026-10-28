@@ -155,6 +155,32 @@ async def test_export_single_event_headers_and_values(
     assert first[25] in (None, "")
 
 
+async def test_export_shows_transaction_number_as_typed(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    """A2.5 (D4): the Excel export shows رقم العملية exactly as stored."""
+    event = await make_event(name="حفل التخرج")
+    college = await make_college(event.id, name="كلية الهندسة المعلوماتية")
+    graduate = await make_graduate(
+        college.id, university_id="1077", full_name="كرمل حنا", email_verified=True
+    )
+    ticket = await make_ticket(
+        graduate.id, event.id, status=TicketStatusEnum.PROCESSING, price=100000
+    )
+    await make_payment(
+        ticket.id, transaction_number="ab-Cd12", amount=100000, sender_name="كرمل"
+    )
+
+    headers = await _admin_headers(client, make_admin)
+    response = await client.get(f"/api/admin/export?event_id={event.id}", headers=headers)
+    assert response.status_code == 200
+
+    _ws, rows = _read_rows(response)
+    txn_column = _HEADERS.index("رقم العملية")
+    typed_row = next(r for r in rows[1:] if r[4] == "1077")
+    assert typed_row[txn_column] == "ab-Cd12"
+
+
 async def test_export_headers_only_when_no_data(
     client, db, make_event, make_college, make_admin
 ):

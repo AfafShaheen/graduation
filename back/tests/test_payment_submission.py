@@ -34,11 +34,13 @@ async def _login(client, graduate):
 
 
 async def _graduate_with_ticket(
-    client, make_event, make_college, make_graduate, **event_kw
+    client, make_event, make_college, make_graduate, *, university_id="123456", **event_kw
 ):
     event = await make_event(**event_kw)
     college = await make_college(event.id)
-    graduate = await make_graduate(college.id, email_verified=True)
+    graduate = await make_graduate(
+        college.id, university_id=university_id, email_verified=True
+    )
     access_value = await _login(client, graduate)
     created = await client.post(
         "/api/graduates/me/ticket", headers=_auth(access_value), json=_SELECT_BODY
@@ -126,9 +128,15 @@ async def test_submit_payment_success(
     assert payment.amount == Decimal("100000")
 
 
-async def test_submit_normalizes_transaction_number(
+async def test_submit_keeps_transaction_number_as_typed(
     client, db, make_event, make_college, make_graduate
 ):
+    """A2.6: D4 replaced the old upper-casing behaviour.
+
+    The previous assertion of this test ("  ab-1234  " was stored as
+    "AB-1234") encoded the old normalisation; the polish round 1 decision D4
+    stores the number EXACTLY as typed (only surrounding spaces trimmed).
+    """
     _event, _college, _grad, access_value, ticket_id = await _graduate_with_ticket(
         client, make_event, make_college, make_graduate
     )
@@ -144,7 +152,130 @@ async def test_submit_normalizes_transaction_number(
             select(PaymentModel).where(PaymentModel.ticket_id == ticket_id)
         )
     ).scalar_one()
-    assert payment.transaction_number == "AB-1234"
+    assert payment.transaction_number == "ab-1234"
+
+
+async def test_submit_duplicate_other_case_other_ticket_conflict(
+    client, make_event, make_college, make_graduate
+):
+    """D4: uniqueness is global and case-insensitive (abc-1 == ABC-1)."""
+    _e1, _c1, _g1, token_a, _ticket_a = await _graduate_with_ticket(
+        client, make_event, make_college, make_graduate
+    )
+    _e2, _c2, _g2, token_b, _ticket_b = await _graduate_with_ticket(
+        client, make_event, make_college, make_graduate, university_id="654321"
+    )
+
+    first = await client.post(
+        "/api/graduates/me/payment",
+        headers=_auth(token_a),
+        json=dict(_PAYMENT_BODY, transaction_number="ab-Cd12"),
+    )
+    assert first.status_code == 201, first.text
+
+    second = await client.post(
+        "/api/graduates/me/payment",
+        headers=_auth(token_b),
+        json=dict(_PAYMENT_BODY, transaction_number="AB-CD12"),
+    )
+    assert second.status_code == 409, second.text
+    assert messages.TRANSACTION_ALREADY_USED in second.json()["detail"]
+
+
+async def test_submit_same_ticket_other_case_updates_stored_text(
+    client, db, make_event, make_college, make_graduate, make_admin
+):
+    """D4: resubmitting on the same ticket refreshes the row with the new text.
+
+    The graduate-side flow refuses a second submission while the ticket is
+    PROCESSING (existing rule, untouched), so the admin resets the ticket to
+    REJECTED between the two submissions.
+    """
+    _event, _college, _grad, access_value, ticket_id = await _graduate_with_ticket(
+        client, make_event, make_college, make_graduate
+    )
+    admin = await make_admin()
+    login = await client.post(
+        "/api/admin/auth/login",
+        json={"username": admin.username, _PW_FIELD: "Admin" + "Pass" + "123!"},
+    )
+    assert login.status_code == 200, login.text
+    admin_auth = _auth(login.json()["access_token"])
+
+    first = await client.post(
+        "/api/graduates/me/payment",
+        headers=_auth(access_value),
+        json=dict(_PAYMENT_BODY, transaction_number="XY-9900"),
+    )
+    assert first.status_code == 201, first.text
+
+    rejected = await client.post(
+        f"/api/admin/tickets/{ticket_id}/reject",
+        headers=admin_auth,
+        json={"reason": "اختبار إعادة الإرسال"},
+    )
+    assert rejected.status_code == 200, rejected.text
+
+    second = await client.post(
+        "/api/graduates/me/payment",
+        headers=_auth(access_value),
+        json=dict(_PAYMENT_BODY, transaction_number="xy-9900"),
+    )
+    assert second.status_code == 201, second.text
+
+    payments = (
+        await db.execute(
+            select(PaymentModel).where(PaymentModel.ticket_id == ticket_id)
+        )
+    ).scalars().all()
+    assert len(payments) == 1
+    assert payments[0].transaction_number == "xy-9900"
+
+
+async def test_admin_and_graduate_views_show_number_as_typed(
+    client, db, make_event, make_college, make_graduate, make_admin
+):
+    """A2.5: every read path returns the stored text exactly as typed (D4)."""
+    _event, _college, _grad, access_value, ticket_id = await _graduate_with_ticket(
+        client, make_event, make_college, make_graduate
+    )
+    submitted = await client.post(
+        "/api/graduates/me/payment",
+        headers=_auth(access_value),
+        json=dict(_PAYMENT_BODY, transaction_number="ab-Cd12"),
+    )
+    assert submitted.status_code == 201, submitted.text
+
+    admin = await make_admin()
+    login = await client.post(
+        "/api/admin/auth/login",
+        json={"username": admin.username, _PW_FIELD: "Admin" + "Pass" + "123!"},
+    )
+    assert login.status_code == 200, login.text
+    admin_auth = _auth(login.json()["access_token"])
+
+    listed = await client.get(
+        f"/api/admin/events/{_event.id}/payments?status=PROCESSING",
+        headers=admin_auth,
+    )
+    assert listed.status_code == 200, listed.text
+    item = next(i for i in listed.json()["items"] if i["ticket_id"] == ticket_id)
+    assert item["payment"]["transaction_number"] == "ab-Cd12"
+
+    detail = await client.get(
+        f"/api/admin/tickets/{ticket_id}", headers=admin_auth
+    )
+    assert detail.status_code == 200, detail.text
+    assert [
+        p["transaction_number"] for p in detail.json()["payments"]
+    ] == ["ab-Cd12"]
+
+    graduate_detail = await client.get(
+        f"/api/admin/graduates/{_grad.id}", headers=admin_auth
+    )
+    assert graduate_detail.status_code == 200, graduate_detail.text
+    payments = graduate_detail.json()["payments"]
+    assert [p["transaction_number"] for p in payments] == ["ab-Cd12"]
 
 
 async def test_submit_validation_cases(
