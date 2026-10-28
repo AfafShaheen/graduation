@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import '../../style/OrderStatus.css';
+import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';

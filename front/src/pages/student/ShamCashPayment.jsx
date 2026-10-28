@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/ShamCashPayment.css';
+import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
 import { getPaymentInfo, submitPayment, getShamcashQr } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';

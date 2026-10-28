@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
+import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { getVolunteerAnswers, saveVolunteerAnswers } from '../../api/graduate';

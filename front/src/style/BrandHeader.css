@@ -1,0 +1,26 @@
+/* ==========================================================================
+   BrandHeader.css — حماية تخطيط العناوين عند استخدام العنوان الثابت الطويل (B1.4)
+   العنوان الجديد «اتحاد الطلبة جامعة حمص حفل تخريج الدفعة 3» أطول من السابق؛
+   هذا الملف يضمن أن عناوين الرؤوس في كل الصفحات تلتف على سطرين بأمان
+   بدون قص أو نقاط حذف (…) وأن ترتفع الحاويات معها تلقائياً.
+   يُستورد بعد ملفات الأنماط الخاصة بالصفحات المتأثرة.
+   ========================================================================== */
+
+.header-title,
+.lg-header-title,
+.os-header-title,
+.or-header-title,
+.ev-header-title,
+.st-header-title,
+.sc-header-title,
+.tk-header-title,
+.ad-header-title,
+.scan-login-header-title,
+.scan-res-header-title {
+  white-space: normal;
+  min-height: 0;
+  height: auto;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}

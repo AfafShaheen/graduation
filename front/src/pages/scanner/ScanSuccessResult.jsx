@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../../style/ScanSuccessResult.css';
+import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 

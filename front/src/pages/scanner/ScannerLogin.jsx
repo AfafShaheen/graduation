@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../../style/ScannerLogin.css';
+import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { request } from '../../api/client';
