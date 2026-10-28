@@ -8,6 +8,7 @@ import { registerStep2 } from "../../api/graduate";
 import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegistrationToken } from "../../api/session";
 import { phoneError, passwordError } from "../../utils/validators";
 import ContactPhoneLink from "../../components/ContactPhoneLink";
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -152,7 +153,7 @@ export default function GraduationFormStep2({
             >
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>
-            <h1 className="header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="header-title">{CEREMONY_TITLE}</h1>
             <div className="icon-btn">
               <img
                 className="header-logo"
@@ -163,7 +164,7 @@ export default function GraduationFormStep2({
           </div>
           <div className="header-subband">
             <span className="subband-title">إنشاء حساب</span>
-            <span className="badge-batch">دفعة 2026</span>
+            <span className="badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -191,7 +192,7 @@ export default function GraduationFormStep2({
             </div>
             <div>
               <h2 className="card-title">بيانات الدخول والأمان</h2>
-              <p className="card-subtitle">حفل تخرج الدفعة 44 — جامعة حمص</p>
+              <p className="card-subtitle">{CEREMONY_TITLE}</p>
             </div>
           </div>
 

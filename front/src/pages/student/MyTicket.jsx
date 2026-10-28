@@ -7,6 +7,7 @@ import { getMyProfile } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
 import ContactPhoneLink from '../../components/ContactPhoneLink';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 const formatEventDate = (value) => {
   if (!value) return '';
@@ -44,7 +45,7 @@ export default function MyTicket() {
   const handleShare = async () => {
     if (!navigator.share) return;
     try {
-      await navigator.share({ title: 'تذكرتي - حفل تخرج جامعة حمص' });
+      await navigator.share({ title: `تذكرتي - ${CEREMONY_TITLE}` });
     } catch {
       /* المستخدم ألغى المشاركة */
     }
@@ -91,7 +92,7 @@ export default function MyTicket() {
   const studentName = profile?.full_name || profile?.name || '—';
   const faculty = profile?.college_name || profile?.college?.name || '—';
   const universityId = profile?.university_id || '—';
-  const eventTitle = event?.name || 'حفل تخرج جامعة حمص';
+  const eventTitle = event?.name || CEREMONY_TITLE;
   const eventDateText = formatEventDate(event?.event_date);
   const eventTimeText = formatEventTime(event?.event_time);
   const topRank = topRankLabel(data?.top_rank);
@@ -105,7 +106,7 @@ export default function MyTicket() {
               <img className="tk-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
             </div>
 
-            <h1 className="tk-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="tk-header-title">{CEREMONY_TITLE}</h1>
 
             <button
               aria-label="مشاركة التذكرة"
@@ -121,7 +122,7 @@ export default function MyTicket() {
 
           <div className="tk-header-subband">
             <span className="tk-subband-title">تذكرتي</span>
-            <span className="tk-badge-batch">دفعة 2026</span>
+            <span className="tk-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -291,8 +292,7 @@ export default function MyTicket() {
 
           <footer className="tk-footer">
             <ContactPhoneLink style={{ margin: '0 0 6px', fontSize: '13px' }} />
-            <p className="tk-footer-main">جامعة حمص • حفل تخرج الدفعة 44</p>
-            <p className="tk-footer-sub">بالتعاون مع فرع حمص لاتحاد الطلبة</p>
+            <p className="tk-footer-main">{CEREMONY_TITLE}</p>
           </footer>
         </div>
       </main>
