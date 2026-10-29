@@ -2,7 +2,7 @@ import asyncio
 import time
 from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 from fastapi import HTTPException, status
 from app.models.graduate import GraduateModel
 from app.models.otp_code import OtpCodeModel
@@ -113,9 +113,15 @@ async def fetch_graduate(db: AsyncSession, graduate_id: int) -> GraduateModel | 
 
 
 async def fetch_graduate_by_email(db: AsyncSession, email: str) -> GraduateModel | None:
-    stmt = select(GraduateModel).where(GraduateModel.email == email)
+    # Case-insensitive: "Name@Gmail.com" at registration and "name@gmail.com" at
+    # reset are the same mailbox. An exact match silently found no account.
+    stmt = (
+        select(GraduateModel)
+        .where(func.lower(GraduateModel.email) == (email or "").strip().lower())
+        .order_by(GraduateModel.id)
+    )
     result = await db.execute(stmt)
-    return result.scalar_one_or_none()
+    return result.scalars().first()
 
 
 def validate_otp_expiration(expires_at) -> bool:
@@ -327,7 +333,8 @@ async def forgot_password_service(db: AsyncSession, email: str) -> dict:
         logger.warning("Password-reset OTP timed out after %s seconds", FORGOT_PASSWORD_SEND_TIMEOUT)
         outcome = "timeout"
     # Log the outcome without the email address or the code.
-    logger.info("forgot-password processed: outcome=%s", outcome)
+    # WARNING level so it reaches stderr.log on the server (no email, no code).
+    logger.warning("forgot-password processed: outcome=%s", outcome)
     elapsed = time.monotonic() - started
     if elapsed < FORGOT_PASSWORD_MIN_SECONDS:
         await asyncio.sleep(FORGOT_PASSWORD_MIN_SECONDS - elapsed)
