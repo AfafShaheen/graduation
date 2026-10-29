@@ -878,3 +878,5 @@
     font-size: 15px;
   }
   
+.scan-set-qr-account { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 12px; }
+.scan-set-qr-account-value { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: #124d44; word-break: break-all; }

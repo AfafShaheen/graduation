@@ -150,11 +150,16 @@ export default function AdminPaymentRequests({
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     setSettingsActionError('');
+    const trimmedAccount = shamCashAccount.trim();
+    if (trimmedAccount !== '' && !/^[A-Za-z0-9-]{4,100}$/.test(trimmedAccount)) {
+      setSettingsActionError('رقم حساب شام كاش يجب أن يتكون من أحرف إنجليزية وأرقام بدون مسافات (4 خانات على الأقل)');
+      return;
+    }
     try {
       setSavingSettings(true);
       await updateAdminSettings({
         shamcash_receiver_name: beneficiaryName,
-        shamcash_account_number: shamCashAccount,
+        shamcash_account_number: trimmedAccount,
         contact_phone: supportPhone,
       });
       setSettingsNotice('تم حفظ إعدادات الدفع بنجاح');
@@ -706,7 +711,7 @@ export default function AdminPaymentRequests({
                   </div>
 
                   <div className="scan-set-field">
-                    <label className="scan-set-label" htmlFor="shamcash">رقم الحساب في محفظة شام كاش</label>
+                    <label className="scan-set-label" htmlFor="shamcash">رقم حساب شام كاش (أحرف وأرقام)</label>
                     <div className="scan-set-input-wrap">
                       <input
                         id="shamcash"
@@ -718,15 +723,18 @@ export default function AdminPaymentRequests({
                           settingsDirtyRef.current = true;
                           setShamCashAccount(e.target.value);
                         }}
+                        placeholder="مثال: a1b2c3d4e5"
+                        autoComplete="off"
+                        spellCheck={false}
                         required
                       />
                       <span className="scan-set-symbol scan-set-input-icon left">wallet</span>
                     </div>
-                    <p className="scan-set-hint">رقم الحساب التعريفي المعتمد لدى محفظة شام كاش.</p>
+                    <p className="scan-set-hint">رقم المحفظة كما يظهر في تطبيق شام كاش. ليس رقم الهاتف.</p>
                   </div>
 
                   <div className="scan-set-field">
-                    <label className="scan-set-label" htmlFor="support-phone">رقم التواصل مع المسؤول (للدعم المالي والاستفسار)</label>
+                    <label className="scan-set-label" htmlFor="support-phone">رقم الطوارئ والتواصل (هاتف)</label>
                     <div className="scan-set-input-wrap">
                       <input
                         id="support-phone"
@@ -742,7 +750,7 @@ export default function AdminPaymentRequests({
                       />
                       <span className="scan-set-symbol scan-set-input-icon left">phone_in_talk</span>
                     </div>
-                    <p className="scan-set-hint">يظهر للطلاب المتعثرين بالدفع لمراجعة مكتب الاتحاد.</p>
+                    <p className="scan-set-hint">يظهر للخريجين في صفحات الموقع للتواصل.</p>
                   </div>
 
                   <div className="scan-set-form-actions">
@@ -773,6 +781,13 @@ export default function AdminPaymentRequests({
                       </>
                     )}
                   </div>
+                </div>
+
+                <div className="scan-set-qr-account">
+                  <span className="scan-set-label">رقم حساب شام كاش</span>
+                  <span dir="ltr" className="scan-set-qr-account-value">
+                    {(settings && settings.shamcash_account_number) || '— لم يُحدَّد بعد —'}
+                  </span>
                 </div>
 
                 <input
