@@ -10,14 +10,27 @@ import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 import { validateTransactionId } from '../../utils/payments';
 
-const LETTERS = /^[\p{L}\s]+$/u; // حروف (عربية أو لاتينية) ومسافات فقط
-
-
-const formatMoney = (value) => Number(value).toLocaleString('en-US');
-
 /* تحويل الأرقام العربية لإنجليزية وإزالة أي رمز غير رقمي */
 const toDigits = (value) =>
   value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, '');
+
+/* Arabic-Indic digits → Latin. الحالة (uppercase/lowercase) محفوظة كما كتبها الخريج (D4). */
+const normalizeTx = (value) =>
+  String(value ?? '')
+    .trim()
+    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+
+/* backend field name → this form's field name */
+const SERVER_FIELD_MAP = {
+  transaction_number: 'transactionId',
+  amount: 'transferAmount',
+  sender_name: 'senderName',
+};
+
+/* pydantic prefixes messages with "Value error, " */
+const cleanServerMessage = (msg) => String(msg || '').replace(/^Value error,\s*/i, '');
+
+const formatMoney = (value) => Number(value).toLocaleString('en-US');
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const makeValidators = () => ({
@@ -25,13 +38,16 @@ const makeValidators = () => ({
   transferAmount: (v) => {
     const t = toDigits(v);
     if (!t) return 'يرجى إدخال المبلغ المحوّل';
-    if (Number(t) <= 0) return 'يرجى إدخال مبلغ صحيح';
+    const n = Number(t);
+    if (!Number.isFinite(n) || n <= 0) return 'يرجى إدخال مبلغ صحيح';
+    if (n >= 100000000) return 'المبلغ كبير جداً';
     return '';
   },
   senderName: (v) => {
     const t = v.trim().replace(/\s+/g, ' ');
     if (!t) return 'يرجى إدخال اسم المرسل';
-    if (!/^[\p{L}\s]+$/u.test(t)) return 'يجب أن يتكون الاسم من حروف فقط';
+    if (!/^[؀-ۿa-zA-Z\s]+$/.test(t)) return 'يجب أن يتكون الاسم من حروف عربية أو إنجليزية فقط';
+    if (t.length < 2) return 'الاسم قصير جداً';
     if (t.split(' ').length < 2) return 'يرجى كتابة الاسم والكنية (كلمتان على الأقل)';
     return '';
   },
@@ -59,7 +75,6 @@ export default function ShamCashPayment({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [qrSrc, setQrSrc] = useState(null);
-  const [objectUrl, setObjectUrl] = useState(null);
 
   const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({ transactionId: '', transferAmount: '', senderName: '' });
@@ -78,10 +93,8 @@ export default function ShamCashPayment({ onBack }) {
 
   const amountValue = info ? parseAmount(info.amount) : 0;
   const validators = makeValidators(amountValue);
-  const apiBase = import.meta.env.VITE_API_URL || '';
 
   useEffect(() => {
-    let revoked = null;
     const load = async () => {
       const accessValue = getGraduateToken();
       if (!accessValue) {
@@ -98,20 +111,12 @@ export default function ShamCashPayment({ onBack }) {
           ...prev,
           transferAmount: prev.transferAmount || formatAmount(result.amount),
         }));
-        if (result.qr_image_url) {
-          const url = String(result.qr_image_url);
-          setQrSrc(url.startsWith('http') ? url : `${apiBase}${url}`);
-        } else {
-          const objUrl = await getShamcashQr();
-          if (!mounted.current) {
-            if (objUrl) URL.revokeObjectURL(objUrl);
-            return;
-          }
-          if (objUrl) {
-            setQrSrc(objUrl);
-            setObjectUrl(objUrl);
-            revoked = objUrl;
-          }
+        // The QR is a data URI from the JSON endpoint; never use qr_image_url as <img src>.
+        try {
+          const dataUri = await getShamcashQr();
+          if (mounted.current) setQrSrc(dataUri);
+        } catch {
+          if (mounted.current) setQrSrc(null); // the account number below is still shown
         }
       } catch (err) {
         if (mounted.current) setLoadError(err?.message || 'تعذّر تحميل معلومات الدفع، حاول لاحقاً.');
@@ -120,9 +125,6 @@ export default function ShamCashPayment({ onBack }) {
       }
     };
     load();
-    return () => {
-      if (revoked) URL.revokeObjectURL(revoked);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -191,7 +193,7 @@ export default function ShamCashPayment({ onBack }) {
     try {
       await submitPayment(
         {
-          transaction_number: formData.transactionId.trim(),
+          transaction_number: normalizeTx(formData.transactionId),
           amount: parseAmount(formData.transferAmount),
           sender_name: formData.senderName.trim().replace(/\s+/g, ' '),
         },
@@ -204,8 +206,20 @@ export default function ShamCashPayment({ onBack }) {
           ...prev,
           transactionId: err?.message || 'رقم العملية مستخدم مسبقاً.',
         }));
+        document.getElementById(fieldIds.transactionId)?.focus();
       } else if (err?.status === 422 && err?.fieldErrors) {
-        setErrors((prev) => ({ ...prev, ...err.fieldErrors }));
+        const mapped = {};
+        const unmapped = [];
+        Object.entries(err.fieldErrors).forEach(([key, msg]) => {
+          const local = SERVER_FIELD_MAP[key];
+          if (local) mapped[local] = cleanServerMessage(msg);
+          else unmapped.push(cleanServerMessage(msg));
+        });
+        setErrors((prev) => ({ ...prev, ...mapped }));
+        if (unmapped.length) setSubmitError(unmapped.join(' — '));
+        const first = Object.keys(mapped)[0];
+        if (first) document.getElementById(fieldIds[first])?.focus();
+        if (!first && !unmapped.length) setSubmitError('يرجى التحقق من البيانات المدخلة.');
       } else if (err?.status === 403) {
         setSubmitError(err?.message || 'التسجيل مغلق حالياً.');
       } else {
@@ -271,10 +285,15 @@ export default function ShamCashPayment({ onBack }) {
               <div className="sc-qr-section">
                 <div className="sc-qr-box">
                   {qrSrc ? (
-                    <img className="sc-qr-svg" src={qrSrc} alt="رمز QR للتحويل عبر شام كاش" />
+                    <img
+                      className="sc-qr-svg"
+                      src={qrSrc}
+                      alt="رمز QR للتحويل عبر شام كاش"
+                      onError={() => setQrSrc(null)}
+                    />
                   ) : (
                     <span className="sc-qr-caption" style={{ textAlign: 'center' }}>
-                      رمز الاستجابة السريعة غير متوفر حالياً، يمكنك التحويل يدوياً إلى رقم الحساب الظاهر أدناه.
+                      رمز QR غير متوفر حالياً. حوّل المبلغ يدوياً إلى رقم الحساب الظاهر أدناه عبر تطبيق شام كاش.
                     </span>
                   )}
                 </div>
@@ -286,21 +305,29 @@ export default function ShamCashPayment({ onBack }) {
                 </span>
               </div>
 
-              <div className="sc-account-strip">
+              <div className={`sc-account-strip ${!qrSrc ? 'sc-account-strip--primary' : ''}`}>
                 <div className="sc-account-details">
                   <span className="sc-account-label">رقم الحساب المستلم</span>
-                  <span className="sc-account-number">{info.account_number}</span>
+                  {info.account_number ? (
+                    <span className="sc-account-number">{info.account_number}</span>
+                  ) : (
+                    <span className="sc-account-number" style={{ fontSize: '14px', fontWeight: 'normal', color: '#725b51' }}>
+                      «لم يُحدَّد رقم حساب شام كاش بعد. يرجى التواصل مع الاتحاد.»
+                    </span>
+                  )}
                 </div>
-                <button
-                  className={`sc-copy-btn ${copied ? 'copied' : ''}`}
-                  type="button"
-                  onClick={handleCopy}
-                >
-                  <span className="sc-symbol" style={{ fontSize: '18px', color: copied ? '#124d44' : '#ca4b00' }}>
-                    {copied ? 'check' : 'content_copy'}
-                  </span>
-                  <span>{copied ? 'تم النسخ' : 'نسخ الرقم'}</span>
-                </button>
+                {info.account_number && (
+                  <button
+                    className={`sc-copy-btn ${copied ? 'copied' : ''}`}
+                    type="button"
+                    onClick={handleCopy}
+                  >
+                    <span className="sc-symbol" style={{ fontSize: '18px', color: copied ? '#124d44' : '#ca4b00' }}>
+                      {copied ? 'check' : 'content_copy'}
+                    </span>
+                    <span>{copied ? 'تم النسخ' : 'نسخ الرقم'}</span>
+                  </button>
+                )}
               </div>
 
               <div className="sc-amount-banner">
@@ -404,7 +431,9 @@ export default function ShamCashPayment({ onBack }) {
                   </div>
 
                   {submitError && (
-                    <p className="sc-error-text" role="alert">
+                    <p className="sc-error-text" role="alert" ref={(node) => {
+                      if (node) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}>
                       {submitError}
                     </p>
                   )}
