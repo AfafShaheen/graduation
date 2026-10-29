@@ -73,8 +73,10 @@ test('transaction input uses text keyboard, ltr, maxLength 100 and no autocorrec
   assert.doesNotMatch(shamCash, /transactionId[\s\S]{0,400}inputMode="numeric"/);
 });
 
-test('the form sends the trimmed value without any case change', () => {
-  assert.match(shamCash, /transaction_number:\s*formData\.transactionId\.trim\(\)/);
+test('the form sends the value with trim only, no case change (Arabic-Indic digits normalized)', () => {
+  // normalizeTx = trim + تحويل الأرقام العربية لإنجليزية، بدون أي toUpperCase
+  assert.match(shamCash, /transaction_number:\s*normalizeTx\(formData\.transactionId\)/);
+  assert.match(shamCash, /const normalizeTx[\s\S]{0,200}\.trim\(\)[\s\S]{0,200}٠-٩/);
 });
 
 /* ---------- فحص ثابت: لا تحويل حالة لرقم العملية في كل الواجهة (B4.3/B4.4) ---------- */
