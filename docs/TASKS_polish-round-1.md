@@ -43,7 +43,7 @@
 | B7.1 | شاشات نتائج الماسح داخل الكاميرا: class بدل inline style، ارتفاع 100% بدل vh/dvh، تمرير المحتوى فقط، footer ثابت، hero مضغوط للشاشات القصيرة | ✅ | (هذا الكوميت) | .scan-cam-result-overlay في ScannerCamera.css + overrides للثلاث شاشات + @media (max-height:700px) |
 | B7.2 | تحقق B7.1: screenshots إن وُجد headless browser، وإلا فحص CSS ثابت + قائمة يدوية للمالك | ✅ | (هذا الكوميت) | لا متصفح headless في البيئة → front/tests/scannerOverlayFit.test.mjs: 9/9 pass + قائمة فحص يدوية أدناه |
 | B8.1 | docs/FRONTEND_WIRING.md بالعربية | ✅ | (هذا الكوميت) | قسم «ملاحظات polish-round-1» أُضيف للملف (brand، HelpFooter، المدققات، الأزرار، الطبقة) |
-| B8.2 | الفحوص النهائية (npm ci/test/build/lint + git diff --stat) وتقرير Part B وبوابة الدفع | ⬜ | | |
+| B8.2 | الفحوص النهائية (npm ci/test/build/lint + git diff --stat) وتقرير Part B وبوابة الدفع | ✅ | (هذا الكوميت) | node --test tests/ → 88 pass / 0 fail؛ npm run build أخضر؛ lint = 46 warning / 0 error (مطابق للـ baseline)؛ git diff dev...HEAD: 52 ملفاً كلها داخل النطاق المسموح، ولا package.json/requirements/docker-compose عُدّلت |
 
 ## سجل Baseline (S4)
 
