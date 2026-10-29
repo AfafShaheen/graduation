@@ -129,13 +129,13 @@ export default function ShamCashPayment({ onBack }) {
   }, []);
 
   const handleCopy = async () => {
-    const digitsOnly = info?.account_number ? String(info.account_number) : '';
-    if (!digitsOnly) return;
+    const accountValue = info?.account_number ? String(info.account_number) : '';
+    if (!accountValue) return;
     try {
-      await navigator.clipboard.writeText(digitsOnly);
+      await navigator.clipboard.writeText(accountValue);
     } catch {
       const el = document.createElement('textarea');
-      el.value = digitsOnly;
+      el.value = accountValue;
       el.style.position = 'fixed';
       el.style.opacity = '0';
       document.body.appendChild(el);
@@ -297,6 +297,20 @@ export default function ShamCashPayment({ onBack }) {
                     </span>
                   )}
                 </div>
+                <div className="sc-qr-account">
+                  <span className="sc-account-label">رقم حساب شام كاش</span>
+                  {info.account_number ? (
+                    <div className="sc-qr-account-row">
+                      <span className="sc-account-number" dir="ltr">{info.account_number}</span>
+                      <button className={`sc-copy-btn ${copied ? 'copied' : ''}`} type="button" onClick={handleCopy}>
+                        <span className="sc-symbol" style={{ fontSize: '18px' }}>{copied ? 'check' : 'content_copy'}</span>
+                        <span>{copied ? 'تم النسخ' : 'نسخ'}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="sc-qr-caption">لم يُحدَّد رقم حساب شام كاش بعد. يرجى التواصل مع الاتحاد.</span>
+                  )}
+                </div>
                 <span className="sc-qr-caption">
                   <span className="sc-symbol" style={{ fontSize: '14px' }}>
                     qr_code_scanner
@@ -305,30 +319,6 @@ export default function ShamCashPayment({ onBack }) {
                 </span>
               </div>
 
-              <div className={`sc-account-strip ${!qrSrc ? 'sc-account-strip--primary' : ''}`}>
-                <div className="sc-account-details">
-                  <span className="sc-account-label">رقم الحساب المستلم</span>
-                  {info.account_number ? (
-                    <span className="sc-account-number">{info.account_number}</span>
-                  ) : (
-                    <span className="sc-account-number" style={{ fontSize: '14px', fontWeight: 'normal', color: '#725b51' }}>
-                      «لم يُحدَّد رقم حساب شام كاش بعد. يرجى التواصل مع الاتحاد.»
-                    </span>
-                  )}
-                </div>
-                {info.account_number && (
-                  <button
-                    className={`sc-copy-btn ${copied ? 'copied' : ''}`}
-                    type="button"
-                    onClick={handleCopy}
-                  >
-                    <span className="sc-symbol" style={{ fontSize: '18px', color: copied ? '#124d44' : '#ca4b00' }}>
-                      {copied ? 'check' : 'content_copy'}
-                    </span>
-                    <span>{copied ? 'تم النسخ' : 'نسخ الرقم'}</span>
-                  </button>
-                )}
-              </div>
 
               <div className="sc-amount-banner">
                 <span className="sc-amount-label">المبلغ المطلوب:</span>

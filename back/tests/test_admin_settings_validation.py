@@ -1,7 +1,7 @@
 """Admin settings validation (polish round 1, task A1.2, decisions D1-D3).
 
 Covers the three text fields of ``PUT /api/admin/settings``:
-- shamcash_account_number: Latin letters and digits only, 4..100, no spaces/symbols (D1);
+- shamcash_account_number: Latin letters, digits and a hyphen, 4..100, no spaces/other symbols (D1, hyphen as already allowed on dev);
 - shamcash_receiver_name: Arabic/Latin letters, spaces and . - ' , no digits, 2..200 (D2);
 - contact_phone: the graduate phone rule (optional + then 7..15 digits) (D3);
 - absent field = unchanged, blank string = clear (service semantics kept);
@@ -68,7 +68,7 @@ async def test_accepted_values_are_trimmed_and_stored(client, db, make_admin):
     assert values[CONTACT_PHONE] == "+963933123456"
 
 
-_ACCEPTED_ACCOUNTS = ["AB12cd34", "7f3a9c1e0b", "A1b2", "a" * 100]
+_ACCEPTED_ACCOUNTS = ["AB12cd34", "7f3a9c1e0b", "A1b2", "12-34", "a" * 100]
 _ACCEPTED_RECEIVERS = ["محمد أحمد", "Mohammad Ahmad", "O'Brien-Smith Jr.", "الطالب-الكريم", "د. سامي"]
 _ACCEPTED_PHONES = ["0933123456", "+963933123456", "1234567", "1" * 15]
 
@@ -103,7 +103,7 @@ async def test_accepted_examples_per_field(client, make_admin):
 
 async def test_rejected_accounts_return_422_with_arabic_message(client, make_admin):
     token = await _admin_token(client, make_admin)
-    rejected = ["AB 12", "12-34", "abc", "a" * 101, "أبج123"]
+    rejected = ["AB 12", "AB_12", "+12345", "abc", "a" * 101, "أبج123"]
     for value in rejected:
         resp = await client.put(
             "/api/admin/settings",

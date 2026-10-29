@@ -8,8 +8,8 @@ import {
 } from "../src/utils/validators.js";
 
 // ---- B5.2: جدول صدق مطابق لجدول A1.2 (back/tests/test_admin_settings_validation.py) ----
-const ACCOUNT_ACCEPTED = ["AB12cd34", "7f3a9c1e0b"];
-const ACCOUNT_REJECTED = ["AB 12", "12-34", "abc", "x".repeat(101), "حساب123"];
+const ACCOUNT_ACCEPTED = ["AB12cd34", "7f3a9c1e0b", "12-34"];
+const ACCOUNT_REJECTED = ["AB 12", "AB_12", "+12345", "abc", "x".repeat(101), "حساب123"];
 const RECEIVER_ACCEPTED = ["محمد أحمد", "Mohammad Ahmad", "O'Brien-Smith Jr."];
 const RECEIVER_REJECTED = ["محمد 123", "A", "ن".repeat(201), "<script>"];
 const PHONE_ACCEPTED = ["0933123456", "+963933123456"];
@@ -20,7 +20,7 @@ test("validateShamCashAccount accepts the same values as the backend (D1)", () =
 });
 
 test("validateShamCashAccount rejects with the backend message", () => {
-  const msg = "رقم الحساب يقبل أحرفاً وأرقاماً إنجليزية فقط (من 4 إلى 100 خانة) بدون مسافات أو رموز";
+  const msg = "رقم الحساب يقبل أحرفاً وأرقاماً إنجليزية وشرطة (-) فقط (من 4 إلى 100 خانة) بدون مسافات";
   for (const v of ACCOUNT_REJECTED) assert.equal(validateShamCashAccount(v), msg, v);
 });
 

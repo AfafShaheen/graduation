@@ -5,8 +5,9 @@ from app.schemas.graduate import PHONE_REGEX  # D3: same rule as the graduate ph
 
 import re
 
-# D1: Latin letters and digits only, no spaces or symbols, 4..100 characters.
-_ACCOUNT_REGEX = re.compile(r"^[A-Za-z0-9]{4,100}$")
+# D1 (as merged with dev): Latin letters, digits and a hyphen, no spaces or other
+# symbols, 4..100 characters (the hyphen was already accepted on dev).
+_ACCOUNT_REGEX = re.compile(r"^[A-Za-z0-9-]{4,100}$")
 # D2: Arabic letters, Latin letters, spaces and . - ' ; no digits; 2..200 after trimming.
 _RECEIVER_REGEX = re.compile(r"^[\u0600-\u06FFa-zA-Z .\-']{2,200}$")
 _PHONE_REGEX = re.compile(PHONE_REGEX)

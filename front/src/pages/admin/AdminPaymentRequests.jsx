@@ -774,7 +774,7 @@ export default function AdminPaymentRequests({
                   </div>
 
                   <div className="scan-set-field">
-                    <label className="scan-set-label" htmlFor="shamcash">رقم الحساب في محفظة شام كاش</label>
+                    <label className="scan-set-label" htmlFor="shamcash">رقم حساب شام كاش (أحرف وأرقام)</label>
                     <div className="scan-set-input-wrap">
                       <input
                         id="shamcash"
@@ -790,6 +790,9 @@ export default function AdminPaymentRequests({
                           }
                         }}
                         aria-invalid={!!settingsFieldErrors.shamcash_account_number}
+                        placeholder="مثال: a1b2c3d4e5"
+                        autoComplete="off"
+                        spellCheck={false}
                         required
                       />
                       <span className="scan-set-symbol scan-set-input-icon left">wallet</span>
@@ -797,12 +800,12 @@ export default function AdminPaymentRequests({
                     {settingsFieldErrors.shamcash_account_number ? (
                       <p className="scan-set-field-error" role="alert">{settingsFieldErrors.shamcash_account_number}</p>
                     ) : (
-                      <p className="scan-set-hint">رقم الحساب التعريفي المعتمد لدى محفظة شام كاش.</p>
+                      <p className="scan-set-hint">رقم المحفظة كما يظهر في تطبيق شام كاش. ليس رقم الهاتف.</p>
                     )}
                   </div>
 
                   <div className="scan-set-field">
-                    <label className="scan-set-label" htmlFor="support-phone">رقم التواصل مع المسؤول (للدعم المالي والاستفسار)</label>
+                    <label className="scan-set-label" htmlFor="support-phone">رقم الطوارئ والتواصل (هاتف)</label>
                     <div className="scan-set-input-wrap">
                       <input
                         id="support-phone"
@@ -825,7 +828,7 @@ export default function AdminPaymentRequests({
                     {settingsFieldErrors.contact_phone ? (
                       <p className="scan-set-field-error" role="alert">{settingsFieldErrors.contact_phone}</p>
                     ) : (
-                      <p className="scan-set-hint">يظهر للطلاب المتعثرين بالدفع لمراجعة مكتب الاتحاد.</p>
+                      <p className="scan-set-hint">يظهر للخريجين في صفحات الموقع للتواصل.</p>
                     )}
                   </div>
 
@@ -861,6 +864,13 @@ export default function AdminPaymentRequests({
                       </>
                     )}
                   </div>
+                </div>
+
+                <div className="scan-set-qr-account">
+                  <span className="scan-set-label">رقم حساب شام كاش</span>
+                  <span dir="ltr" className="scan-set-qr-account-value">
+                    {(settings && settings.shamcash_account_number) || '— لم يُحدَّد بعد —'}
+                  </span>
                 </div>
 
                 <input

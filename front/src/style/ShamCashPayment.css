@@ -618,3 +618,6 @@
   .sc-mobile-shell { max-width: 640px; }
   .sc-card-box { padding: 28px; }
 }
+.sc-qr-account { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 12px; width: 100%; }
+.sc-qr-account-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.sc-qr-account .sc-account-number { font-size: 20px; font-weight: 700; letter-spacing: 1px; word-break: break-all; unicode-bidi: plaintext; }

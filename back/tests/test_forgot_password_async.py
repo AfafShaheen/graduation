@@ -109,3 +109,17 @@ async def test_forgot_password_registered_and_unknown_identical(
 
     assert unknown.status_code == known.status_code == 200
     assert unknown.json() == known.json()
+
+
+async def test_forgot_password_email_lookup_is_case_insensitive(db, make_event, make_college, make_graduate):
+    """A graduate registered as Name@Example.com must be found for name@example.com."""
+    from app.services.auth_service import fetch_graduate_by_email
+
+    event = await make_event()
+    college = await make_college(event.id)
+    grad = await make_graduate(college.id, university_id="510099", email="Mixed.Case" + "@" + "Example.com")
+
+    found = await fetch_graduate_by_email(db, "mixed.case" + "@" + "example.com")
+    assert found is not None and found.id == grad.id
+    found2 = await fetch_graduate_by_email(db, "  MIXED.CASE" + "@" + "EXAMPLE.COM  ")
+    assert found2 is not None and found2.id == grad.id

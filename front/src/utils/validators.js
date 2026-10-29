@@ -60,14 +60,14 @@ export function passwordError(value) {
 /* المرجع: back/app/schemas/settings_admin.py + back/app/core/messages.py   */
 
 export const SETTINGS_ACCOUNT_INVALID =
-  "رقم الحساب يقبل أحرفاً وأرقاماً إنجليزية فقط (من 4 إلى 100 خانة) بدون مسافات أو رموز";
+  "رقم الحساب يقبل أحرفاً وأرقاماً إنجليزية وشرطة (-) فقط (من 4 إلى 100 خانة) بدون مسافات";
 export const SETTINGS_RECEIVER_INVALID =
   "اسم المستفيد يقبل حروفاً عربية أو إنجليزية ومسافات فقط (من حرفين إلى 200)";
 export const SETTINGS_PHONE_INVALID =
   "رقم الهاتف يجب أن يتكون من أرقام فقط (من 7 إلى 15 رقماً) ويمكن أن يبدأ بعلامة +";
 
 // D1: حروف لاتينية وأرقام فقط، بلا مسافات أو رموز، 4 إلى 100.
-const ACCOUNT_REGEX = /^[A-Za-z0-9]{4,100}$/;
+const ACCOUNT_REGEX = /^[A-Za-z0-9-]{4,100}$/;
 // D2: حروف عربية/لاتينية ومسافات و . - ' فقط، بلا أرقام، 2 إلى 200 بعد trim.
 const RECEIVER_REGEX = /^[\u0600-\u06FFa-zA-Z .'-]{2,200}$/;
 

@@ -404,25 +404,22 @@ export default function Otp({
             {/* النصوص الرئيسية */}
             <h2 className="ev-card-headline">رمز التأكيد في طريقه إليك</h2>
             <p className="ev-card-subtext">
-              أرسلنا رمزاً سرّياً مكوّناً من {CODE_LENGTH} أرقام إلى بريدك الإلكتروني:
+              {isResetMode
+                ? `إذا كان هذا البريد مسجّلاً لدينا، فقد أرسلنا إليه رمزاً مكوّناً من ${CODE_LENGTH} أرقام. تحقّق من البريد الوارد ومجلد الرسائل غير المرغوب فيها (Spam):`
+                : `أرسلنا رمزاً سرّياً مكوّناً من ${CODE_LENGTH} أرقام إلى بريدك الإلكتروني:`}
             </p>
 
-            {/* البريد الإلكتروني مع زر التعديل */}
+            {/* البريد الإلكتروني (زر التعديل لتأكيد التسجيل فقط، لا تعديل في استعادة كلمة السر) */}
             <div className="ev-email-pill">
               <span className="ev-email-address" dir="ltr">{email}</span>
-              <span className="ev-pill-dot">•</span>
+              {!isResetMode && <span className="ev-pill-dot">•</span>}
               {!isResetMode && (
                 <button className="ev-edit-btn" type="button" onClick={() => (showChangeEmail ? closeChangeEmail() : setShowChangeEmail(true))}>
                   <span>تعديل البريد</span>
                   <span className="ev-symbol" style={{ fontSize: '13px' }}>edit</span>
                 </button>
               )}
-              {isResetMode && (
-                <button className="ev-edit-btn" type="button" onClick={onBack}>
-                  <span>تعديل البريد</span>
-                  <span className="ev-symbol" style={{ fontSize: '13px' }}>edit</span>
-                </button>
-              )}
+
             </div>
 
             {showChangeEmail && !isResetMode && (
