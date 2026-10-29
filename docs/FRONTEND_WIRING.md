@@ -166,3 +166,24 @@
 **الاختبارات (`npm test`):** `roster.test.mjs` (الفلاتر والترقيم والتسميات) و`rosterContract.test.mjs` (بيقارن أسماء الفلاتر وقيمها وأحجام الصفحات مع ملف العقد `back/tests/contract/openapi_baseline.json`، فأي اختلاف بين الواجهة والباك بيفشل الاختبار).
 
 اسم عنصر القائمة الجانبية صار «الخريجون والإجراءات».
+
+---
+
+## ملاحظات polish-round-1 (الجزء B)
+
+### ملف العلامة التجارية `src/config/brand.js`
+كل صياغة الحفل الثابتة في مكان واحد: `CEREMONY_TITLE` («اتحاد الطلبة جامعة حمص حفل تخريج الدفعة 3»)، `BATCH_BADGE` («الدفعة 3»)، `HELP_QUESTION` و`HELP_EMERGENCY_LABEL`. عناوين الصفحات والشارات والتذييلات والنصوص البديلة وعنوان SEO كلها تُبنى من هذه الثوابت؛ أي تعديل مستقبلي للصياغة يحصل في ملف واحد. اختبار `tests/brandConsistency.test.mjs` يمنع رجوع العبارات القديمة. عنوان الرأس الطويل يلتف على سطرين بأمان عبر `style/BrandHeader.css` (بلا nowrap/ellipsis/ارتفاع ثابت).
+
+### تذييل المساعدة `components/HelpFooter.jsx`
+يُعرض مرة واحدة فوق التذييل المؤسسي في كل صفحات الخريجين الـ12: السطر الأول (سؤال المساعدة) دائماً، والسطر الثاني (label الطوارئ + رابط `tel:` بـ dir=ltr) فقط إذا وُجد هاتف من `useContactPhone` (أو من prop `phone` للاختبارات). النسخ اليدوية أزيلت من Otp/OrderRejected/GraduateGuide/Step1/Step2/Login/MyTicket؛ وبقي `ContactPhoneLink` لصفحة دخول الماسح فقط كما هو محدد.
+
+### مدققات الحقول `utils/validators.js` و`utils/payments.js`
+- `validateTransactionId`: نقيّة؛ trim فقط بلا تغيير حالة الأحرف، رسائل عربية مطابقة للباك (فارغ/قصير/غير صالح، 4-100 حرف `[A-Za-z0-9-]`). تُستخدم في ShamCashPayment مع خصائص حقل تحافظ على ما يُكتب حرفياً (`inputMode=text`, `dir=ltr`, `autoCapitalize=off`, maxLength=100)، وكل مواضع العرض تعرض القيمة كما وصلت (لا toUpperCase ولا text-transform).
+- `validateShamCashAccount` / `validateReceiverName` / `validateSupportPhone`: تطابق قواعد A1 وقواعد الهاتف نفسها، والرسائل حرفياً مثل رسائل الباك؛ مربوطة بتبويب إعدادات الإدارة مع خطأ تحت كل حقل و`aria-invalid` ومنع الحفظ أثناء الخطأ، ورسائل 422 من السيرفر تُعرض تحت الحقل الصحيح.
+
+### أزرار وتسجيلات مبسطة
+- دخول الماسح: زر submit واحد «تسجيل الدخول» («جاري الدخول...» أثناء العمل)؛ منتقي الحفل (409 SCANNER_EVENT_REQUIRED) يكتمل بنفس الزر ويُعطَّل حتى اختيار فعالية؛ تعديل المستخدم/كلمة المرور يمسح المنتقي. منطق performLogin والجلسة لم يُمس.
+- أُزيلت: رقاقة ‎+963‎ من حقل هاتف الخريج، checkbox «تذكرني» من دخول المدير، وصندوق البحث العلوي من لوحة التحكم (مع حالته ومرشحه وCSS الخاص به).
+
+### طبقة نتائج الماسح داخل الكاميرا (D10)
+الطبقة صارت كلاس `.scan-cam-result-overlay` في `ScannerCamera.css` (بدل inline style): `position:absolute; inset:0; z-index:40; display:flex; column; overflow:hidden` مع خلفية حسب نوع النتيجة (`--error` أحمر، `--success`/`--wrong_ceremony` كريمي). داخلها الشاشات الثلاث تحجّم نفسها بالحاوية (`height:100%` بلا vh/dvh)، منطقة المحتوى وحدها تمرر (`overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin`)، والهيدر والفوتر `flex-shrink:0` والفوتر يحتفظ بحشو safe-area. على الشاشات القصيرة (`max-height:700px`) يُضغط الـ hero. المسارات المستقلة `/scanner/error|result|wrong-ceremony` بقيت بـ 100dvh كما هي. التحقق: `tests/scannerOverlayFit.test.mjs` (ثوابت CSS ثابتة) + قائمة الفحص اليدوية في `docs/TASKS_polish-round-1.md`.

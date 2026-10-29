@@ -42,7 +42,7 @@
 | B6.2 | اختبار: زر scan-login-submit-btn واحد static + فحص رندر مؤقت | ✅ | 6df1355 | scannerLoginButton.test.mjs: عدد أزرار submit = 1 والنص «تسجيل الدخول» |
 | B7.1 | شاشات نتائج الماسح داخل الكاميرا: class بدل inline style، ارتفاع 100% بدل vh/dvh، تمرير المحتوى فقط، footer ثابت، hero مضغوط للشاشات القصيرة | ✅ | (هذا الكوميت) | .scan-cam-result-overlay في ScannerCamera.css + overrides للثلاث شاشات + @media (max-height:700px) |
 | B7.2 | تحقق B7.1: screenshots إن وُجد headless browser، وإلا فحص CSS ثابت + قائمة يدوية للمالك | ✅ | (هذا الكوميت) | لا متصفح headless في البيئة → front/tests/scannerOverlayFit.test.mjs: 9/9 pass + قائمة فحص يدوية أدناه |
-| B8.1 | docs/FRONTEND_WIRING.md بالعربية | ⬜ | | |
+| B8.1 | docs/FRONTEND_WIRING.md بالعربية | ✅ | (هذا الكوميت) | قسم «ملاحظات polish-round-1» أُضيف للملف (brand، HelpFooter، المدققات، الأزرار، الطبقة) |
 | B8.2 | الفحوص النهائية (npm ci/test/build/lint + git diff --stat) وتقرير Part B وبوابة الدفع | ⬜ | | |
 
 ## سجل Baseline (S4)
