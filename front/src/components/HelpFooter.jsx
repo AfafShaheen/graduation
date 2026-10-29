@@ -1,6 +1,7 @@
 import React from "react";
 import useContactPhone from "../hooks/useContactPhone";
 import { HELP_QUESTION, HELP_EMERGENCY_LABEL } from "../config/brand";
+import { helpLines } from "./helpFooterLogic";
 import "../style/HelpFooter.css";
 
 /**
@@ -9,14 +10,6 @@ import "../style/HelpFooter.css";
  * السطر الثاني: HELP_EMERGENCY_LABEL + رابط tel عند وجود رقم دعم؛ يُحذف إن لم يوجد رقم.
  * prop اختياري phone (للاختبار)؛ افتراضياً من useContactPhone.
  */
-export function helpLines(question, label, phone) {
-  const trimmed = typeof phone === "string" ? phone.trim() : "";
-  return {
-    line1: question,
-    line2: trimmed ? { label, phone: trimmed } : null,
-  };
-}
-
 export default function HelpFooter({ phone }) {
   const hookPhone = useContactPhone();
   const effectivePhone = phone !== undefined ? phone : hookPhone;

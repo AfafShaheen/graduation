@@ -367,6 +367,15 @@
     margin: 0;
     line-height: 1.6;
   }
+
+  /* B5.1: خطأ ميداني صغير تحت الحقل (نفس حجم scan-set-hint) */
+  .scan-set-field-error {
+    font-size: 11px;
+    color: #ba1a1a;
+    margin: 0;
+    line-height: 1.6;
+    font-weight: 600;
+  }
   
   .scan-set-count-pill {
     padding: 2px 12px;

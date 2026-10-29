@@ -9,21 +9,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 const here = dirname(fileURLToPath(import.meta.url));
 const studentDir = join(here, "..", "src", "pages", "student");
 
-// helpLines هو دالة نقية من مكوّن HelpFooter (نفس منطق السطرين بدون React)
-const { helpLines } = await import("../src/components/HelpFooter.jsx").catch(async () => {
-  // استيراد JSX غير مدعوم مباشرة في node؛ نعيد تنفيذ الدالة النقية من المصدر
-  const src = readFileSync(join(here, "..", "src", "components", "HelpFooter.jsx"), "utf8");
-  const m = src.match(/export function helpLines[\s\S]*?\n}\n/);
-  assert.ok(m, "helpLines must be exported from HelpFooter.jsx");
-  const factory = new Function(
-    "return (" +
-      m[0]
-        .replace("export function helpLines", "function helpLines")
-        .trimEnd() +
-      ");"
-  );
-  return { helpLines: factory() };
-});
+// helpLines دالة نقية في ملف منفصل (نفس منطق السطرين بدون React)
+const { helpLines } = await import("../src/components/helpFooterLogic.js");
 
 const { HELP_QUESTION, HELP_EMERGENCY_LABEL } = await import("../src/config/brand.js");
 
@@ -73,7 +60,12 @@ test("HelpFooter markup shows one line without a phone and two with one", async 
   assert.ok(globalSrc.includes("tel:"), "phone must be a tel: link");
   assert.ok(globalSrc.includes("replace(/\\s+/g"), "href must strip spaces");
 
-  // رسم ثابت للمكوّن مع prop phone (يتجاوز الخطاف) للتأكد من السطرين معاً
+  // التحقق من بنية JSX الفعلية للمكوّن: سطرين مشروطين بنفس الأصناف المستخدمة في renderToStaticMarkup أدناه
+  assert.ok(globalSrc.includes('className="help-footer-question"'), "line1 markup present");
+  assert.ok(globalSrc.includes('{line2 && ('), "line2 rendered only when helpLines returns it");
+  assert.ok(globalSrc.includes("phone !== undefined ? phone : hookPhone"), "phone prop overrides the hook for tests");
+
+  // رسم ثابت للنسخة المكافئة من نفس المنطق (helpLines) للتأكد من السطرين معاً
   const HelpFooterMod = await loadComponent();
   const withPhone = renderToStaticMarkup(React.createElement(HelpFooterMod.default, { phone: "0933 123456" }));
   assert.ok(withPhone.includes(HELP_QUESTION), "line1 always rendered");
@@ -121,10 +113,7 @@ async function loadComponent() {
 }
 
 async function getHelpLines() {
-  const src = readFileSync(join(here, "..", "src", "components", "HelpFooter.jsx"), "utf8");
-  const m = src.match(/export function helpLines[\s\S]*?\n}\n/);
-  const factory = new Function(
-    "return (" + m[0].replace("export function helpLines", "function helpLines").trimEnd() + ");"
-  );
-  return { helpLines: factory() };
+  // helpLines الآن دالة نقية مصدّرة من ملف المنطق نفسه الذي يستخدمه المكوّن
+  const mod = await import("../src/components/helpFooterLogic.js");
+  return { helpLines: mod.helpLines };
 }
