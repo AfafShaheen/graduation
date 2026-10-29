@@ -107,6 +107,11 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
       return;
     }
 
+    // D9: عند ظهور منتقي الحفل، نفس زر الدخول يُكمل بالحدث المختار
+    if (eventChoices.length > 0 && selectedEventId) {
+      await performLogin(selectedEventId);
+      return;
+    }
     await performLogin();
   };
 
@@ -189,15 +194,6 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
                       </option>
                     ))}
                   </select>
-                  <button
-                    type="button"
-                    className="scan-login-submit-btn"
-                    disabled={!selectedEventId || loading}
-                    onClick={() => performLogin(selectedEventId)}
-                  >
-                    <span>دخول إلى هذا الحفل</span>
-                    <span className="scan-login-symbol">arrow_back</span>
-                  </button>
                 </div>
               )}
 
@@ -267,9 +263,13 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
                 <FieldError message={errors.password} />
               </div>
 
-              {/* زر الدخول */}
-              <button type="submit" className="scan-login-submit-btn" disabled={loading}>
-                <span>{loading ? 'جاري الدخول...' : 'تسجيل الدخول وبدء المسح'}</span>
+              {/* زر الدخول: الزر الوحيد (D9) — يُكمل بالحدث المختار عند ظهور المنتقي */}
+              <button
+                type="submit"
+                className="scan-login-submit-btn"
+                disabled={loading || (eventChoices.length > 0 && !selectedEventId)}
+              >
+                <span>{loading ? 'جاري الدخول...' : 'تسجيل الدخول'}</span>
                 <span className="scan-login-symbol">arrow_back</span>
               </button>
             </form>
