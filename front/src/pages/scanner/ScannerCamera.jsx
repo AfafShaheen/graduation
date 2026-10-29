@@ -515,7 +515,7 @@ export default function ScannerCamera({ onLogout }) {
 
         {/* Result Overlay Sheet */}
         {activeResult && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 40, background: activeResult.type === 'error' ? '#b3261e' : 'var(--sc-cream)' }}>
+          <div className={`scan-cam-result-overlay scan-cam-result-overlay--${activeResult.type}`}>
             {activeResult.type === 'success' && (
               <ScanSuccessResult
                 result={activeResult.result}

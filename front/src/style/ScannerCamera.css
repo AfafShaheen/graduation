@@ -737,3 +737,73 @@
     margin-top: 1px;
   }
   
+/* ==========================================================================
+   B7.1 — طبقة نتائج المسح داخل إطار الكاميرا (تملأ الطبقة فقط، لا الـ viewport)
+   ========================================================================== */
+.scan-cam-result-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* الخلفية حسب نوع النتيجة (نفس القيم القديمة inline) */
+.scan-cam-result-overlay--error { background-color: #b3261e; }
+.scan-cam-result-overlay--success,
+.scan-cam-result-overlay--wrong_ceremony { background-color: var(--sc-cream); }
+
+/* داخل الطبقة: المكونات تحجّم نفسها حسب الحاوية بدل vh/dvh */
+.scan-cam-result-overlay .scan-err-app-container,
+.scan-cam-result-overlay .scan-res-app-container,
+.scan-cam-result-overlay .wrong-cer-app-container {
+  height: 100%;
+  min-height: 0;
+}
+
+.scan-cam-result-overlay .scan-err-mobile-frame,
+.scan-cam-result-overlay .scan-res-mobile-frame,
+.scan-cam-result-overlay .wrong-cer-mobile-frame {
+  height: 100%;
+  min-height: 0;
+}
+
+/* منطقة المحتوى هي الوحيدة التي تمرر */
+.scan-cam-result-overlay .scan-err-content,
+.scan-cam-result-overlay .scan-res-content,
+.scan-cam-result-overlay .wrong-cer-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* داخل الطبقة: هيدر شاشة النجاح sticky بلا معنى (المحتوى هو من يمرر) — نجعله ثابتاً */
+.scan-cam-result-overlay .scan-res-header {
+  position: static;
+}
+
+/* الهيدر والفوتر ثابتان دائماً (الفوتر يحتفظ بحشو safe-area الأصلي) */
+.scan-cam-result-overlay .scan-err-header,
+.scan-cam-result-overlay .scan-res-header,
+.scan-cam-result-overlay .wrong-cer-header,
+.scan-cam-result-overlay .wrong-cer-subbar,
+.scan-cam-result-overlay .scan-err-footer,
+.scan-cam-result-overlay .scan-res-footer,
+.scan-cam-result-overlay .wrong-cer-footer {
+  flex-shrink: 0;
+}
+
+/* الشاشات القصيرة: ضغط الـ hero (أيقونة/halo وحشو أقل) */
+@media (max-height: 700px) {
+  .scan-cam-result-overlay .scan-err-hero { padding: 12px 20px 20px 20px; gap: 4px; }
+  .scan-cam-result-overlay .scan-err-badge-wrapper { width: 80px; height: 80px; margin-bottom: 4px; }
+  .scan-cam-result-overlay .scan-err-hero-title { font-size: 22px; }
+  .scan-cam-result-overlay .scan-err-hero-sub { font-size: 14px; }
+  .scan-cam-result-overlay .scan-err-content { gap: 10px; }
+  .scan-cam-result-overlay .scan-res-status-section { padding-top: 8px; }
+  .scan-cam-result-overlay .wrong-cer-main { padding: 10px 16px; justify-content: flex-start; }
+}
