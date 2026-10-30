@@ -11,6 +11,19 @@ export class ApiError extends Error {
   }
 }
 
+// Message for a failed response whose body is NOT JSON (a Cloudflare/proxy HTML error
+// page, for example). The body is never shown to the user. Returns null for statuses
+// that keep the caller's default message.
+export function serverErrorMessage(status) {
+  if ((status >= 520 && status <= 524) || (status >= 502 && status <= 504)) {
+    return `تعذّر الاتصال بالخادم مؤقتاً (رمز ${status}). أعد المحاولة بعد لحظات.`;
+  }
+  if (status >= 500) {
+    return `حدث خطأ في الخادم (رمز ${status}). أعد المحاولة.`;
+  }
+  return null;
+}
+
 // Sub-path deploy (cPanel): with VITE_BASE_PATH=/graduation/ the app lives under
 // /graduation/, so absolute paths must be prefixed. Default base '/' keeps the
 // root-path behaviour unchanged.
@@ -265,14 +278,9 @@ export async function request(path, { method = "GET", body = null, token = null 
     let fieldErrors = null;
 
     if (!data) {
-      try {
-        const text = await response.text();
-        if (text && text.trim()) {
-          errorMessage = text.trim().slice(0, 500);
-        }
-      } catch {
-        /* ignore */
-      }
+      // Not a JSON answer (e.g. an HTML error page from Cloudflare or a proxy):
+      // never use its body as the message.
+      errorMessage = serverErrorMessage(response.status) || errorMessage;
     }
 
     if (data) {
@@ -339,15 +347,20 @@ export async function requestBlob(path, { token } = {}) {
   if (!response.ok) {
     let errorMessage = "فشل تنزيل الملف.";
     const contentType = response.headers.get("content-type");
+    let parsedJson = false;
     if (contentType && contentType.includes("application/json")) {
       try {
         const errData = await response.json();
+        parsedJson = true;
         if (typeof errData.detail === "string") {
           errorMessage = errData.detail;
         } else if (typeof errData.detail === "object" && errData.detail !== null && typeof errData.detail.message === "string") {
           errorMessage = errData.detail.message;
         }
       } catch {}
+    }
+    if (!parsedJson) {
+      errorMessage = serverErrorMessage(response.status) || errorMessage;
     }
 
     if (response.status === 401) {
