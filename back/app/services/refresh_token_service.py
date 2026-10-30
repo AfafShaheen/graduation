@@ -25,11 +25,12 @@ def _family_key(family: str) -> str:
 
 
 async def store_refresh_token(
-    jti: str, family: str, role: str, subject: str, days: int
+    jti: str, family: str, role: str, subject: str, days: int,
+    ttl_seconds: Optional[int] = None,
 ) -> None:
-    """Register a refresh token's jti as active for ``days`` days."""
+    """Register a refresh token's jti as active for ``days`` days (or ``ttl_seconds``)."""
     payload = json.dumps({"family": family, "role": role, "subject": subject})
-    ttl = int(timedelta(days=days).total_seconds())
+    ttl = ttl_seconds if ttl_seconds is not None else int(timedelta(days=days).total_seconds())
     await redis_client.setex(_refresh_key(jti), ttl, payload)
     await redis_client.sadd(_family_key(family), jti)
     await redis_client.expire(_family_key(family), ttl)

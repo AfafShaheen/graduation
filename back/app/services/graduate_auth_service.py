@@ -10,6 +10,7 @@ from app.core.security import (
     get_password_hash,
     create_access_token,
     create_refresh_token,
+    refresh_expires_in,
     create_verification_token,
     secret_key,
     ALGORITHM,
@@ -151,19 +152,20 @@ def _session_unauthorized():
     )
 
 
-def _make_refresh(data):
+def _make_refresh(data, family_exp=None):
     days = GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS
-    return create_refresh_token(data, days)
+    return create_refresh_token(data, days, family_exp)
 
 
-async def _issue_refresh(graduate: GraduateModel, family: str):
+async def _issue_refresh(graduate: GraduateModel, family: str, family_exp=None):
     data = {"sub": str(graduate.id), "role": "graduate", "family": family}
-    value = _make_refresh(data)
+    value = _make_refresh(data, family_exp)
     payload = jwt.decode(value, secret_key, algorithms=[ALGORITHM])
     await refresh_store.store_refresh_token(
-        payload["jti"], family, "graduate", str(graduate.id), GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS
+        payload["jti"], family, "graduate", str(graduate.id), GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS,
+        ttl_seconds=refresh_expires_in(GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS, family_exp),
     )
-    return value, GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS * 86400
+    return value, refresh_expires_in(GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS, family_exp)
 
 
 def _decode_refresh(refresh_value: str, role: str) -> dict:
@@ -191,7 +193,7 @@ async def refresh_graduate_session(refresh_value: str, db: AsyncSession) -> dict
             detail={"message": "يجب تأكيد البريد الإلكتروني أولاً لإكمال هذه العملية."},
         )
     access_value = create_graduate_access_token(graduate)
-    rotation, rotation_expires = await _issue_refresh(graduate, family)
+    rotation, rotation_expires = await _issue_refresh(graduate, family, payload.get("fexp"))
     return {
         "access_token": access_value,
         "token_type": "bearer",
