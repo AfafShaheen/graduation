@@ -406,7 +406,7 @@ async def test_confirm_returns_seat_no_prefix(client, db, make_event, make_colle
     )
 
     assert response.status_code == 200, response.text
-    assert response.json()["seat"] == "1 \u2192 3"
+    assert response.json()["seat"] == "1"
 
 
 async def test_confirm_returns_seat_with_prefix(client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin):
@@ -422,7 +422,7 @@ async def test_confirm_returns_seat_with_prefix(client, db, make_event, make_col
     )
 
     assert response.status_code == 200, response.text
-    assert response.json()["seat"] == "E-1 \u2192 E-3"
+    assert response.json()["seat"] == "E-1"
 
 
 async def test_payments_list_seat_null_before_and_range_after(client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin):
@@ -446,7 +446,7 @@ async def test_payments_list_seat_null_before_and_range_after(client, db, make_e
         f"/api/admin/events/{event.id}/payments?status=CONFIRMED", headers=admin_auth
     )
     assert after.status_code == 200, after.text
-    assert after.json()["items"][0]["seat"] == "1 \u2192 3"
+    assert after.json()["items"][0]["seat"] == "1"
 
 
 async def test_second_confirmed_ticket_continues_numbers(client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin):
@@ -470,4 +470,4 @@ async def test_second_confirmed_ticket_continues_numbers(client, db, make_event,
         f"/api/admin/tickets/{ticket2.id}/confirm", headers=admin_auth
     )
     assert second.status_code == 200, second.text
-    assert second.json()["seat"] == "4 \u2192 6"
+    assert second.json()["seat"] == "2"

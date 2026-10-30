@@ -139,7 +139,7 @@ export default function ScanErrorResult({
               <div className="scan-err-body">
                 <p className="scan-err-text">
                   رمز التذكرة المعروض يخص مرافقاً. تنص تعليمات الحفل على دخول
-                  الخريج الأساسي أولاً لتفعيل مقاعد المرافقين التابعين له.
+                  الخريج الأساسي أولاً لتفعيل تذاكر المرافقين التابعين له.
                 </p>
                 <div className="scan-err-tip">
                   <div className="scan-err-tip-head">

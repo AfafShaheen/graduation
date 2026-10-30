@@ -328,7 +328,7 @@ export default function AdminPaymentRequests({
       const res = await confirmTicket(item.ticketId);
       await loadPayments();
       if (onPendingChanged) onPendingChanged();
-      if (res && res.seat) setPaymentNotice(`تم التأكيد. المقاعد: ${res.seat}`);
+      if (res && res.seat) setPaymentNotice(`تم التأكيد. المقعد: ${res.seat}`);
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
       if (e instanceof ApiError && e.status === 409) await loadPayments();
@@ -696,7 +696,7 @@ export default function AdminPaymentRequests({
                                 {item.status === 'confirmed' ? 'تم التأكيد' : 'تم الرفض'}
                               </span>
                               {item.status === 'confirmed' && item.seat && (
-                                <span className="pay-req-person-sub">المقاعد: {item.seat}</span>
+                                <span className="pay-req-person-sub">المقعد: {item.seat}</span>
                               )}
                             </div>
                           )}

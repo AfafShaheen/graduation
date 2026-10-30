@@ -60,8 +60,8 @@ async def test_enriched_details_expose_seat_payment_and_codes(
     assert details["created_at"] is not None
     assert details["seat"] == {
         "graduate": "E-1",
-        "companions": ["E-2", "E-3"],
-        "range": "E-1 \u2192 E-3",
+        "companions": [],
+        "range": "E-1",
     }
 
     payment = body["payments"][0]

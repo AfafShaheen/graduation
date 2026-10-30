@@ -289,6 +289,11 @@
   display: block;
 }
 
+.tk-seat-box { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 12px auto 16px; padding: 14px 24px; border-radius: 16px; background: #f1f8f6; border: 2px solid #124d44; width: fit-content; min-width: 180px; }
+.tk-seat-label { font-size: 13px; color: #124d44; font-weight: 600; }
+.tk-seat-number { font-size: 40px; line-height: 1.1; font-weight: 800; color: #124d44; letter-spacing: 1px; }
+.tk-seat-hint { font-size: 12px; color: #725b51; text-align: center; }
+
 .tk-meta-value {
   font-size: 14px;
   font-weight: 800;
