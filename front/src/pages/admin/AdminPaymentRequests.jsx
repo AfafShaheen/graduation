@@ -57,6 +57,7 @@ export default function AdminPaymentRequests({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
+  const [paymentNotice, setPaymentNotice] = useState('');
   const [busyId, setBusyId] = useState(null);
 
   const [rejectTarget, setRejectTarget] = useState(null);
@@ -185,6 +186,12 @@ export default function AdminPaymentRequests({
     return () => clearTimeout(t);
   }, [settingsNotice]);
 
+  useEffect(() => {
+    if (!paymentNotice) return undefined;
+    const t = setTimeout(() => setPaymentNotice(''), 3500);
+    return () => clearTimeout(t);
+  }, [paymentNotice]);
+
   // تحرير رابط معاينة الـ QR عند الاستبدال/الإزالة
   useEffect(() => {
     return () => {
@@ -292,6 +299,7 @@ export default function AdminPaymentRequests({
           senderName: p.sender_name || '—',
           mismatch: it.amount_mismatch != null ? !!it.amount_mismatch : paid !== required,
           status: STATUS_TO_UI[it.status] || (it.status || '').toLowerCase(),
+          seat: it.seat || null,
         };
       }),
     [items]
@@ -314,11 +322,13 @@ export default function AdminPaymentRequests({
 
   const handleConfirm = async (item) => {
     setActionError('');
+    setPaymentNotice('');
     setBusyId(item.ticketId);
     try {
-      await confirmTicket(item.ticketId);
+      const res = await confirmTicket(item.ticketId);
       await loadPayments();
       if (onPendingChanged) onPendingChanged();
+      if (res && res.seat) setPaymentNotice(`تم التأكيد. المقاعد: ${res.seat}`);
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
       if (e instanceof ApiError && e.status === 409) await loadPayments();
@@ -572,6 +582,12 @@ export default function AdminPaymentRequests({
 
           {eventsError && <div className="pay-req-empty">{eventsError}</div>}
           {error && <div className="pay-req-empty">{error}</div>}
+          {paymentNotice && (
+            <div className="scan-set-notice" role="status">
+              <span className="scan-set-symbol" style={{ fontSize: '18px' }}>check_circle</span>
+              <span>{paymentNotice}</span>
+            </div>
+          )}
           {actionError && <div className="pay-req-empty">{actionError}</div>}
           {loading && <div className="pay-req-empty">جارٍ تحميل طلبات الدفع...</div>}
 
@@ -675,10 +691,13 @@ export default function AdminPaymentRequests({
                               </button>
                             </div>
                           ) : (
-                            <div className="pay-req-actions-cell" style={{ justifyContent: 'center' }}>
+                            <div className="pay-req-actions-cell" style={{ justifyContent: 'center', flexDirection: 'column' }}>
                               <span className="pay-req-ticket-chip">
                                 {item.status === 'confirmed' ? 'تم التأكيد' : 'تم الرفض'}
                               </span>
+                              {item.status === 'confirmed' && item.seat && (
+                                <span className="pay-req-person-sub">المقاعد: {item.seat}</span>
+                              )}
                             </div>
                           )}
                         </td>

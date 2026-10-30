@@ -392,3 +392,82 @@ async def test_all_routes_require_admin(
             path, headers=_auth(scanner_value)
         )
         assert with_scanner.status_code in (401, 403)
+
+
+
+async def test_confirm_returns_seat_no_prefix(client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin):
+    _event, _c, _g, ticket, _p = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    response = await client.post(
+        f"/api/admin/tickets/{ticket.id}/confirm", headers=admin_auth
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["seat"] == "1 \u2192 3"
+
+
+async def test_confirm_returns_seat_with_prefix(client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin):
+    event = await make_event(seat_prefix="E")
+    _e, _c, _g, ticket, _p = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment,
+        event=event,
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    response = await client.post(
+        f"/api/admin/tickets/{ticket.id}/confirm", headers=admin_auth
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["seat"] == "E-1 \u2192 E-3"
+
+
+async def test_payments_list_seat_null_before_and_range_after(client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin):
+    event, _c, _g, ticket, _p = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    before = await client.get(
+        f"/api/admin/events/{event.id}/payments?status=PROCESSING", headers=admin_auth
+    )
+    assert before.status_code == 200, before.text
+    assert before.json()["items"][0]["seat"] is None
+
+    confirm = await client.post(
+        f"/api/admin/tickets/{ticket.id}/confirm", headers=admin_auth
+    )
+    assert confirm.status_code == 200, confirm.text
+
+    after = await client.get(
+        f"/api/admin/events/{event.id}/payments?status=CONFIRMED", headers=admin_auth
+    )
+    assert after.status_code == 200, after.text
+    assert after.json()["items"][0]["seat"] == "1 \u2192 3"
+
+
+async def test_second_confirmed_ticket_continues_numbers(client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin):
+    event = await make_event()
+    _e, _c, _g, ticket1, _p1 = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment,
+        event=event, university_id="700001",
+    )
+    _e, _c, _g, ticket2, _p2 = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment,
+        event=event, university_id="700002",
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    first = await client.post(
+        f"/api/admin/tickets/{ticket1.id}/confirm", headers=admin_auth
+    )
+    assert first.status_code == 200, first.text
+
+    second = await client.post(
+        f"/api/admin/tickets/{ticket2.id}/confirm", headers=admin_auth
+    )
+    assert second.status_code == 200, second.text
+    assert second.json()["seat"] == "4 \u2192 6"
