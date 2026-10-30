@@ -16,7 +16,7 @@ import HelpFooter from '../../components/HelpFooter';
 const STEPS = [
   'أدخل بياناتك الجامعية كما هي مسجلة في الجامعة.',
   'أنشئ حسابك وأكّد بريدك الإلكتروني بالرمز المرسل إليك.',
-  'اختر نوع التذكرة: خريج + مرافقَين، أو خريج + 3 مرافقين.',
+  'اختر الباقة المناسبة من باقات التذاكر المتاحة لحفلك (عدد المرافقين والسعر).',
   'حوّل المبلغ عبر شام كاش وأدخل بيانات التحويل.',
   'بعد تأكيد الاتحاد للدفع تظهر لك رموز QR ورقم مقعدك ورابط مجموعة الواتساب.',
 ];
@@ -49,6 +49,11 @@ const EVENT_DAY_POINTS = [
   'لا يمكن إدخال مرافقين أكثر من العدد المحدد في تذكرتك.',
 ];
 
+const SEAT_POINTS = [
+  'بعد تأكيد الدفع يُحجز لك مقعد، ولكل مرافق مقعد بجانبك، بأرقام متتالية.',
+  'رقم مقعدك ومقاعد المرافقين يظهر في صفحة «تذكرتي».',
+];
+
 const FAQ = [
   {
     q: 'لم يصلني الرمز؟',
@@ -63,6 +68,12 @@ const FAQ = [
     a: 'فترة التسجيل محدودة بأيام قليلة، فلا تؤجل.',
   },
 ];
+
+const PHASES = {
+  before: { subband: 'قبل التسجيل', title: 'قبل أن تبدأ التسجيل 🎓', sections: ['steps', 'own', 'faq'], faq: [0, 2] },
+  registered: { subband: 'قبل الدفع', title: 'دليلك لاختيار التذكرة والدفع', sections: ['payment', 'faq'], faq: [0, 1] },
+  paid: { subband: 'بعد الدفع', title: 'تذكرتك جاهزة: ماذا بعد؟', sections: ['qr', 'seat', 'eventday'], faq: [] },
+};
 
 function SectionHeader({ number, icon, title }) {
   return (
@@ -93,13 +104,12 @@ function Warning({ children, tone = 'orange' }) {
   );
 }
 
-/*
-  onContinue({ dontShowAgain }): بعد ما الخريج يقرأ ويوافق ويضغط "فهمت، متابعة"
-  supportPhone: رقم اتحاد الطلبة (اختياري)، إن مررته بيظهر بنهاية الصفحة
-*/
-export default function GraduateGuide({ onContinue, supportPhone = '' }) {
+export default function GraduateGuide({ phase = 'registered', onContinue, onBack, supportPhone = '' }) {
   const cachedContactPhone = useContactPhone();
   const contactPhone = supportPhone || cachedContactPhone;
+
+  const resolvedPhase = PHASES[phase] ? phase : 'registered';
+  const phaseConfig = PHASES[resolvedPhase];
 
   const [acknowledged, setAcknowledged] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
@@ -109,41 +119,12 @@ export default function GraduateGuide({ onContinue, supportPhone = '' }) {
     if (onContinue) onContinue({ dontShowAgain });
   };
 
-  return (
-    <div className="app-container">
-      <main className="mobile-shell">
-        {/* الهيدر العلوي (نفس بقية الصفحات، بلا سهم رجوع) */}
-        <header className="header-main">
-          <div className="header-top">
-            <div className="icon-btn" aria-hidden="true"></div>
-            <h1 className="header-title">{CEREMONY_TITLE}</h1>
-            <div className="icon-btn">
-              <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
-            </div>
-          </div>
-          <div className="header-subband">
-            <span className="subband-title">دليل التذكرة</span>
-            <span className="badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
-
-        <div className="guide-body">
-          {/* مقدمة */}
-          <section className="form-card guide-intro">
-            <div className="logo-circle">
-              <img src={universityLogo} alt="شعار جامعة حمص" />
-            </div>
-            <div>
-              <h2 className="card-title">دليلك لتذكرة حفل التخرج 🎓</h2>
-              <p className="card-subtitle">
-                ألف مبروك التخرج! اقرأ هذه النقاط قبل المتابعة، فهي توفر عليك الكثير يوم الحفل.
-              </p>
-            </div>
-          </section>
-
-          {/* ① خطوات الحصول على التذكرة */}
-          <section className="guide-section" aria-label="خطوات الحصول على التذكرة">
-            <SectionHeader number="1" icon="format_list_numbered" title="خطوات الحصول على التذكرة" />
+  const renderSection = (key, number) => {
+    switch (key) {
+      case 'steps':
+        return (
+          <section className="guide-section" aria-label="خطوات الحصول على التذكرة" key={key}>
+            <SectionHeader number={String(number)} icon="format_list_numbered" title="خطوات الحصول على التذكرة" />
             <ol className="guide-steps">
               {STEPS.map((text) => (
                 <li key={text}>
@@ -152,16 +133,18 @@ export default function GraduateGuide({ onContinue, supportPhone = '' }) {
               ))}
             </ol>
           </section>
-
-          {/* ② سجّل بنفسك فقط */}
-          <section className="guide-section" aria-label="سجّل بنفسك فقط">
-            <SectionHeader number="2" icon="badge" title="سجّل بنفسك فقط" />
+        );
+      case 'own':
+        return (
+          <section className="guide-section" aria-label="سجّل بنفسك فقط" key={key}>
+            <SectionHeader number={String(number)} icon="badge" title="سجّل بنفسك فقط" />
             <BulletList items={OWN_ONLY} />
           </section>
-
-          {/* ③ الدفع */}
-          <section className="guide-section" aria-label="الدفع">
-            <SectionHeader number="3" icon="payments" title="الدفع" />
+        );
+      case 'payment':
+        return (
+          <section className="guide-section" aria-label="الدفع" key={key}>
+            <SectionHeader number={String(number)} icon="payments" title="الدفع" />
             <BulletList items={PAYMENT_POINTS} />
 
             <div className="guide-status-block">
@@ -187,35 +170,88 @@ export default function GraduateGuide({ onContinue, supportPhone = '' }) {
               بعد تأكيد الدفع لا يمكن تعديل التذكرة أو إلغاؤها، ولا يُسترجع المبلغ.
             </Warning>
           </section>
-
-          {/* ④ رموز QR */}
-          <section className="guide-section" aria-label="رموز QR">
-            <SectionHeader number="4" icon="qr_code_2" title="رموز QR" />
+        );
+      case 'qr':
+        return (
+          <section className="guide-section" aria-label="رموز QR" key={key}>
+            <SectionHeader number={String(number)} icon="qr_code_2" title="رموز QR" />
             <BulletList items={QR_POINTS} />
           </section>
-
-          {/* ⑤ يوم الحفل */}
-          <section className="guide-section" aria-label="يوم الحفل">
-            <SectionHeader number="5" icon="celebration" title="يوم الحفل" />
+        );
+      case 'seat':
+        return (
+          <section className="guide-section" aria-label="مقعدك" key={key}>
+            <SectionHeader number={String(number)} icon="event_seat" title="مقعدك" />
+            <BulletList items={SEAT_POINTS} />
+          </section>
+        );
+      case 'eventday':
+        return (
+          <section className="guide-section" aria-label="يوم الحفل" key={key}>
+            <SectionHeader number={String(number)} icon="celebration" title="يوم الحفل" />
             <BulletList items={EVENT_DAY_POINTS} />
             <Warning>
               <strong>الهوية الشخصية إلزامية:</strong> تُستلم هويتك عند الدخول ويُسلَّم لك لباس التخرج، وتُعاد إليك
               الهوية بعد انتهاء الحفل وإرجاع اللباس. بدون هوية لن تتمكن من استلام لباس التخرج.
             </Warning>
           </section>
-
-          {/* ⑥ أسئلة سريعة */}
-          <section className="guide-section" aria-label="أسئلة سريعة">
-            <SectionHeader number="6" icon="help" title="أسئلة سريعة" />
+        );
+      case 'faq':
+        return (
+          <section className="guide-section" aria-label="أسئلة سريعة" key={key}>
+            <SectionHeader number={String(number)} icon="help" title="أسئلة سريعة" />
             <div className="guide-faq">
-              {FAQ.map((item) => (
-                <div className="guide-faq-item" key={item.q}>
-                  <p className="guide-faq-q">{item.q}</p>
-                  <p className="guide-faq-a">{item.a}</p>
-                </div>
-              ))}
+              {phaseConfig.faq.map((idx) => {
+                const item = FAQ[idx];
+                if (!item) return null;
+                return (
+                  <div className="guide-faq-item" key={item.q}>
+                    <p className="guide-faq-q">{item.q}</p>
+                    <p className="guide-faq-a">{item.a}</p>
+                  </div>
+                );
+              })}
             </div>
           </section>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="app-container">
+      <main className="mobile-shell">
+        {/* الهيدر العلوي (نفس بقية الصفحات، بلا سهم رجوع) */}
+        <header className="header-main">
+          <div className="header-top">
+            <div className="icon-btn" aria-hidden="true"></div>
+            <h1 className="header-title">{CEREMONY_TITLE}</h1>
+            <div className="icon-btn">
+              <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
+            </div>
+          </div>
+          <div className="header-subband">
+            <span className="subband-title">{phaseConfig.subband}</span>
+            <span className="badge-batch">{BATCH_BADGE}</span>
+          </div>
+        </header>
+
+        <div className="guide-body">
+          {/* مقدمة */}
+          <section className="form-card guide-intro">
+            <div className="logo-circle">
+              <img src={universityLogo} alt="شعار جامعة حمص" />
+            </div>
+            <div>
+              <h2 className="card-title">{phaseConfig.title}</h2>
+              <p className="card-subtitle">
+                ألف مبروك التخرج! اقرأ هذه النقاط قبل المتابعة، فهي توفر عليك الكثير يوم الحفل.
+              </p>
+            </div>
+          </section>
+
+          {phaseConfig.sections.map((key, index) => renderSection(key, index + 1))}
 
           {/* الختام */}
           <section className="guide-closing">
@@ -227,30 +263,50 @@ export default function GraduateGuide({ onContinue, supportPhone = '' }) {
 
         {/* الشريط السفلي: الموافقة والمتابعة */}
         <div className="footer-deck guide-dock">
-          <label className="guide-check">
-            <input
-              type="checkbox"
-              checked={acknowledged}
-              onChange={(e) => setAcknowledged(e.target.checked)}
-            />
-            <span>
-              قرأت الإرشادات وفهمتها <span className="required-star">*</span>
-            </span>
-          </label>
+          {resolvedPhase === 'registered' && (
+            <>
+              <label className="guide-check">
+                <input
+                  type="checkbox"
+                  checked={acknowledged}
+                  onChange={(e) => setAcknowledged(e.target.checked)}
+                />
+                <span>
+                  قرأت الإرشادات وفهمتها <span className="required-star">*</span>
+                </span>
+              </label>
 
-          <label className="guide-check muted">
-            <input
-              type="checkbox"
-              checked={dontShowAgain}
-              onChange={(e) => setDontShowAgain(e.target.checked)}
-            />
-            <span>لا تعرض لي هذه الصفحة عند تسجيل الدخول مرة أخرى</span>
-          </label>
+              <label className="guide-check muted">
+                <input
+                  type="checkbox"
+                  checked={dontShowAgain}
+                  onChange={(e) => setDontShowAgain(e.target.checked)}
+                />
+                <span>لا تعرض لي هذه الصفحة عند تسجيل الدخول مرة أخرى</span>
+              </label>
+            </>
+          )}
 
-          <button className="submit-btn" type="button" disabled={!acknowledged} onClick={handleContinue}>
-            <span>فهمت، متابعة لاختيار التذكرة</span>
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
+          {resolvedPhase === 'before' && (
+            <button className="submit-btn" type="button" onClick={() => onContinue && onContinue()}>
+              <span>ابدأ التسجيل</span>
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+          )}
+
+          {resolvedPhase === 'registered' && (
+            <button className="submit-btn" type="button" disabled={!acknowledged} onClick={handleContinue}>
+              <span>فهمت، متابعة لاختيار التذكرة</span>
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+          )}
+
+          {resolvedPhase === 'paid' && (
+            <button className="submit-btn" type="button" onClick={() => onBack && onBack()}>
+              <span>العودة إلى تذكرتي</span>
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+          )}
         </div>
       </main>
     </div>

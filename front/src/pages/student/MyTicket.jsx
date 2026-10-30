@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import '../../style/MyTicket.css';
 import '../../style/BrandHeader.css';
@@ -237,6 +238,10 @@ export default function MyTicket() {
               </div>
             </div>
           </section>
+
+          <p style={{ textAlign: 'center', margin: '0 0 12px' }}>
+            <Link to="/guide/ticket">إرشادات يوم الحفل</Link>
+          </p>
 
           {companionCodes.length > 0 && (
             <section className="tk-companions-box">
