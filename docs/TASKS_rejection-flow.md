@@ -16,7 +16,7 @@
 | B3.2 | إعادة كتابة `OrderRejected.jsx` وفق D6/D5 مع الحفاظ على HelpFooter مرة واحدة وحالات التحميل/الخطأ | ✅ | هذا الالتزام | عبارات D6 الجديدة، حُذفت الدعوتان القديمتان، HelpFooter مرة واحدة، header/footer/loading/error/reload محفوظة |
 | B3.3 | اختبارات B3 (SSR لأربع حالات + فحص ثابت لـ OrderRejected) | ✅ | هذا الالتزام | `node --test tests/rejectionOptions.test.mjs` → 5 passed؛ الحزمة الكاملة → 138 passed / 0 failed |
 | B4.1 | ملاحظة عربية في `docs/FRONTEND_WIRING.md` (المسار، الملفات، القرارات D1-D6، كيفية التعديل) | ✅ | هذا الالتزام | قسم «مسار الرفض» مضاف في نهاية docs/FRONTEND_WIRING.md |
-| B4.2 | فحوص نهائية (`npm ci`, `npm test`, `npm run build`, `npx oxlint src`) + `git diff --stat origin/dev` + تقرير Part B + التسليم per S11 | ⬜ | - | - |
+| B4.2 | فحوص نهائية (`npm ci`, `npm test`, `npm run build`, `npx oxlint src`) + `git diff --stat origin/dev` + تقرير Part B + التسليم per S11 | ✅ | هذا الالتزام | `npm ci` نجح؛ `node --test tests/` → 138 pass / 0 fail؛ `npm run build` → ✓ built؛ `npx oxlint src` → 43 warnings / 0 errors (= خط الأساس)؛ backend كامل → 459 passed / 2 failed (نفس فشلي خط الأساس، خارج النطاق)؛ contract checker → OK 0 إضافات/0 كسر؛ `git diff --stat` ضمن النطاق المسموح؛ تقرير `docs/REPORT_PART_B_rejection-flow.md` |
 
 ## Baseline (قبل أي تعديل)
 - Backend full suite: `python -m pytest -q -p no:libtmux` → **453 passed, 2 failed** (فشلان موجودان أصلاً في البيئة: `test_get_graduates_me_unauthorized` و `test_endpoints_require_verification_token` — كلاهما 403 بدل 401، خارج نطاق العمل).
