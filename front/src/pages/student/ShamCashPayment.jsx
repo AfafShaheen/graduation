@@ -1,21 +1,24 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/ShamCashPayment.css';
+import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
 import { getPaymentInfo, submitPayment, getShamcashQr } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import { parseAmount, formatAmount } from '../../utils/amount.js';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
+import { validateTransactionId } from '../../utils/payments';
 
 /* تحويل الأرقام العربية لإنجليزية وإزالة أي رمز غير رقمي */
 const toDigits = (value) =>
   value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, '');
 
-/* Arabic-Indic digits → Latin, then uppercase: same normalisation as the backend */
+/* Arabic-Indic digits → Latin. الحالة (uppercase/lowercase) محفوظة كما كتبها الخريج (D4). */
 const normalizeTx = (value) =>
-  value
+  String(value ?? '')
     .trim()
-    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-    .toUpperCase();
+    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 
 /* backend field name → this form's field name */
 const SERVER_FIELD_MAP = {
@@ -31,15 +34,7 @@ const formatMoney = (value) => Number(value).toLocaleString('en-US');
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const makeValidators = () => ({
-  transactionId: (v) => {
-    const t = normalizeTx(v);
-    if (!t) return 'يرجى إدخال رقم العملية';
-    if (/\s/.test(t)) return 'رقم العملية يجب ألا يحتوي على مسافات';
-    if (!/^[A-Z0-9-]+$/.test(t)) return 'رقم العملية يقبل أحرفاً إنجليزية وأرقاماً وشرطة (-) فقط';
-    if (t.length < 4) return 'رقم العملية يجب أن يكون 4 خانات على الأقل';
-    if (t.length > 100) return 'رقم العملية طويل جداً (100 خانة كحد أقصى)';
-    return '';
-  },
+  transactionId: (v) => validateTransactionId(v),
   transferAmount: (v) => {
     const t = toDigits(v);
     if (!t) return 'يرجى إدخال المبلغ المحوّل';
@@ -251,7 +246,7 @@ export default function ShamCashPayment({ onBack }) {
               </span>
             </button>
 
-            <h1 className="sc-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="sc-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="sc-icon-btn static">
               <img className="sc-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -260,7 +255,7 @@ export default function ShamCashPayment({ onBack }) {
 
           <div className="sc-header-subband">
             <span className="sc-subband-title">الدفع عبر شام كاش</span>
-            <span className="sc-badge-batch">دفعة 2026</span>
+            <span className="sc-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -353,16 +348,24 @@ export default function ShamCashPayment({ onBack }) {
                         id="transactionId"
                         name="transactionId"
                         type="text"
-                        inputMode="numeric"
+                        inputMode="text"
+                        autoCapitalize="off"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        dir="ltr"
+                        maxLength={100}
                         autoComplete="off"
                         className={`sc-input ${errors.transactionId ? 'error' : ''}`}
-                        placeholder="مثال: 948271503"
+                        placeholder="مثال: Ab12-9x"
                         value={formData.transactionId}
                         onChange={handleInputChange}
                         aria-invalid={!!errors.transactionId}
                       />
                       <span className="sc-symbol sc-input-icon-left">pin</span>
                     </div>
+                    <p className="sc-field-hint" style={{ margin: '4px 0 0', fontSize: '12px', color: '#725b51' }}>
+                      اكتب رقم العملية كما ظهر في تطبيق شام كاش بالضبط (حروف إنجليزية وأرقام وشرطة، بدون مسافات).
+                    </p>
                     <FieldError message={errors.transactionId} />
                   </div>
 
@@ -449,7 +452,8 @@ export default function ShamCashPayment({ onBack }) {
           )}
 
           <footer className="sc-footer">
-            <p className="sc-footer-main">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+            <HelpFooter />
+            <p className="sc-footer-main">{CEREMONY_TITLE}</p>
             <p className="sc-footer-sub">إصدار البطاقة الإلكترونية مؤمَّن ومعتمد رسمياً</p>
           </footer>
         </div>
