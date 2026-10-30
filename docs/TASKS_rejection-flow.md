@@ -12,8 +12,8 @@
 | B1.3 | اختبارات B1 (تفرّد الإعدادات، أطوالها، SSR render، فحص ثابت للنافذة) | ✅ | هذا الالتزام | `node --test tests/rejectReasonPresets.test.mjs` → 3 passed؛ الحزمة الكاملة `node --test tests/` → 124 passed / 0 failed؛ build ✓؛ oxlint 43 warnings = خط الأساس |
 | B2.1 | `front/src/utils/rejection.js`: `supportHref` / `rejectionReasonText` / `rejectionActions` | ✅ | هذا الالتزام | ملف جديد نقي؛ قاعدة الهاتف `PHONE_REGEX` المعاد استخدامها من validators.js |
 | B2.2 | اختبارات B2.1 (هواتف صحيحة/غير صحيحة، تسجيل مغلق، بلا هاتف، مسافات في السبب) | ✅ | هذا الالتزام | `node --test tests/rejectionUtils.test.mjs` → 9 passed / 0 failed؛ build ✓؛ oxlint 43 = خط الأساس |
-| B3.1 | `front/src/components/RejectionOptions.jsx` (عنوان + زر إعادة الدفع + رابط الدعم + عبارات D5) | ⬜ | - | - |
-| B3.2 | إعادة كتابة `OrderRejected.jsx` وفق D6/D5 مع الحفاظ على HelpFooter مرة واحدة وحالات التحميل/الخطأ | ⬜ | - | - |
+| B3.1 | `front/src/components/RejectionOptions.jsx` (عنوان + زر إعادة الدفع + رابط الدعم + عبارات D5) | ✅ | هذا الالتزام | مكوّن جديد + أصناف CSS جديدة قليلة فوق or-* الموجودة؛ build ✓ oxlint 43 = خط الأساس |
+| B3.2 | إعادة كتابة `OrderRejected.jsx` وفق D6/D5 مع الحفاظ على HelpFooter مرة واحدة وحالات التحميل/الخطأ | ✅ | هذا الالتزام | عبارات D6 الجديدة، حُذفت الدعوتان القديمتان، HelpFooter مرة واحدة، header/footer/loading/error/reload محفوظة |
 | B3.3 | اختبارات B3 (SSR لأربع حالات + فحص ثابت لـ OrderRejected) | ⬜ | - | - |
 | B4.1 | ملاحظة عربية في `docs/FRONTEND_WIRING.md` (المسار، الملفات، القرارات D1-D6، كيفية التعديل) | ⬜ | - | - |
 | B4.2 | فحوص نهائية (`npm ci`, `npm test`, `npm run build`, `npx oxlint src`) + `git diff --stat origin/dev` + تقرير Part B + التسليم per S11 | ⬜ | - | - |

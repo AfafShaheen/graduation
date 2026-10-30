@@ -346,6 +346,57 @@
   text-decoration-color: #ca4b00;
 }
 
+/* --- RejectionOptions (المهمة B3.1): أصناف جديدة قليلة فوق or-* الموجودة --- */
+.or-options {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.or-options-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #322923;
+  margin: 0 0 4px;
+  text-align: center;
+}
+
+.or-support-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 9999px;
+  justify-content: center;
+  background-color: #ffffff;
+  border: 1px solid #eedebd;
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
+
+.or-support-number {
+  font-weight: 700;
+  color: #124d44;
+}
+
+.or-office-text {
+  font-size: 13px;
+  line-height: 18px;
+  color: #594138;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
+}
+
+.or-closed-notice {
+  font-size: 12px;
+  line-height: 17px;
+  color: #725b51;
+  margin: 2px 0 0;
+  text-align: center;
+}
+
 .or-footer {
   text-align: center;
 }
