@@ -116,6 +116,12 @@ async def list_event_payments_service(
                 "amount_mismatch": bool(
                     payment is not None and payment.amount != ticket.price
                 ),
+                "seat": (
+                    seat_labels(
+                        event.seat_prefix, ticket.seat_start, ticket.companions_count
+                    )
+                    or {}
+                ).get("range"),
             }
         )
 
@@ -229,6 +235,13 @@ async def confirm_payment_service(
     # Reserve the ticket's seat block in the same transaction (FR-24 extension).
     await assign_seat_block(db, ticket)
 
+    event = await db.get(EventModel, ticket.event_id)
+    seat_range = seat_labels(
+        event.seat_prefix if event is not None else None,
+        ticket.seat_start,
+        ticket.companions_count,
+    )["range"]
+
     await record_audit(
         db,
         actor_type=ActorType.ADMIN,
@@ -245,7 +258,7 @@ async def confirm_payment_service(
     )
 
     await invalidate_admin_cache()
-    return {"status": "success", "message": messages.PAYMENT_CONFIRMED}
+    return {"status": "success", "message": messages.PAYMENT_CONFIRMED, "seat": seat_range}
 
 
 async def reject_payment_service(

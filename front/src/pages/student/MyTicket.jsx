@@ -164,7 +164,7 @@ export default function MyTicket() {
                 <div className="tk-meta-divider"></div>
                 <div className="tk-meta-col">
                   <span className="tk-meta-label">المقعد</span>
-                  <span className="tk-meta-value">{seat?.graduate || '—'}</span>
+                  <span className="tk-meta-value">{seat?.graduate || 'يُحدَّد المقعد بعد تأكيد الدفع'}</span>
                 </div>
               </div>
 
@@ -181,6 +181,15 @@ export default function MyTicket() {
                   </div>
                 </div>
               )}
+
+              {seat?.companions?.length ? (
+                <div className="tk-meta-row">
+                  <div className="tk-meta-col">
+                    <span className="tk-meta-label">مقاعد المرافقين</span>
+                    <span className="tk-meta-value" dir="ltr">{seat.companions.join('، ')}</span>
+                  </div>
+                </div>
+              ) : null}
 
               {topRank && (
                 <div
@@ -254,6 +263,9 @@ export default function MyTicket() {
                       aria-label={`رمز QR للمرافق ${idx + 1}`}
                     />
                     <span className="tk-companion-name">المرافق {idx + 1}</span>
+                    {seat?.companions?.[idx] && (
+                      <span className="tk-meta-label">المقعد: {seat.companions[idx]}</span>
+                    )}
                     <span className="tk-companion-status">
                       {code.scanned ? 'مستخدم' : 'قيد الانتظار'}
                     </span>
