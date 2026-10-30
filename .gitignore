@@ -36,7 +36,10 @@ deploy/.deploy_cache.json
 local-dev/local.env
 back/.venv/
 
-# --- Local test artifacts ---
+# --- Agent patches / Redis dump ---
+patches/
 dump.rdb
+
+# --- Local test artifacts (rejection-flow) ---
 __pycache__/
 back/storage/
