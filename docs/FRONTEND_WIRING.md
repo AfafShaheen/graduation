@@ -187,3 +187,18 @@
 
 ### طبقة نتائج الماسح داخل الكاميرا (D10)
 الطبقة صارت كلاس `.scan-cam-result-overlay` في `ScannerCamera.css` (بدل inline style): `position:absolute; inset:0; z-index:40; display:flex; column; overflow:hidden` مع خلفية حسب نوع النتيجة (`--error` أحمر، `--success`/`--wrong_ceremony` كريمي). داخلها الشاشات الثلاث تحجّم نفسها بالحاوية (`height:100%` بلا vh/dvh)، منطقة المحتوى وحدها تمرر (`overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin`)، والهيدر والفوتر `flex-shrink:0` والفوتر يحتفظ بحشو safe-area. على الشاشات القصيرة (`max-height:700px`) يُضغط الـ hero. المسارات المستقلة `/scanner/error|result|wrong-ceremony` بقيت بـ 100dvh كما هي. التحقق: `tests/scannerOverlayFit.test.mjs` (ثوابت CSS ثابتة) + قائمة الفحص اليدوية في `docs/TASKS_polish-round-1.md`.
+
+
+---
+
+## الجلسات وتجديد التوكن، وتحديث صفحة الخريج تلقائياً
+
+**المشاكل يلي انحلت:**
+1. حراس الصفحات (`App.jsx` و`TicketGuard` و`useMyTicket` وحارس الماسح) كانوا يفحصوا التوكن القصير (ساعتين) فقط، فبعد ساعتين أو عند إعادة تحميل الصفحة كانوا يرجعوا المستخدم لصفحة الدخول قبل ما يتجدد التوكن. صاروا يستعملوا `hasAdminSession()` و`hasGraduateSession()` و`hasScannerSession()` (بـ `api/session.js`): الجلسة صالحة إذا التوكن القصير صالح **أو** عنده توكن تجديد لسا ما انتهت جلسته.
+2. الجلسات كانت بـ `sessionStorage` (بتروح لما بيسكّر التبويب أو يفتح تبويب جديد). صارت جلسات الأدمن والخريج والماسح بـ `localStorage` (جلسة قديمة بـ sessionStorage بتنفهم وبتنمسح عند الخروج). خطوات التسجيل القصيرة (تأكيد البريد، واستعادة كلمة السر) بقيت بـ sessionStorage.
+3. عدة طلبات متزامنة كانت تجدّد التوكن بنفس اللحظة، والباك بيدوّر التوكن وبيلغي الجلسة كلها إذا رجع توكن مستعمل. صار التجديد **مرة وحدة بالمرة** (`utils/singleFlight.js`) وبين التبويبات (Web Locks API)، وإذا تبويب تاني جدّد قبلنا بنستعمل توكنه (`reuseFreshToken`).
+4. انقطاع الإنترنت أو خطأ 5xx أثناء التجديد ما بيطلّع المستخدم من حسابه: بس رفض توكن التجديد (400/401/403) بينهي الجلسة.
+
+**تحديث صفحة «بانتظار المراجعة» تلقائياً (`OrderStatus.jsx`):** بتسأل السيرفر كل **15 ثانية** (والتبويب ظاهر)، وفوراً لما يرجع الخريج للتبويب أو يرجع الاتصال. التحديث صامت (`refresh()` من `useMyTicket`): ما بيظهر «جارٍ التحميل» وما بيستبدل الصفحة بخطأ. لما تتغير الحالة، `routeForTicket` (بـ `utils/ticketRoute.js`) بينقله لصفحته: قُبل ← `/my-ticket`، رُفض ← `/payment-rejected`.
+
+**الاختبارات:** `sessionPersistence` و`singleFlight` و`ticketRoute` و`authWiring` (19 اختبار).

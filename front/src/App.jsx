@@ -39,7 +39,7 @@ import ScannerCamera from "./pages/scanner/ScannerCamera";
 import ScanSuccessResult from "./pages/scanner/ScanSuccessResult";
 import ScanErrorResult from "./pages/scanner/ScanErrorResult";
 import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
-import { getScannerToken, isScannerTokenExpired, clearScannerSession, getGraduateToken, isGraduateTokenExpired, getAdminToken, isAdminTokenExpired, clearAdminSession, getAdminUsername, getVerificationToken, getRegistrationToken, isRegistrationTokenExpired, getResetEmail, setResetEmail, getResetCode, getGraduateEmail } from "./api/session";
+import { hasScannerSession, hasGraduateSession, hasAdminSession, clearScannerSession, clearAdminSession, getAdminUsername, getVerificationToken, getRegistrationToken, isRegistrationTokenExpired, getResetEmail, setResetEmail, getResetCode, getGraduateEmail } from "./api/session";
 
 /*
   وضع المعاينة (للتصميم فقط):
@@ -74,7 +74,7 @@ function App() {
   const [pendingPayments, setPendingPayments] = useState(0);
   const [, setSurvey] = useState(null);
   const [scanner, setScanner] = useState(() =>
-    Boolean(getScannerToken() && !isScannerTokenExpired())
+    hasScannerSession()
   );
   const [scannerError, setScannerError] = useState("");
 
@@ -104,8 +104,8 @@ function App() {
     navigate("/admin", { replace: true });
   };
 
-  const hasValidGraduate = getGraduateToken() && !isGraduateTokenExpired();
-  const hasValidAdmin = getAdminToken() && !isAdminTokenExpired();
+  const hasValidGraduate = hasGraduateSession();
+  const hasValidAdmin = hasAdminSession();
   const hasVerifySession = getVerificationToken();
   const hasValidRegistration = getRegistrationToken() && !isRegistrationTokenExpired();
   const adminName = getAdminUsername();
@@ -507,7 +507,7 @@ function App() {
         <Route
           path="/scanner/scan"
           element={
-            getScannerToken() && !isScannerTokenExpired() ? (
+            hasScannerSession() ? (
               <ScannerCamera
                 onLogout={() => {
                   clearScannerSession();
@@ -523,7 +523,7 @@ function App() {
         <Route
           path="/scanner/result"
           element={
-            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
+            (hasScannerSession()) || PREVIEW ? (
               <ScanSuccessResult onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
@@ -535,7 +535,7 @@ function App() {
         <Route
           path="/scanner/error"
           element={
-            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
+            (hasScannerSession()) || PREVIEW ? (
               <ScanErrorResult
                 errorType={
                   new URLSearchParams(location.search).get("type") ||
@@ -554,7 +554,7 @@ function App() {
         <Route
           path="/scanner/wrong-ceremony"
           element={
-            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
+            (hasScannerSession()) || PREVIEW ? (
               <WrongCeremoniesWarning onNextScan={() => navigate("/scanner/scan")} />
             ) : (
               <Navigate to="/scanner" replace />
@@ -566,7 +566,7 @@ function App() {
         <Route
           path="/scanner/*"
           element={
-            (getScannerToken() && !isScannerTokenExpired()) || PREVIEW ? (
+            (hasScannerSession()) || PREVIEW ? (
               <div
                 style={{ padding: 24, textAlign: "center", direction: "rtl" }}
               >

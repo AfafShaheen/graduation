@@ -12,6 +12,7 @@ from app.core.security import (
     REFRESH_TOKEN_TYPE,
     create_access_token,
     create_refresh_token,
+    refresh_expires_in,
     get_password_hash,
     secret_key,
     verify_password,
@@ -125,19 +126,20 @@ def _session_unauthorized():
     )
 
 
-def _make_refresh(data):
+def _make_refresh(data, family_exp=None):
     days = ADMIN_REFRESH_TOKEN_EXPIRE_DAYS
-    return create_refresh_token(data, days)
+    return create_refresh_token(data, days, family_exp)
 
 
-async def _issue_refresh(admin: AdminModel, family: str):
+async def _issue_refresh(admin: AdminModel, family: str, family_exp=None):
     data = {"sub": str(admin.id), "role": "admin", "family": family}
-    value = _make_refresh(data)
+    value = _make_refresh(data, family_exp)
     payload = jwt.decode(value, secret_key, algorithms=[ALGORITHM])
     await refresh_store.store_refresh_token(
-        payload["jti"], family, "admin", str(admin.id), ADMIN_REFRESH_TOKEN_EXPIRE_DAYS
+        payload["jti"], family, "admin", str(admin.id), ADMIN_REFRESH_TOKEN_EXPIRE_DAYS,
+        ttl_seconds=refresh_expires_in(ADMIN_REFRESH_TOKEN_EXPIRE_DAYS, family_exp),
     )
-    return value, ADMIN_REFRESH_TOKEN_EXPIRE_DAYS * 86400
+    return value, refresh_expires_in(ADMIN_REFRESH_TOKEN_EXPIRE_DAYS, family_exp)
 
 
 def _decode_refresh(refresh_value: str, role: str) -> dict:
@@ -164,7 +166,7 @@ async def refresh_admin_session(refresh_value: str, db: AsyncSession) -> dict:
         "role": "admin",
         "username": admin.username,
     })
-    rotation, rotation_expires = await _issue_refresh(admin, family)
+    rotation, rotation_expires = await _issue_refresh(admin, family, payload.get("fexp"))
     return {
         "access_token": access_value,
         "token_type": "bearer",

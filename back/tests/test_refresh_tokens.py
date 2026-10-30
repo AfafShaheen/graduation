@@ -103,7 +103,8 @@ async def test_scanner_refresh_keeps_event(client, make_admin, make_event, make_
     )
     assert login.status_code == 200
     body = login.json()
-    assert body["refresh_expires_in"] == 30 * 86400
+    # The scanner session lasts 24 hours (it was 30 days before).
+    assert body["refresh_expires_in"] == 1 * 86400
 
     resp = await client.post(
         "/api/scanner/auth/refresh", json={"refresh_token": body["refresh_token"]}

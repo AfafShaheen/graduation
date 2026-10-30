@@ -24,6 +24,51 @@ const ADMIN_USERNAME_KEY = "admin_username";
 const RESET_EMAIL_KEY = "reset.email";
 const RESET_CODE_KEY = "reset.code";
 
+// Admin, graduate and scanner sessions must survive closing the tab or the browser
+// (they last 30 days, 7 days and 24 hours), so they live in localStorage. Reads fall
+// back to sessionStorage so a session saved by an older build is still understood;
+// removing a key clears both. Short registration/reset flows keep using sessionStorage.
+const persistent = {
+  getItem(key) {
+    try {
+      const value = localStorage.getItem(key);
+      if (value !== null) return value;
+    } catch {
+      /* التخزين الدائم غير متاح */
+    }
+    try {
+      return sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return;
+    } catch {
+      /* نرجع لتخزين الجلسة */
+    }
+    try {
+      sessionStorage.setItem(key, value);
+    } catch {
+      /* لا يوجد تخزين */
+    }
+  },
+  removeItem(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+    try {
+      sessionStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  },
+};
+
 export function getToken(key) {
   return sessionStorage.getItem(key);
 }
@@ -37,27 +82,27 @@ export function removeToken(key) {
 }
 
 export function getScannerToken() {
-  return sessionStorage.getItem(SCANNER_ACCESS_TOKEN_KEY);
+  return persistent.getItem(SCANNER_ACCESS_TOKEN_KEY);
 }
 
 export function setScannerSession({ accessToken, expiresIn, event, refreshToken, refreshExpiresIn }) {
-  sessionStorage.setItem(SCANNER_ACCESS_TOKEN_KEY, accessToken);
-  sessionStorage.setItem(SCANNER_EVENT_KEY, JSON.stringify(event));
+  persistent.setItem(SCANNER_ACCESS_TOKEN_KEY, accessToken);
+  persistent.setItem(SCANNER_EVENT_KEY, JSON.stringify(event));
   const expiresAt = Date.now() + expiresIn * 1000;
-  sessionStorage.setItem(SCANNER_EXPIRES_AT_KEY, String(expiresAt));
+  persistent.setItem(SCANNER_EXPIRES_AT_KEY, String(expiresAt));
   if (refreshToken) {
-    sessionStorage.setItem(SCANNER_REFRESH_TOKEN_KEY, refreshToken);
+    persistent.setItem(SCANNER_REFRESH_TOKEN_KEY, refreshToken);
     const refreshExpiresAt = Date.now() + (refreshExpiresIn || 0) * 1000;
-    sessionStorage.setItem(SCANNER_REFRESH_EXPIRES_AT_KEY, String(refreshExpiresAt));
+    persistent.setItem(SCANNER_REFRESH_EXPIRES_AT_KEY, String(refreshExpiresAt));
   }
 }
 
 export function getScannerRefreshToken() {
-  return sessionStorage.getItem(SCANNER_REFRESH_TOKEN_KEY);
+  return persistent.getItem(SCANNER_REFRESH_TOKEN_KEY);
 }
 
 export function getScannerEvent() {
-  const raw = sessionStorage.getItem(SCANNER_EVENT_KEY);
+  const raw = persistent.getItem(SCANNER_EVENT_KEY);
   try {
     return raw ? JSON.parse(raw) : null;
   } catch {
@@ -66,18 +111,18 @@ export function getScannerEvent() {
 }
 
 export function isScannerTokenExpired() {
-  const expiresAt = sessionStorage.getItem(SCANNER_EXPIRES_AT_KEY);
+  const expiresAt = persistent.getItem(SCANNER_EXPIRES_AT_KEY);
   if (!expiresAt) return true;
   return Date.now() >= Number(expiresAt);
 }
 
 export function clearScannerSession() {
-  sessionStorage.removeItem(SCANNER_ACCESS_TOKEN_KEY);
-  sessionStorage.removeItem(SCANNER_EVENT_KEY);
-  sessionStorage.removeItem(SCANNER_EXPIRES_AT_KEY);
-  sessionStorage.removeItem(SCANNER_REFRESH_TOKEN_KEY);
-  sessionStorage.removeItem(SCANNER_REFRESH_EXPIRES_AT_KEY);
-  sessionStorage.removeItem("grad.scanner");
+  persistent.removeItem(SCANNER_ACCESS_TOKEN_KEY);
+  persistent.removeItem(SCANNER_EVENT_KEY);
+  persistent.removeItem(SCANNER_EXPIRES_AT_KEY);
+  persistent.removeItem(SCANNER_REFRESH_TOKEN_KEY);
+  persistent.removeItem(SCANNER_REFRESH_EXPIRES_AT_KEY);
+  persistent.removeItem("grad.scanner");
 }
 
 export function getRegistrationToken() {
@@ -122,65 +167,65 @@ export function setGraduateEmail(email) {
 }
 
 export function getGraduateToken() {
-  return sessionStorage.getItem(GRADUATE_ACCESS_TOKEN_KEY);
+  return persistent.getItem(GRADUATE_ACCESS_TOKEN_KEY);
 }
 
 export function setGraduateSession({ accessToken, expiresIn, refreshToken, refreshExpiresIn }) {
-  sessionStorage.setItem(GRADUATE_ACCESS_TOKEN_KEY, accessToken);
+  persistent.setItem(GRADUATE_ACCESS_TOKEN_KEY, accessToken);
   const expiresAt = Date.now() + expiresIn * 1000;
-  sessionStorage.setItem(GRADUATE_EXPIRES_AT_KEY, String(expiresAt));
+  persistent.setItem(GRADUATE_EXPIRES_AT_KEY, String(expiresAt));
   if (refreshToken) {
-    sessionStorage.setItem(GRADUATE_REFRESH_TOKEN_KEY, refreshToken);
+    persistent.setItem(GRADUATE_REFRESH_TOKEN_KEY, refreshToken);
     const refreshExpiresAt = Date.now() + (refreshExpiresIn || 0) * 1000;
-    sessionStorage.setItem(GRADUATE_REFRESH_EXPIRES_AT_KEY, String(refreshExpiresAt));
+    persistent.setItem(GRADUATE_REFRESH_EXPIRES_AT_KEY, String(refreshExpiresAt));
   }
 }
 
 export function getGraduateRefreshToken() {
-  return sessionStorage.getItem(GRADUATE_REFRESH_TOKEN_KEY);
+  return persistent.getItem(GRADUATE_REFRESH_TOKEN_KEY);
 }
 
 export function isGraduateTokenExpired() {
-  const expiresAt = sessionStorage.getItem(GRADUATE_EXPIRES_AT_KEY);
+  const expiresAt = persistent.getItem(GRADUATE_EXPIRES_AT_KEY);
   if (!expiresAt) return true;
   return Date.now() >= Number(expiresAt);
 }
 
 export function getAdminToken() {
-  return sessionStorage.getItem(ADMIN_ACCESS_TOKEN_KEY);
+  return persistent.getItem(ADMIN_ACCESS_TOKEN_KEY);
 }
 
 export function setAdminSession({ accessToken, expiresIn, refreshToken, refreshExpiresIn }) {
-  sessionStorage.setItem(ADMIN_ACCESS_TOKEN_KEY, accessToken);
+  persistent.setItem(ADMIN_ACCESS_TOKEN_KEY, accessToken);
   const expiresAt = Date.now() + expiresIn * 1000;
-  sessionStorage.setItem(ADMIN_EXPIRES_AT_KEY, String(expiresAt));
+  persistent.setItem(ADMIN_EXPIRES_AT_KEY, String(expiresAt));
   if (refreshToken) {
-    sessionStorage.setItem(ADMIN_REFRESH_TOKEN_KEY, refreshToken);
+    persistent.setItem(ADMIN_REFRESH_TOKEN_KEY, refreshToken);
     const refreshExpiresAt = Date.now() + (refreshExpiresIn || 0) * 1000;
-    sessionStorage.setItem(ADMIN_REFRESH_EXPIRES_AT_KEY, String(refreshExpiresAt));
+    persistent.setItem(ADMIN_REFRESH_EXPIRES_AT_KEY, String(refreshExpiresAt));
   }
 }
 
 export function getAdminRefreshToken() {
-  return sessionStorage.getItem(ADMIN_REFRESH_TOKEN_KEY);
+  return persistent.getItem(ADMIN_REFRESH_TOKEN_KEY);
 }
 
 export function isAdminTokenExpired() {
-  const expiresAt = sessionStorage.getItem(ADMIN_EXPIRES_AT_KEY);
+  const expiresAt = persistent.getItem(ADMIN_EXPIRES_AT_KEY);
   if (!expiresAt) return true;
   return Date.now() >= Number(expiresAt);
 }
 
 export function setAdminUsername(username) {
   if (username) {
-    sessionStorage.setItem(ADMIN_USERNAME_KEY, username);
+    persistent.setItem(ADMIN_USERNAME_KEY, username);
   } else {
-    sessionStorage.removeItem(ADMIN_USERNAME_KEY);
+    persistent.removeItem(ADMIN_USERNAME_KEY);
   }
 }
 
 export function getAdminUsername() {
-  return sessionStorage.getItem(ADMIN_USERNAME_KEY);
+  return persistent.getItem(ADMIN_USERNAME_KEY);
 }
 
 export function getResetEmail() {
@@ -205,10 +250,10 @@ export function clearResetFlow() {
 }
 
 export function clearGraduateSession() {
-  sessionStorage.removeItem(GRADUATE_ACCESS_TOKEN_KEY);
-  sessionStorage.removeItem(GRADUATE_EXPIRES_AT_KEY);
-  sessionStorage.removeItem(GRADUATE_REFRESH_TOKEN_KEY);
-  sessionStorage.removeItem(GRADUATE_REFRESH_EXPIRES_AT_KEY);
+  persistent.removeItem(GRADUATE_ACCESS_TOKEN_KEY);
+  persistent.removeItem(GRADUATE_EXPIRES_AT_KEY);
+  persistent.removeItem(GRADUATE_REFRESH_TOKEN_KEY);
+  persistent.removeItem(GRADUATE_REFRESH_EXPIRES_AT_KEY);
   sessionStorage.removeItem(VERIFICATION_TOKEN_KEY);
   sessionStorage.removeItem(REGISTRATION_TOKEN_KEY);
   sessionStorage.removeItem(REGISTRATION_EXPIRES_AT_KEY);
@@ -219,11 +264,11 @@ export function clearGraduateSession() {
 }
 
 export function clearAdminSession() {
-  sessionStorage.removeItem(ADMIN_ACCESS_TOKEN_KEY);
-  sessionStorage.removeItem(ADMIN_EXPIRES_AT_KEY);
-  sessionStorage.removeItem(ADMIN_REFRESH_TOKEN_KEY);
-  sessionStorage.removeItem(ADMIN_REFRESH_EXPIRES_AT_KEY);
-  sessionStorage.removeItem(ADMIN_USERNAME_KEY);
+  persistent.removeItem(ADMIN_ACCESS_TOKEN_KEY);
+  persistent.removeItem(ADMIN_EXPIRES_AT_KEY);
+  persistent.removeItem(ADMIN_REFRESH_TOKEN_KEY);
+  persistent.removeItem(ADMIN_REFRESH_EXPIRES_AT_KEY);
+  persistent.removeItem(ADMIN_USERNAME_KEY);
   sessionStorage.removeItem("grad.admin");
 }
 
@@ -236,4 +281,43 @@ export function clearAllSessions() {
   clearScannerSession();
   clearAdminSession();
   clearResetFlow();
+}
+
+// A session is usable when the access token is still valid OR it can be renewed:
+// the refresh token exists and has not reached the end of the session. The route
+// guards must use these (not the *TokenExpired helpers, which only look at the short
+// access token and would send the user to the login page every two hours).
+function sessionAlive(accessKey, expiresKey, refreshKey, refreshExpiresKey) {
+  if (!persistent.getItem(accessKey)) return false;
+  const accessExpiresAt = Number(persistent.getItem(expiresKey));
+  if (accessExpiresAt && Date.now() < accessExpiresAt) return true;
+  const refreshExpiresAt = Number(persistent.getItem(refreshExpiresKey));
+  return Boolean(persistent.getItem(refreshKey)) && refreshExpiresAt > Date.now();
+}
+
+export function hasScannerSession() {
+  return sessionAlive(
+    SCANNER_ACCESS_TOKEN_KEY,
+    SCANNER_EXPIRES_AT_KEY,
+    SCANNER_REFRESH_TOKEN_KEY,
+    SCANNER_REFRESH_EXPIRES_AT_KEY,
+  );
+}
+
+export function hasGraduateSession() {
+  return sessionAlive(
+    GRADUATE_ACCESS_TOKEN_KEY,
+    GRADUATE_EXPIRES_AT_KEY,
+    GRADUATE_REFRESH_TOKEN_KEY,
+    GRADUATE_REFRESH_EXPIRES_AT_KEY,
+  );
+}
+
+export function hasAdminSession() {
+  return sessionAlive(
+    ADMIN_ACCESS_TOKEN_KEY,
+    ADMIN_EXPIRES_AT_KEY,
+    ADMIN_REFRESH_TOKEN_KEY,
+    ADMIN_REFRESH_EXPIRES_AT_KEY,
+  );
 }
