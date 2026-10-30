@@ -12,8 +12,9 @@ Business rules that live here (and only here):
 - A ticket is AWAITING_PAYMENT right after selection and PROCESSING as soon as
   payment data is submitted (FR-9). The current payment of a ticket is its
   latest ``payments`` row by id (D16).
-- For any status other than CONFIRMED the my-ticket payload exposes NO QR code
-  values and NO WhatsApp link (FR-10 / FR-22-c).
+- The my-ticket payload exposes QR code values and the seat ONLY for CONFIRMED
+  tickets. The WhatsApp group link is exposed for PROCESSING and CONFIRMED
+  tickets (changed from CONFIRMED-only; FR-10 / FR-22-c must be updated to match).
 """
 
 from datetime import UTC, datetime
@@ -44,6 +45,9 @@ from app.services.settings_service import (
 )
 
 _PAYABLE_STATUSES = (TicketStatusEnum.AWAITING_PAYMENT, TicketStatusEnum.REJECTED)
+
+# Statuses for which the WhatsApp group link is shown to the graduate.
+_WHATSAPP_LINK_STATUSES = (TicketStatusEnum.PROCESSING, TicketStatusEnum.CONFIRMED)
 
 _STATUS_MESSAGES = {
     TicketStatusEnum.AWAITING_PAYMENT: messages.TICKET_STATUS_AWAITING_PAYMENT,
@@ -320,13 +324,17 @@ async def get_my_ticket_service(db: AsyncSession, graduate: GraduateModel) -> di
             }
             for code in codes
         ]
-        result["whatsapp_group_link"] = (
-            event.whatsapp_group_link if event is not None else None
-        )
         result["seat"] = seat_labels(
             event.seat_prefix if event is not None else None,
             ticket.seat_start,
             ticket.companions_count,
+        )
+
+    # WhatsApp group link: visible while the payment is under review
+    # (PROCESSING) and after confirmation (CONFIRMED).
+    if ticket.status in _WHATSAPP_LINK_STATUSES:
+        result["whatsapp_group_link"] = (
+            event.whatsapp_group_link if event is not None else None
         )
 
     return result

@@ -26,6 +26,8 @@ export default function OrderStatus() {
   const navigate = useNavigate();
   const ticket = data?.ticket;
   const event = data?.event;
+  // الرابط بيجي على المستوى الأعلى من الرد (مو جوا event)
+  const whatsappLink = data?.whatsapp_group_link;
 
   // تحديث تلقائي بصمت كل 15 ثانية أثناء ظهور الصفحة، وفوراً عند العودة للتبويب
   // أو رجوع الاتصال، حتى يظهر قبول الأدمن أو رفضه بدون ما يضغط الخريج شي.
@@ -154,13 +156,13 @@ export default function OrderStatus() {
                   </div>
                 </div>
 
-                {event?.whatsapp_group_link && (
+                {whatsappLink && (
                   <>
                     <div className="os-dashed-divider"></div>
                     <div className="os-community-section">
                       <div className="os-community-header">
                         <div>
-                          <h3 className="os-community-title">{event.name}</h3>
+                          <h3 className="os-community-title">{event?.name}</h3>
                           <span className="os-community-subtitle">القناة الرسمية المعتمدة</span>
                         </div>
                         <div className="os-community-icon-bg">
@@ -176,7 +178,7 @@ export default function OrderStatus() {
 
                       <a
                         className="os-whatsapp-btn"
-                        href={event.whatsapp_group_link}
+                        href={whatsappLink}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
