@@ -163,10 +163,10 @@ async def test_select_success(
     assert stored.status == TicketStatusEnum.AWAITING_PAYMENT
 
 
-async def test_second_selection_conflict(
-    client, make_event, make_college, make_graduate
+async def test_same_package_again_returns_same_ticket_unchanged(
+    client, db, make_event, make_college, make_graduate
 ):
-    _event, _college, _grad, access_value = await _verified_graduate(
+    _event, _college, graduate, access_value = await _verified_graduate(
         client, make_event, make_college, make_graduate
     )
     first = await client.post(
@@ -178,14 +178,163 @@ async def test_second_selection_conflict(
         "/api/graduates/me/ticket", headers=_auth(access_value), json=_SELECT_BODY
     )
 
-    assert second.status_code == 409
-    assert second.json()["detail"] == messages.TICKET_ALREADY_EXISTS
+    assert second.status_code == 201, second.text
+    assert second.json()["id"] == first.json()["id"]
+    assert second.json()["companions_count"] == 2
+    assert second.json()["price"] == "100000.00"
+    assert second.json()["status"] == "AWAITING_PAYMENT"
+    rows = (
+        await db.execute(
+            select(TicketModel).where(TicketModel.graduate_id == graduate.id)
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+
+
+async def test_change_package_while_awaiting_payment(
+    client, db, make_event, make_college, make_graduate
+):
+    _event, _college, graduate, access_value = await _verified_graduate(
+        client, make_event, make_college, make_graduate
+    )
+    first = await client.post(
+        "/api/graduates/me/ticket", headers=_auth(access_value), json=_SELECT_BODY
+    )
+    assert first.status_code == 201, first.text
+
+    changed = await client.post(
+        "/api/graduates/me/ticket",
+        headers=_auth(access_value),
+        json={"companions_count": 3, "confirm": True},
+    )
+
+    assert changed.status_code == 201, changed.text
+    body = changed.json()
+    assert body["id"] == first.json()["id"]
+    assert body["companions_count"] == 3
+    assert body["price"] == "150000.00"
+    assert body["status"] == "AWAITING_PAYMENT"
+    rows = (
+        await db.execute(
+            select(TicketModel).where(TicketModel.graduate_id == graduate.id)
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+    await db.refresh(rows[0])
+    assert rows[0].companions_count == 3
+    assert rows[0].price == Decimal("150000")
+
+
+async def _ticket_with_status(client, db, access_value, new_status):
+    created = await client.post(
+        "/api/graduates/me/ticket", headers=_auth(access_value), json=_SELECT_BODY
+    )
+    assert created.status_code == 201, created.text
+    ticket = await db.get(TicketModel, created.json()["id"])
+    ticket.status = new_status
+    db.add(ticket)
+    await db.commit()
+    return created.json()["id"]
+
+
+async def test_change_package_blocked_while_processing(
+    client, db, make_event, make_college, make_graduate
+):
+    _event, _college, _grad, access_value = await _verified_graduate(
+        client, make_event, make_college, make_graduate
+    )
+    await _ticket_with_status(client, db, access_value, TicketStatusEnum.PROCESSING)
+
+    response = await client.post(
+        "/api/graduates/me/ticket",
+        headers=_auth(access_value),
+        json={"companions_count": 3, "confirm": True},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == messages.TICKET_ALREADY_EXISTS
+
+
+async def test_change_package_blocked_when_confirmed(
+    client, db, make_event, make_college, make_graduate
+):
+    _event, _college, _grad, access_value = await _verified_graduate(
+        client, make_event, make_college, make_graduate
+    )
+    await _ticket_with_status(client, db, access_value, TicketStatusEnum.CONFIRMED)
+
+    response = await client.post(
+        "/api/graduates/me/ticket",
+        headers=_auth(access_value),
+        json={"companions_count": 3, "confirm": True},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == messages.TICKET_ALREADY_EXISTS
+
+
+async def test_change_package_allowed_when_rejected_keeps_status(
+    client, db, make_event, make_college, make_graduate
+):
+    _event, _college, _grad, access_value = await _verified_graduate(
+        client, make_event, make_college, make_graduate
+    )
+    ticket_id = await _ticket_with_status(
+        client, db, access_value, TicketStatusEnum.REJECTED
+    )
+
+    response = await client.post(
+        "/api/graduates/me/ticket",
+        headers=_auth(access_value),
+        json={"companions_count": 3, "confirm": True},
+    )
+
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["id"] == ticket_id
+    assert body["companions_count"] == 3
+    assert body["status"] == "REJECTED"
+
+
+async def test_ticket_options_reports_selection_and_can_change(
+    client, db, make_event, make_college, make_graduate
+):
+    _event, _college, _grad, access_value = await _verified_graduate(
+        client, make_event, make_college, make_graduate
+    )
+
+    before = await client.get(
+        "/api/graduates/me/ticket-options", headers=_auth(access_value)
+    )
+    assert before.status_code == 200, before.text
+    assert before.json()["selected_companions_count"] is None
+    assert before.json()["can_change"] is True
+
+    ticket_id = await _ticket_with_status(
+        client, db, access_value, TicketStatusEnum.AWAITING_PAYMENT
+    )
+    awaiting = await client.get(
+        "/api/graduates/me/ticket-options", headers=_auth(access_value)
+    )
+    assert awaiting.json()["has_ticket"] is True
+    assert awaiting.json()["selected_companions_count"] == 2
+    assert awaiting.json()["can_change"] is True
+
+    ticket = await db.get(TicketModel, ticket_id)
+    ticket.status = TicketStatusEnum.PROCESSING
+    db.add(ticket)
+    await db.commit()
+    processing = await client.get(
+        "/api/graduates/me/ticket-options", headers=_auth(access_value)
+    )
+    assert processing.json()["selected_companions_count"] == 2
+    assert processing.json()["can_change"] is False
 
 
 async def test_concurrent_double_submit_gives_one_ticket(
-    client, make_event, make_college, make_graduate
+    client, db, make_event, make_college, make_graduate
 ):
-    _event, _college, _grad, access_value = await _verified_graduate(
+    _event, _college, graduate, access_value = await _verified_graduate(
         client, make_event, make_college, make_graduate
     )
 
@@ -198,7 +347,16 @@ async def test_concurrent_double_submit_gives_one_ticket(
         ),
     )
 
-    assert sorted(response.status_code for response in results) == [201, 409]
+    # The loser either sees the winner's ticket (201, same ticket) or hits the
+    # unique constraint (409). Either way only one ticket row exists.
+    codes = sorted(response.status_code for response in results)
+    assert codes in ([201, 201], [201, 409])
+    rows = (
+        await db.execute(
+            select(TicketModel).where(TicketModel.graduate_id == graduate.id)
+        )
+    ).scalars().all()
+    assert len(rows) == 1
 
 
 async def test_price_snapshot_survives_event_price_change(
