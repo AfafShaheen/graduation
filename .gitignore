@@ -35,3 +35,8 @@ deploy/.deploy_cache.json
 # --- Local dev on Windows (local-dev/*.bat) ---
 local-dev/local.env
 back/.venv/
+
+# --- Local test artifacts ---
+dump.rdb
+__pycache__/
+back/storage/

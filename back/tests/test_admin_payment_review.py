@@ -335,6 +335,189 @@ async def test_reject_success_and_graduate_sees_reason(
     assert mine.json()["ticket"]["rejection_reason"] == "رقم العملية غير صحيح"
 
 
+async def _graduate_auth(client, graduate):
+    login = await client.post(
+        "/api/auth/graduate/login",
+        json={"email": graduate.email, _PW_FIELD: _GRAD_PW},
+    )
+    assert login.status_code == 200, login.text
+    return _auth(login.json()["access_token"])
+
+
+async def test_reject_whitespace_and_short_reasons_are_400(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    """Whitespace-only and 2-character reasons must be refused (A1.2)."""
+    _event, _c, _g, ticket, _p = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    for bad in ("   ", "ab"):
+        response = await client.post(
+            f"/api/admin/tickets/{ticket.id}/reject",
+            headers=admin_auth,
+            json={"reason": bad},
+        )
+        assert response.status_code == 400, (bad, response.text)
+        assert response.json()["detail"] == messages.REJECT_REASON_REQUIRED
+
+    await db.refresh(ticket)
+    assert ticket.status == TicketStatusEnum.PROCESSING
+
+
+async def test_reject_boundary_lengths_and_trim(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    """3 and 255 characters pass, 256 fails; the stored reason is trimmed."""
+    _event, _c, _g, ticket, _p = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    # PaymentRejectRequest caps the raw field at 255 characters, so a longer
+    # body is rejected by validation before the service runs.
+    too_long = await client.post(
+        f"/api/admin/tickets/{ticket.id}/reject",
+        headers=admin_auth,
+        json={"reason": "ا" * 256},
+    )
+    assert too_long.status_code == 422, too_long.text
+
+    # 251 trimmed to 253: the longest reason that passes the schema and the
+    # service together (raw body must be <= 255 characters, trimmed >= 3).
+    padded = "  " + "س" * 251 + "  "
+    response = await client.post(
+        f"/api/admin/tickets/{ticket.id}/reject",
+        headers=admin_auth,
+        json={"reason": padded},
+    )
+    assert response.status_code == 200, response.text
+    await db.refresh(ticket)
+    assert ticket.rejection_reason == "س" * 251
+
+    audits = (
+        await db.execute(
+            select(AuditLogModel).where(AuditLogModel.action == "PAYMENT_REJECTED")
+        )
+    ).scalars().all()
+    assert len(audits) == 1
+    assert "س" * 251 in audits[0].details
+
+
+async def test_reject_three_char_reason_passes(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    _event, _c, _g, ticket, _p = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    response = await client.post(
+        f"/api/admin/tickets/{ticket.id}/reject",
+        headers=admin_auth,
+        json={"reason": " abc "},
+    )
+
+    assert response.status_code == 200, response.text
+    await db.refresh(ticket)
+    assert ticket.status == TicketStatusEnum.REJECTED
+    assert ticket.rejection_reason == "abc"
+
+
+async def test_reject_audit_details_contain_reason(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    _event, _c, graduate, ticket, _p = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+    reason = "لم يصلنا إشعار دفع مطابق لهذا الطلب."
+
+    response = await client.post(
+        f"/api/admin/tickets/{ticket.id}/reject",
+        headers=admin_auth,
+        json={"reason": reason},
+    )
+    assert response.status_code == 200, response.text
+
+    audit = (
+        await db.execute(
+            select(AuditLogModel).where(AuditLogModel.action == "PAYMENT_REJECTED")
+        )
+    ).scalar_one()
+    assert reason in audit.details
+    assert str(graduate.id) in audit.details
+
+
+async def test_graduate_sees_exact_reason_then_resubmit_clears_it(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    """End-to-end: reject -> graduate sees REJECTED + exact reason -> resubmit clears it."""
+    _event, _college, graduate, ticket, _payment = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+    reason = "المبلغ المحوَّل لا يطابق سعر الحفل."
+
+    rejected = await client.post(
+        f"/api/admin/tickets/{ticket.id}/reject",
+        headers=admin_auth,
+        json={"reason": reason},
+    )
+    assert rejected.status_code == 200, rejected.text
+
+    grad_auth = await _graduate_auth(client, graduate)
+    mine = await client.get("/api/graduates/me/ticket", headers=grad_auth)
+    assert mine.status_code == 200, mine.text
+    body = mine.json()
+    assert body["ticket"]["status"] == TicketStatusEnum.REJECTED.value
+    assert body["ticket"]["rejection_reason"] == reason
+
+    again = await client.post(
+        "/api/graduates/me/payment",
+        headers=grad_auth,
+        json={
+            "transaction_number": "TXN-RETRY-0001",
+            "amount": 100000,
+            "sender_name": "اسم اختبار",
+        },
+    )
+    assert again.status_code == 201, again.text
+
+    mine_after = await client.get("/api/graduates/me/ticket", headers=grad_auth)
+    after = mine_after.json()["ticket"]
+    assert after["status"] == TicketStatusEnum.PROCESSING.value
+    # The response uses exclude_none, so a cleared reason is simply absent.
+    assert after.get("rejection_reason") is None
+
+
+async def test_reject_non_processing_ticket_returns_409(
+    client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    _event, _c, _g, ticket, _p = await _processing_ticket(
+        db, make_event, make_college, make_graduate, make_ticket, make_payment
+    )
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    first = await client.post(
+        f"/api/admin/tickets/{ticket.id}/reject",
+        headers=admin_auth,
+        json={"reason": "سبب اختبار"},
+    )
+    assert first.status_code == 200, first.text
+
+    second = await client.post(
+        f"/api/admin/tickets/{ticket.id}/reject",
+        headers=admin_auth,
+        json={"reason": "سبب آخر للاختبار"},
+    )
+    assert second.status_code == 409, second.text
+    assert second.json()["detail"] == messages.REQUEST_NOT_PROCESSING
+    await db.refresh(ticket)
+    assert ticket.rejection_reason == "سبب اختبار"
+
+
 async def test_confirm_after_window_ended(
     client, db, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
 ):

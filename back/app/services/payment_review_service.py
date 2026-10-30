@@ -303,7 +303,10 @@ async def reject_payment_service(
         actor_id=admin["admin_id"],
         action="PAYMENT_REJECTED",
         target=f"Ticket ID {ticket_id}",
-        details=f"Rejected payment for graduate ID {ticket.graduate_id}",
+        details=(
+            f"Rejected payment for graduate ID {ticket.graduate_id} "
+            f"(reason: {clean_reason})"
+        ),
         event_id=ticket.event_id,
         graduate_id=ticket.graduate_id,
         ticket_id=ticket_id,
