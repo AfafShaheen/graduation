@@ -1,0 +1,96 @@
+From cc5727a3c82947c10739eb9a8aae37406949cd9e Mon Sep 17 00:00:00 2001
+From: "qwen.ai[bot]" <qwenlm-intl@service.alibaba.com>
+Date: Fri, 30 Oct 2026 19:06:56 +0000
+Subject: [PATCH 1/5] task snapshot 6d517ac4-f48f-4e90-a584-022144922b74
+
+---
+ back/app/services/export_service.py | 10 +++-------
+ back/app/services/seat_service.py   | 31 ++++++-----------------------
+ 2 files changed, 9 insertions(+), 32 deletions(-)
+
+diff --git a/back/app/services/export_service.py b/back/app/services/export_service.py
+index bd62c01..335384a 100644
+--- a/back/app/services/export_service.py
++++ b/back/app/services/export_service.py
+@@ -60,7 +60,6 @@ _HEADERS = (
+     "المعدل",
+     "الترتيب",
+     "مقعد الخريج",
+-    "مقاعد المرافقين",
+     "وقت الحفل",
+     "الاسم",
+     "الكنية",
+@@ -221,12 +220,9 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
+         _number_cell(ws, row_idx, 22, graduate.gpa)
+         _string_cell(ws, row_idx, 23, _format_rank(graduate.top_rank))
+         _string_cell(ws, row_idx, 24, seat["graduate"] if seat else "")
+-        _string_cell(
+-            ws, row_idx, 25, ", ".join(seat["companions"]) if seat else ""
+-        )
+-        _string_cell(ws, row_idx, 26, ev_time)
+-        _string_cell(ws, row_idx, 27, graduate.first_name)
+-        _string_cell(ws, row_idx, 28, graduate.last_name)
++        _string_cell(ws, row_idx, 25, ev_time)
++        _string_cell(ws, row_idx, 26, graduate.first_name)
++        _string_cell(ws, row_idx, 27, graduate.last_name)
+
+     ws.freeze_panes = "A2"
+
+diff --git a/back/app/services/seat_service.py b/back/app/services/seat_service.py
+index edf5cb7..0cf987d 100644
+--- a/back/app/services/seat_service.py
++++ b/back/app/services/seat_service.py
+@@ -2,8 +2,7 @@
+
+ A seat label is an optional event letter plus a sequence number, e.g. ``E-17``
+ or, when the event has no letter, ``17``. Labels are assigned when a payment is
+-confirmed: each ticket reserves ``1 + companions_count`` consecutive numbers in
+-which the graduate takes the first number and the companions follow.
++confirmed: one seat number per graduate; companions have no seat.
+
+ Rules that live here (and only here):
+ - Assignment is idempotent: a ticket that already has a ``seat_start`` keeps it.
+@@ -39,9 +38,7 @@ async def assign_seat_block(db: AsyncSession, ticket: TicketModel) -> None:
+
+     highest = (
+         await db.execute(
+-            select(
+-                func.max(TicketModel.seat_start + TicketModel.companions_count)
+-            ).where(
++            select(func.max(TicketModel.seat_start)).where(
+                 TicketModel.event_id == ticket.event_id,
+                 TicketModel.seat_start.is_not(None),
+             )
+@@ -53,25 +50,9 @@ async def assign_seat_block(db: AsyncSession, ticket: TicketModel) -> None:
+     await db.flush()
+
+
+-def seat_labels(
+-    prefix: str | None, seat_start: int | None, companions_count: int
+-) -> dict | None:
+-    """Build the display labels of a ticket's seat block.
+-
+-    Returns ``None`` when no seat is allocated. Otherwise a dict with the
+-    graduate label, the companion labels in order, and a ``range`` string
+-    (e.g. ``E-17 -> E-19``).
+-    """
+-
+-    def label(number: int) -> str:
+-        return f"{prefix}-{number}" if prefix else str(number)
+-
++def seat_labels(prefix, seat_start, companions_count=0):
++    """Seat label of the GRADUATE only (companions have no seats)."""
+     if seat_start is None:
+         return None
+-
+-    graduate = label(seat_start)
+-    companions = [
+-        label(seat_start + offset) for offset in range(1, companions_count + 1)
+-    ]
+-    range_text = f"{graduate} \u2192 {companions[-1]}" if companions else graduate
+-    return {"graduate": graduate, "companions": companions, "range": range_text}
++    graduate = f"{prefix}-{seat_start}" if prefix else str(seat_start)
++    return {"graduate": graduate, "companions": [], "range": graduate}
+--
+2.39.5
+

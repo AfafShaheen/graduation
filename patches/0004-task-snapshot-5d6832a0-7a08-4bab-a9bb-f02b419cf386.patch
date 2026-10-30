@@ -1,0 +1,57 @@
+From 2b1f61b24f63a75ff037126cc8bcb267e858ab5e Mon Sep 17 00:00:00 2001
+From: "qwen.ai[bot]" <qwenlm-intl@service.alibaba.com>
+Date: Fri, 30 Oct 2026 19:58:03 +0000
+Subject: [PATCH 4/5] task snapshot 5d6832a0-7a08-4bab-a9bb-f02b419cf386
+
+---
+ back/tests/contract/openapi_baseline.json | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/back/tests/contract/openapi_baseline.json b/back/tests/contract/openapi_baseline.json
+index 1280b17..4a86089 100644
+--- a/back/tests/contract/openapi_baseline.json
++++ b/back/tests/contract/openapi_baseline.json
+@@ -280,7 +280,7 @@
+       "Body_update_shamcash_qr_api_admin_settings_shamcash_qr_put": {
+         "properties": {
+           "file": {
+-            "format": "binary",
++            "contentMediaType": "application/octet-stream",
+             "title": "File",
+             "type": "string"
+           }
+@@ -305,7 +305,7 @@
+             "title": "Event Id"
+           },
+           "file": {
+-            "format": "binary",
++            "contentMediaType": "application/octet-stream",
+             "title": "File",
+             "type": "string"
+           }
+@@ -319,7 +319,7 @@
+       "Body_upload_records_api_admin_events__event_id__university_records_post": {
+         "properties": {
+           "file": {
+-            "format": "binary",
++            "contentMediaType": "application/octet-stream",
+             "title": "File",
+             "type": "string"
+           }
+@@ -2985,6 +2985,13 @@
+       },
+       "ValidationError": {
+         "properties": {
++          "ctx": {
++            "title": "Context",
++            "type": "object"
++          },
++          "input": {
++            "title": "Input"
++          },
+           "loc": {
+             "items": {
+               "anyOf": [
+--
+2.39.5
+
