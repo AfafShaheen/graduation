@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import '../../style/GraduationForm.css';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
@@ -261,6 +262,10 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               <p className="card-subtitle">سجّل بياناتك لتأكيد حجز مقعدك وتذكرتك الرقمية</p>
             </div>
           </div>
+
+          <p style={{ margin: '0 0 12px', textAlign: 'center' }}>
+            <Link to="/guide/start">📘 اقرأ إرشادات التسجيل قبل البدء</Link>
+          </p>
 
           <form onSubmit={handleNextStep} noValidate>
             {/* الاسم والكنية */}

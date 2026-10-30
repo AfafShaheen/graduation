@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import '../../style/OrderStatus.css';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
@@ -187,6 +187,10 @@ export default function OrderStatus() {
                   </>
                 )}
               </section>
+
+              <p style={{ textAlign: 'center', margin: '0 0 12px' }}>
+                <Link to="/guide/ticket">ماذا بعد تأكيد الدفع؟</Link>
+              </p>
 
               <div className="os-reassurance-bar">
                 <span className="os-symbol" style={{ color: '#ca4b00', fontSize: '19px', flexShrink: 0 }}>

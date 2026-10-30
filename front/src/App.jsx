@@ -253,6 +253,7 @@ function App() {
           element={
             hasValidGraduate || PREVIEW ? (
               <GraduateGuide
+                phase="registered"
                 onContinue={({ dontShowAgain }) => {
                   if (dontShowAgain) saveSkipGuide();
                   navigate("/tickets", { replace: true });
@@ -591,6 +592,21 @@ function App() {
 
         {/* اختصار: /dashboard يودّي للوحة الإدارة */}
         <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+
+        <Route
+          path="/guide/start"
+          element={<GraduateGuide phase="before" onContinue={() => navigate("/")} />}
+        />
+        <Route
+          path="/guide/ticket"
+          element={
+            hasValidGraduate || PREVIEW ? (
+              <GraduateGuide phase="paid" onBack={() => navigate("/my-ticket")} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
