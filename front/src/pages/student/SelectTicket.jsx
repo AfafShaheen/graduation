@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/SelectTicket.css';
+import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { getTicketOptions, selectTicket } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 /* صيغة العدد بالعربي: 1 مرافق، 2 مرافقان، 3-10 مرافقين، 11+ مرافقاً */
 const companionsText = (n) => {
@@ -126,7 +129,7 @@ export default function SelectTicket({ onBack }) {
               </span>
             </button>
 
-            <h1 className="st-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="st-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="st-icon-btn static">
               <img className="st-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -135,7 +138,7 @@ export default function SelectTicket({ onBack }) {
 
           <div className="st-header-subband">
             <span className="st-subband-title">اختيار التذكرة</span>
-            <span className="st-badge-batch">دفعة 2026</span>
+            <span className="st-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -145,7 +148,7 @@ export default function SelectTicket({ onBack }) {
               <div className="st-hero-tag">
                 <span className="st-dot"></span>
                 <span className="st-tag-text">
-                  {data?.event?.name || 'جامعة حمص • دفعة 2026'}
+                  {data?.event?.name || CEREMONY_TITLE}
                 </span>
               </div>
               <h2 className="st-hero-headline">حدّد باقة الحضور المناسبة لك ولعائلتك</h2>
@@ -269,6 +272,7 @@ export default function SelectTicket({ onBack }) {
         </main>
 
         <div className="st-bottom-dock">
+          <HelpFooter />
           <button
             className="st-action-btn"
             type="button"

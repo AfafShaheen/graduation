@@ -11,6 +11,11 @@ import {
   deleteShamcashQr,
 } from './hooks/useAdminSettings.js';
 import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
+import {
+  validateShamCashAccount,
+  validateReceiverName,
+  validateSupportPhone,
+} from '../../utils/validators.js';
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-US');
 
@@ -118,6 +123,48 @@ export default function AdminPaymentRequests({
   const [qrPreview, setQrPreview] = useState('');
   const [qrUploading, setQrUploading] = useState(false);
   const qrInputRef = useRef(null);
+  // B5.1: أخطاء الحقول الميدانية في تبويب الإعدادات (نفس رسائل الخلفية)
+  const [settingsFieldErrors, setSettingsFieldErrors] = useState({
+    shamcash_receiver_name: '',
+    shamcash_account_number: '',
+    contact_phone: '',
+  });
+
+  const validateSettingsFields = () => {
+    return {
+      shamcash_receiver_name: validateReceiverName(beneficiaryName),
+      shamcash_account_number: validateShamCashAccount(shamCashAccount),
+      contact_phone: validateSupportPhone(supportPhone),
+    };
+  };
+
+  // تحويل أخطاء 422 القادمة من الخلفية إلى رسالة الحقل الصحيح
+  // (client.js يملأ err.fieldErrors من مصفوفة detail في FastAPI)
+  const mapBackendFieldErrors = (err) => {
+    const out = {
+      shamcash_receiver_name: '',
+      shamcash_account_number: '',
+      contact_phone: '',
+    };
+    const src = err?.fieldErrors;
+    if (src && typeof src === 'object') {
+      for (const field of Object.keys(out)) {
+        if (src[field]) out[field] = String(src[field]);
+      }
+    }
+    return out;
+  };
+
+  // رسائل pydantic تأتي على شكل "Value error، <رسالتنا العربية>" — تُنظَّف للعرض
+  // Note: FastAPI/pydantic v2 uses a regular comma; the Arabic comma is accepted too.
+  const stripPydanticPrefix = (msg) =>
+    String(msg).replace(/^Value error[,\u060C]?\s*/i, '').trim();
+
+  const cleanMappedErrors = (mapped) => {
+    const out = {};
+    for (const [k, v] of Object.entries(mapped)) out[k] = stripPydanticPrefix(v);
+    return out;
+  };
 
   // علامة تعديل يدوي: تمنع إعادة تهيئة حقول نموذج الدفع عند أي تحديث للإعدادات
   // (مثل بعد رفع صورة QR، إذ يُعاد جلب الإعدادات وتُمسح ما كتبه المشرف).
@@ -150,23 +197,31 @@ export default function AdminPaymentRequests({
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     setSettingsActionError('');
-    const trimmedAccount = shamCashAccount.trim();
-    if (trimmedAccount !== '' && !/^[A-Za-z0-9-]{4,100}$/.test(trimmedAccount)) {
-      setSettingsActionError('رقم حساب شام كاش يجب أن يتكون من أحرف إنجليزية وأرقام بدون مسافات (4 خانات على الأقل)');
-      return;
-    }
+    // B5.1: منع الحفظ ما دام هناك خطأ ميداني في المتصفح (نفس رسائل الخلفية)
+    const fieldErrors = validateSettingsFields();
+    setSettingsFieldErrors(fieldErrors);
+    if (Object.values(fieldErrors).some(Boolean)) return;
     try {
       setSavingSettings(true);
       await updateAdminSettings({
-        shamcash_receiver_name: beneficiaryName,
-        shamcash_account_number: trimmedAccount,
-        contact_phone: supportPhone,
+        shamcash_receiver_name: beneficiaryName.trim(),
+        shamcash_account_number: shamCashAccount.trim(),
+        contact_phone: supportPhone.trim(),
       });
       setSettingsNotice('تم حفظ إعدادات الدفع بنجاح');
       settingsDirtyRef.current = false;
       await refetchSettings();
     } catch (err) {
-      setSettingsActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
+      if (err instanceof ApiError && err.status === 422) {
+        const mapped = cleanMappedErrors(mapBackendFieldErrors(err));
+        if (Object.values(mapped).some(Boolean)) {
+          setSettingsFieldErrors(mapped);
+        } else {
+          setSettingsActionError(err.message);
+        }
+      } else {
+        setSettingsActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
+      }
     } finally {
       setSavingSettings(false);
     }
@@ -690,7 +745,7 @@ export default function AdminPaymentRequests({
                 {settingsError && <div className="scan-set-empty" role="alert">{settingsError}</div>}
                 {settingsLoading && <div className="scan-set-empty">جارٍ التحميل...</div>}
 
-                <form className="scan-set-form-stack" onSubmit={handleSaveSettings}>
+                <form className="scan-set-form-stack" onSubmit={handleSaveSettings} noValidate>
                   <div className="scan-set-field">
                     <label className="scan-set-label" htmlFor="beneficiary">اسم المستلم الرسمي (الجهة المستفيدة)</label>
                     <div className="scan-set-input-wrap">
@@ -702,12 +757,20 @@ export default function AdminPaymentRequests({
                         onChange={(e) => {
                           settingsDirtyRef.current = true;
                           setBeneficiaryName(e.target.value);
+                          if (settingsFieldErrors.shamcash_receiver_name) {
+                            setSettingsFieldErrors((p) => ({ ...p, shamcash_receiver_name: '' }));
+                          }
                         }}
+                        aria-invalid={!!settingsFieldErrors.shamcash_receiver_name}
                         required
                       />
                       <span className="scan-set-symbol scan-set-input-icon right">account_balance</span>
                     </div>
-                    <p className="scan-set-hint">الاسم الذي يظهر للطلاب عند تأكيد عملية تسديد رسوم التخرج.</p>
+                    {settingsFieldErrors.shamcash_receiver_name ? (
+                      <p className="scan-set-field-error" role="alert">{settingsFieldErrors.shamcash_receiver_name}</p>
+                    ) : (
+                      <p className="scan-set-hint">الاسم الذي يظهر للطلاب عند تأكيد عملية تسديد رسوم التخرج.</p>
+                    )}
                   </div>
 
                   <div className="scan-set-field">
@@ -722,7 +785,11 @@ export default function AdminPaymentRequests({
                         onChange={(e) => {
                           settingsDirtyRef.current = true;
                           setShamCashAccount(e.target.value);
+                          if (settingsFieldErrors.shamcash_account_number) {
+                            setSettingsFieldErrors((p) => ({ ...p, shamcash_account_number: '' }));
+                          }
                         }}
+                        aria-invalid={!!settingsFieldErrors.shamcash_account_number}
                         placeholder="مثال: a1b2c3d4e5"
                         autoComplete="off"
                         spellCheck={false}
@@ -730,7 +797,11 @@ export default function AdminPaymentRequests({
                       />
                       <span className="scan-set-symbol scan-set-input-icon left">wallet</span>
                     </div>
-                    <p className="scan-set-hint">رقم المحفظة كما يظهر في تطبيق شام كاش. ليس رقم الهاتف.</p>
+                    {settingsFieldErrors.shamcash_account_number ? (
+                      <p className="scan-set-field-error" role="alert">{settingsFieldErrors.shamcash_account_number}</p>
+                    ) : (
+                      <p className="scan-set-hint">رقم المحفظة كما يظهر في تطبيق شام كاش. ليس رقم الهاتف.</p>
+                    )}
                   </div>
 
                   <div className="scan-set-field">
@@ -745,16 +816,28 @@ export default function AdminPaymentRequests({
                         onChange={(e) => {
                           settingsDirtyRef.current = true;
                           setSupportPhone(e.target.value);
+                          if (settingsFieldErrors.contact_phone) {
+                            setSettingsFieldErrors((p) => ({ ...p, contact_phone: '' }));
+                          }
                         }}
+                        aria-invalid={!!settingsFieldErrors.contact_phone}
                         required
                       />
                       <span className="scan-set-symbol scan-set-input-icon left">phone_in_talk</span>
                     </div>
-                    <p className="scan-set-hint">يظهر للخريجين في صفحات الموقع للتواصل.</p>
+                    {settingsFieldErrors.contact_phone ? (
+                      <p className="scan-set-field-error" role="alert">{settingsFieldErrors.contact_phone}</p>
+                    ) : (
+                      <p className="scan-set-hint">يظهر للخريجين في صفحات الموقع للتواصل.</p>
+                    )}
                   </div>
 
                   <div className="scan-set-form-actions">
-                    <button type="submit" className="scan-set-btn-primary" disabled={savingSettings}>
+                    <button
+                      type="submit"
+                      className="scan-set-btn-primary"
+                      disabled={savingSettings || Object.values(settingsFieldErrors).some(Boolean)}
+                    >
                       <span className="scan-set-symbol" style={{ fontSize: '18px' }}>check</span>
                       <span>{savingSettings ? 'جارٍ الحفظ...' : 'حفظ التعديلات والإعدادات'}</span>
                     </button>

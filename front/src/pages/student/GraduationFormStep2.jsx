@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import "../../style/GraduationForm.css";
+import '../../style/BrandHeader.css';
 import universityLogo from "../../assets/homs-university-white.png";
 import unionLogo from "../../assets/only-logo.png";
 import useFormDraft from "../../hooks/useFormDraft";
 import { registerStep2 } from "../../api/graduate";
 import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegistrationToken } from "../../api/session";
 import { phoneError, passwordError } from "../../utils/validators";
-import ContactPhoneLink from "../../components/ContactPhoneLink";
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -152,7 +154,7 @@ export default function GraduationFormStep2({
             >
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>
-            <h1 className="header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="header-title">{CEREMONY_TITLE}</h1>
             <div className="icon-btn">
               <img
                 className="header-logo"
@@ -163,7 +165,7 @@ export default function GraduationFormStep2({
           </div>
           <div className="header-subband">
             <span className="subband-title">إنشاء حساب</span>
-            <span className="badge-batch">دفعة 2026</span>
+            <span className="badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -191,7 +193,7 @@ export default function GraduationFormStep2({
             </div>
             <div>
               <h2 className="card-title">بيانات الدخول والأمان</h2>
-              <p className="card-subtitle">حفل تخرج الدفعة 44 — جامعة حمص</p>
+              <p className="card-subtitle">{CEREMONY_TITLE}</p>
             </div>
           </div>
 
@@ -243,7 +245,6 @@ export default function GraduationFormStep2({
                   placeholder="09xxxxxxxx"
                   style={{
                     paddingRight: "40px",
-                    paddingLeft: "56px",
                     textAlign: "left",
                   }}
                   value={formData.phone}
@@ -255,21 +256,6 @@ export default function GraduationFormStep2({
                   style={{ left: "auto", right: "12px" }}
                 >
                   phone_iphone
-                </span>
-                <span
-                  style={{
-                    position: "absolute",
-                    left: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    fontSize: "13px",
-                    fontWeight: "bold",
-                    color: "#725b51",
-                    borderRight: "1px solid #e2bfb2",
-                    paddingRight: "8px",
-                  }}
-                >
-                  +963
                 </span>
               </div>
               <FieldError message={errors.phone} />
@@ -422,10 +408,10 @@ export default function GraduationFormStep2({
             padding: "8px 16px",
           }}
         >
-          <ContactPhoneLink style={{ margin: "0 0 6px", fontSize: "13px" }} />
+          <HelpFooter />
 
           <p className="footer-copy">
-            جامعة حمص — حمص • فرع الاتحاد الوطني لطلبة سورية
+            {CEREMONY_TITLE}
           </p>
           <p
             style={{ fontSize: "10px", color: "#8d7166", margin: "2px 0 0 0" }}

@@ -70,10 +70,12 @@ class PaymentSubmitRequest(BaseModel):
     @field_validator("transaction_number")
     @classmethod
     def _normalize_transaction_number(cls, value: str) -> str:
-        normalized = (value or "").strip().upper()
-        if not re.fullmatch(r"[A-Z0-9-]{4,100}", normalized):
+        # D4: store the number EXACTLY as typed; only surrounding spaces are
+        # trimmed and the case is kept. Allowed characters stay A-Z a-z 0-9 -.
+        cleaned = (value or "").strip()
+        if not re.fullmatch(r"[A-Za-z0-9-]{4,100}", cleaned):
             raise ValueError("رقم العملية غير صالح")
-        return normalized
+        return cleaned
 
     @field_validator("amount")
     @classmethod

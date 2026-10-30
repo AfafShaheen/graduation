@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import '../../style/GraduationForm.css';
 import '../../style/GraduateGuide.css';
+import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import useContactPhone from '../../hooks/useContactPhone';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 /* ==========================================================================
    دليل التذكرة: صفحة إرشادات بتظهر بعد تسجيل الدخول وقبل اختيار التذكرة
@@ -113,14 +116,14 @@ export default function GraduateGuide({ onContinue, supportPhone = '' }) {
         <header className="header-main">
           <div className="header-top">
             <div className="icon-btn" aria-hidden="true"></div>
-            <h1 className="header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="header-title">{CEREMONY_TITLE}</h1>
             <div className="icon-btn">
               <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
             </div>
           </div>
           <div className="header-subband">
             <span className="subband-title">دليل التذكرة</span>
-            <span className="badge-batch">دفعة 2026</span>
+            <span className="badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -217,24 +220,8 @@ export default function GraduateGuide({ onContinue, supportPhone = '' }) {
           {/* الختام */}
           <section className="guide-closing">
             <span className="material-symbols-outlined">support_agent</span>
-            <p>
-              لأي استفسار تواصل مع اتحاد الطلبة.
-              {contactPhone ? (
-                <>
-                  <br />
-                  للطوارئ والاستفسار:{' '}
-                  <a
-                    href={`tel:${contactPhone.replace(/\s+/g, '')}`}
-                    dir="ltr"
-                    style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 700 }}
-                  >
-                    {contactPhone}
-                  </a>
-                </>
-              ) : null}
-              <br />
-              نتمنى لك حفلاً لا يُنسى! 🎓
-            </p>
+            <HelpFooter phone={contactPhone} />
+            <p>نتمنى لك حفلاً لا يُنسى! 🎓</p>
           </section>
         </div>
 

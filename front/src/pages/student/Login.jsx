@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import '../../style/Login.css';
+import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { loginGraduate } from '../../api/graduate';
 import { setGraduateSession, setVerificationToken, setGraduateEmail } from '../../api/session';
 import { extractVerificationToken } from '../../utils/extractVerificationToken.js';
-import ContactPhoneLink from '../../components/ContactPhoneLink';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import HelpFooter from '../../components/HelpFooter';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -150,7 +152,7 @@ export default function Login({
               <span className="lg-symbol">arrow_forward</span>
             </button>
 
-            <h1 className="lg-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="lg-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="lg-icon-btn static">
               <img className="lg-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -159,7 +161,7 @@ export default function Login({
 
           <div className="lg-header-subband">
             <span className="lg-subband-title">تسجيل الدخول</span>
-            <span className="lg-badge-batch">دفعة 2026</span>
+            <span className="lg-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 
@@ -295,8 +297,8 @@ export default function Login({
 
           {/* تذييل الصفحة */}
           <footer className="lg-footer">
-            <ContactPhoneLink style={{ margin: '0 0 8px', fontWeight: 600 }} />
-            <p className="lg-footer-org">جامعة حمص • فرع حمص لاتحاد الطلبة</p>
+            <HelpFooter />
+            <p className="lg-footer-org">{CEREMONY_TITLE}</p>
             <p className="lg-footer-copy">منظومة الحجز والتحقق الإلكتروني لتذاكر التخرج © 2026</p>
           </footer>
         </div>

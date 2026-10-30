@@ -334,31 +334,6 @@
   line-height: 1.4;
 }
 
-/* تذكرني */
-.ad-remember-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.ad-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 13px;
-  color: #594138;
-  user-select: none;
-}
-
-.ad-checkbox {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  accent-color: #124d44;
-  cursor: pointer;
-}
-
 /* زر الدخول */
 .ad-submit-btn {
   width: 100%;

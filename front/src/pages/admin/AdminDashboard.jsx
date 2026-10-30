@@ -51,7 +51,6 @@ export default function AdminDashboard({
   onNavigate,
 }) {
   const [eventId, setEventId] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [navOpen, setNavOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [hiddenCols, setHiddenCols] = useState([]);
@@ -118,7 +117,6 @@ export default function AdminDashboard({
 
   // صفوف سجل التدقيق: آخر عمليات الدفع للحفل المحدد
   const reviewRows = useMemo(() => {
-    const q = searchQuery.trim();
     return payments
       .map((p) => ({
         ticketId: p.ticket_id,
@@ -127,9 +125,8 @@ export default function AdminDashboard({
         college: p.graduate?.college_name || '—',
         ticketType: p.companions_count != null ? companionsLabel(p.companions_count) : '—',
         status: PAY_STATUS_UI[p.status] || 'review',
-      }))
-      .filter((r) => !q || r.name.includes(q) || String(r.uniId).includes(q));
-  }, [payments, searchQuery]);
+      }));
+  }, [payments]);
 
   const totalPages = Math.max(1, Math.ceil(reviewRows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -143,11 +140,6 @@ export default function AdminDashboard({
   const goToPage = (n) => {
     if (n < 1 || n > totalPages || n === currentPage) return;
     setPage(n);
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setPage(1);
   };
 
   // تصدير أسماء الخريجين المسجّلين (كل الأسماء أو حسب الحفل المختار) إلى Excel
@@ -198,23 +190,6 @@ export default function AdminDashboard({
           <h2>تذاكر حفل التخرج — لوحة الإدارة</h2>
           <span>جامعة حمص</span>
         </div>
-
-        <form className="adm-search-form" onSubmit={handleSearch} role="search">
-          <input
-            type="text"
-            autoComplete="off"
-            className="adm-search-input"
-            placeholder="بحث عن اسم أو رقم جامعي..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-          />
-          <span className="adm-symbol adm-search-icon" style={{ fontSize: '18px' }}>
-            search
-          </span>
-        </form>
       </header>
 
       {/* محتوى اللوحة */}

@@ -1,0 +1,25 @@
+/* ==========================================================================
+   HelpFooter.css — كتلة المساعدة الموحدة على صفحات الخريجين (D8)
+   نفس مظهر سطر الطوارئ السابق: توسيط، خط صغير، لون ثانوي.
+   ========================================================================== */
+
+.help-footer {
+  margin: 8px 0;
+  text-align: center;
+  font-size: 13px;
+  color: inherit;
+}
+
+.help-footer-question {
+  margin: 0 0 4px;
+}
+
+.help-footer-emergency {
+  margin: 0;
+}
+
+.help-footer-phone {
+  color: inherit;
+  text-decoration: underline;
+  font-weight: 600;
+}

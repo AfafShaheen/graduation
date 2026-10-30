@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../../style/ScanSuccessResult.css';
+import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
+import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 const PREVIEW_RESULT = {
   message: "معاينة ناجحة",
@@ -58,7 +60,7 @@ export default function ScanSuccessResult({
               </span>
             </button>
 
-            <h1 className="scan-res-header-title">حفل تخرج جامعة حمص</h1>
+            <h1 className="scan-res-header-title">{CEREMONY_TITLE}</h1>
 
             <div className="scan-res-icon-slot">
               <img className="scan-res-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -70,7 +72,7 @@ export default function ScanSuccessResult({
               <span className="scan-res-symbol" style={{ fontSize: '18px' }}>qr_code_scanner</span>
               ماسح التذاكر
             </span>
-            <span className="scan-res-badge-batch">دفعة 2026</span>
+            <span className="scan-res-badge-batch">{BATCH_BADGE}</span>
           </div>
         </header>
 

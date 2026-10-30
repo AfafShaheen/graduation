@@ -9,6 +9,7 @@ import ScanSuccessResult from './ScanSuccessResult';
 import ScanErrorResult from './ScanErrorResult';
 import WrongCeremoniesWarning from './WrongCeremoniesWarning';
 import { eventTitle, formatEventDate } from '../../utils/eventLabel';
+import { CEREMONY_TITLE } from '../../config/brand';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -509,12 +510,12 @@ export default function ScannerCamera({ onLogout }) {
             </button>
           </div>
 
-          <p className="scan-cam-supervisor">{eventInfo?.name ? `حفل تخرج جامعة حمص — ${eventName}` : 'بوابة المسح الميداني'}</p>
+          <p className="scan-cam-supervisor">{eventInfo?.name ? `${CEREMONY_TITLE} — ${eventName}` : 'بوابة المسح الميداني'}</p>
         </footer>
 
         {/* Result Overlay Sheet */}
         {activeResult && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 40, background: activeResult.type === 'error' ? '#b3261e' : 'var(--sc-cream)' }}>
+          <div className={`scan-cam-result-overlay scan-cam-result-overlay--${activeResult.type}`}>
             {activeResult.type === 'success' && (
               <ScanSuccessResult
                 result={activeResult.result}

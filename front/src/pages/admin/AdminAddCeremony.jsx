@@ -5,6 +5,7 @@ import { createAdminEvent, updateAdminEvent } from './hooks/useAdminEvents.js';
 import { ApiError, listColleges, listUniversityFiles, linkUniversityFile, adminBlob, downloadBlob } from '../../api/admin.js';
 import useFormDraft from '../../hooks/useFormDraft';
 import CollegeCatalogField from '../../components/CollegeCatalogField';
+import { BATCH_BADGE } from '../../config/brand';
 
 /* مفاتيح مسودة نموذج الحفل الجديد (localStorage) */
 const CEREMONY_DRAFT_KEYS = [
@@ -572,7 +573,7 @@ export default function AdminAddCeremony({
                   className="add-cer-input with-icon-left"
                   value={ceremonyName}
                   onChange={(e) => setCeremonyName(e.target.value)}
-                  placeholder="مثال: حفل كليات الهندسة — الدفعة 44"
+                  placeholder={`مثال: حفل كليات الهندسة — ${BATCH_BADGE}`}
                   required
                 />
                 <span className="add-cer-symbol add-cer-input-icon left">edit_note</span>

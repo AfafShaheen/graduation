@@ -18,7 +18,7 @@ Business rules that live here (and only here):
 
 from datetime import UTC, datetime
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -223,7 +223,11 @@ async def submit_payment_service(
     existing_payment = (
         await db.execute(
             select(PaymentModel).where(
-                PaymentModel.transaction_number == data.transaction_number
+                # D4: uniqueness is global but case-insensitive; abc-1 and
+                # ABC-1 are the same number even though the text is stored
+                # exactly as typed.
+                func.upper(PaymentModel.transaction_number)
+                == data.transaction_number.upper()
             )
         )
     ).scalar_one_or_none()
@@ -235,7 +239,9 @@ async def submit_payment_service(
         )
 
     if existing_payment is not None:
-        # Same number, same ticket: refresh the row instead of inserting (D16).
+        # Same number (ignoring case), same ticket: refresh the row instead of
+        # inserting (D16) and store the text exactly as just typed (D4).
+        existing_payment.transaction_number = data.transaction_number
         existing_payment.amount = data.amount
         existing_payment.sender_name = data.sender_name
         existing_payment.reviewed_at = None

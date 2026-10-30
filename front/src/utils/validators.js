@@ -55,3 +55,43 @@ export function passwordError(value) {
   if (!value) return "يرجى إدخال كلمة السر";
   return isValidPassword(value) ? "" : PASSWORD_POLICY_MESSAGE;
 }
+
+/* ===== مدقّقات إعدادات الإدارة (B5.1) — مطابقة حرفية لرسائل الخلفية A1 ===== */
+/* المرجع: back/app/schemas/settings_admin.py + back/app/core/messages.py   */
+
+export const SETTINGS_ACCOUNT_INVALID =
+  "رقم الحساب يقبل أحرفاً وأرقاماً إنجليزية وشرطة (-) فقط (من 4 إلى 100 خانة) بدون مسافات";
+export const SETTINGS_RECEIVER_INVALID =
+  "اسم المستفيد يقبل حروفاً عربية أو إنجليزية ومسافات فقط (من حرفين إلى 200)";
+export const SETTINGS_PHONE_INVALID =
+  "رقم الهاتف يجب أن يتكون من أرقام فقط (من 7 إلى 15 رقماً) ويمكن أن يبدأ بعلامة +";
+
+// D1: حروف لاتينية وأرقام فقط، بلا مسافات أو رموز، 4 إلى 100.
+const ACCOUNT_REGEX = /^[A-Za-z0-9-]{4,100}$/;
+// D2: حروف عربية/لاتينية ومسافات و . - ' فقط، بلا أرقام، 2 إلى 200 بعد trim.
+const RECEIVER_REGEX = /^[\u0600-\u06FFa-zA-Z .'-]{2,200}$/;
+
+/**
+ * @param {string|null|undefined} value
+ * @returns {string} نص الخطأ بالعربية، أو '' إذا القيمة صالحة أو فارغة (فارغ = مسح الإعداد)
+ */
+export function validateShamCashAccount(value) {
+  const v = String(value ?? "").trim();
+  if (!v) return ""; // الفراغ يعني "امسح الحقل" كما في الخلفية
+  if (!ACCOUNT_REGEX.test(v)) return SETTINGS_ACCOUNT_INVALID;
+  return "";
+}
+
+export function validateReceiverName(value) {
+  const v = String(value ?? "").trim();
+  if (!v) return "";
+  if (!RECEIVER_REGEX.test(v)) return SETTINGS_RECEIVER_INVALID;
+  return "";
+}
+
+export function validateSupportPhone(value) {
+  const v = String(value ?? "").trim();
+  if (!v) return "";
+  if (!PHONE_REGEX.test(v)) return SETTINGS_PHONE_INVALID;
+  return "";
+}

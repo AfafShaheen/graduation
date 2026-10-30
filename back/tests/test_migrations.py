@@ -440,3 +440,69 @@ async def test_seat_positive_check_enforced(
         )
         await db.commit()
     await db.rollback()
+
+
+# --- 0013: case-insensitive unique transaction number (D4) ------------------
+
+
+def _payments_schema():
+    url = make_url(os.environ["DATABASE_URL"]).set(drivername="postgresql")
+    conn = psycopg2.connect(url.render_as_string(hide_password=False))
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT conname FROM pg_constraint "
+                "WHERE conrelid = 'payments'::regclass"
+            )
+            constraints = {row[0] for row in cur.fetchall()}
+            cur.execute(
+                "SELECT indexname FROM pg_indexes WHERE tablename = 'payments'"
+            )
+            indexes = {row[0] for row in cur.fetchall()}
+    finally:
+        conn.close()
+    return constraints, indexes
+
+
+def test_transaction_ci_migration_applies_expected_schema():
+    constraints, indexes = _payments_schema()
+
+    assert "unique_transaction_number" not in constraints
+    assert "uq_payments_transaction_number_ci" in indexes
+    # The plain column index stays (task A2.2).
+    assert "idx_payments_transaction_number" in indexes
+
+
+def test_transaction_ci_migration_round_trip():
+    _alembic("downgrade", "0012_university_record_file")
+    try:
+        constraints, indexes = _payments_schema()
+        assert "unique_transaction_number" in constraints
+        assert "uq_payments_transaction_number_ci" not in indexes
+    finally:
+        _alembic("upgrade", "head")
+
+    constraints, indexes = _payments_schema()
+    assert "unique_transaction_number" not in constraints
+    assert "uq_payments_transaction_number_ci" in indexes
+
+
+async def test_transaction_ci_unique_index_enforced_by_database(
+    make_event, make_college, make_graduate, make_ticket, make_payment, db
+):
+    """A2.5: two rows differing only by case are rejected by PostgreSQL itself."""
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+
+    event = await make_event()
+    college = await make_college(event.id)
+    first = await make_graduate(college.id, university_id="930001")
+    second = await make_graduate(college.id, university_id="930002")
+    first_ticket = await make_ticket(first.id, event.id)
+    second_ticket = await make_ticket(second.id, event.id)
+
+    await make_payment(first_ticket.id, transaction_number="ab-1")
+
+    with pytest.raises(IntegrityError):
+        await make_payment(second_ticket.id, transaction_number="AB-1")
+    await db.rollback()
