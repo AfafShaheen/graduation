@@ -315,7 +315,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               <label className="form-label">
                 الجنس <span className="required-star">*</span>
               </label>
-              <div className="gender-grid">
+              <div className="input-wrapper">
                 <select
                   name="gender"
                   className={`form-select select-with-icon ${errors.gender ? 'error' : ''}`}
