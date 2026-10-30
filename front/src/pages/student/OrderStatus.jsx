@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../style/OrderStatus.css';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
@@ -7,6 +8,7 @@ import useMyTicket from '../../hooks/useMyTicket';
 import { companionsLabel } from '../../utils/companions';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import { routeForTicket, ORDER_POLL_MS } from '../../utils/ticketRoute';
 
 /* تنسيق التاريخ والوقت بالعربية مع أرقام إنجليزية */
 const formatDate = (value) => {
@@ -20,17 +22,35 @@ const formatDate = (value) => {
 };
 
 export default function OrderStatus() {
-  const { data, loading, error, reload } = useMyTicket();
+  const { data, loading, error, reload, refresh } = useMyTicket();
+  const navigate = useNavigate();
   const ticket = data?.ticket;
   const event = data?.event;
 
-  // تحديث دوري كل 60 ثانية أثناء ظهور الصفحة
+  // تحديث تلقائي بصمت كل 15 ثانية أثناء ظهور الصفحة، وفوراً عند العودة للتبويب
+  // أو رجوع الاتصال، حتى يظهر قبول الأدمن أو رفضه بدون ما يضغط الخريج شي.
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (document.visibilityState === 'visible') reload();
-    }, 60000);
-    return () => clearInterval(timer);
-  }, [reload]);
+    const tick = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    const timer = setInterval(tick, ORDER_POLL_MS);
+    document.addEventListener('visibilitychange', tick);
+    window.addEventListener('focus', tick);
+    window.addEventListener('online', tick);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', tick);
+      window.removeEventListener('focus', tick);
+      window.removeEventListener('online', tick);
+    };
+  }, [refresh]);
+
+  // لما تتغير حالة الطلب (قُبل أو رُفض) ننقل الخريج تلقائياً للصفحة المناسبة
+  useEffect(() => {
+    if (!data) return;
+    const target = routeForTicket(data);
+    if (target !== '/payment-submitted') navigate(target, { replace: true });
+  }, [data, navigate]);
 
   const amountText = ticket?.price != null
     ? `${Number(ticket.price).toLocaleString('en-US')} ل.س`

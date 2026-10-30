@@ -1,26 +1,12 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { getGraduateToken, isGraduateTokenExpired } from "../api/session";
+import { hasGraduateSession } from "../api/session";
+import { routeForTicket } from "../utils/ticketRoute";
 import useMyTicket from "../hooks/useMyTicket";
 
-/* المسار الصحيح الذي يجب أن يكون فيه الخريج حسب حالة تذكرته */
-export function routeForTicket(data) {
-  if (!data || !data.has_ticket) return "/tickets";
-  switch (data.ticket?.status) {
-    case "AWAITING_PAYMENT":
-      return "/payment";
-    case "PROCESSING":
-      return "/payment-submitted";
-    case "REJECTED":
-      return "/payment-rejected";
-    case "CONFIRMED":
-      return "/my-ticket";
-    default:
-      return "/tickets";
-  }
-}
+export { routeForTicket };
 
 export function hasValidGraduateSession() {
-  return !!getGraduateToken() && !isGraduateTokenExpired();
+  return hasGraduateSession();
 }
 
 /*

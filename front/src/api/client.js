@@ -1,3 +1,5 @@
+import { createSingleFlight, reuseFreshToken } from "../utils/singleFlight.js";
+
 export class ApiError extends Error {
   constructor(status, message, data = null, fieldErrors = null) {
     super(message);
@@ -22,7 +24,30 @@ function currentAppPath() {
   return window.location.pathname;
 }
 
+function roleOfPath(path) {
+  if (path.startsWith("/api/admin")) return "admin";
+  if (path.startsWith("/api/scanner")) return path === "/api/scanner/auth/login" ? null : "scanner";
+  if (path.startsWith("/api/graduates") || path.startsWith("/api/auth/graduate")) return "graduate";
+  return null;
+}
+
+const refreshFlights = createSingleFlight();
+
+// One refresh at a time per role (the backend rotates refresh tokens and revokes the
+// whole session if an already-used one comes back), also across browser tabs.
 async function refreshSession(path, token) {
+  const role = roleOfPath(path);
+  if (!role) return null;
+  return refreshFlights.run(role, () => {
+    const locks = typeof navigator !== "undefined" ? navigator.locks : null;
+    if (locks && typeof locks.request === "function") {
+      return locks.request(`grad-refresh-${role}`, () => performRefresh(path, token));
+    }
+    return performRefresh(path, token);
+  });
+}
+
+async function performRefresh(path, token) {
   const session = await import("./session.js");
   const baseUrl = import.meta.env.VITE_API_URL || "";
   let refreshPath = null;
@@ -82,6 +107,18 @@ async function refreshSession(path, token) {
   }
   apply = { pick, persist, role };
 
+  // Another tab (or an earlier call) may already have renewed the session.
+  const stored =
+    role === "admin" ? session.getAdminToken()
+    : role === "scanner" ? session.getScannerToken()
+    : session.getGraduateToken();
+  const storedExpired =
+    role === "admin" ? session.isAdminTokenExpired()
+    : role === "scanner" ? session.isScannerTokenExpired()
+    : session.isGraduateTokenExpired();
+  const alreadyFresh = reuseFreshToken(stored, token, storedExpired);
+  if (alreadyFresh) return alreadyFresh;
+
   if (!refreshPath || !refreshValue) return null;
 
   const payload = {};
@@ -95,11 +132,14 @@ async function refreshSession(path, token) {
       body: JSON.stringify(payload),
     });
   } catch {
-    return null;
+    // No connection is not the end of the session: keep it and let the caller retry.
+    throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
   }
 
   if (!response.ok) {
-    return null;
+    // Only a refusal of the refresh token ends the session; a server hiccup does not.
+    if (response.status === 400 || response.status === 401 || response.status === 403) return null;
+    throw new ApiError(response.status, "تعذّر تجديد الجلسة، حاول لاحقاً.");
   }
 
   let blob = null;

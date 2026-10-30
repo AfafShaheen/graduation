@@ -4,7 +4,7 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import '../../style/ScannerCamera.css';
 import unionLogo from '../../assets/only-logo.png';
 import { request } from '../../api/client';
-import { getScannerToken, isScannerTokenExpired, clearScannerSession, getScannerEvent } from '../../api/session';
+import { getScannerToken, hasScannerSession, clearScannerSession, getScannerEvent } from '../../api/session';
 import ScanSuccessResult from './ScanSuccessResult';
 import ScanErrorResult from './ScanErrorResult';
 import WrongCeremoniesWarning from './WrongCeremoniesWarning';
@@ -134,7 +134,7 @@ export default function ScannerCamera({ onLogout }) {
 
   /* Token guard */
   useEffect(() => {
-    if (!getScannerToken() || isScannerTokenExpired()) {
+    if (!hasScannerSession()) {
       clearScannerSession();
       navigate('/scanner', { replace: true });
     }
