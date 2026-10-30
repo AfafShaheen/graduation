@@ -11,6 +11,7 @@ import {
   deleteShamcashQr,
 } from './hooks/useAdminSettings.js';
 import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
+import RejectReasonPresets from './RejectReasonPresets.jsx';
 import {
   validateShamCashAccount,
   validateReceiverName,
@@ -328,7 +329,7 @@ export default function AdminPaymentRequests({
       const res = await confirmTicket(item.ticketId);
       await loadPayments();
       if (onPendingChanged) onPendingChanged();
-      if (res && res.seat) setPaymentNotice(`تم التأكيد. المقاعد: ${res.seat}`);
+      if (res && res.seat) setPaymentNotice(`تم التأكيد. المقعد: ${res.seat}`);
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
       if (e instanceof ApiError && e.status === 409) await loadPayments();
@@ -696,7 +697,7 @@ export default function AdminPaymentRequests({
                                 {item.status === 'confirmed' ? 'تم التأكيد' : 'تم الرفض'}
                               </span>
                               {item.status === 'confirmed' && item.seat && (
-                                <span className="pay-req-person-sub">المقاعد: {item.seat}</span>
+                                <span className="pay-req-person-sub">المقعد: {item.seat}</span>
                               )}
                             </div>
                           )}
@@ -948,6 +949,7 @@ export default function AdminPaymentRequests({
             <label className="pay-req-modal-label" htmlFor="reject-reason">
               سبب الرفض (3 - 255 حرفاً)
             </label>
+            <RejectReasonPresets onPick={(text) => setRejectReason(text)} />
             <textarea
               id="reject-reason"
               className="pay-req-modal-textarea"
@@ -956,7 +958,17 @@ export default function AdminPaymentRequests({
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="مثال: المبلغ المُدخل لا يطابق السعر المطلوب للباقة"
               maxLength={255}
+              aria-label="سبب رفض الدفع"
+              aria-describedby="reject-reason-hint reject-reason-count"
             />
+            <div className="pay-req-modal-meta">
+              <span id="reject-reason-hint" className="pay-req-modal-hint">
+                سيظهر هذا السبب للخريج كما كُتب.
+              </span>
+              <span id="reject-reason-count" className="pay-req-modal-count" dir="ltr">
+                {rejectReason.length}/255
+              </span>
+            </div>
             {rejectError && <p className="pay-req-modal-error">{rejectError}</p>}
             <div className="pay-req-modal-actions">
               <button

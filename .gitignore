@@ -31,3 +31,15 @@ Thumbs.db
 # --- Deploy tool (local config + upload cache) ---
 deploy/deploy.config.json
 deploy/.deploy_cache.json
+
+# --- Local dev on Windows (local-dev/*.bat) ---
+local-dev/local.env
+back/.venv/
+
+# --- Agent patches / Redis dump ---
+patches/
+dump.rdb
+
+# --- Local test artifacts (rejection-flow) ---
+__pycache__/
+back/storage/

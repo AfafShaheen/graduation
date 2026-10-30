@@ -7,6 +7,8 @@ import useMyTicket from '../../hooks/useMyTicket';
 import { getPublicSettings } from '../../api/graduate';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import RejectionOptions from '../../components/RejectionOptions';
+import { rejectionReasonText } from '../../utils/rejection';
 
 export default function OrderRejected() {
   const navigate = useNavigate();
@@ -25,8 +27,8 @@ export default function OrderRejected() {
     };
   }, []);
 
-  const rejectionReason =
-    data?.ticket?.rejection_reason || 'لم يُرفق سبب الرفض. يرجى التواصل مع الدعم للاستفسار.';
+  // سبب الرفض كما كتبه المسؤول (D2/D6) أو النص الافتراضي للطلبات القديمة — في utils/rejection.
+  const rejectionReason = rejectionReasonText(data?.ticket);
   const registrationOpen = Boolean(data?.registration?.is_open);
 
   return (
@@ -64,9 +66,9 @@ export default function OrderRejected() {
               <span className="or-badge-text">الطلب مرفوض</span>
             </div>
 
-            <h2 className="or-card-headline">تعذّر تأكيد عملية الدفع</h2>
+            <h2 className="or-card-headline">تم رفض طلب الدفع</h2>
             <p className="or-card-subtext">
-              راجعنا بيانات التحويل المرسلة وتبيّن وجود خطأ في مطابقة الإشعار.
+              راجعنا طلبك ولم نتمكن من تأكيد الدفع. اطّلع على السبب أدناه ثم اختر ما يناسبك.
             </p>
 
             {loading && !data && <p className="or-card-subtext">جارٍ تحميل تفاصيل الرفض...</p>}
@@ -94,37 +96,18 @@ export default function OrderRejected() {
                     <p className="or-reason-desc">{rejectionReason}</p>
                   </div>
                 </div>
-
-                <div className="or-reason-divider">
-                  <span
-                    className="or-symbol"
-                    style={{ color: '#124d44', fontSize: '18px', flexShrink: 0, marginTop: '2px' }}
-                  >
-                    info
-                  </span>
-                  <p className="or-reason-desc">
-                    {registrationOpen
-                      ? 'يرجى التأكد من كتابة رقم العملية المكتوب في إشعار شام كاش بدقة، ثم إعادة إرسال بيانات الدفع.'
-                      : 'انتهت فترة التسجيل، لم يعد إرسال بيانات الدفع متاحاً.'}
-                  </p>
-                </div>
               </div>
             )}
           </section>
         </div>
 
         <div className="or-bottom-dock">
-          {registrationOpen && (
-            <button
-              className="or-resubmit-btn"
-              type="button"
-              onClick={() => navigate('/payment', { replace: true })}
-            >
-              <span className="or-symbol" style={{ fontSize: '20px' }}>
-                refresh
-              </span>
-              <span>إعادة إرسال بيانات الدفع</span>
-            </button>
+          {!loading && !error && (
+            <RejectionOptions
+              registrationOpen={registrationOpen}
+              phone={contactPhone}
+              onResubmit={() => navigate('/payment', { replace: true })}
+            />
           )}
 
           <HelpFooter phone={contactPhone} />

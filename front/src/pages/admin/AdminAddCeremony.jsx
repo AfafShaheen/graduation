@@ -809,7 +809,7 @@ export default function AdminAddCeremony({
                       </div>
                     </div>
 
-                    <p className="add-cer-hint">تشمل روب التخرج + شهادة الحفل + مقاعد المرافقين بالمدرج.</p>
+                    <p className="add-cer-hint">تشمل روب التخرج + شهادة الحفل + دخول المرافقين إلى المدرج.</p>
                   </div>
                 ))}
               </div>

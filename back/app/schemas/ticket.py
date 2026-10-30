@@ -34,6 +34,8 @@ class TicketOptionsResponse(BaseModel):
     has_ticket: bool
     info_text: str
     options: List[TicketOption]
+    selected_companions_count: Optional[int] = None
+    can_change: bool = True
 
 
 class TicketSelectRequest(BaseModel):

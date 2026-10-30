@@ -60,7 +60,6 @@ _HEADERS = (
     "المعدل",
     "الترتيب",
     "مقعد الخريج",
-    "مقاعد المرافقين",
     "وقت الحفل",
     "الاسم",
     "الكنية",
@@ -221,12 +220,9 @@ async def export_service(db: AsyncSession, event_id: int | None, admin: dict):
         _number_cell(ws, row_idx, 22, graduate.gpa)
         _string_cell(ws, row_idx, 23, _format_rank(graduate.top_rank))
         _string_cell(ws, row_idx, 24, seat["graduate"] if seat else "")
-        _string_cell(
-            ws, row_idx, 25, ", ".join(seat["companions"]) if seat else ""
-        )
-        _string_cell(ws, row_idx, 26, ev_time)
-        _string_cell(ws, row_idx, 27, graduate.first_name)
-        _string_cell(ws, row_idx, 28, graduate.last_name)
+        _string_cell(ws, row_idx, 25, ev_time)
+        _string_cell(ws, row_idx, 26, graduate.first_name)
+        _string_cell(ws, row_idx, 27, graduate.last_name)
 
     ws.freeze_panes = "A2"
 

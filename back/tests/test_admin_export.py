@@ -37,7 +37,6 @@ _HEADERS = [
     "المعدل",
     "الترتيب",
     "مقعد الخريج",
-    "مقاعد المرافقين",
     "وقت الحفل",
     "الاسم",
     "الكنية",
@@ -148,11 +147,10 @@ async def test_export_single_event_headers_and_values(
     assert second[9] == "لا"
     assert all(cell in (None, "") for cell in second[10:])
 
-    # No seat and no ceremony time on this event -> the three appended columns
+    # No seat and no ceremony time on this event -> the two appended columns
     # stay empty.
     assert first[23] in (None, "")
     assert first[24] in (None, "")
-    assert first[25] in (None, "")
 
 
 async def test_export_shows_transaction_number_as_typed(
@@ -420,5 +418,4 @@ async def test_export_appends_seat_and_ceremony_columns(
     assert rows[0] == _HEADERS
     # Seat label is written next to the data, never inside any QR value.
     assert rows[1][23] == "E-4"
-    assert rows[1][24] == "E-5, E-6"
-    assert rows[1][25] == "18:30:00"
+    assert rows[1][24] == "18:30:00"

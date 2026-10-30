@@ -120,6 +120,8 @@ async def get_ticket_options_service(db: AsyncSession, graduate: GraduateModel) 
         "has_ticket": ticket is not None,
         "info_text": messages.TICKET_INFO_TEXT,
         "options": options,
+        "selected_companions_count": ticket.companions_count if ticket is not None else None,
+        "can_change": ticket is None or ticket.status in _PAYABLE_STATUSES,
     }
 
 
@@ -156,10 +158,20 @@ async def select_ticket_service(
 
     existing = await _get_graduate_ticket(db, graduate.id)
     if existing is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=messages.TICKET_ALREADY_EXISTS,
-        )
+        if existing.status not in _PAYABLE_STATUSES:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=messages.TICKET_ALREADY_EXISTS,
+            )
+        # Before payment is submitted/confirmed the graduate may switch package.
+        if existing.companions_count != package.companions_count or existing.price != package.price:
+            existing.companions_count = package.companions_count
+            existing.price = package.price
+            db.add(existing)
+            await db.flush()
+            await db.refresh(existing)
+            await invalidate_admin_cache()
+        return existing
 
     ticket = TicketModel(
         graduate_id=graduate.id,

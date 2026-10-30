@@ -164,11 +164,16 @@ export default function MyTicket() {
                   <span className="tk-meta-label">الرقم الجامعي</span>
                   <span className="tk-meta-value">{universityId}</span>
                 </div>
-                <div className="tk-meta-divider"></div>
-                <div className="tk-meta-col">
-                  <span className="tk-meta-label">المقعد</span>
-                  <span className="tk-meta-value">{seat?.graduate || 'يُحدَّد المقعد بعد تأكيد الدفع'}</span>
-                </div>
+              </div>
+
+              <div className="tk-seat-box" role="note">
+                <span className="tk-seat-label">رقم مقعدك</span>
+                <span className="tk-seat-number" dir="ltr">{seat?.graduate || '—'}</span>
+                <span className="tk-seat-hint">
+                  {seat?.graduate
+                    ? 'يحدّد ترتيبك عند الصعود إلى المسرح'
+                    : 'يُحدَّد رقم المقعد بعد تأكيد الدفع'}
+                </span>
               </div>
 
               {(eventDateText || eventTimeText) && (
@@ -184,15 +189,6 @@ export default function MyTicket() {
                   </div>
                 </div>
               )}
-
-              {seat?.companions?.length ? (
-                <div className="tk-meta-row">
-                  <div className="tk-meta-col">
-                    <span className="tk-meta-label">مقاعد المرافقين</span>
-                    <span className="tk-meta-value" dir="ltr">{seat.companions.join('، ')}</span>
-                  </div>
-                </div>
-              ) : null}
 
               {topRank && (
                 <div
@@ -270,9 +266,6 @@ export default function MyTicket() {
                       aria-label={`رمز QR للمرافق ${idx + 1}`}
                     />
                     <span className="tk-companion-name">المرافق {idx + 1}</span>
-                    {seat?.companions?.[idx] && (
-                      <span className="tk-meta-label">المقعد: {seat.companions[idx]}</span>
-                    )}
                     <span className="tk-companion-status">
                       {code.scanned ? 'مستخدم' : 'قيد الانتظار'}
                     </span>

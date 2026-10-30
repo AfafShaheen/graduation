@@ -750,3 +750,28 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 - الجلسات القديمة (قبل هالتحديث) ما فيها `fexp`: أول تجديد بياخد المدة الكاملة للدور من لحظته (فجلسة الماسح القديمة بتصير 24 ساعة من أول تجديد).
 - الثوابت بـ `core/security.py` (`*_REFRESH_TOKEN_EXPIRE_DAYS`) والمساعدات `create_refresh_token(..., family_exp)` و`refresh_expires_in(days, family_exp)`.
 - الاختبارات: `tests/test_session_lifetimes.py` (9 اختبارات: المدد، وسقف التدوير، ورفض توكن تجاوز نهاية الجلسة).
+
+---
+
+## رفض الدفع: سبب الرفض في سجل التدقيق (فرع `fix/rejection-flow` — A1)
+
+### ما تغيّر فعلياً
+
+- **لا تغيير في عقد الـ API إطلاقاً**: نفس المسار `POST /api/admin/tickets/{ticket_id}/reject` ونفس الجسم `PaymentRejectRequest{reason}` (مطلوب، 3..255 بعد التقليم، وإلا 400 برسالة `REJECT_REASON_REQUIRED` العربية؛ و409 إذا لم تكن التذكرة `PROCESSING`). فاحص العقد `python -m scripts.check_openapi_additive` أكّد عدم وجود أي تغيير.
+- **سجل التدقيق (D3)**: عند الرفض صار تدقيق `PAYMENT_REJECTED` يسجّل السبب داخل `details` بدل الاكتفاء بمعرّف الخريج فقط. الصيغة الجديدة:
+  `Rejected payment for graduate ID {id} (reason: {trimmed_reason})`
+  العمود من نوع `Text` فلا يوجد حدّ طول يمنع ذلك (السبب نفسه مقبول أصلاً حتى 255 حرفاً).
+- بقية السلوك كما هو: `ticket.status = REJECTED`، حفظ `rejection_reason` كما كتبه الأدمن (يُعرض للخريج كما كُتب — D2)، وسم `reviewed_at` للدفعة، وتقشير ذاكرة الأدمن. وعند إعادة إرسال الدفع من الخريج تُمسح `rejection_reason` وتعود الحالة `PROCESSING`.
+
+### الاختبارات (`back/tests/test_admin_payment_review.py`)
+
+أُضيفت 6 اختبارات جديدة إلى جانب الاختبارات الموجودة مسبقاً:
+
+- سبب مكوّن من مسافات فقط أو من حرفين → 400 مع `REJECT_REASON_REQUIRED`.
+- سبب من 3 أحرف ومن 255 حرفاً → يُقبل، والنص يُقلَّم من المسافات قبل الحفظ والتدقيق.
+- الخريج يرى عبر `GET /api/graduates/me/ticket` الحالة `REJECTED` والسبب مطابقاً تماماً لما كتبه الأدمن.
+- إعادة إرسال الدفع بعد الرفض تُرجع التذكرة إلى `PROCESSING` وتمسح السبب.
+- تذكرة ليست `PROCESSING` → 409.
+- `details` في سجل التدقيق يحتوي نص السبب.
+
+النتيجة: `python -m pytest -q tests/test_admin_payment_review.py` → 24 passed؛ والحزمة الكاملة → 459 passed و2 failed هي فشلان موجودان في خط الأساس ولا علاقة لهما بهذا التغيير (اختبارات مصادقة خارج النطاق).

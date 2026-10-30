@@ -2,8 +2,7 @@
 
 A seat label is an optional event letter plus a sequence number, e.g. ``E-17``
 or, when the event has no letter, ``17``. Labels are assigned when a payment is
-confirmed: each ticket reserves ``1 + companions_count`` consecutive numbers in
-which the graduate takes the first number and the companions follow.
+confirmed: one seat number per graduate; companions have no seat.
 
 Rules that live here (and only here):
 - Assignment is idempotent: a ticket that already has a ``seat_start`` keeps it.
@@ -39,9 +38,7 @@ async def assign_seat_block(db: AsyncSession, ticket: TicketModel) -> None:
 
     highest = (
         await db.execute(
-            select(
-                func.max(TicketModel.seat_start + TicketModel.companions_count)
-            ).where(
+            select(func.max(TicketModel.seat_start)).where(
                 TicketModel.event_id == ticket.event_id,
                 TicketModel.seat_start.is_not(None),
             )
@@ -53,25 +50,9 @@ async def assign_seat_block(db: AsyncSession, ticket: TicketModel) -> None:
     await db.flush()
 
 
-def seat_labels(
-    prefix: str | None, seat_start: int | None, companions_count: int
-) -> dict | None:
-    """Build the display labels of a ticket's seat block.
-
-    Returns ``None`` when no seat is allocated. Otherwise a dict with the
-    graduate label, the companion labels in order, and a ``range`` string
-    (e.g. ``E-17 -> E-19``).
-    """
-
-    def label(number: int) -> str:
-        return f"{prefix}-{number}" if prefix else str(number)
-
+def seat_labels(prefix, seat_start, companions_count=0):
+    """Seat label of the GRADUATE only (companions have no seats)."""
     if seat_start is None:
         return None
-
-    graduate = label(seat_start)
-    companions = [
-        label(seat_start + offset) for offset in range(1, companions_count + 1)
-    ]
-    range_text = f"{graduate} \u2192 {companions[-1]}" if companions else graduate
-    return {"graduate": graduate, "companions": companions, "range": range_text}
+    graduate = f"{prefix}-{seat_start}" if prefix else str(seat_start)
+    return {"graduate": graduate, "companions": [], "range": graduate}
