@@ -35,3 +35,7 @@ deploy/.deploy_cache.json
 # --- Local dev on Windows (local-dev/*.bat) ---
 local-dev/local.env
 back/.venv/
+
+# --- Agent patches / Redis dump ---
+patches/
+dump.rdb

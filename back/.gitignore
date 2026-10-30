@@ -36,10 +36,3 @@ Thumbs.db
 .vscode/
 *.swp
 !.env.cpanel.example
-
-# --- Deploy tool (local config + upload cache) ---
-deploy/deploy.config.json
-deploy/.deploy_cache.json
-
-patches/
-dump.rdb
