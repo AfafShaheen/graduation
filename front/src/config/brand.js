@@ -10,7 +10,7 @@ export const CEREMONY_TITLE = 'اتحاد الطلبة جامعة حمص حفل 
 export const BATCH_BADGE = 'الدفعة 3';
 
 // سطر المساعدة الأول على كل صفحات الخريج (D8).
-export const HELP_QUESTION = 'هل تواجه مشكلة؟ تواصل مع الدعم الفني للاتحاد';
+export const HELP_QUESTION = 'تحتاج مساعدة؟';
 
 // تسمية سطر المساعدة الثاني المتبوع برقم الطوارئ (D8).
-export const HELP_EMERGENCY_LABEL = 'للطوارئ والاستفسار:';
+export const HELP_EMERGENCY_LABEL = 'اتصل بنا:';
