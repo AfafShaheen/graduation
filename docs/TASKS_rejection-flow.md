@@ -10,8 +10,8 @@
 | B1.1 | `front/src/config/rejectReasons.js` (`REJECT_REASON_PRESETS`) + `front/src/pages/admin/RejectReasonPresets.jsx` | ✅ | هذا الالتزام | ملفان جديدان؛ 5 أسباب (انظر ملاحظة D1 في التقرير) |
 | B1.2 | استخدام الإعدادات الجاهزة في نافذة رفض `AdminPaymentRequests.jsx` + جملة D2 + عدّاد `n/255` + `aria-label` | ✅ | هذا الالتزام | presets فوق الـ textarea، جملة «سيظهر هذا السبب للخريج كما كُتب.»، عدّاد `n/255`، التحقق القديم 3..255 لم يُمس |
 | B1.3 | اختبارات B1 (تفرّد الإعدادات، أطوالها، SSR render، فحص ثابت للنافذة) | ✅ | هذا الالتزام | `node --test tests/rejectReasonPresets.test.mjs` → 3 passed؛ الحزمة الكاملة `node --test tests/` → 124 passed / 0 failed؛ build ✓؛ oxlint 43 warnings = خط الأساس |
-| B2.1 | `front/src/utils/rejection.js`: `supportHref` / `rejectionReasonText` / `rejectionActions` | ⬜ | - | - |
-| B2.2 | اختبارات B2.1 (هواتف صحيحة/غير صحيحة، تسجيل مغلق، بلا هاتف، مسافات في السبب) | ⬜ | - | - |
+| B2.1 | `front/src/utils/rejection.js`: `supportHref` / `rejectionReasonText` / `rejectionActions` | ✅ | هذا الالتزام | ملف جديد نقي؛ قاعدة الهاتف `PHONE_REGEX` المعاد استخدامها من validators.js |
+| B2.2 | اختبارات B2.1 (هواتف صحيحة/غير صحيحة، تسجيل مغلق، بلا هاتف، مسافات في السبب) | ✅ | هذا الالتزام | `node --test tests/rejectionUtils.test.mjs` → 9 passed / 0 failed؛ build ✓؛ oxlint 43 = خط الأساس |
 | B3.1 | `front/src/components/RejectionOptions.jsx` (عنوان + زر إعادة الدفع + رابط الدعم + عبارات D5) | ⬜ | - | - |
 | B3.2 | إعادة كتابة `OrderRejected.jsx` وفق D6/D5 مع الحفاظ على HelpFooter مرة واحدة وحالات التحميل/الخطأ | ⬜ | - | - |
 | B3.3 | اختبارات B3 (SSR لأربع حالات + فحص ثابت لـ OrderRejected) | ⬜ | - | - |
