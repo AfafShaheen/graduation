@@ -825,6 +825,43 @@
   outline: none;
   border-color: #124d44;
 }
+/* أزرار أسباب الرفض الجاهزة (RejectReasonPresets) + سطر التلميح والعدّاد */
+.pay-req-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.pay-req-preset-btn {
+  border: 1px solid #d7e0dd;
+  background: #f4faf8;
+  color: #124d44;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.pay-req-preset-btn:hover {
+  border-color: #124d44;
+  background: #e7f3ef;
+}
+.pay-req-modal-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.pay-req-modal-hint {
+  font-size: 12px;
+  color: #6b7a76;
+}
+.pay-req-modal-count {
+  font-size: 12px;
+  color: #6b7a76;
+  white-space: nowrap;
+}
 .pay-req-modal-error {
   margin: 8px 0 0;
   font-size: 13px;

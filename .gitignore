@@ -39,3 +39,7 @@ back/.venv/
 # --- Agent patches / Redis dump ---
 patches/
 dump.rdb
+
+# --- Local test artifacts (rejection-flow) ---
+__pycache__/
+back/storage/
