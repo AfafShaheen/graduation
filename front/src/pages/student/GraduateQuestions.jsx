@@ -12,7 +12,7 @@ import HelpFooter from '../../components/HelpFooter';
 const QUESTIONS = [
   {
     name: 'wantsResponsibility',
-    text: 'هل ترغب بأن تكون مسؤولاً عن شيء في تقديم الحفل؟',
+    text: 'هل ترغب ان تكون ممثلاً لطلاب دفعتك في حفل التخرج ',
     icon: 'record_voice_over',
   },
   {

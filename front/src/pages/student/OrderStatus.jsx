@@ -196,9 +196,6 @@ export default function OrderStatus() {
                 <span className="os-symbol" style={{ color: '#ca4b00', fontSize: '19px', flexShrink: 0 }}>
                   notifications_active
                 </span>
-                <p className="os-reassurance-text">
-                  سيصلك إشعار عبر الرسائل النصية وتطبيق شام كاش فور تدقيق طلبك.
-                </p>
               </div>
             </>
           )}

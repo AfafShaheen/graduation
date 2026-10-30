@@ -1,13 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/SelectTicket.css';
-import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { getTicketOptions, selectTicket } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
-import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
 
 /* صيغة العدد بالعربي: 1 مرافق، 2 مرافقان، 3-10 مرافقين، 11+ مرافقاً */
 const companionsText = (n) => {
@@ -69,6 +66,9 @@ export default function SelectTicket({ onBack }) {
       setSelectedType((prev) => {
         const counts = (result.options || []).map((o) => Number(o.companions_count));
         if (prev != null && counts.includes(prev)) return prev;
+        /* الباقة المختارة سابقاً (إن رجّعها الباك) بدل أول باقة */
+        const current = Number(result.selected_companions_count);
+        if (counts.includes(current)) return current;
         return counts.length ? counts[0] : null;
       });
     } catch (err) {
@@ -129,7 +129,7 @@ export default function SelectTicket({ onBack }) {
               </span>
             </button>
 
-            <h1 className="st-header-title">{CEREMONY_TITLE}</h1>
+            <h1 className="st-header-title">حفل تخرج جامعة حمص</h1>
 
             <div className="st-icon-btn static">
               <img className="st-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
@@ -138,7 +138,7 @@ export default function SelectTicket({ onBack }) {
 
           <div className="st-header-subband">
             <span className="st-subband-title">اختيار التذكرة</span>
-            <span className="st-badge-batch">{BATCH_BADGE}</span>
+            <span className="st-badge-batch">دفعة 2026</span>
           </div>
         </header>
 
@@ -148,7 +148,7 @@ export default function SelectTicket({ onBack }) {
               <div className="st-hero-tag">
                 <span className="st-dot"></span>
                 <span className="st-tag-text">
-                  {data?.event?.name || CEREMONY_TITLE}
+                  {data?.event?.name || 'جامعة حمص • دفعة 2026'}
                 </span>
               </div>
               <h2 className="st-hero-headline">حدّد باقة الحضور المناسبة لك ولعائلتك</h2>
@@ -229,19 +229,19 @@ export default function SelectTicket({ onBack }) {
                   </ul>
 
                   {option.badge && (
-                  <div className="st-option-footer">
-                    <span className={option.badge.className}>
-                      {option.badge.dot && (
-                        <span className="st-dot" style={{ width: '6px', height: '6px' }}></span>
-                      )}
-                      {option.badge.icon && (
-                        <span className="st-symbol" style={{ fontSize: '14px' }}>
-                          {option.badge.icon}
-                        </span>
-                      )}
-                      {option.badge.text}
-                    </span>
-                  </div>
+                    <div className="st-option-footer">
+                      <span className={option.badge.className}>
+                        {option.badge.dot && (
+                          <span className="st-dot" style={{ width: '6px', height: '6px' }}></span>
+                        )}
+                        {option.badge.icon && (
+                          <span className="st-symbol" style={{ fontSize: '14px' }}>
+                            {option.badge.icon}
+                          </span>
+                        )}
+                        {option.badge.text}
+                      </span>
+                    </div>
                   )}
                 </div>
               ))}
@@ -272,7 +272,6 @@ export default function SelectTicket({ onBack }) {
         </main>
 
         <div className="st-bottom-dock">
-          <HelpFooter />
           <button
             className="st-action-btn"
             type="button"

@@ -1,12 +1,26 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { hasGraduateSession } from "../api/session";
-import { routeForTicket } from "../utils/ticketRoute";
+import { getGraduateToken, isGraduateTokenExpired } from "../api/session";
 import useMyTicket from "../hooks/useMyTicket";
 
-export { routeForTicket };
+/* المسار الصحيح الذي يجب أن يكون فيه الخريج حسب حالة تذكرته */
+export function routeForTicket(data) {
+  if (!data || !data.has_ticket) return "/tickets";
+  switch (data.ticket?.status) {
+    case "AWAITING_PAYMENT":
+      return "/payment";
+    case "PROCESSING":
+      return "/payment-submitted";
+    case "REJECTED":
+      return "/payment-rejected";
+    case "CONFIRMED":
+      return "/my-ticket";
+    default:
+      return "/tickets";
+  }
+}
 
 export function hasValidGraduateSession() {
-  return hasGraduateSession();
+  return !!getGraduateToken() && !isGraduateTokenExpired();
 }
 
 /*
@@ -14,6 +28,7 @@ export function hasValidGraduateSession() {
  * - بدون جلسة صالحة -> /login
  * - مع جلسة: يجلب التذكرة ويوجّه الخريج للصفحة المطابقة لحالتها
  *   (فلو فتح رابطاً خاطئاً بالخطأ يُعاد توجيهه تلقائياً للصفحة الصحيحة).
+ * - استثناء: الخريج بانتظار الدفع أو مرفوض الدفع يقدر يفتح /tickets ليغيّر الباقة.
  */
 export default function TicketGuard({ children }) {
   // React reuses the same TicketGuard instance when moving between ticket routes
@@ -42,7 +57,14 @@ function TicketGuardInner({ children }) {
   }
 
   const target = routeForTicket(data);
-  if (target !== location.pathname) {
+  const status = data?.ticket?.status;
+
+  /* بانتظار الدفع أو مرفوض: مسموح له يرجع لاختيار الباقة */
+  const canChangePackage =
+    location.pathname === "/tickets" &&
+    (status === "AWAITING_PAYMENT" || status === "REJECTED");
+
+  if (!canChangePackage && target !== location.pathname) {
     return <Navigate to={target} replace />;
   }
   return children;
