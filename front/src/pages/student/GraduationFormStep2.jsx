@@ -361,6 +361,13 @@ export default function GraduationFormStep2({
               <p className="label-hint" style={{ marginTop: "4px" }}>
                 ٨ محارف كحد أدنى تحوي حروفاً وأرقاماً
               </p>
+              <div className="info-box password-scope-note" role="note">
+                <span className="material-symbols-outlined info-icon">key</span>
+                <p className="info-text">
+                  هذه كلمة سر <strong>جديدة لحسابك على منصة الحفل فقط</strong>، وليست كلمة سر بريدك
+                  الإلكتروني. لا تكتب كلمة سر إيميلك هنا، واختر كلمة سر تتذكرها لتسجيل الدخول لاحقاً.
+                </p>
+              </div>
             </div>
 
             {/* زر الإرسال داخل البطاقة */}

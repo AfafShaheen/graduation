@@ -277,6 +277,14 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin, onOpenG
               </div>
             )}
 
+            <div className="info-box name-certificate-note" role="note">
+              <span className="material-symbols-outlined info-icon">workspace_premium</span>
+              <p className="info-text">
+                <strong>انتبه:</strong> الاسم والكنية اللذان تكتبهما هنا هما ما سيُطبع على شهادة التخرج.
+                اكتبهما بدقة وبالأحرف الصحيحة (مثل: ة / ه، أ / ا) كما في البطاقة الجامعية.
+              </p>
+            </div>
+
             <div className="form-group grid-two-cols">
               <div>
                 <label className="form-label">

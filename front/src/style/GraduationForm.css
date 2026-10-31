@@ -568,3 +568,20 @@
   outline: 2px solid #ca4b00;
   outline-offset: 2px;
 }
+
+/* ملاحظة الاسم على الشهادة (الخطوة 1) وملاحظة كلمة السر (الخطوة 2) */
+.info-box.name-certificate-note {
+  margin: 0 0 16px;
+  background-color: #fff0e6;
+  border-color: rgba(202, 75, 0, 0.35);
+}
+
+.info-box.password-scope-note {
+  margin-top: 8px;
+}
+
+.name-certificate-note .info-text,
+.password-scope-note .info-text {
+  font-size: 12px;
+  line-height: 1.7;
+}
