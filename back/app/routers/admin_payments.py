@@ -8,6 +8,7 @@ from app.schemas.ticket import PaymentRejectRequest
 from app.services.payment_review_service import (
     confirm_payment_service,
     get_admin_ticket_service,
+    get_event_payments_summary_service,
     list_event_payments_service,
     reject_payment_service,
 )
@@ -25,6 +26,15 @@ async def list_event_payments(
     admin: dict = Depends(get_current_admin),
 ):
     return await list_event_payments_service(db, event_id, status_filter, limit, offset)
+
+
+@router.get("/events/{event_id}/payments/summary", status_code=status.HTTP_200_OK)
+async def get_event_payments_summary(
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    return await get_event_payments_summary_service(db, event_id)
 
 
 @router.get("/tickets/{ticket_id}", status_code=status.HTTP_200_OK)

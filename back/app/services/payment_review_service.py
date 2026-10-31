@@ -12,6 +12,7 @@ window ended (D9). Every action is written to the audit trail (FR-22/NFR).
 """
 
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
@@ -126,6 +127,48 @@ async def list_event_payments_service(
         )
 
     return {"total": total, "items": items}
+
+
+async def get_event_payments_summary_service(db: AsyncSession, event_id: int) -> dict:
+    """Totals for the stats cards, independent of any list filter."""
+    if await db.get(EventModel, event_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الحفل.")
+
+    latest_payment = (
+        select(PaymentModel.ticket_id, func.max(PaymentModel.id).label("payment_id"))
+        .group_by(PaymentModel.ticket_id)
+        .subquery()
+    )
+    rows = (
+        await db.execute(
+            select(TicketModel.status, TicketModel.price, PaymentModel.amount)
+            .outerjoin(latest_payment, latest_payment.c.ticket_id == TicketModel.id)
+            .outerjoin(PaymentModel, PaymentModel.id == latest_payment.c.payment_id)
+            .where(TicketModel.event_id == event_id)
+        )
+    ).all()
+
+    counts = {"AWAITING_PAYMENT": 0, "PROCESSING": 0, "CONFIRMED": 0, "REJECTED": 0}
+    confirmed_amount = Decimal("0")
+    mismatch_processing = 0
+    for st, price, amount in rows:
+        key = st.value if hasattr(st, "value") else str(st)
+        counts[key] = counts.get(key, 0) + 1
+        if key == "CONFIRMED" and amount is not None:
+            confirmed_amount += amount
+        if key == "PROCESSING" and amount is not None and amount != price:
+            mismatch_processing += 1
+
+    return {
+        "total_tickets": len(rows),
+        "submitted": counts["PROCESSING"] + counts["CONFIRMED"] + counts["REJECTED"],
+        "awaiting_payment": counts["AWAITING_PAYMENT"],
+        "processing": counts["PROCESSING"],
+        "confirmed": counts["CONFIRMED"],
+        "rejected": counts["REJECTED"],
+        "confirmed_amount": format(confirmed_amount, ".2f"),
+        "mismatch_processing": mismatch_processing,
+    }
 
 
 async def get_admin_ticket_service(db: AsyncSession, ticket_id: int) -> dict:

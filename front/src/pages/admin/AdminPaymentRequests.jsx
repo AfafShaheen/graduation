@@ -3,7 +3,7 @@ import '../../style/AdminPaymentRequests.css';
 import '../../style/AdminScannersSettings.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
-import { fetchAllEventPayments, confirmTicket, rejectTicket } from './hooks/useAdminPayments.js';
+import { fetchAllEventPayments, fetchEventPaymentsSummary, confirmTicket, rejectTicket } from './hooks/useAdminPayments.js';
 import {
   useAdminSettings,
   updateAdminSettings,
@@ -111,6 +111,29 @@ export default function AdminPaymentRequests({
   useEffect(() => {
     loadPayments();
   }, [loadPayments]);
+
+  // إحصائيات البطاقات من الخادم، على مستوى الحفل كله ومستقلة عن فلتر الحالة.
+  const [summary, setSummary] = useState(null);
+  const loadSummary = useCallback(async () => {
+    if (!ceremonyFilter) {
+      setSummary(null);
+      return;
+    }
+    try {
+      setSummary(await fetchEventPaymentsSummary(ceremonyFilter));
+    } catch {
+      setSummary(null);
+    }
+  }, [ceremonyFilter]);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
+
+  const reloadAll = () => {
+    loadPayments();
+    loadSummary();
+  };
 
   // ===== إعدادات الدفع وشام كاش =====
   const [activeTab, setActiveTab] = useState('payments'); // 'payments' | 'settings'
@@ -307,9 +330,8 @@ export default function AdminPaymentRequests({
   );
 
   const pendingCount = mapped.filter((i) => i.status === 'pending').length;
-  const mismatchCount = mapped.filter((i) => i.status === 'pending' && i.mismatch).length;
-  const confirmedItems = mapped.filter((i) => i.status === 'confirmed');
-  const confirmedTotal = confirmedItems.reduce((sum, i) => sum + i.paid, 0);
+  const statValue = (key) => (summary ? fmt(summary[key]) : '—');
+  const mismatchCount = summary ? summary.mismatch_processing : 0;
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -328,11 +350,15 @@ export default function AdminPaymentRequests({
     try {
       const res = await confirmTicket(item.ticketId);
       await loadPayments();
+      await loadSummary();
       if (onPendingChanged) onPendingChanged();
       if (res && res.seat) setPaymentNotice(`تم التأكيد. المقعد: ${res.seat}`);
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
-      if (e instanceof ApiError && e.status === 409) await loadPayments();
+      if (e instanceof ApiError && e.status === 409) {
+        await loadPayments();
+        await loadSummary();
+      }
     } finally {
       setBusyId(null);
     }
@@ -357,12 +383,14 @@ export default function AdminPaymentRequests({
       await rejectTicket(rejectTarget.ticketId, reason);
       setRejectTarget(null);
       await loadPayments();
+      await loadSummary();
       if (onPendingChanged) onPendingChanged();
     } catch (e) {
       setRejectError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
       if (e instanceof ApiError && e.status === 409) {
         setRejectTarget(null);
         await loadPayments();
+        await loadSummary();
       }
     } finally {
       setRejecting(false);
@@ -465,7 +493,7 @@ export default function AdminPaymentRequests({
           <div className="pay-req-stat-card">
             <div>
               <p className="pay-req-stat-label">إجمالي الطلبات المستلمة</p>
-              <p className="pay-req-stat-value">{fmt(mapped.length)}</p>
+              <p className="pay-req-stat-value">{statValue('submitted')}</p>
               <p className="pay-req-stat-note">
                 <span className="pay-req-symbol" style={{ fontSize: '16px' }}>trending_up</span>
                 {selectedEvent ? selectedEvent.name : 'اختر حفلاً'}
@@ -479,7 +507,7 @@ export default function AdminPaymentRequests({
           <div className="pay-req-stat-card orange">
             <div>
               <p className="pay-req-stat-label orange">قيد التدقيق والمعالجة</p>
-              <p className="pay-req-stat-value orange">{fmt(pendingCount)}</p>
+              <p className="pay-req-stat-value orange">{statValue('processing')}</p>
               <p className="pay-req-stat-note orange">تتطلب مراجعة إشعار شام كاش</p>
             </div>
             <div className="pay-req-stat-icon orange">
@@ -490,7 +518,7 @@ export default function AdminPaymentRequests({
           <div className="pay-req-stat-card">
             <div>
               <p className="pay-req-stat-label">حالات عدم تطابق المبلغ</p>
-              <p className="pay-req-stat-value orange">{fmt(mismatchCount)}</p>
+              <p className="pay-req-stat-value orange">{statValue('mismatch_processing')}</p>
               <p className="pay-req-stat-note">تفاوت بين السعر والإشعار</p>
             </div>
             <div className="pay-req-stat-icon orange">
@@ -502,9 +530,9 @@ export default function AdminPaymentRequests({
             <div>
               <p className="pay-req-stat-label">المبالغ المؤكدة للاتحاد</p>
               <p className="pay-req-stat-value small">
-                {fmt(confirmedTotal)} <span className="pay-req-stat-unit">ل.س</span>
+                {summary ? fmt(Number(summary.confirmed_amount)) : '—'} <span className="pay-req-stat-unit">ل.س</span>
               </p>
-              <p className="pay-req-stat-note">{fmt(confirmedItems.length)} خريج مسدد بنجاح</p>
+              <p className="pay-req-stat-note">{summary ? fmt(summary.confirmed) : '—'} خريج مسدد بنجاح</p>
             </div>
             <div className="pay-req-stat-icon">
               <span className="pay-req-symbol" style={{ fontSize: '24px' }}>account_balance_wallet</span>
@@ -574,7 +602,7 @@ export default function AdminPaymentRequests({
                 <span className="pay-req-symbol" style={{ fontSize: '16px' }}>table_chart</span>
                 <span>تصدير إكسل</span>
               </button>
-              <button type="button" className="pay-req-tool-btn" onClick={loadPayments} disabled={loading}>
+              <button type="button" className="pay-req-tool-btn" onClick={reloadAll} disabled={loading}>
                 <span className="pay-req-symbol" style={{ fontSize: '16px' }}>refresh</span>
                 <span>تحديث</span>
               </button>

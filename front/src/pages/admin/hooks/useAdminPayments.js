@@ -65,3 +65,8 @@ export async function fetchAllEventPayments(eventId, status, pageSize = 200) {
   }
   return { items: all, total };
 }
+
+export async function fetchEventPaymentsSummary(eventId) {
+  if (!eventId) return null;
+  return adminRequest(`/api/admin/events/${eventId}/payments/summary`);
+}

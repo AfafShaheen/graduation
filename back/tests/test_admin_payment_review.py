@@ -654,3 +654,103 @@ async def test_second_confirmed_ticket_continues_numbers(client, db, make_event,
     )
     assert second.status_code == 200, second.text
     assert second.json()["seat"] == "2"
+
+
+# --- Payments summary (stats cards, independent of the list filter) -------
+
+
+async def _summary_ticket(
+    make_college, make_graduate, make_ticket, make_payment, event, uid, status,
+    amount=None, price=100000,
+):
+    college = await make_college(event.id, name=f"كلية {uid}")
+    graduate = await make_graduate(college.id, university_id=uid, email_verified=True)
+    ticket = await make_ticket(graduate.id, event.id, status=status, price=price)
+    if amount is not None:
+        await make_payment(ticket.id, transaction_number=f"TXN-{uid}", amount=amount)
+    return ticket
+
+
+async def test_payments_summary_counts_and_amounts(
+    client, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    event = await make_event()
+    other_event = await make_event(name="حفل آخر")
+    args = (make_college, make_graduate, make_ticket, make_payment)
+    await _summary_ticket(*args, event, "700001", TicketStatusEnum.AWAITING_PAYMENT)
+    await _summary_ticket(*args, event, "700002", TicketStatusEnum.PROCESSING, amount=100000)
+    await _summary_ticket(*args, event, "700003", TicketStatusEnum.PROCESSING, amount=90000)
+    await _summary_ticket(*args, event, "700004", TicketStatusEnum.CONFIRMED, amount=100000)
+    await _summary_ticket(*args, event, "700005", TicketStatusEnum.REJECTED, amount=50000)
+    # Another ceremony must not leak into the totals.
+    await _summary_ticket(*args, other_event, "700006", TicketStatusEnum.CONFIRMED, amount=100000)
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    response = await client.get(
+        f"/api/admin/events/{event.id}/payments/summary", headers=admin_auth
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "total_tickets": 5,
+        "submitted": 4,
+        "awaiting_payment": 1,
+        "processing": 2,
+        "confirmed": 1,
+        "rejected": 1,
+        "confirmed_amount": "100000.00",
+        "mismatch_processing": 1,
+    }
+
+
+async def test_payments_summary_uses_latest_payment(
+    client, make_event, make_college, make_graduate, make_ticket, make_payment, make_admin
+):
+    event = await make_event()
+    ticket = await _summary_ticket(
+        make_college, make_graduate, make_ticket, make_payment,
+        event, "710001", TicketStatusEnum.PROCESSING, amount=90000,
+    )
+    # A resubmission with the right amount: only the newest payment counts.
+    await make_payment(ticket.id, transaction_number="TXN-710001-B", amount=100000)
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    response = await client.get(
+        f"/api/admin/events/{event.id}/payments/summary", headers=admin_auth
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["mismatch_processing"] == 0
+    assert response.json()["total_tickets"] == 1
+
+
+async def test_payments_summary_empty_event(client, make_event, make_admin):
+    event = await make_event()
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    response = await client.get(
+        f"/api/admin/events/{event.id}/payments/summary", headers=admin_auth
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["total_tickets"] == 0
+    assert body["confirmed_amount"] == "0.00"
+
+
+async def test_payments_summary_unknown_event_404(client, make_admin):
+    admin_auth, _admin = await _admin_auth(client, make_admin)
+
+    response = await client.get(
+        "/api/admin/events/999999/payments/summary", headers=admin_auth
+    )
+
+    assert response.status_code == 404
+
+
+async def test_payments_summary_requires_admin(client, make_event):
+    event = await make_event()
+
+    response = await client.get(f"/api/admin/events/{event.id}/payments/summary")
+
+    assert response.status_code in (401, 403)
