@@ -1,0 +1,120 @@
+{
+  "generated_at": "2026-10-31T16:44:49.252151+00:00",
+  "scope": {
+    "event_id": 1,
+    "event_name": "الحفل الأول",
+    "events_count": 1,
+    "event_day": false
+  },
+  "attention": {
+    "processing": 1,
+    "oldest_pending_hours": 5.0,
+    "rejected": 1,
+    "unverified": 1,
+    "confirmed": 1
+  },
+  "registered": {
+    "confirmed_accounts": 4,
+    "unverified_accounts": 1
+  },
+  "status": {
+    "confirmed": 1,
+    "processing": 1,
+    "awaiting_payment": 1,
+    "rejected": 1,
+    "no_ticket": 0
+  },
+  "by_event": [
+    {
+      "event_id": 1,
+      "event_name": "الحفل الأول",
+      "event_date": "2030-06-01",
+      "expected_people": 6,
+      "registered": 4,
+      "unverified": 1,
+      "status": {
+        "confirmed": 1,
+        "processing": 1,
+        "awaiting_payment": 1,
+        "rejected": 1,
+        "no_ticket": 0
+      },
+      "attendance": {
+        "graduates": 1,
+        "companions": 2,
+        "expected": 3
+      },
+      "entry": {
+        "graduates_entered": 1,
+        "companions_entered": 1,
+        "entered": 2,
+        "manual": 0,
+        "expected": 3,
+        "last_entry_at": "2026-10-31T15:44:46.703027+00:00"
+      },
+      "money_confirmed": "100.00",
+      "money_processing": "150.00"
+    }
+  ],
+  "attendance": {
+    "graduates": 1,
+    "companions": 2,
+    "expected": 3
+  },
+  "entry": {
+    "graduates_entered": 1,
+    "companions_entered": 1,
+    "entered": 2,
+    "manual": 0,
+    "expected": 3,
+    "last_entry_at": "2026-10-31T15:44:46.703027+00:00"
+  },
+  "finance": {
+    "confirmed_amount": "100.00",
+    "processing_amount": "150.00",
+    "by_package": [
+      {
+        "companions_count": 2,
+        "tickets": 1,
+        "amount": "100.00"
+      }
+    ]
+  },
+  "top_students": {
+    "total": 2,
+    "registered": 2,
+    "confirmed": 1
+  },
+  "representation": {
+    "answered": 3,
+    "wants": 2,
+    "experienced": 2,
+    "both": 1
+  },
+  "colleges": [
+    {
+      "college_id": 1,
+      "name": "كلية أ",
+      "expected": 4,
+      "registered": 2,
+      "confirmed": 1
+    },
+    {
+      "college_id": 2,
+      "name": "كلية ب",
+      "expected": 2,
+      "registered": 2,
+      "confirmed": 0
+    }
+  ],
+  "footer": {
+    "confirmed_accounts": 4,
+    "registration": {
+      "event_id": 1,
+      "event_name": "الحفل الأول",
+      "ends_at": "2026-11-06T16:44:46.703027+00:00"
+    },
+    "avg_review_hours": 2.5,
+    "reviewed_count": 2
+  }
+}

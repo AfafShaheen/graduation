@@ -9,6 +9,9 @@ load_dotenv()
 # Empty/unset REDIS_URL: point at a closed port so every call fails fast
 # (callers with fail-open paths then skip the cache). Socket timeouts keep a
 # hung Redis from hanging requests.
+# Prefix of the cached dashboard statistics (see services/stats_v2_service.py).
+STATS_V2_CACHE_PREFIX = "admin:stats:v2"
+
 REDIS_URL = os.getenv("REDIS_URL") or "redis://127.0.0.1:9/9"
 
 redis_client = redis.from_url(

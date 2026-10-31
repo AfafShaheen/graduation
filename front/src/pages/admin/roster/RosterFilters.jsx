@@ -35,10 +35,12 @@ export default function RosterFilters({
   canReset,
   files,
   colleges,
+  events = [],
 }) {
   const set = (key) => (value) => onChange({ ...filters, [key]: value });
   const fileOptions = files.map((f) => ({ value: String(f.id), label: f.original_name }));
   const collegeOptions = colleges.map((c) => ({ value: String(c.id), label: c.name }));
+  const eventOptions = events.map((e) => ({ value: String(e.id), label: e.name }));
 
   return (
     <section className="exc-card rost-filters" aria-label="البحث والفلاتر">
@@ -77,6 +79,7 @@ export default function RosterFilters({
           />
         </label>
 
+        <SelectField label="الحفل" value={filters.eventId} options={eventOptions} onChange={set('eventId')} />
         <SelectField label="الملف المرفوع" value={filters.fileId} options={fileOptions} onChange={set('fileId')} />
         <SelectField label="الكلية" value={filters.collegeId} options={collegeOptions} onChange={set('collegeId')} />
         <SelectField label="التسجيل" value={filters.registration} options={REGISTRATION_OPTIONS} onChange={set('registration')} />

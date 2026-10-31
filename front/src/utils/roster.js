@@ -6,6 +6,7 @@ export const DEFAULT_PAGE_SIZE = 50;
 
 export const EMPTY_FILTERS = Object.freeze({
   search: '',
+  eventId: '',
   fileId: '',
   collegeId: '',
   registration: '',
@@ -59,6 +60,7 @@ export const TICKET_TYPE_OPTIONS = [
 
 const QUERY_KEYS = {
   search: 'search',
+  eventId: 'event_id',
   fileId: 'file_id',
   collegeId: 'college_id',
   registration: 'registration',
@@ -89,6 +91,36 @@ export function buildRosterQuery(filters, page = 1, pageSize = DEFAULT_PAGE_SIZE
 
 export function hasActiveFilters(filters = {}) {
   return Object.keys(buildRosterFilterQuery(filters)).length > 0;
+}
+
+// Filters carried by a link from the statistics page (?event_id=3&ticket=confirmed...).
+// Unknown or malformed values are ignored, so a hand-edited link cannot break the page.
+const SEARCH_ENUMS = [
+  ['registration', 'registration', REGISTRATION_OPTIONS],
+  ['top_rank', 'topRank', TOP_OPTIONS],
+  ['ticket', 'ticket', TICKET_OPTIONS],
+  ['payment', 'payment', PAYMENT_OPTIONS],
+  ['entry', 'entry', ENTRY_OPTIONS],
+  ['ticket_type', 'ticketType', TICKET_TYPE_OPTIONS],
+];
+const SEARCH_IDS = [
+  ['event_id', 'eventId'],
+  ['college_id', 'collegeId'],
+  ['file_id', 'fileId'],
+];
+
+export function filtersFromSearch(search = '') {
+  const params = new URLSearchParams(search);
+  const out = {};
+  SEARCH_ENUMS.forEach(([param, key, options]) => {
+    const value = params.get(param);
+    if (value !== null && options.some((o) => o.value === value)) out[key] = value;
+  });
+  SEARCH_IDS.forEach(([param, key]) => {
+    const value = params.get(param);
+    if (value !== null && /^\d{1,9}$/.test(value)) out[key] = value;
+  });
+  return out;
 }
 
 // ----------------------------------------------------------------- pagination

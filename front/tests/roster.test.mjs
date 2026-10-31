@@ -124,3 +124,27 @@ test('badge tones', () => {
   assert.equal(badgeTone('payment', 'unknown'), 'muted');
   assert.equal(badgeTone('nothing', 'x'), 'muted');
 });
+
+test('the ceremony filter is sent as event_id', async () => {
+  const { buildRosterFilterQuery: build, EMPTY_FILTERS: empty } = await import('../src/utils/roster.js');
+  assert.deepEqual(build({ ...empty, eventId: '3' }), { event_id: '3' });
+  assert.equal('eventId' in empty, true);
+});
+
+test('filtersFromSearch reads the filters of a link from the statistics page', async () => {
+  const { filtersFromSearch } = await import('../src/utils/roster.js');
+  assert.deepEqual(
+    filtersFromSearch('?event_id=3&registration=verified&ticket=confirmed&entry=entered&top_rank=any&college_id=12'),
+    { eventId: '3', registration: 'verified', ticket: 'confirmed', entry: 'entered', topRank: 'any', collegeId: '12' },
+  );
+  assert.deepEqual(filtersFromSearch('?ticket=none&registration=unverified'), { ticket: 'none', registration: 'unverified' });
+  assert.deepEqual(filtersFromSearch(''), {});
+});
+
+test('filtersFromSearch ignores unknown or malformed values', async () => {
+  const { filtersFromSearch } = await import('../src/utils/roster.js');
+  assert.deepEqual(
+    filtersFromSearch('?ticket=hacked&registration=%3Cscript%3E&event_id=abc&college_id=1;drop&file_id=-4&entry=&x=1'),
+    {},
+  );
+});

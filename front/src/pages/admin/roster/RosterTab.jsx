@@ -4,10 +4,12 @@ import RosterTable from './RosterTable.jsx';
 import RosterDrawer from './RosterDrawer.jsx';
 import Pagination from './Pagination.jsx';
 import { useAdminRoster, exportRosterXlsx } from '../hooks/useAdminRoster.js';
+import { useAdminEvents } from '../hooks/useAdminEvents.js';
 import { listUniversityFiles, listColleges, ApiError } from '../../../api/admin.js';
 import {
   EMPTY_FILTERS,
   DEFAULT_PAGE_SIZE,
+  filtersFromSearch,
   hasActiveFilters,
   pageCount,
   clampPage,
@@ -16,7 +18,8 @@ import {
 const asList = (res) => (Array.isArray(res) ? res : res?.items || res?.colleges || []);
 
 export default function RosterTab() {
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  // a link from the statistics page opens this list already filtered
+  const [filters, setFilters] = useState(() => ({ ...EMPTY_FILTERS, ...filtersFromSearch(window.location.search) }));
   const [searchText, setSearchText] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -28,6 +31,7 @@ export default function RosterTab() {
   const [files, setFiles] = useState([]);
   const [colleges, setColleges] = useState([]);
   const appliedSearch = useRef('');
+  const { events } = useAdminEvents({ limit: 100 });
 
   const { items, total, loading, error, refetch } = useAdminRoster({
     filters,
@@ -131,6 +135,7 @@ export default function RosterTab() {
         canReset={hasActiveFilters(filters) || searchText.trim() !== ''}
         files={files}
         colleges={colleges}
+        events={events}
       />
 
       {exportError && (

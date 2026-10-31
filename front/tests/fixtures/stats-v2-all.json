@@ -1,0 +1,162 @@
+{
+  "generated_at": "2026-10-31T16:44:49.489778+00:00",
+  "scope": {
+    "event_id": null,
+    "event_name": null,
+    "events_count": 2,
+    "event_day": false
+  },
+  "attention": {
+    "processing": 2,
+    "oldest_pending_hours": 5.0,
+    "rejected": 1,
+    "unverified": 1,
+    "confirmed": 2
+  },
+  "registered": {
+    "confirmed_accounts": 6,
+    "unverified_accounts": 1
+  },
+  "status": {
+    "confirmed": 2,
+    "processing": 2,
+    "awaiting_payment": 2,
+    "rejected": 1,
+    "no_ticket": 0
+  },
+  "by_event": [
+    {
+      "event_id": 1,
+      "event_name": "الحفل الأول",
+      "event_date": "2030-06-01",
+      "expected_people": 6,
+      "registered": 4,
+      "unverified": 1,
+      "status": {
+        "confirmed": 1,
+        "processing": 1,
+        "awaiting_payment": 1,
+        "rejected": 1,
+        "no_ticket": 0
+      },
+      "attendance": {
+        "graduates": 1,
+        "companions": 2,
+        "expected": 3
+      },
+      "entry": {
+        "graduates_entered": 1,
+        "companions_entered": 1,
+        "entered": 2,
+        "manual": 0,
+        "expected": 3,
+        "last_entry_at": "2026-10-31T15:44:46.703027+00:00"
+      },
+      "money_confirmed": "100.00",
+      "money_processing": "150.00"
+    },
+    {
+      "event_id": 2,
+      "event_name": "الحفل الثاني",
+      "event_date": "2030-06-01",
+      "expected_people": 3,
+      "registered": 3,
+      "unverified": 0,
+      "status": {
+        "confirmed": 1,
+        "processing": 1,
+        "awaiting_payment": 1,
+        "rejected": 0,
+        "no_ticket": 0
+      },
+      "attendance": {
+        "graduates": 1,
+        "companions": 3,
+        "expected": 4
+      },
+      "entry": {
+        "graduates_entered": 1,
+        "companions_entered": 0,
+        "entered": 1,
+        "manual": 1,
+        "expected": 4,
+        "last_entry_at": "2026-10-31T15:44:46.703027+00:00"
+      },
+      "money_confirmed": "150.00",
+      "money_processing": "100.00"
+    }
+  ],
+  "attendance": {
+    "graduates": 2,
+    "companions": 5,
+    "expected": 7
+  },
+  "entry": {
+    "graduates_entered": 2,
+    "companions_entered": 1,
+    "entered": 3,
+    "manual": 1,
+    "expected": 7,
+    "last_entry_at": "2026-10-31T15:44:46.703027+00:00"
+  },
+  "finance": {
+    "confirmed_amount": "250.00",
+    "processing_amount": "250.00",
+    "by_package": [
+      {
+        "companions_count": 2,
+        "tickets": 1,
+        "amount": "100.00"
+      },
+      {
+        "companions_count": 3,
+        "tickets": 1,
+        "amount": "150.00"
+      }
+    ]
+  },
+  "top_students": {
+    "total": 3,
+    "registered": 3,
+    "confirmed": 1
+  },
+  "representation": {
+    "answered": 4,
+    "wants": 3,
+    "experienced": 3,
+    "both": 2
+  },
+  "colleges": [
+    {
+      "college_id": 1,
+      "name": "كلية أ",
+      "expected": 5,
+      "registered": 3,
+      "confirmed": 1
+    },
+    {
+      "college_id": 2,
+      "name": "كلية ب",
+      "expected": 2,
+      "registered": 2,
+      "confirmed": 0
+    },
+    {
+      "college_id": 3,
+      "name": "كلية ج",
+      "expected": 1,
+      "registered": 1,
+      "confirmed": 0
+    }
+  ],
+  "footer": {
+    "confirmed_accounts": 6,
+    "registration": {
+      "event_id": 2,
+      "event_name": "الحفل الثاني",
+      "ends_at": "2026-11-02T16:44:46.703027+00:00"
+    },
+    "avg_review_hours": 2.7,
+    "reviewed_count": 3
+  }
+}
