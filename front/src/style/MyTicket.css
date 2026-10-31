@@ -410,20 +410,92 @@
 
 .tk-companions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px; /* مسافة واضحة بين الرموز حتى لا يلتقط الماسح رمزين معاً */
 }
 
 .tk-companion-card {
   background-color: #f8edd9;
   border-radius: 12px;
-  padding: 10px;
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   text-align: center;
   border: 1px solid #eedebd;
+}
+
+/* إطار أبيض حول كل رمز (هامش هادئ يساعد المسح) */
+.tk-companion-qr {
+  background-color: #ffffff;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid #eedebd;
+  margin-bottom: 6px;
+  line-height: 0;
+}
+
+/* تنبيه أهمية رموز المرافقين */
+.tk-companions-important {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background-color: #fff0e6;
+  border: 1px solid rgba(202, 75, 0, 0.35);
+  color: #7a2f00;
+}
+
+.tk-companions-important-title {
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ca4b00;
+}
+
+.tk-companions-important ul {
+  margin: 0;
+  padding-inline-start: 18px;
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+/* زر تنزيل رمز واحد */
+.tk-qr-download {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  border: 1px solid #124d44;
+  background-color: #ffffff;
+  color: #124d44;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tk-qr-download:active {
+  transform: scale(0.97);
+}
+
+.tk-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tk-download-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #8d7166;
+  text-align: center;
 }
 
 .tk-companion-avatar {

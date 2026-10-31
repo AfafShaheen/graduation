@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import '../../style/MyTicket.css';
 import '../../style/BrandHeader.css';
@@ -10,6 +10,7 @@ import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 import GuideLinkButton from '../../components/GuideLinkButton';
+import { downloadQrPng, downloadQrPngs, qrFileName } from '../../utils/qrDownload';
 
 const formatEventDate = (value) => {
   if (!value) return '';
@@ -29,6 +30,8 @@ const formatEventTime = (value) => {
 export default function MyTicket() {
   const { data, loading, error, reload } = useMyTicket();
   const [profile, setProfile] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const qrRefs = useRef({});
 
   useEffect(() => {
     let mounted = true;
@@ -98,6 +101,36 @@ export default function MyTicket() {
   const eventDateText = formatEventDate(event?.event_date);
   const eventTimeText = formatEventTime(event?.event_time);
   const topRank = topRankLabel(data?.top_rank);
+
+  // ===== تنزيل رموز QR كصور =====
+  const graduateItem = graduateCode
+    ? {
+        codeId: graduateCode.id,
+        filename: qrFileName('GRADUATE', 0, universityId),
+        lines: [`رمز الخريج: ${studentName}`, seat?.graduate ? `رقم المقعد: ${seat.graduate}` : eventTitle],
+      }
+    : null;
+  const companionItems = companionCodes.map((code, idx) => ({
+    codeId: code.id,
+    filename: qrFileName('COMPANION', idx + 1, universityId),
+    lines: [`المرافق ${idx + 1}`, `مرافق الخريج: ${studentName}`],
+  }));
+
+  // يُستدعى من الأزرار فقط (خارج الرسم)
+  const svgFor = (codeId) => qrRefs.current[codeId]?.querySelector('svg') || null;
+
+  const runDownload = async (items) => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      await downloadQrPngs(items.map((it) => ({ ...it, svg: svgFor(it.codeId) })));
+    } finally {
+      setDownloading(false);
+    }
+  };
+  const downloadOne = (item) => {
+    downloadQrPng(svgFor(item.codeId), item.filename, item.lines);
+  };
 
   return (
     <div className="tk-app-container">
@@ -218,11 +251,17 @@ export default function MyTicket() {
               )}
 
               <div className="tk-qr-box">
-                <div className="tk-qr-relative">
+                <div
+                  className="tk-qr-relative"
+                  ref={(el) => {
+                    if (graduateCode) qrRefs.current[graduateCode.id] = el;
+                  }}
+                >
                   {graduateCode ? (
                     <QRCodeSVG
                       value={graduateCode.code_value}
                       size={168}
+                      marginSize={2}
                       className="tk-qr-svg"
                       aria-label="رمز QR للتحقق من التذكرة"
                     />
@@ -231,6 +270,12 @@ export default function MyTicket() {
                   )}
                 </div>
                 {graduateCode && <span className="tk-meta-label">{graduateCode.code_value}</span>}
+                {graduateCode && (
+                  <button type="button" className="tk-qr-download" onClick={() => downloadOne(graduateItem)}>
+                    <span className="tk-symbol" style={{ fontSize: '16px' }}>download</span>
+                    <span>تنزيل رمزي كصورة</span>
+                  </button>
+                )}
               </div>
             </div>
           </section>
@@ -246,28 +291,51 @@ export default function MyTicket() {
                   </span>
                   <h3 className="tk-companions-title">تذاكر المرافقين ({companionsCount})</h3>
                 </div>
-                <span className="tk-companions-hint">
-                  <span className="tk-symbol" style={{ fontSize: '14px' }}>
-                    info
-                  </span>
-                  تُفعَّل تلقائياً بعد مسح كود الخريج
-                </span>
+              </div>
+
+              <div className="tk-companions-important" role="note">
+                <p className="tk-companions-important-title">
+                  <span className="tk-symbol" style={{ fontSize: '18px' }}>priority_high</span>
+                  مهم جداً: بدون رمزه لن يدخل المرافق
+                </p>
+                <ul>
+                  <li>كل مرافق يدخل <strong>برمزه الخاص فقط</strong>، وكل رمز يُستخدم مرة واحدة.</li>
+                  <li>رموز المرافقين <strong>لا تعمل قبل مسح رمزك أنت</strong>، لذلك ادخلوا معاً.</li>
+                  <li>نزّل صورة كل رمز وأرسلها لصاحبها، أو احتفظ بها كلها على هاتفك.</li>
+                  <li>لا تنشر الرموز ولا تعطها لغير مرافقيك: إذا استخدم شخص آخر الرمز، لن يتمكن مرافقك من الدخول به.</li>
+                </ul>
               </div>
 
               <div className="tk-companions-grid">
                 {companionCodes.map((code, idx) => (
                   <div key={code.id} className="tk-companion-card">
-                    <QRCodeSVG
-                      value={code.code_value}
-                      size={110}
-                      className="tk-qr-svg"
-                      aria-label={`رمز QR للمرافق ${idx + 1}`}
-                    />
+                    <div
+                      className="tk-companion-qr"
+                      ref={(el) => {
+                        qrRefs.current[code.id] = el;
+                      }}
+                    >
+                      <QRCodeSVG
+                        value={code.code_value}
+                        size={132}
+                        marginSize={2}
+                        className="tk-qr-svg"
+                        aria-label={`رمز QR للمرافق ${idx + 1}`}
+                      />
+                    </div>
                     <span className="tk-companion-name">المرافق {idx + 1}</span>
                     <span className="tk-companion-status">
                       {code.scanned ? 'مستخدم' : 'قيد الانتظار'}
                     </span>
                     <span className="tk-meta-label">{code.code_value}</span>
+                    <button
+                      type="button"
+                      className="tk-qr-download"
+                      onClick={() => downloadOne(companionItems[idx])}
+                    >
+                      <span className="tk-symbol" style={{ fontSize: '16px' }}>download</span>
+                      <span>تنزيل كصورة</span>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -291,12 +359,20 @@ export default function MyTicket() {
           )}
 
           <div className="tk-actions-group">
-            <button type="button" className="tk-btn-primary" onClick={() => window.print()}>
+            <button
+              type="button"
+              className="tk-btn-primary"
+              disabled={downloading || !graduateCode}
+              onClick={() => runDownload([graduateItem, ...companionItems].filter(Boolean))}
+            >
               <span className="tk-symbol" style={{ fontSize: '20px' }}>
                 download
               </span>
-              <span>طباعة التذكرة / حفظ PDF</span>
+              <span>{downloading ? 'جارٍ تنزيل الصور...' : 'تنزيل كل رموز QR كصور'}</span>
             </button>
+            <p className="tk-download-note">
+              تُحفظ صورة منفصلة لكل رمز. إذا سألك المتصفح عن السماح بتنزيل عدة ملفات، اختر «السماح».
+            </p>
           </div>
 
           <footer className="tk-footer">
