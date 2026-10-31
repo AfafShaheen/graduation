@@ -15,6 +15,7 @@ export function hasValidGraduateSession() {
  * - مع جلسة: يجلب التذكرة ويوجّه الخريج للصفحة المطابقة لحالتها
  *   (فلو فتح رابطاً خاطئاً بالخطأ يُعاد توجيهه تلقائياً للصفحة الصحيحة).
  * - استثناء: الخريج بانتظار الدفع أو مرفوض الدفع يقدر يفتح /tickets ليغيّر الباقة.
+ * - استثناء: المرفوض يقدر يفتح /payment ليعيد إرسال الدفع (زر «إعادة الدفع»).
  */
 export default function TicketGuard({ children }) {
   // React reuses the same TicketGuard instance when moving between ticket routes
@@ -50,7 +51,10 @@ function TicketGuardInner({ children }) {
     location.pathname === "/tickets" &&
     (status === "AWAITING_PAYMENT" || status === "REJECTED");
 
-  if (!canChangePackage && target !== location.pathname) {
+  /* مرفوض: زر «إعادة الدفع» يفتح صفحة الدفع مباشرة بدل الرجوع لصفحة الرفض */
+  const canResubmitPayment = location.pathname === "/payment" && status === "REJECTED";
+
+  if (!canChangePackage && !canResubmitPayment && target !== location.pathname) {
     return <Navigate to={target} replace />;
   }
   return children;

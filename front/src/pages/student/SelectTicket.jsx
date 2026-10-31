@@ -8,6 +8,7 @@ import { getTicketOptions, selectTicket } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import GuideLinkButton from '../../components/GuideLinkButton';
 
 /* صيغة العدد بالعربي: 1 مرافق، 2 مرافقان، 3-10 مرافقين، 11+ مرافقاً */
 const companionsText = (n) => {
@@ -161,6 +162,8 @@ export default function SelectTicket({ onBack }) {
               <img alt="شعار جامعة حمص" className="st-hero-logo-img" src={universityLogo} />
             </div>
           </section>
+
+          <GuideLinkButton to="/guide" label="إرشادات اختيار التذكرة والدفع" className="st-guide-btn" />
 
           {!loading && !error && !registrationOpen && (
             <section className="st-notice-card" aria-live="polite">

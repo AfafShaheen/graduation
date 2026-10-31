@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import '../../style/MyTicket.css';
 import '../../style/BrandHeader.css';
@@ -10,6 +9,7 @@ import { getGraduateToken } from '../../api/session';
 import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import GuideLinkButton from '../../components/GuideLinkButton';
 
 const formatEventDate = (value) => {
   if (!value) return '';
@@ -235,9 +235,7 @@ export default function MyTicket() {
             </div>
           </section>
 
-          <p style={{ textAlign: 'center', margin: '0 0 12px' }}>
-            <Link to="/guide/ticket">إرشادات يوم الحفل</Link>
-          </p>
+          <GuideLinkButton to="/guide/ticket" label="إرشادات يوم الحفل" />
 
           {companionCodes.length > 0 && (
             <section className="tk-companions-box">

@@ -145,7 +145,6 @@ function App() {
               <GraduationFormStep1
                 onNavigateToLogin={() => navigate("/login")}
                 onNext={() => navigate("/register")}
-                onOpenGuide={() => navigate("/guide/start")}
               />
             ) : (
               <Navigate to="/guide/start" replace />
@@ -279,7 +278,8 @@ function App() {
                 phase="registered"
                 onContinue={({ dontShowAgain }) => {
                   if (dontShowAgain) saveSkipGuide();
-                  navigate("/tickets", { replace: true });
+                  // فُتح من زر الإرشادات بصفحة التذكرة/الدفع: نرجع لنفس الصفحة
+                  navigate(location.state?.from || "/tickets", { replace: true });
                 }}
               />
             ) : (
@@ -632,7 +632,7 @@ function App() {
           path="/guide/ticket"
           element={
             hasValidGraduate || PREVIEW ? (
-              <GraduateGuide phase="paid" onBack={() => navigate("/my-ticket")} />
+              <GraduateGuide phase="paid" onBack={() => navigate(location.state?.from || "/my-ticket")} />
             ) : (
               <Navigate to="/login" replace />
             )

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
+import GuideLinkButton from '../../components/GuideLinkButton';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
@@ -104,7 +105,7 @@ function FieldError({ message }) {
   );
 }
 
-export default function GraduationFormStep1({ onNext, onNavigateToLogin, onOpenGuide }) {
+export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -262,10 +263,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin, onOpenG
             </div>
           </div>
 
-          <button type="button" className="guide-back-btn" onClick={onOpenGuide}>
-            <span className="material-symbols-outlined" aria-hidden="true">menu_book</span>
-            <span>العودة لإرشادات التسجيل</span>
-          </button>
+          <GuideLinkButton to="/guide/start" label="العودة لإرشادات التسجيل" />
 
           <form onSubmit={handleNextStep} noValidate>
             {/* الاسم والكنية */}

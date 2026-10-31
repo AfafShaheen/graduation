@@ -8,6 +8,7 @@ import { getGraduateToken } from '../../api/session';
 import { parseAmount, formatAmount } from '../../utils/amount.js';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import GuideLinkButton from '../../components/GuideLinkButton';
 import { validateTransactionId } from '../../utils/payments';
 
 /* تحويل الأرقام العربية لإنجليزية وإزالة أي رمز غير رقمي */
@@ -266,6 +267,8 @@ export default function ShamCashPayment({ onBack }) {
               بوابة السداد الإلكتروني المعتمدة
             </span>
           </div>
+
+          <GuideLinkButton to="/guide" label="إرشادات الدفع عبر شام كاش" className="sc-guide-btn" />
 
           {loading && <p className="sc-qr-caption">جارٍ تحميل معلومات الدفع...</p>}
 

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../../style/OrderStatus.css';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
@@ -8,6 +8,7 @@ import useMyTicket from '../../hooks/useMyTicket';
 import { companionsLabel } from '../../utils/companions';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import GuideLinkButton from '../../components/GuideLinkButton';
 import { routeForTicket, ORDER_POLL_MS } from '../../utils/ticketRoute';
 
 /* تنسيق التاريخ والوقت بالعربية مع أرقام إنجليزية */
@@ -190,9 +191,7 @@ export default function OrderStatus() {
                 )}
               </section>
 
-              <p style={{ textAlign: 'center', margin: '0 0 12px' }}>
-                <Link to="/guide/ticket">ماذا بعد تأكيد الدفع؟</Link>
-              </p>
+              <GuideLinkButton to="/guide/ticket" label="ماذا بعد تأكيد الدفع؟" />
 
               <div className="os-reassurance-bar">
                 <span className="os-symbol" style={{ color: '#ca4b00', fontSize: '19px', flexShrink: 0 }}>
