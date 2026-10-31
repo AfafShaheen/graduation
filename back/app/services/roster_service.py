@@ -372,6 +372,9 @@ def _item(row) -> Dict[str, Any]:
             "revert_payment": confirmed,
             "manual_entry": confirmed and not entered,
             "cancel_scan": entered,
+            # Exceptional admin action: only for an existing account whose
+            # e-mail is not confirmed yet.
+            "verify_email": row.graduate_id is not None and not row.email_verified,
         },
     }
 

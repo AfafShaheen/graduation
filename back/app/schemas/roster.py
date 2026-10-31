@@ -46,6 +46,7 @@ class RosterActions(BaseModel):
     revert_payment: bool
     manual_entry: bool
     cancel_scan: bool
+    verify_email: bool
 
 
 class RosterItem(BaseModel):

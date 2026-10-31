@@ -9,6 +9,7 @@ from app.services.admin_graduate_service import (
     get_graduate_full_details_service,
     admin_force_update_email_service,
     manual_check_in_service,
+    verify_email_service,
     revert_scan_service,
     revert_payment_service,
 )
@@ -68,6 +69,15 @@ async def manual_check_in(
     admin: dict = Depends(get_current_admin)
 ):
     return await manual_check_in_service(db, graduate_id, admin)
+
+@router.post("/graduates/{graduate_id}/verify-email", status_code=status.HTTP_200_OK)
+async def verify_graduate_email(
+    graduate_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin)
+):
+    """Exceptional action: confirm the graduate e-mail without the OTP code."""
+    return await verify_email_service(db, graduate_id, admin)
 
 @router.post("/graduates/{graduate_id}/revert-scan", status_code=status.HTTP_200_OK)
 async def revert_scan(
