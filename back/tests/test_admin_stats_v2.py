@@ -298,3 +298,38 @@ async def test_an_empty_system_returns_zeros_not_errors(client, make_admin):
     assert s["colleges"] == [] and s["by_event"] == []
     assert s["finance"]["confirmed_amount"] == "0.00" and s["finance"]["by_package"] == []
     assert s["footer"]["avg_review_hours"] is None and s["footer"]["registration"] is None
+
+
+# --- the front end is tested against REAL answers of this API -----------------------
+import json
+import os
+from pathlib import Path
+
+_FIXTURES = Path(__file__).resolve().parents[2] / "front" / "tests" / "fixtures"
+
+
+def _keys(value):
+    """The nested key structure of an answer, ignoring the values."""
+    if isinstance(value, dict):
+        return {k: _keys(v) for k, v in sorted(value.items())}
+    if isinstance(value, list):
+        return [_keys(value[0])] if value else []
+    return None
+
+
+async def test_dump_answers_for_the_front_end_tests(client, world):
+    """Run with STATS_V2_DUMP=1 to refresh front/tests/fixtures (the shape test below keeps them honest)."""
+    if os.getenv("STATS_V2_DUMP") != "1":
+        pytest.skip("only used to regenerate the front-end fixtures")
+    _FIXTURES.mkdir(parents=True, exist_ok=True)
+    for name, event_id in (("stats-v2-event.json", world["e1"].id), ("stats-v2-all.json", None)):
+        data = await _stats(client, world["headers"], event_id)
+        (_FIXTURES / name).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@pytest.mark.skipif(not _FIXTURES.exists(), reason="the front end is not next to the backend")
+@pytest.mark.parametrize("name,scope", [("stats-v2-event.json", "e1"), ("stats-v2-all.json", None)])
+async def test_the_answer_has_exactly_the_shape_the_front_end_is_tested_with(client, world, name, scope):
+    live = await _stats(client, world["headers"], world[scope].id if scope else None)
+    saved = json.loads((_FIXTURES / name).read_text(encoding="utf-8"))
+    assert _keys(live) == _keys(saved)
