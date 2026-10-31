@@ -7,7 +7,6 @@ export const DEFAULT_PAGE_SIZE = 50;
 export const EMPTY_FILTERS = Object.freeze({
   search: '',
   eventId: '',
-  fileId: '',
   collegeId: '',
   registration: '',
   topRank: '',
@@ -61,7 +60,6 @@ export const TICKET_TYPE_OPTIONS = [
 const QUERY_KEYS = {
   search: 'search',
   eventId: 'event_id',
-  fileId: 'file_id',
   collegeId: 'college_id',
   registration: 'registration',
   topRank: 'top_rank',
@@ -106,7 +104,6 @@ const SEARCH_ENUMS = [
 const SEARCH_IDS = [
   ['event_id', 'eventId'],
   ['college_id', 'collegeId'],
-  ['file_id', 'fileId'],
 ];
 
 export function filtersFromSearch(search = '') {

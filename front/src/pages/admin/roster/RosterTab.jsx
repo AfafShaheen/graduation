@@ -5,7 +5,7 @@ import RosterDrawer from './RosterDrawer.jsx';
 import Pagination from './Pagination.jsx';
 import { useAdminRoster, exportRosterXlsx } from '../hooks/useAdminRoster.js';
 import { useAdminEvents } from '../hooks/useAdminEvents.js';
-import { listUniversityFiles, listColleges, ApiError } from '../../../api/admin.js';
+import { listColleges, ApiError } from '../../../api/admin.js';
 import {
   EMPTY_FILTERS,
   DEFAULT_PAGE_SIZE,
@@ -28,7 +28,6 @@ export default function RosterTab() {
   const [notice, setNotice] = useState('');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
-  const [files, setFiles] = useState([]);
   const [colleges, setColleges] = useState([]);
   const appliedSearch = useRef('');
   const { events } = useAdminEvents({ limit: 100 });
@@ -40,12 +39,9 @@ export default function RosterTab() {
     onPageOverflow: setPage,
   });
 
-  // Options of the "uploaded file" and "college" filters (loaded once).
+  // Options of the "college" filter (loaded once).
   useEffect(() => {
     let alive = true;
-    listUniversityFiles()
-      .then((res) => alive && setFiles(asList(res)))
-      .catch(() => {});
     listColleges()
       .then((res) => alive && setColleges(asList(res)))
       .catch(() => {});
@@ -133,7 +129,6 @@ export default function RosterTab() {
         onExport={handleExport}
         exporting={exporting}
         canReset={hasActiveFilters(filters) || searchText.trim() !== ''}
-        files={files}
         colleges={colleges}
         events={events}
       />

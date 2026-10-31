@@ -48,3 +48,9 @@ export async function revertPayment(ticketId) {
 export async function updateGraduateEmail(id, newEmail) {
   return await adminRequest(`/api/admin/graduates/${id}/email`, { method: "PUT", body: { new_email: newEmail } });
 }
+
+// Exceptional admin action: confirm the graduate's e-mail without the OTP
+// code so he can log in normally (single graduate only, no bulk).
+export async function verifyGraduateEmail(id) {
+  return await adminRequest(`/api/admin/graduates/${id}/verify-email`, { method: "POST" });
+}

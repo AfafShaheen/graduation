@@ -16,7 +16,7 @@ function Badge({ tone, children }) {
 function Message({ icon, text, role }) {
   return (
     <tr>
-      <td colSpan={8}>
+      <td colSpan={7}>
         <div className="exc-empty" role={role}>
           <span className="exc-symbol">{icon}</span>
           <span>{text}</span>
@@ -39,7 +39,6 @@ export default function RosterTable({ items, loading, error, selectedId, onSelec
             <th>التذكرة</th>
             <th>الدفع</th>
             <th>الدخول</th>
-            <th>الملف</th>
           </tr>
         </thead>
         <tbody>
@@ -120,9 +119,6 @@ export default function RosterTable({ items, loading, error, selectedId, onSelec
                   </Badge>
                 </td>
 
-                <td>
-                  <span className="exc-cell-sub">{item.file_name || '—'}</span>
-                </td>
               </tr>
             );
           })}
