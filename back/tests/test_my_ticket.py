@@ -95,7 +95,9 @@ async def test_my_ticket_processing(
     assert body["message"] == messages.TICKET_STATUS_PROCESSING
     assert "payment_info" not in body
     assert "qr_codes" not in body
-    assert "whatsapp_group_link" not in body
+    # the WhatsApp group link is shown while the payment is under review (and after
+    # confirmation); the QR codes stay hidden until the payment is confirmed
+    assert body["whatsapp_group_link"] == event.whatsapp_group_link
 
 
 async def test_my_ticket_confirmed_shows_codes(
@@ -177,7 +179,8 @@ async def test_codes_hidden_after_revert_and_returned_after_reconfirm(
     reverted = await _my_ticket(client, access_value)
     assert reverted["ticket"]["status"] == "PROCESSING"
     assert "qr_codes" not in reverted
-    assert "whatsapp_group_link" not in reverted
+    # back under review: the codes are hidden again, the WhatsApp link is still shown
+    assert reverted["whatsapp_group_link"] == event.whatsapp_group_link
 
     reconfirm = await client.post(
         f"/api/admin/tickets/{ticket.id}/confirm", headers=admin_auth
