@@ -5,7 +5,8 @@ const CACHE_KEY = "grad.contactPhone";
 
 function readCache() {
   try {
-    return window.sessionStorage.getItem(CACHE_KEY);
+    // A cached empty value means "not set yet": ask the server again.
+    return window.sessionStorage.getItem(CACHE_KEY) || null;
   } catch {
     return null;
   }
@@ -27,8 +28,8 @@ export default function useContactPhone() {
     let mounted = true;
     getPublicSettings()
       .then((data) => {
-        const phone = data?.contact_phone || "";
-        writeCache(phone);
+        const phone = (data?.contact_phone || "").trim();
+        if (phone) writeCache(phone);
         if (mounted) setContactPhone(phone);
       })
       .catch(() => {

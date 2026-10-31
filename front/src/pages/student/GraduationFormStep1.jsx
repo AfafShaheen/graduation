@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import '../../style/GraduationForm.css';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
@@ -105,7 +104,7 @@ function FieldError({ message }) {
   );
 }
 
-export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
+export default function GraduationFormStep1({ onNext, onNavigateToLogin, onOpenGuide }) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -263,9 +262,10 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             </div>
           </div>
 
-          <p style={{ margin: '0 0 12px', textAlign: 'center' }}>
-            <Link to="/guide/start">📘 اقرأ إرشادات التسجيل قبل البدء</Link>
-          </p>
+          <button type="button" className="guide-back-btn" onClick={onOpenGuide}>
+            <span className="material-symbols-outlined" aria-hidden="true">menu_book</span>
+            <span>العودة لإرشادات التسجيل</span>
+          </button>
 
           <form onSubmit={handleNextStep} noValidate>
             {/* الاسم والكنية */}

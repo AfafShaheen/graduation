@@ -13,67 +13,131 @@ import HelpFooter from '../../components/HelpFooter';
    عدّل النصوص من الثوابت تحت بدون ما تلمس الواجهة
    ========================================================================== */
 
-const STEPS = [
-  'أدخل بياناتك الجامعية كما هي مسجلة في الجامعة.',
-  'أنشئ حسابك وأكّد بريدك الإلكتروني بالرمز المرسل إليك.',
-  'اختر الباقة المناسبة من باقات التذاكر المتاحة لحفلك (عدد المرافقين والسعر).',
-  'حوّل المبلغ عبر شام كاش وأدخل بيانات التحويل.',
-  'بعد تأكيد الاتحاد للدفع تظهر لك رموز QR ورقم مقعدك ورابط مجموعة الواتساب.',
-];
-
-const OWN_ONLY = [
-  'لكل خريج حساب واحد وتذكرة واحدة.',
-  'لا تسجّل لصديقك ببريدك، ولا تعطِ بياناتك لأحد.',
-  'عند الدخول تُطابَق الهوية الشخصية لكل خريج، فلا يمكن الدخول بتذكرة شخص آخر.',
-];
-
-const PAYMENT_POINTS = [
-  'اكتب رقمك الجامعي في خانة الملاحظة عند التحويل.',
-  'أدخل رقم العملية والمبلغ واسم المرسل بدقة.',
-];
-
 const PAYMENT_STATUSES = [
   { label: 'بانتظار الدفع', tone: 'neutral' },
   { label: 'قيد المعالجة', tone: 'orange' },
   { label: 'مؤكدة', tone: 'green' },
 ];
 
-const QR_POINTS = [
-  'رمز لك ورمز لكل مرافق، وكل رمز يُستخدم مرة واحدة فقط.',
-  'لا تنشر رموزك، وأعطِ كل مرافق رمزه.',
-  'احتفظ بلقطة شاشة واشحن هاتفك يوم الحفل.',
-];
-
-const EVENT_DAY_POINTS = [
-  'الخريج يدخل أولاً: رموز المرافقين لا تعمل قبل مسح رمز الخريج، فاحضروا معاً.',
-  'لا يمكن إدخال مرافقين أكثر من العدد المحدد في تذكرتك.',
-];
-
-const SEAT_POINTS = [
-  'بعد تأكيد الدفع يُحجز لك رقم مقعد واحد حسب ترتيب الصعود على المسرح.',
-  'المرافقون يدخلون المدرج بدون أرقام مقاعد.',
-  'رقم مقعدك يظهر بخط كبير في صفحة «تذكرتي».',
-];
-
-const FAQ = [
-  {
-    q: 'لم يصلني الرمز؟',
-    a: 'تحقق من مجلد Spam، أو اطلب رمزاً جديداً بعد دقيقة، أو عدّل بريدك إن كان خاطئاً.',
-  },
-  {
-    q: 'نسيت كلمة السر؟',
-    a: 'اضغط «نسيت كلمة السر» في صفحة الدخول.',
-  },
-  {
-    q: 'متى يغلق التسجيل؟',
-    a: 'فترة التسجيل محدودة بأيام قليلة، فلا تؤجل.',
-  },
-];
-
+/* كل مرحلة = صفحة كاملة. لا يوجد قسم أسئلة شائعة. */
 const PHASES = {
-  before: { subband: 'قبل التسجيل', title: 'قبل أن تبدأ التسجيل 🎓', sections: ['steps', 'own', 'faq'], faq: [0, 2] },
-  registered: { subband: 'قبل الدفع', title: 'دليلك لاختيار التذكرة والدفع', sections: ['payment', 'faq'], faq: [0, 1] },
-  paid: { subband: 'بعد الدفع', title: 'تذكرتك جاهزة: ماذا بعد؟', sections: ['qr', 'seat', 'eventday'], faq: [] },
+  before: {
+    subband: 'إرشادات التسجيل',
+    title: 'قبل أن تبدأ التسجيل 🎓',
+    subtitle: 'ألف مبروك التخرج! اقرأ هذه النقاط قبل تعبئة بياناتك.',
+    sections: [
+      {
+        icon: 'how_to_reg',
+        title: 'من يحق له التسجيل؟',
+        bullets: [
+          'الخريجون المسجّلون في سجلات الجامعة لهذا الفوج فقط.',
+          'يجب أن تكون كليتك مشمولة بالحفل وأن تكون فترة التسجيل مفتوحة.',
+        ],
+      },
+      {
+        icon: 'checklist',
+        title: 'جهّز قبل البدء',
+        bullets: [
+          'اسمك وكنيتك واسم الأب واسم الأم كما هي في سجلات الجامعة.',
+          'رقمك الجامعي ومعدلك.',
+          'بريد إلكتروني تستخدمه فعلاً، لأن رمز التحقق سيصلك عليه.',
+          'رقم هاتف للتواصل.',
+        ],
+      },
+      {
+        icon: 'format_list_numbered',
+        title: 'خطوات التسجيل',
+        steps: [
+          'أدخل معلوماتك الجامعية.',
+          'أنشئ حسابك (البريد الإلكتروني وكلمة السر).',
+          'أكّد بريدك بالرمز المرسل إليك.',
+          'أجب عن سؤالين قصيرين، ثم انتقل لاختيار التذكرة.',
+        ],
+      },
+      {
+        icon: 'badge',
+        title: 'سجّل بنفسك فقط',
+        bullets: [
+          'لكل خريج حساب واحد وتذكرة واحدة.',
+          'لا تسجّل لصديقك ببريدك، ولا تعطِ بياناتك لأحد.',
+          'عند الدخول تُطابَق الهوية الشخصية لكل خريج.',
+        ],
+      },
+      {
+        icon: 'priority_high',
+        title: 'ملاحظات مهمة',
+        bullets: [
+          'إذا لم يصلك رمز التحقق، تحقّق من مجلد الرسائل غير المرغوب فيها (Spam).',
+          'فترة التسجيل محدودة، فلا تؤجّل.',
+        ],
+      },
+    ],
+  },
+
+  registered: {
+    subband: 'اختيار التذكرة والدفع',
+    title: 'دليلك لاختيار التذكرة والدفع',
+    subtitle: 'تم إنشاء حسابك بنجاح. هذه خطواتك التالية.',
+    sections: [
+      {
+        icon: 'confirmation_number',
+        title: 'اختيار الباقة',
+        bullets: [
+          'اختر باقة واحدة حسب عدد المرافقين، ولكل باقة سعرها.',
+          'يمكنك تغيير الباقة طالما لم ترسل بيانات الدفع بعد.',
+        ],
+      },
+      {
+        icon: 'payments',
+        title: 'الدفع عبر شام كاش',
+        bullets: [
+          'امسح رمز QR أو انسخ رقم حساب شام كاش من صفحة الدفع.',
+          'اكتب رقمك الجامعي في خانة الملاحظة عند التحويل.',
+          'أدخل رقم العملية والمبلغ واسم المرسل كما تظهر في إشعار التحويل.',
+        ],
+      },
+      { icon: 'pending_actions', title: 'حالة طلبك', statuses: true },
+    ],
+    warning: { tone: 'red', text: 'بعد تأكيد الدفع لا يمكن تعديل التذكرة أو إلغاؤها، ولا يُسترجع المبلغ.' },
+  },
+
+  paid: {
+    subband: 'يوم الحفل',
+    title: 'تذكرتك جاهزة: ماذا بعد؟',
+    subtitle: 'تم تأكيد دفعك. احتفظ بهذه الإرشادات ليوم الحفل.',
+    sections: [
+      {
+        icon: 'qr_code_2',
+        title: 'رموز QR',
+        bullets: [
+          'رمز لك ورمز لكل مرافق، وكل رمز يُستخدم مرة واحدة فقط.',
+          'لا تنشر رموزك، وأعطِ كل مرافق رمزه.',
+          'احتفظ بلقطة شاشة واشحن هاتفك يوم الحفل.',
+        ],
+      },
+      {
+        icon: 'event_seat',
+        title: 'رقم مقعدك',
+        bullets: [
+          'رقم المقعد للخريج فقط، ويحدّد ترتيبك عند الصعود إلى المسرح.',
+          'احفظ رقمك واجلس في مقعدك المحدّد.',
+          'يجلس المرافقون في الصالة المخصّصة لهم دون أرقام مقاعد.',
+        ],
+      },
+      {
+        icon: 'celebration',
+        title: 'يوم الحفل',
+        bullets: [
+          'الخريج يدخل أولاً: رموز المرافقين لا تعمل قبل مسح رمز الخريج، فاحضروا معاً.',
+          'لا يمكن إدخال مرافقين أكثر من العدد المحدّد في تذكرتك.',
+        ],
+      },
+    ],
+    warning: {
+      tone: 'orange',
+      text: 'الهوية الشخصية إلزامية: تُستلم هويتك عند الدخول ويُسلَّم لك لباس التخرج، وتُعاد إليك بعد انتهاء الحفل وإرجاع اللباس.',
+    },
+  },
 };
 
 function SectionHeader({ number, icon, title }) {
@@ -120,105 +184,44 @@ export default function GraduateGuide({ phase = 'registered', onContinue, onBack
     if (onContinue) onContinue({ dontShowAgain });
   };
 
-  const renderSection = (key, number) => {
-    switch (key) {
-      case 'steps':
-        return (
-          <section className="guide-section" aria-label="خطوات الحصول على التذكرة" key={key}>
-            <SectionHeader number={String(number)} icon="format_list_numbered" title="خطوات الحصول على التذكرة" />
-            <ol className="guide-steps">
-              {STEPS.map((text) => (
-                <li key={text}>
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ol>
-          </section>
-        );
-      case 'own':
-        return (
-          <section className="guide-section" aria-label="سجّل بنفسك فقط" key={key}>
-            <SectionHeader number={String(number)} icon="badge" title="سجّل بنفسك فقط" />
-            <BulletList items={OWN_ONLY} />
-          </section>
-        );
-      case 'payment':
-        return (
-          <section className="guide-section" aria-label="الدفع" key={key}>
-            <SectionHeader number={String(number)} icon="payments" title="الدفع" />
-            <BulletList items={PAYMENT_POINTS} />
+  const renderSection = (section, number) => (
+    <section className="guide-section" aria-label={section.title} key={section.title}>
+      <SectionHeader number={String(number)} icon={section.icon} title={section.title} />
 
-            <div className="guide-status-block">
-              <span className="guide-status-label">حالات التذكرة:</span>
-              <div className="guide-status-flow">
-                {PAYMENT_STATUSES.map((status, i) => (
-                  <React.Fragment key={status.label}>
-                    {i > 0 && (
-                      <span className="material-symbols-outlined guide-status-arrow" aria-hidden="true">
-                        arrow_back
-                      </span>
-                    )}
-                    <span className={`guide-status-chip ${status.tone}`}>{status.label}</span>
-                  </React.Fragment>
-                ))}
-              </div>
-              <p className="guide-status-note">
-                أو <strong>مرفوضة</strong> مع ذكر السبب، ويمكنك إعادة الإرسال.
-              </p>
-            </div>
+      {section.bullets && <BulletList items={section.bullets} />}
 
-            <Warning tone="red">
-              بعد تأكيد الدفع لا يمكن تعديل التذكرة أو إلغاؤها، ولا يُسترجع المبلغ.
-            </Warning>
-          </section>
-        );
-      case 'qr':
-        return (
-          <section className="guide-section" aria-label="رموز QR" key={key}>
-            <SectionHeader number={String(number)} icon="qr_code_2" title="رموز QR" />
-            <BulletList items={QR_POINTS} />
-          </section>
-        );
-      case 'seat':
-        return (
-          <section className="guide-section" aria-label="مقعدك" key={key}>
-            <SectionHeader number={String(number)} icon="event_seat" title="مقعدك" />
-            <BulletList items={SEAT_POINTS} />
-          </section>
-        );
-      case 'eventday':
-        return (
-          <section className="guide-section" aria-label="يوم الحفل" key={key}>
-            <SectionHeader number={String(number)} icon="celebration" title="يوم الحفل" />
-            <BulletList items={EVENT_DAY_POINTS} />
-            <Warning>
-              <strong>الهوية الشخصية إلزامية:</strong> تُستلم هويتك عند الدخول ويُسلَّم لك لباس التخرج، وتُعاد إليك
-              الهوية بعد انتهاء الحفل وإرجاع اللباس. بدون هوية لن تتمكن من استلام لباس التخرج.
-            </Warning>
-          </section>
-        );
-      case 'faq':
-        return (
-          <section className="guide-section" aria-label="أسئلة سريعة" key={key}>
-            <SectionHeader number={String(number)} icon="help" title="أسئلة سريعة" />
-            <div className="guide-faq">
-              {phaseConfig.faq.map((idx) => {
-                const item = FAQ[idx];
-                if (!item) return null;
-                return (
-                  <div className="guide-faq-item" key={item.q}>
-                    <p className="guide-faq-q">{item.q}</p>
-                    <p className="guide-faq-a">{item.a}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        );
-      default:
-        return null;
-    }
-  };
+      {section.steps && (
+        <ol className="guide-steps">
+          {section.steps.map((text) => (
+            <li key={text}>
+              <span>{text}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {section.statuses && (
+        <div className="guide-status-block">
+          <span className="guide-status-label">حالات التذكرة:</span>
+          <div className="guide-status-flow">
+            {PAYMENT_STATUSES.map((status, i) => (
+              <React.Fragment key={status.label}>
+                {i > 0 && (
+                  <span className="material-symbols-outlined guide-status-arrow" aria-hidden="true">
+                    arrow_back
+                  </span>
+                )}
+                <span className={`guide-status-chip ${status.tone}`}>{status.label}</span>
+              </React.Fragment>
+            ))}
+          </div>
+          <p className="guide-status-note">
+            أو <strong>مرفوضة</strong> مع ذكر السبب، ويمكنك إعادة الإرسال.
+          </p>
+        </div>
+      )}
+    </section>
+  );
 
   return (
     <div className="app-container">
@@ -246,19 +249,25 @@ export default function GraduateGuide({ phase = 'registered', onContinue, onBack
             </div>
             <div>
               <h2 className="card-title">{phaseConfig.title}</h2>
-              <p className="card-subtitle">
-                ألف مبروك التخرج! اقرأ هذه النقاط قبل المتابعة، فهي توفر عليك الكثير يوم الحفل.
-              </p>
+              <p className="card-subtitle">{phaseConfig.subtitle}</p>
             </div>
           </section>
 
-          {phaseConfig.sections.map((key, index) => renderSection(key, index + 1))}
+          {phaseConfig.sections.map((section, index) => renderSection(section, index + 1))}
+
+          {phaseConfig.warning && (
+            <div className="guide-warning-wrap">
+              <Warning tone={phaseConfig.warning.tone}>{phaseConfig.warning.text}</Warning>
+            </div>
+          )}
 
           {/* الختام */}
           <section className="guide-closing">
-            <span className="material-symbols-outlined">support_agent</span>
-            <HelpFooter phone={contactPhone} />
-            <p>نتمنى لك حفلاً لا يُنسى! 🎓</p>
+            <div className="guide-closing-help">
+              <span className="material-symbols-outlined" aria-hidden="true">support_agent</span>
+              <HelpFooter phone={contactPhone} />
+            </div>
+            <p className="guide-closing-wish">نتمنى لك حفلاً لا يُنسى! 🎓</p>
           </section>
         </div>
 

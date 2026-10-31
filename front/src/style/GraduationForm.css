@@ -528,3 +528,43 @@
 .login-link:hover {
   text-decoration: underline;
 }
+
+/* زر "العودة لإرشادات التسجيل" بأعلى نموذج الخطوة الأولى (نفس ثيم الأزرار) */
+.guide-back-btn {
+  width: 100%;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  border: 1.5px solid #124d44;
+  background-color: #f8edd9;
+  color: #124d44;
+  font-family: 'Ghroob', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.guide-back-btn .material-symbols-outlined {
+  font-size: 20px;
+  color: #ca4b00;
+}
+
+.guide-back-btn:hover {
+  background-color: #f1e3c6;
+}
+
+.guide-back-btn:active {
+  transform: scale(0.98);
+}
+
+.guide-back-btn:focus-visible {
+  outline: 2px solid #ca4b00;
+  outline-offset: 2px;
+}

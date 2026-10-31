@@ -264,24 +264,60 @@
 .guide-closing {
   margin: 0 clamp(12px, 4vw, 16px);
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 10px;
-  padding: 14px;
+  padding: 14px 16px;
   border-radius: 20px;
   background-color: #124d44;
   color: #ffffff;
 }
 
-.guide-closing .material-symbols-outlined {
+/* سطر المساعدة: الأيقونة + السؤال ورقم التواصل */
+.guide-closing-help {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guide-closing-help .material-symbols-outlined {
   color: #ffb598;
   flex-shrink: 0;
 }
 
-.guide-closing p {
+.guide-closing .help-footer {
   margin: 0;
+  text-align: start;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.8;
+}
+
+.guide-closing .help-footer p {
+  margin: 0;
+}
+
+.guide-closing .help-footer-phone {
+  color: #ffb598;
+}
+
+/* أمنية الختام: تحت سطر المساعدة بخط فاصل */
+.guide-closing-wish {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.25);
+  text-align: center;
   font-size: 13px;
   line-height: 1.9;
   font-weight: 600;
+}
+
+/* التحذير الختامي للمرحلة (خارج الأقسام) */
+.guide-warning-wrap {
+  margin: 0 clamp(12px, 4vw, 16px);
+}
+
+.guide-warning-wrap .guide-warning {
+  margin-top: 0;
 }
 
 /* الشريط السفلي: الموافقة والمتابعة */
@@ -333,6 +369,7 @@
 
 @media (min-width: 600px) {
   .guide-section,
-  .guide-closing { margin: 0 24px; }
+  .guide-closing,
+  .guide-warning-wrap { margin: 0 24px; }
   .guide-section { padding: 20px; }
 }

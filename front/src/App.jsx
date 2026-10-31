@@ -66,6 +66,24 @@ function saveSkipGuide() {
   }
 }
 
+const GUIDE_START_SEEN_KEY = "grad.guide.start.seen";
+
+function hasSeenStartGuide() {
+  try {
+    return window.sessionStorage.getItem(GUIDE_START_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markStartGuideSeen() {
+  try {
+    window.sessionStorage.setItem(GUIDE_START_SEEN_KEY, "1");
+  } catch {
+    /* التخزين غير متاح */
+  }
+}
+
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -123,10 +141,15 @@ function App() {
         <Route
           path="/"
           element={
-            <GraduationFormStep1
-              onNavigateToLogin={() => navigate("/login")}
-              onNext={() => navigate("/register")}
-            />
+            hasSeenStartGuide() ? (
+              <GraduationFormStep1
+                onNavigateToLogin={() => navigate("/login")}
+                onNext={() => navigate("/register")}
+                onOpenGuide={() => navigate("/guide/start")}
+              />
+            ) : (
+              <Navigate to="/guide/start" replace />
+            )
           }
         />
 
@@ -595,7 +618,15 @@ function App() {
 
         <Route
           path="/guide/start"
-          element={<GraduateGuide phase="before" onContinue={() => navigate("/")} />}
+          element={
+            <GraduateGuide
+              phase="before"
+              onContinue={() => {
+                markStartGuideSeen();
+                navigate("/");
+              }}
+            />
+          }
         />
         <Route
           path="/guide/ticket"
