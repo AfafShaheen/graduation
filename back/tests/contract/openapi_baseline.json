@@ -5886,6 +5886,59 @@
         ]
       }
     },
+    "/api/admin/stats/v2": {
+      "get": {
+        "description": "Dashboard statistics (v2): one definition per number, cached for a few seconds.",
+        "operationId": "get_stats_v2_api_admin_stats_v2_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "event_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Stats V2",
+        "tags": [
+          "Admin Statistics"
+        ]
+      }
+    },
     "/api/admin/tickets/{ticket_id}": {
       "get": {
         "operationId": "get_admin_ticket_api_admin_tickets__ticket_id__get",

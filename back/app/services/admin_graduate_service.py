@@ -17,7 +17,7 @@ from app.services.seat_service import seat_labels
 from app.services.audit_log import ActorType, record_audit
 from app.services.college_links import colleges_of_event_filter, resolve_college_event
 from app.core import messages
-from app.core.redis import redis_client
+from app.core.redis import STATS_V2_CACHE_PREFIX, redis_client
 from app.core.sql_utils import escape_like
 
 
@@ -25,6 +25,7 @@ async def invalidate_admin_cache() -> None:
     """Invalidate all admin graduation and ticket related Redis caches."""
     try:
         keys = await redis_client.keys("admin:graduates:*")
+        keys += await redis_client.keys(f"{STATS_V2_CACHE_PREFIX}:*")
         if keys:
             await redis_client.delete(*keys)
     except Exception:
