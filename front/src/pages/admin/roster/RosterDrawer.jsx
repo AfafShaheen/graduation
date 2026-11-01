@@ -259,10 +259,7 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
                   <div className="exc-info-value">{companionsLabel(ticket.companions_count)}</div>
                   <span className="exc-info-sub num">{ticket.price || '—'}</span>
                 </div>
-                <div>
-                  <span className="exc-info-label">المقاعد</span>
-                  <div className="exc-info-value">{ticket.seat || '—'}</div>
-                </div>
+                
                 {ticketDetail?.rejection_reason && (
                   <div>
                     <span className="exc-info-label">سبب الرفض</span>

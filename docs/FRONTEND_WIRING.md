@@ -58,7 +58,7 @@
 | `/payment-rejected` | `OrderRejected` | `GET /api/graduates/me/ticket` (عبر `useMyTicket`) | خريج |
 | `/my-ticket` | `MyTicket` | `GET /api/graduates/me/ticket` (عبر `useMyTicket`) + `GET /api/graduates/me` | خريج |
 
-مصدر حالة التذكرة الموحّد: `front/src/hooks/useMyTicket.js` → `getMyTicket` (`GET /api/graduates/me/ticket`)، ويعيد `{status, seat:{graduate,companions[],range}, ...}` عند التأكيد.
+مصدر حالة التذكرة الموحّد: `front/src/hooks/useMyTicket.js` → `getMyTicket` (`GET /api/graduates/me/ticket`)، ويعيد `{status, ...}`. الباك ما زال يرجّع `seat` عند التأكيد، لكن الواجهة ما عادت تعرضه (انظر قسم «إخفاء المقاعد من الواجهة» بآخر الملف).
 
 ---
 
@@ -102,7 +102,7 @@
 
 ## 7. قائمة اختبار يدوي مختصرة
 
-1. تسجيل كامل: `/` → `/register` → `/otp` → `/questions` → `/tickets` → `/payment` → `/payment-submitted` → (تأكيد من الإدارة) → `/my-ticket` مع ظهور المقعد والوقت.
+1. تسجيل كامل: `/` → `/register` → `/otp` → `/questions` → `/tickets` → `/payment` → `/payment-submitted` → (تأكيد من الإدارة) → `/my-ticket` مع ظهور وقت الحفل.
 2. استعادة كلمة السر: `/login` «نسيت كلمة السر» → `/reset-otp` → `/reset-password` → دخول.
 3. الإدارة: `/admin` دخول → `/admin/ceremonies` (بحث، حذف بتأكيد، إنشاء/تعديل مع `event_time`/`seat_prefix` وتخصصات) → `/admin/payments` (تأكيد/رفض) → `/admin/scanners` (ماسح + إعدادات + QR) → `/admin/actions` (تفاصيل غنية) → `/admin/volunteers` (فلترة + تصدير).
 4. الماسح: `/scanner` دخول → مسح تذكرة صحيحة/مستخدمة/مرافق قبل الخريج.
@@ -259,3 +259,18 @@
 - شارة الشريط الجانبي ورأس صفحة طلبات الدفع يعرضان نفس الرقم بالضبط؛ عنوان الرأس: «بانتظار التدقيق في كل الحفلات: N» مع title إرشادي. بطاقات كل حفل بقيت لكل حفل لكن صارت موسومة باسم الحفل: «قيد التدقيق والمعالجة (اسم الحفل)» حتى لا يُخلط الرقمان. القائمة والفلاتر والإجراءات واستدعاءات `onPendingChanged` بعد القبول/الرفض كما هي بلا تغيير.
 - لا قراءة لإحصائيات `/api/admin/stats` القديمة في هذا المسار إطلاقاً.
 - الاختبار: `pendingCounter.test.mjs` (الدوال النقية + ثابت: المصدر stats/v2 وليس stats القديم، الرأس يستخدم رقم الكونتكست وعبارة «في كل الحفلات»، فترة التحديث ≥ 20 ثانية).
+---
+
+## إخفاء المقاعد من الواجهة (hide-seats)
+
+**القرار:** الباك إند بيضل يخصّص المقعد عند تأكيد الدفع ويرجّعه بالـ API (حقل `seat` بـ `GET /api/graduates/me/ticket` وتفاصيل التذكرة والخريج، وأعمدة المقاعد بتصدير Excel) بدون أي تغيير. الواجهة بس ما عادت تعرضه.
+
+| الملف | التغيير |
+|---|---|
+| `pages/student/MyTicket.jsx` | حذف صندوق «رقم مقعدك» ومتغير `seat`؛ سطر التعريف بصورة QR المنزّلة صار اسم الحفل دائماً بدل رقم المقعد |
+| `pages/student/GraduateGuide.jsx` | حذف قسم «رقم مقعدك» من مرحلة `paid` |
+| `pages/admin/AdminPaymentRequests.jsx` | حذف `seat` من الصفوف، وسطر «المقعد: ...» من الجدول، وإشعار «تم التأكيد. المقعد: ...» بعد التأكيد |
+
+**ملاحظات:**
+- أصناف `.tk-seat-*` بـ `MyTicket.css` بقيت بدون استخدام (عمداً، ما عدّلنا على التصميم).
+- للرجوع لعرض المقعد: البيانات موجودة بالـ API، يكفي إعادة العرض بالواجهة.
