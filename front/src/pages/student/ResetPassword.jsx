@@ -6,6 +6,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { resetPassword } from '../../api/graduate';
 import { clearResetFlow, getResetEmail, getResetCode } from '../../api/session';
 import { passwordError } from '../../utils/validators';
+import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 
@@ -136,9 +137,10 @@ export default function ResetPassword({ onBack, onDone }) {
         const mapped = {};
         let general = '';
         Object.entries(err.fieldErrors).forEach(([field, msg]) => {
-          if (field === 'new_password' || field === PWD_FIELD) mapped[PWD_FIELD] = msg;
-          else if (field === 'confirmPassword') mapped.confirmPassword = msg;
-          else general = msg;
+          const c = cleanServerMessage(msg);
+          if (field === 'new_password' || field === PWD_FIELD) mapped[PWD_FIELD] = c;
+          else if (field === 'confirmPassword') mapped.confirmPassword = c;
+          else general = c;
         });
         if (Object.keys(mapped).length) setErrors((prev) => ({ ...prev, ...mapped }));
         if (general) setSaveError(general);

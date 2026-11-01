@@ -8,6 +8,7 @@ import useFormDraft from "../../hooks/useFormDraft";
 import { registerStep2 } from "../../api/graduate";
 import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegistrationToken } from "../../api/session";
 import { phoneError, passwordError } from "../../utils/validators";
+import { cleanServerMessage } from "../../utils/cleanServerMessage.js";
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 
@@ -126,8 +127,10 @@ export default function GraduationFormStep2({
       if (onNext) onNext(formData);
     } catch (err) {
       if (err.fieldErrors) {
-        setErrors((prev) => ({ ...prev, ...err.fieldErrors }));
-        const firstField = Object.keys(err.fieldErrors)[0];
+        const cleaned = {};
+        for (const [k, v] of Object.entries(err.fieldErrors)) cleaned[k] = cleanServerMessage(v);
+        setErrors((prev) => ({ ...prev, ...cleaned }));
+        const firstField = Object.keys(cleaned)[0];
         document.getElementById(fieldIds[firstField])?.focus();
       } else if (err.status === 401) {
         setErrors({ general: err.message || 'انتهت الجلسة، يرجى إعادة الخطوة الأولى' });

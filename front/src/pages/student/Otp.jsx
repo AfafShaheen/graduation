@@ -5,6 +5,7 @@ import unionLogo from '../../assets/only-logo.png';
 import { verifyOtp, resendOtp, changeEmail, forgotPassword } from '../../api/graduate';
 import { setGraduateSession, clearVerificationToken, setVerificationToken, setGraduateEmail, getVerificationToken, getGraduateEmail, setResetCode, clearResetFlow } from '../../api/session';
 import HelpFooter from '../../components/HelpFooter';
+import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
 const CODE_LENGTH = 6;
@@ -23,7 +24,7 @@ const firstFieldError = (err) => {
   const fieldErrors = err?.fieldErrors;
   if (!fieldErrors) return '';
   const keys = Object.keys(fieldErrors);
-  return keys.length ? fieldErrors[keys[0]] : '';
+  return keys.length ? cleanServerMessage(fieldErrors[keys[0]]) : '';
 };
 
 const emptyOtp = () => Array(CODE_LENGTH).fill('');

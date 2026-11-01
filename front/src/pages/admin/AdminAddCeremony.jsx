@@ -6,6 +6,7 @@ import { ApiError, listColleges, listUniversityFiles, linkUniversityFile, adminB
 import useFormDraft from '../../hooks/useFormDraft';
 import CollegeCatalogField from '../../components/CollegeCatalogField';
 import { BATCH_BADGE } from '../../config/brand';
+import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 
 /* مفاتيح مسودة نموذج الحفل الجديد (localStorage) */
 const CEREMONY_DRAFT_KEYS = [
@@ -455,7 +456,9 @@ export default function AdminAddCeremony({
       }
     } catch (err) {
       if (err instanceof ApiError && err.status === 422 && err.fieldErrors) {
-        setFieldErrors(err.fieldErrors);
+        const cleaned = {};
+        for (const [k, v] of Object.entries(err.fieldErrors)) cleaned[k] = cleanServerMessage(v);
+        setFieldErrors(cleaned);
         setSubmitError('يرجى تصحيح الحقول المميّزة بالأحمر ثم إعادة المحاولة.');
       } else if (collegesChanged && err instanceof ApiError && err.status === 409) {
         setCollegeError(err.message || 'تعذّر تعديل كليات الحفل.');

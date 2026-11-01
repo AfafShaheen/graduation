@@ -10,6 +10,7 @@ import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 import GuideLinkButton from '../../components/GuideLinkButton';
 import { validateTransactionId } from '../../utils/payments';
+import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 
 /* تحويل الأرقام العربية لإنجليزية وإزالة أي رمز غير رقمي */
 const toDigits = (value) =>
@@ -27,9 +28,6 @@ const SERVER_FIELD_MAP = {
   amount: 'transferAmount',
   sender_name: 'senderName',
 };
-
-/* pydantic prefixes messages with "Value error, " */
-const cleanServerMessage = (msg) => String(msg || '').replace(/^Value error,\s*/i, '');
 
 const formatMoney = (value) => Number(value).toLocaleString('en-US');
 

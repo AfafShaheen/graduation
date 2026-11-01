@@ -11,6 +11,7 @@ import {
   deleteShamcashQr,
 } from './hooks/useAdminSettings.js';
 import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
+import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 import { useAdminStats } from '../../context/AdminStatsContext.jsx';
 import RejectReasonPresets from './RejectReasonPresets.jsx';
 import {
@@ -186,8 +187,7 @@ export default function AdminPaymentRequests({
 
   // رسائل pydantic تأتي على شكل "Value error، <رسالتنا العربية>" — تُنظَّف للعرض
   // Note: FastAPI/pydantic v2 uses a regular comma; the Arabic comma is accepted too.
-  const stripPydanticPrefix = (msg) =>
-    String(msg).replace(/^Value error[,\u060C]?\s*/i, '').trim();
+  const stripPydanticPrefix = (msg) => cleanServerMessage(msg);
 
   const cleanMappedErrors = (mapped) => {
     const out = {};

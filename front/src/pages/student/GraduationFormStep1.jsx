@@ -7,6 +7,7 @@ import unionLogo from '../../assets/only-logo.png';
 import useFormDraft from '../../hooks/useFormDraft';
 import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
 import { setRegistrationToken } from '../../api/session';
+import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 
@@ -219,8 +220,10 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
       if (onNext) onNext(formData);
     } catch (err) {
       if (err.fieldErrors) {
-        setErrors((prev) => ({ ...prev, ...err.fieldErrors }));
-        const firstField = Object.keys(err.fieldErrors)[0];
+        const cleaned = {};
+        for (const [k, v] of Object.entries(err.fieldErrors)) cleaned[k] = cleanServerMessage(v);
+        setErrors((prev) => ({ ...prev, ...cleaned }));
+        const firstField = Object.keys(cleaned)[0];
         document.getElementsByName(firstField)?.[0]?.focus();
       } else if (err.status === 400 || err.status === 403) {
         const detail = err.data?.detail;
