@@ -104,6 +104,24 @@ export default function OrderStatus() {
                 </button>
               </div>
 
+              {/* تحذير واضح: على الخريج متابعة حالة طلبه بنفسه */}
+              <section className="os-critical-warning" role="alert">
+                <div className="os-critical-head">
+                  <span className="os-symbol os-critical-icon" aria-hidden="true">warning</span>
+                  <h2 className="os-critical-title">تنبيه مهم، اقرأه جيداً</h2>
+                </div>
+                <p className="os-critical-text">
+                  تأكّد بنفسك من حالة طلبك: عُد إلى هذا الموقع بعد المراجعة وتحقّق أن طلبك صار{' '}
+                  <strong>«مؤكدة»</strong> وأن <strong>رمز QR</strong> ظهر لك.
+                </p>
+                <p className="os-critical-text strong">
+                  من لا يملك رمز QR لن يُسمح له بدخول الحفل، والاتحاد غير مسؤول عن ذلك.
+                </p>
+                <p className="os-critical-text">
+                  وإن تأخّر طلبك أو واجهتك أي مشكلة، راجعنا قبل موعد الحفل بوقت كافٍ.
+                </p>
+              </section>
+
               <section className="os-card-box">
                 <div className="os-logo-wrapper">
                   <img alt="شعار جامعة حمص" className="os-logo-img" src={universityLogo} />

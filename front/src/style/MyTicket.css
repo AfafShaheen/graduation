@@ -366,6 +366,53 @@
   margin: 0;
 }
 
+/* تذكير إثبات الشخصية (بنفس لغة تحذيرات صفحة الدليل) */
+.tk-id-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background-color: #fff0e6;
+  border: 1px solid rgba(202, 75, 0, 0.35);
+  color: #7a2f00;
+  box-sizing: border-box;
+  text-align: right;
+}
+
+.tk-id-reminder-icon {
+  font-size: 22px;
+  color: #ca4b00;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.tk-id-reminder-body {
+  min-width: 0;
+}
+
+.tk-id-reminder-title {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 800;
+  color: #ca4b00;
+}
+
+.tk-id-reminder-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.tk-id-reminder-text + .tk-id-reminder-text {
+  margin-top: 6px;
+}
+
+.tk-id-reminder-text strong {
+  font-weight: 800;
+}
+
 /* تذاكر المرافقين */
 .tk-companions-box {
   background-color: #ffffff;

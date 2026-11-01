@@ -280,6 +280,22 @@ export default function MyTicket() {
             </div>
           </section>
 
+          {/* تذكير: إثبات الشخصية مطلوب يوم الحفل */}
+          <section className="tk-id-reminder" role="note">
+            <span className="tk-symbol tk-id-reminder-icon" aria-hidden="true">badge</span>
+            <div className="tk-id-reminder-body">
+              <h3 className="tk-id-reminder-title">لا تنسَ إحضار إثبات شخصيتك</h3>
+              <p className="tk-id-reminder-text">
+                أحضر معك <strong>هويتك الشخصية</strong> أو <strong>إخراج قيد</strong> أو أي وثيقة
+                رسمية تثبت أنك الخريج صاحب هذه التذكرة، فالتحقق من هويتك يتم عند الدخول.
+              </p>
+              <p className="tk-id-reminder-text">
+                <strong>تُستلم هويتك أو إخراج القيد عند الدخول</strong> ويُسلَّم لك لباس التخرج، وتُعاد إليك بعد
+                انتهاء الحفل وإرجاع اللباس.
+              </p>
+            </div>
+          </section>
+
           <GuideLinkButton to="/guide/ticket" label="إرشادات يوم الحفل" />
 
           {companionCodes.length > 0 && (

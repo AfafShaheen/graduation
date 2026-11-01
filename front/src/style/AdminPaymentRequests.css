@@ -7,6 +7,8 @@
   font-family: 'Ghroob', 'Cairo', sans-serif;
   background-color: #fcf6ed;
   color: #201b0f;
+  /* يمنع الوضع الداكن التلقائي في المتصفح من قلب ألوان الحقول (textarea/select) */
+  color-scheme: light;
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
@@ -785,6 +787,8 @@
 }
 .pay-req-modal {
   background: #ffffff;
+  /* يثبّت ألوان عناصر النموذج على الوضع الفاتح حتى لو المتصفح/النظام بالوضع الداكن */
+  color-scheme: light;
   border-radius: 16px;
   width: 100%;
   max-width: 460px;
@@ -813,6 +817,8 @@
 .pay-req-modal-textarea {
   width: 100%;
   box-sizing: border-box;
+  background-color: #ffffff;
+  color-scheme: light;
   border: 1px solid #d7e0dd;
   border-radius: 10px;
   padding: 10px 12px;
@@ -820,6 +826,10 @@
   font-size: 14px;
   resize: vertical;
   color: #1f2a28;
+}
+.pay-req-modal-textarea::placeholder {
+  color: #9aa8a4;
+  opacity: 1;
 }
 .pay-req-modal-textarea:focus {
   outline: none;

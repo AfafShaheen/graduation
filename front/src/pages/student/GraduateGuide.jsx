@@ -13,6 +13,11 @@ import HelpFooter from '../../components/HelpFooter';
    عدّل النصوص من الثوابت تحت بدون ما تلمس الواجهة
    ========================================================================== */
 
+/* رقم واتساب للتواصل: الرقم للرابط بدون + وبدون أصفار، والعرض للمستخدم */
+const WHATSAPP_NUMBER = '963983186498';
+const WHATSAPP_DISPLAY = '+963 983 186 498';
+const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}`;
+
 const PAYMENT_STATUSES = [
   { label: 'بانتظار الدفع', tone: 'neutral' },
   { label: 'قيد المعالجة', tone: 'orange' },
@@ -69,6 +74,7 @@ const PHASES = {
         bullets: [
           'إذا لم يصلك رمز التحقق، تحقّق من مجلد الرسائل غير المرغوب فيها (Spam).',
           'فترة التسجيل محدودة، فلا تؤجّل.',
+          'يوم الحفل أحضر معك هويتك الشخصية أو إخراج قيد أو أي وثيقة رسمية تثبت أنك الخريج.',
         ],
       },
     ],
@@ -130,12 +136,13 @@ const PHASES = {
         bullets: [
           'الخريج يدخل أولاً: رموز المرافقين لا تعمل قبل مسح رمز الخريج، فاحضروا معاً.',
           'لا يمكن إدخال مرافقين أكثر من العدد المحدّد في تذكرتك.',
+          'أحضر هويتك الشخصية أو إخراج قيد أو أي وثيقة رسمية تثبت أنك الخريج صاحب التذكرة.',
         ],
       },
     ],
     warning: {
       tone: 'orange',
-      text: 'الهوية الشخصية إلزامية: تُستلم هويتك عند الدخول ويُسلَّم لك لباس التخرج، وتُعاد إليك بعد انتهاء الحفل وإرجاع اللباس.',
+      text: 'إثبات الشخصية إلزامي: أحضر هويتك أو إخراج القيد أو أي وثيقة رسمية تثبت أنك الخريج. تُستلم عند الدخول ويُسلَّم لك لباس التخرج، وتُعاد إليك بعد انتهاء الحفل وإرجاع اللباس.',
     },
   },
 };
@@ -267,6 +274,18 @@ export default function GraduateGuide({ phase = 'registered', onContinue, onBack
               <span className="material-symbols-outlined" aria-hidden="true">support_agent</span>
               <HelpFooter phone={contactPhone} />
             </div>
+
+            <a
+              className="guide-whatsapp"
+              href={WHATSAPP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">chat</span>
+              <span className="guide-whatsapp-text">تواصل عبر واتساب</span>
+              <span className="guide-whatsapp-number" dir="ltr">{WHATSAPP_DISPLAY}</span>
+            </a>
+
             <p className="guide-closing-wish">نتمنى لك حفلاً لا يُنسى! 🎓</p>
           </section>
         </div>

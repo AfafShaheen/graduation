@@ -1,4 +1,6 @@
-
+:root {
+  color-scheme: only light;
+}
 @font-face {
   font-family: 'Ghroob';
   src: url('./assets/fonts/itfGhroobArabic-Light.otf') format('opentype');

@@ -4,6 +4,7 @@ import GuideLinkButton from '../../components/GuideLinkButton';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
+import useFormDraft from '../../hooks/useFormDraft';
 import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
 import { setRegistrationToken } from '../../api/session';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
@@ -106,7 +107,8 @@ function FieldError({ message }) {
 }
 
 export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
-  const [formData, setFormData] = useState({
+  // مسودة محفوظة: إذا الخريج راح يقرأ الإرشادات ورجع، بتضل بياناته معبّاية
+  const [formData, setFormData] = useFormDraft('step1', {
     firstName: '',
     lastName: '',
     gender: '',
@@ -142,6 +144,25 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
       });
     return () => { mounted = false; };
   }, []);
+
+  // بعد تحميل الكليات: إذا الكلية أو التخصص المحفوظ ما عاد موجود بالقائمة (تغيّرت الكشوفات مثلاً)
+  // منرجّعه لحالته الفاضية بدل ما يضل اختيار وهمي
+  useEffect(() => {
+    if (collegesLoading || colleges.length === 0) return;
+    setFormData((prev) => {
+      if (!prev.faculty) return prev;
+      const college = colleges.find((c) => String(c.id) === String(prev.faculty));
+      if (!college) return { ...prev, faculty: '', major: 'none' };
+      if (
+        prev.major !== 'none' &&
+        !(college.majors || []).some((m) => String(m.id) === String(prev.major))
+      ) {
+        return { ...prev, major: 'none' };
+      }
+      return prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colleges, collegesLoading]);
 
   const selectedCollege = colleges.find((c) => String(c.id) === String(formData.faculty));
   const majors = selectedCollege?.majors || [];

@@ -203,6 +203,70 @@
   50% { opacity: 0.5; }
 }
 
+/* تحذير مهم: متابعة حالة الطلب مسؤولية الخريج */
+.os-critical-warning {
+  background-color: #fff0e6;
+  border: 2px solid #ca4b00;
+  border-right-width: 6px;
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  text-align: right;
+}
+
+.os-critical-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.os-critical-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background-color: #ca4b00;
+  color: #ffffff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.os-critical-title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 26px;
+  font-weight: 800;
+  color: #8a3300;
+}
+
+.os-critical-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.9;
+  font-weight: 600;
+  color: #5c2a0d;
+}
+
+.os-critical-text strong {
+  color: #8a3300;
+  font-weight: 800;
+}
+
+/* الجملة الأهم: خلفية بيضا ليبين أنها الخلاصة */
+.os-critical-text.strong {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  border: 1px solid rgba(202, 75, 0, 0.4);
+  color: #8a3300;
+  font-weight: 800;
+}
+
 /* البطاقة البيضاء */
 .os-card-box {
   background-color: #ffffff;
@@ -482,6 +546,9 @@
   .os-header-title { font-size: 15px; }
   .os-card-box { padding: 20px 12px; }
   .os-card-headline { font-size: 17px; }
+  .os-critical-warning { padding: 12px; }
+  .os-critical-title { font-size: 15px; }
+  .os-critical-text { font-size: 13px; }
 }
 
 /* تابلت ولابتوب */
