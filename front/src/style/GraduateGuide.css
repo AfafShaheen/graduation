@@ -300,45 +300,6 @@
   color: #ffb598;
 }
 
-/* زر واتساب: ضمن القسم الختامي بنفس لغة الألوان */
-.guide-whatsapp {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #ffffff;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.8;
-  transition: background-color 0.15s ease;
-}
-
-.guide-whatsapp:hover,
-.guide-whatsapp:focus-visible {
-  background-color: rgba(255, 255, 255, 0.18);
-  outline: none;
-}
-
-.guide-whatsapp .material-symbols-outlined {
-  color: #ffb598;
-  flex-shrink: 0;
-}
-
-.guide-whatsapp-text {
-  flex: 1;
-}
-
-.guide-whatsapp-number {
-  color: #ffb598;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 /* أمنية الختام: تحت سطر المساعدة بخط فاصل */
 .guide-closing-wish {
   margin: 0;

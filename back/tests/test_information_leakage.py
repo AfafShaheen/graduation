@@ -117,5 +117,5 @@ async def test_contact_phone_appended_only_when_setting_exists(
     after = await client.post(
         "/api/graduates/verify-step1", json=_registration_payload(college.id, "500031")
     )
-    assert after.json()["detail"] == messages.GENERIC_VERIFY_FAIL + " رقم التواصل: " + _CONTACT
-    assert await _register_fail(db) == messages.REGISTER_FAIL + " رقم التواصل: " + _CONTACT
+    assert after.json()["detail"] == messages.GENERIC_VERIFY_FAIL + " رقم واتساب التواصل: " + _CONTACT
+    assert await _register_fail(db) == messages.REGISTER_FAIL + " رقم واتساب التواصل: " + _CONTACT

@@ -59,6 +59,7 @@ export default function GraduationFormStep2({
   const [submitted, setSubmitted] = useState(false); // الأخطاء ما بتبين إلا بعد أول ضغطة على الزر
   const [isLoading, setIsLoading] = useState(false);
   const [notice, setNotice] = useState('');
+  const [unverifiedNotice, setUnverifiedNotice] = useState('');
 
   const handleInputChange = (e) => {
     let { name, value } = e.target;
@@ -286,6 +287,9 @@ export default function GraduationFormStep2({
                 </span>
               </div>
               <FieldError message={errors.phone} />
+              <p className="label-hint" style={{ marginTop: "4px" }}>
+                هذا الرقم هو رقم واتساب للتواصل معك عند الحاجة
+              </p>
             </div>
 
             {/* البريد الإلكتروني */}

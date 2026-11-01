@@ -208,7 +208,7 @@
 
 ## مسار الرفض: من نافذة رفض الإدارة إلى صفحة الخريج (fix/rejection-flow)
 
-**المشكلة يلي انحلت:** لما ترفض الإدارة طلب دفع كان الخريج يشوف نصاً ثابتاً قديماً («وجود خطأ في مطابقة الإشعار» وتلميح إعادة كتابة رقم العملية) لا يطابق أسباب الإدارة الحقيقية، وما كانت عنده خيارات واضحة. الآن السبب يظهر كما كُتب، والخريج يختار بين إعادة الدفع والتواصل مع الدعم.
+**المشكلة يلي انحلت:** لما ترفض الإدارة طلب دفع كان الخريج يشوف نصاً ثابتاً قديماً («وجود خطأ في مطابقة الإشعار» وتلميح إعادة كتابة رقم العملية) لا يطابق أسباب الإدارة الحقيقية. الآن السبب يظهر كما كُتب، والخريج يختار إعادة الدفع عند توفرها، والتواصل معنا عبر واتساب.
 
 **المسار الكامل:**
 1. الإدارة: `pages/admin/AdminPaymentRequests.jsx` → نافذة الرفض فيها الآن أزرار أسباب جاهزة فوق مربع النص (`pages/admin/RejectReasonPresets.jsx`) + جملة «سيظهر هذا السبب للخريج كما كُتب.» (D2) + عدّاد `n/255`. التحقق القديم (3..255 بعد trim) لم يُمس؛ اختيار سبب يملأ المربع ويبقى قابلاً للتعديل. الإرسال عبر `rejectTicket(ticketId, reason)` (hook `useAdminPayments.js`) بلا تغيير.
@@ -218,9 +218,9 @@
 **الملفات:**
 - `src/config/rejectReasons.js` — قائمة الأسباب الجاهزة `REJECT_REASON_PRESETS` (المصدر الوحيد، D1). **ملاحظة انحراف:** قرار D1 ذكر ثلاث strings فقط بينما المهمة B1.1 تشترط خمسة؛ اعتمدنا خمسة (الثلاثة الأولى هي strings D1 نفسها مع إتمام الأولى الناقصة «…سعر الباقة.» و«…غير موجود.» + سببين إضافيين). لتغيير الأسباب كلها تُعدَّل هذه القائمة فقط (كل سبب يجب أن يبقى بين 3 و255 حرفاً ومتميزاً — اختبار `rejectReasonPresets.test.mjs` يفرض ذلك).
 - `src/pages/admin/RejectReasonPresets.jsx` — أزرار تختار سبباً وتستدعي `onPick(text)`.
-- `src/utils/rejection.js` — دوال نقية: `supportHref(phone)` (قاعدة الهاتف: ‎+‎ اختياري ثم 7-15 رقماً، تُزال الفراغات والشرطات، وإلا null)، `rejectionReasonText(ticket)` (السبب بعد trim أو fallback D6)، `rejectionActions({registrationOpen, phone})` → `{canResubmit, callHref, showClosedNotice, showOfficeText}`.
-- `src/components/RejectionOptions.jsx` — عنوان «ماذا تريد أن تفعل؟»، زر «إعادة الدفع» (فقط أثناء فتح التسجيل، يذهب إلى `/payment`)، رابط «تواصل مع الدعم» `<a href="tel:...">` يعرض الرقم بـ `dir="ltr"`، جملة «انتهت فترة التسجيل، لم يعد إعادة الدفع متاحاً.» عند الإغلاق، ونص «تواصل مع مكتب الاتحاد.» بدل الزر إذا لم يكن رقم الدعم مضبوطاً في الإعداد العام `contact_phone` (D5). الأصناف الجديدة قليلة مضافة فوق `or-*` الموجودة في `style/OrderRejected.css`.
-- `src/pages/student/OrderRejected.jsx` — صياغة D6 (badge «الطلب مرفوض»، headline «تم رفض طلب الدفع»، subtext جديد، «سبب الرفض:»، fallback «لم يُرفق سبب للرفض. يمكنك التواصل مع الدعم للاستفسار.»)؛ حُذفت الدعوتان القديمتان؛ بقيت الهيدر و`HelpFooter` (مرة واحدة تماماً) والتذييل وحالات التحميل/الخطأ وزر إعادة المحاولة.
+- `src/utils/rejection.js` — دوال نقية: `supportHref(phone)` (تحويل رقم الدعم إلى رابط واتساب بعد التحقق)، `rejectionReasonText(ticket)` (السبب بعد trim أو fallback D6)، `rejectionActions({registrationOpen, phone})` → `{canResubmit, callHref, showClosedNotice, showOfficeText}`.
+- `src/components/RejectionOptions.jsx` — عنوان «ماذا تريد أن تفعل؟» وزر «إعادة الدفع» فقط أثناء فتح التسجيل. تم توحيد التواصل عبر واتساب في `HelpFooter` مع عرض أيقونة واتساب.
+- `src/pages/student/OrderRejected.jsx` — صياغة D6 (badge «الطلب مرفوض»، headline «تم رفض طلب الدفع»، subtext جديد، «سبب الرفض:»، fallback «لم يُرفق سبب للرفض. تواصل معنا على الواتساب للاستفسار.»)؛ بقيت الهيدر و`HelpFooter` والتذييل وحالات التحميل/الخطأ وزر إعادة المحاولة.
 
 **عبارات الصفحة والسبب:** نصوص الخريج كلها في `utils/rejection.js` و`RejectionOptions.jsx` و`OrderRejected.jsx` أعلاه؛ نصوص نافذة الإدارة حول المربع في `AdminPaymentRequests.jsx`؛ الأسباب الجاهزة في `config/rejectReasons.js` وحدها. الاختبارات: `rejectReasonPresets` و`rejectionUtils` و`rejectionOptions` (SSR عبر Vite + react-dom/server، بلا أي dependency جديد).
 

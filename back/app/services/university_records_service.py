@@ -2,6 +2,7 @@ import io
 import json
 import re
 import asyncio
+import logging
 import pandas as pd
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -18,6 +19,8 @@ from app.services.graduate_service import normalize_arabic
 from app.services.college_links import colleges_for_event
 from app.services.audit_log import ActorType, record_audit
 from app.core.redis import redis_client
+
+logger = logging.getLogger(__name__)
 
 
 def parse_gpa(val: Any) -> Decimal | None:
@@ -210,7 +213,7 @@ async def invalidate_uni_records_cache(event_id: int) -> None:
         if admin_keys:
             await redis_client.delete(*admin_keys)
     except Exception:
-        pass
+        logger.warning("University records cache invalidation failed", exc_info=True)
 
 
 # Canonical field name -> Arabic column header. The dict order is the canonical
@@ -793,7 +796,7 @@ async def list_university_records(
         if cached:
             return json.loads(cached)
     except Exception:
-        pass
+        logger.warning("University records cache read failed", exc_info=True)
 
     stmt = (
         select(UniversityRecordModel, MajorModel.name.label("major_name"))
@@ -849,7 +852,7 @@ async def list_university_records(
     try:
         await redis_client.setex(cache_key, 300, json.dumps(result))
     except Exception:
-        pass
+        logger.warning("University records cache write failed", exc_info=True)
 
     return result
 

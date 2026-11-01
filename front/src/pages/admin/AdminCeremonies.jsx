@@ -10,8 +10,6 @@ const STATUS_LABELS = {
   upcoming: "قريباً",
 };
 
-const fmt = (n) => n.toLocaleString("en-US");
-
 export default function AdminCeremonies({
   adminName = "مسؤول الاتحاد",
   adminRole = "الاتحاد الوطني لطلبة سورية",
@@ -300,7 +298,6 @@ export default function AdminCeremonies({
     </div>
   );
 }
-
 
 
 

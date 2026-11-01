@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import List, Optional, Dict, Any
@@ -22,6 +23,8 @@ from app.services.college_links import (
     assert_college_not_on_other_event,
     colleges_for_event,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize_college_key(name: str) -> str:
@@ -74,7 +77,7 @@ async def invalidate_events_cache() -> None:
         if keys:
             await redis_client.delete(*keys)
     except Exception:
-        pass
+        logger.warning("Event cache invalidation failed", exc_info=True)
 
 
 async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict) -> dict:
@@ -161,7 +164,7 @@ async def list_events_service(
         if cached:
             return json.loads(cached)
     except Exception:
-        pass
+        logger.warning("Event list cache read failed for %s", cache_key, exc_info=True)
 
     stmt = select(EventModel).options(
         selectinload(EventModel.colleges),
@@ -212,7 +215,7 @@ async def list_events_service(
     try:
         await redis_client.setex(cache_key, 300, json.dumps(result))
     except Exception:
-        pass
+        logger.warning("Event list cache write failed for %s", cache_key, exc_info=True)
 
     return result
 
@@ -224,7 +227,7 @@ async def get_event_details_service(db: AsyncSession, event_id: int) -> dict:
         if cached:
             return json.loads(cached)
     except Exception:
-        pass
+        logger.warning("Event detail cache read failed for %s", cache_key, exc_info=True)
 
     ev = await db.get(
         EventModel,
@@ -259,7 +262,7 @@ async def get_event_details_service(db: AsyncSession, event_id: int) -> dict:
     try:
         await redis_client.setex(cache_key, 300, json.dumps(result))
     except Exception:
-        pass
+        logger.warning("Event detail cache write failed for %s", cache_key, exc_info=True)
 
     return result
 

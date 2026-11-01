@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
@@ -20,6 +21,7 @@ from app.services.settings_service import (
 )
 
 router = APIRouter(prefix="/api", tags=["Public"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/colleges", status_code=status.HTTP_200_OK)
@@ -43,7 +45,7 @@ async def list_registration_colleges(db: AsyncSession = Depends(get_db)):
         if cached:
             return json.loads(cached)
     except Exception:
-        pass
+        logger.warning("Public college cache read failed", exc_info=True)
 
     now = datetime.now(UTC)
 
@@ -99,7 +101,7 @@ async def list_registration_colleges(db: AsyncSession = Depends(get_db)):
     try:
         await redis_client.setex(cache_key, 60, json.dumps(output))
     except Exception:
-        pass
+        logger.warning("Public college cache write failed", exc_info=True)
 
     return output
 

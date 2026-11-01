@@ -322,6 +322,13 @@
   color: #124d44;
 }
 
+.st-option-description {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: #725b51;
+}
+
 .st-price-row {
   display: flex;
   align-items: baseline;
@@ -404,43 +411,7 @@
   color: #124d44;
 }
 
-/* شارة أسفل البطاقة */
-.st-option-footer {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid #f2e7d3;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
-.st-badge-popular {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  background-color: #f8edd9;
-  border: 1px solid rgba(202, 75, 0, 0.25);
-  font-size: 11px;
-  line-height: 14px;
-  color: #124d44;
-  font-weight: 700;
-}
-
-.st-badge-family {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  background-color: #f8edd9;
-  border: 1px solid #eedebd;
-  font-size: 11px;
-  line-height: 14px;
-  color: #594138;
-  font-weight: 700;
-}
 
 /* التنبيه */
 .st-notice-card {

@@ -75,7 +75,7 @@ class EventCreate(BaseModel):
     registration_end: datetime
     whatsapp_group_link: str
     packages: List[PackageItem] = Field(..., min_length=1)
-    college_names: List[str] = Field(..., min_items=1)
+    college_names: List[str] = Field(..., min_length=1)
 
     @field_validator("seat_prefix")
     @classmethod
@@ -109,7 +109,7 @@ class EventUpdate(BaseModel):
     registration_end: Optional[datetime] = None
     whatsapp_group_link: Optional[str] = None
     packages: Optional[List[PackageItem]] = None
-    college_names: Optional[List[str]] = Field(None, min_items=1)
+    college_names: Optional[List[str]] = Field(None, min_length=1)
 
     @field_validator("seat_prefix")
     @classmethod

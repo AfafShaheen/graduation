@@ -180,7 +180,7 @@ async def logout_scanner(credentials, scanner: ScannerModel) -> dict:
             if ttl > 0:
                 await redis_client.setex(f"token_blacklist:{jti}", ttl, "1")
     except Exception:
-        pass
+        logger.warning("Scanner logout token revocation failed", exc_info=True)
 
     return {"status": "success", "message": "تم تسجيل الخروج بنجاح."}
 

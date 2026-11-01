@@ -13,11 +13,6 @@ import HelpFooter from '../../components/HelpFooter';
    عدّل النصوص من الثوابت تحت بدون ما تلمس الواجهة
    ========================================================================== */
 
-/* رقم واتساب للتواصل: الرقم للرابط بدون + وبدون أصفار، والعرض للمستخدم */
-const WHATSAPP_NUMBER = '963983186498';
-const WHATSAPP_DISPLAY = '+963 983 186 498';
-const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}`;
-
 const PAYMENT_STATUSES = [
   { label: 'بانتظار الدفع', tone: 'neutral' },
   { label: 'قيد المعالجة', tone: 'orange' },
@@ -46,7 +41,7 @@ const PHASES = {
           'اسمك وكنيتك واسم الأب واسم الأم كما هي في سجلات الجامعة.',
           'رقمك الجامعي ومعدلك.',
           'بريد إلكتروني تستخدمه فعلاً، لأن رمز التحقق سيصلك عليه.',
-          'رقم هاتف للتواصل.',
+          'رقم واتساب للتواصل.',
         ],
       },
       {
@@ -262,20 +257,8 @@ export default function GraduateGuide({ phase = 'registered', onContinue, onBack
           {/* الختام */}
           <section className="guide-closing">
             <div className="guide-closing-help">
-              <span className="material-symbols-outlined" aria-hidden="true">support_agent</span>
               <HelpFooter phone={contactPhone} />
             </div>
-
-            <a
-              className="guide-whatsapp"
-              href={WHATSAPP_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span className="material-symbols-outlined" aria-hidden="true">chat</span>
-              <span className="guide-whatsapp-text">تواصل عبر واتساب</span>
-              <span className="guide-whatsapp-number" dir="ltr">{WHATSAPP_DISPLAY}</span>
-            </a>
 
             <p className="guide-closing-wish">نتمنى لك حفلاً لا يُنسى! 🎓</p>
           </section>

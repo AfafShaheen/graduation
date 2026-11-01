@@ -91,12 +91,6 @@ function App() {
   const { pathname } = location;
 
   const [pendingPayments, setPendingPayments] = useState(0);
-  const [, setSurvey] = useState(null);
-  const [scanner, setScanner] = useState(() =>
-    hasScannerSession()
-  );
-  const [scannerError, setScannerError] = useState("");
-
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
@@ -210,7 +204,7 @@ function App() {
           element={
             hasValidGraduate || PREVIEW ? (
               <GraduateQuestions
-                onDone={(answers) => {
+                onDone={() => {
                   navigate("/guide", { replace: true }); // الدليل أولاً، ومنه لاختيار التذكرة
                 }}
               />

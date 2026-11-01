@@ -6,7 +6,7 @@ endpoint leaks which field mismatched (SRS FR-2, FR-6, NFR privacy).
 
 GENERIC_VERIFY_FAIL = (
     "ما قدرنا نتحقق من بياناتك، يرجى التأكد من الرقم الجامعي والاسم والكلية والمعدل "
-    "كما هي مسجلة في سجلات الجامعة، أو التواصل مع الاتحاد"
+    "كما هي مسجلة في سجلات الجامعة، أو تواصل معنا على الواتساب"
 )
 
 # D11: the only *specific* verification failure (a top-student mismatch). The
@@ -29,7 +29,7 @@ UNIVERSITY_ID_ALREADY_REGISTERED = "رقمك الجامعي مسجل مسبقا�
 ACCOUNT_UNVERIFIED = (
     "لديك حساب غير مفعّل. اضغط على «لدي حساب» لإكمال التفعيل."
 )
-REGISTER_FAIL = "تعذّر إكمال التسجيل، يرجى مراجعة بياناتك أو التواصل مع الاتحاد"
+REGISTER_FAIL = "تعذّر إكمال التسجيل، يرجى مراجعة بياناتك أو تواصل معنا على الواتساب"
 EMAIL_ALREADY_USED = (
     "هذا البريد الإلكتروني مستخدم بحساب آخر. إذا كان حسابك، سجّل الدخول أو استخدم "
     "«نسيت كلمة السر»."
@@ -93,7 +93,7 @@ SETTINGS_RECEIVER_INVALID = (
     "اسم المستفيد يقبل حروفاً عربية أو إنجليزية ومسافات فقط (من حرفين إلى 200)"
 )
 SETTINGS_PHONE_INVALID = (
-    "رقم الهاتف يجب أن يتكون من أرقام فقط (من 7 إلى 15 رقماً) ويمكن أن يبدأ بعلامة +"
+    "رقم واتساب يجب أن يتكون من أرقام فقط (من 7 إلى 15 رقماً) ويمكن أن يبدأ بعلامة +"
 )
 SHAMCASH_QR_UPDATED = "تم تحديث رمز دفع الشام كاش بنجاح"
 SHAMCASH_QR_DELETED = "تم حذف رمز دفع الشام كاش"
@@ -121,7 +121,7 @@ PAYMENT_REJECTED = "تم رفض الدفع"
 def append_contact_phone(message: str, contact_phone: str | None) -> str:
     """Append the union contact number when the setting is configured (SRS FR-2)."""
     if contact_phone:
-        return f"{message} رقم التواصل: {contact_phone}"
+        return f"{message} رقم واتساب التواصل: {contact_phone}"
     return message
 
 

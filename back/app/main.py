@@ -1,4 +1,5 @@
 import os
+import logging
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -131,6 +132,8 @@ app.add_middleware(
 from app.models import all_models  # noqa: F401  (registers every model, including MajorModel)
 from sqlalchemy.orm import configure_mappers; configure_mappers()
 
+logger = logging.getLogger(__name__)
+
 app.include_router(graduates.router)
 app.include_router(auth.router)
 app.include_router(admin_graduates.router)
@@ -161,10 +164,12 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     try:
         await db.execute(text("SELECT 1"))
     except Exception:
+        logger.exception("Health check database probe failed")
         details["database"] = "error"
     try:
         await redis_client.ping()
     except Exception:
+        logger.exception("Health check Redis probe failed")
         details["redis"] = "error"
 
     healthy = all(value == "ok" for value in details.values())

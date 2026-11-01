@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from typing import Any, Dict
@@ -21,6 +22,8 @@ STORAGE_DIR = os.getenv("UNIVERSITY_FILES_DIR", "/app/storage/university_files")
 
 _ALLOWED_EXTENSIONS = (".xlsx", ".xls", ".csv")
 MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+
+logger = logging.getLogger(__name__)
 
 
 def _safe_filename(name: str) -> str:
@@ -307,7 +310,11 @@ async def delete_university_file(
         if path and os.path.exists(path):
             os.remove(path)
     except OSError:
-        pass
+        logger.warning(
+            "Failed to remove university file from disk after database deletion",
+            extra={"file_id": file_id},
+            exc_info=True,
+        )
     if event_id is not None:
         await invalidate_uni_records_cache(event_id)
     return {

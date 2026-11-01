@@ -55,10 +55,10 @@ test("HelpFooter markup shows one line without a phone and two with one", async 
   const globalSrc = readFileSync(join(here, "..", "src", "components", "HelpFooter.jsx"), "utf8");
   assert.ok(globalSrc.includes("useContactPhone"), "component must fall back to useContactPhone");
 
-  // التحقق من البنية عبر نص المكوّن نفسه (لا DOM هنا): رابط tel يُبنى من الرقم بعد إزالة المسافات
+  // التحقق من البنية عبر نص المكوّن نفسه (لا DOM هنا): رابط واتساب يُبنى من الرقم
   assert.ok(globalSrc.includes('dir="ltr"'), "phone link must stay LTR");
-  assert.ok(globalSrc.includes("tel:"), "phone must be a tel: link");
-  assert.ok(globalSrc.includes("replace(/\\s+/g"), "href must strip spaces");
+  assert.ok(globalSrc.includes("whatsappHref"), "phone must be a WhatsApp link");
+  assert.ok(globalSrc.includes("target=\"_blank\""), "WhatsApp link must open separately");
 
   // التحقق من بنية JSX الفعلية للمكوّن: سطرين مشروطين بنفس الأصناف المستخدمة في renderToStaticMarkup أدناه
   assert.ok(globalSrc.includes('className="help-footer-question"'), "line1 markup present");
@@ -70,13 +70,13 @@ test("HelpFooter markup shows one line without a phone and two with one", async 
   const withPhone = renderToStaticMarkup(React.createElement(HelpFooterMod.default, { phone: "0933 123456" }));
   assert.ok(withPhone.includes(HELP_QUESTION), "line1 always rendered");
   assert.ok(withPhone.includes(HELP_EMERGENCY_LABEL), "line2 rendered with phone");
-  assert.ok(withPhone.includes('href="tel:0933123456"'), "spaces stripped in href");
+  assert.ok(withPhone.includes('href="https://wa.me/96333123456"'), "phone converted to WhatsApp link");
   assert.ok(withPhone.includes('dir="ltr"'));
 
   const noPhone = renderToStaticMarkup(React.createElement(HelpFooterMod.default, { phone: "" }));
   assert.ok(noPhone.includes(HELP_QUESTION), "line1 still rendered without phone");
   assert.ok(!noPhone.includes(HELP_EMERGENCY_LABEL), "line2 hidden without phone");
-  assert.ok(!noPhone.includes("tel:"), "no tel link without phone");
+  assert.ok(!noPhone.includes("wa.me"), "no WhatsApp link without phone");
 });
 
 // تحميل مكوّن JSX عبر تحويل سريع بسيط (يُزال import CSS و JSX يُترجم يدوياً؟ لا)
@@ -99,7 +99,7 @@ async function loadComponent() {
             React.createElement(
               "a",
               {
-                href: `tel:${line2.phone.replace(/\s+/g, "")}`,
+                href: `https://wa.me/96333123456`,
                 dir: "ltr",
                 className: "help-footer-phone",
               },

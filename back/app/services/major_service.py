@@ -1,3 +1,4 @@
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
@@ -10,6 +11,8 @@ from app.services.audit_log import ActorType, record_audit
 from app.services.graduate_service import normalize_arabic
 from app.services.college_links import resolve_college_event
 from app.core.redis import redis_client
+
+logger = logging.getLogger(__name__)
 
 
 async def _audit_event_id(db: AsyncSession, college_id: int) -> int | None:
@@ -25,7 +28,7 @@ async def invalidate_majors_cache() -> None:
         if keys:
             await redis_client.delete(*keys)
     except Exception:
-        pass
+        logger.warning("Major cache invalidation failed", exc_info=True)
 
 
 async def list_college_majors_service(db: AsyncSession, college_id: int) -> list[MajorModel]:

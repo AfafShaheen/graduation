@@ -115,7 +115,7 @@ async def logout_admin(credentials, admin: dict) -> dict:
             if ttl > 0:
                 await redis_client.setex(f"token_blacklist:{jti}", ttl, "1")
     except Exception:
-        pass
+        logger.warning("Admin logout token revocation failed", exc_info=True)
 
     return {"status": "success", "message": "تم تسجيل الخروج بنجاح."}
 

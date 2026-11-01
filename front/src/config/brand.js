@@ -13,4 +13,4 @@ export const BATCH_BADGE = 'الدفعة 3';
 export const HELP_QUESTION = 'تحتاج مساعدة؟';
 
 // تسمية سطر المساعدة الثاني المتبوع برقم الطوارئ (D8).
-export const HELP_EMERGENCY_LABEL = 'اتصل بنا:';
+export const HELP_EMERGENCY_LABEL = 'تواصل معنا على الواتساب:';

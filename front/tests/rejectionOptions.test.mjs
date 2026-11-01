@@ -29,7 +29,7 @@ async function render(props) {
 
 test('RejectionOptions: registration open -> resubmit button without support button', async () => {
   const html = await render({ registrationOpen: true, phone: PHONE, onResubmit: () => {} });
-  assert.match(html, /ماذا تريد أن تفعل\؟/);
+  assert.match(html, /ماذا تريد أن تفعل؟/);
   assert.match(html, /إعادة الدفع/);
   assert.doesNotMatch(html, /تواصل مع الدعم/);
   assert.doesNotMatch(html, /href="tel:/);
@@ -85,7 +85,3 @@ test('OrderRejected.jsx static checks: D6 wording in, old claims out, wiring kep
   assert.ok(src.includes('or-retry-link'), 'reload button must stay');
   assert.ok(src.includes('CEREMONY_TITLE'), 'footer brand string must stay');
 });
-
-function escapeRe(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

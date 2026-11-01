@@ -859,7 +859,7 @@ export default function AdminPaymentRequests({
                   </div>
 
                   <div className="scan-set-field">
-                    <label className="scan-set-label" htmlFor="support-phone">رقم الطوارئ والتواصل (هاتف)</label>
+                    <label className="scan-set-label" htmlFor="support-phone">رقم واتساب التواصل</label>
                     <div className="scan-set-input-wrap">
                       <input
                         id="support-phone"

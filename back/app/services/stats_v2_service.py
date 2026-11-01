@@ -30,6 +30,7 @@ changes a ticket or a payment, so an admin's own action shows at once.
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List
@@ -41,6 +42,8 @@ from sqlalchemy.orm import aliased
 
 from app.core import messages
 from app.core.redis import STATS_V2_CACHE_PREFIX, redis_client
+
+logger = logging.getLogger(__name__)
 from app.models.college import CollegeModel
 from app.models.event import EventModel
 from app.models.graduate import GraduateModel
@@ -394,12 +397,12 @@ async def get_stats_v2_service(db: AsyncSession, event_id: int | None) -> Dict[s
         if cached:
             return json.loads(cached)
     except Exception:
-        pass
+        logger.warning("Stats v2 cache read failed for %s", key, exc_info=True)
 
     data = await compute_stats_v2(db, event_id)
     ttl = CACHE_TTL_EVENT_DAY_SECONDS if data["scope"]["event_day"] else CACHE_TTL_SECONDS
     try:
         await redis_client.setex(key, ttl, json.dumps(data))
     except Exception:
-        pass
+        logger.warning("Stats v2 cache write failed for %s", key, exc_info=True)
     return data

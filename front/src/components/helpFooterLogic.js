@@ -14,4 +14,11 @@ export function helpLines(question, label, phone) {
   };
 }
 
+export function whatsappHref(phone) {
+  const digits = typeof phone === "string" ? phone.replace(/\D/g, "") : "";
+  if (!digits) return null;
+  const internationalNumber = digits.startsWith("0") ? `963${digits.slice(1)}` : digits;
+  return `https://wa.me/${internationalNumber}`;
+}
+
 export { HELP_QUESTION, HELP_EMERGENCY_LABEL };

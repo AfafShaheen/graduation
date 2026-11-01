@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/ShamCashPayment.css';
 import '../../style/BrandHeader.css';
@@ -28,8 +28,6 @@ const SERVER_FIELD_MAP = {
   amount: 'transferAmount',
   sender_name: 'senderName',
 };
-
-const formatMoney = (value) => Number(value).toLocaleString('en-US');
 
 /* كل دالة ترجع نص الخطأ، أو نص فاضي إذا القيمة صحيحة */
 const makeValidators = () => ({

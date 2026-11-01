@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, or_
@@ -22,6 +23,8 @@ from app.core import messages
 from app.core.redis import STATS_V2_CACHE_PREFIX, redis_client
 from app.core.sql_utils import escape_like
 
+logger = logging.getLogger(__name__)
+
 
 async def invalidate_admin_cache() -> None:
     """Invalidate all admin graduation and ticket related Redis caches."""
@@ -31,7 +34,7 @@ async def invalidate_admin_cache() -> None:
         if keys:
             await redis_client.delete(*keys)
     except Exception:
-        pass
+        logger.warning("Admin graduate cache invalidation failed", exc_info=True)
 
 
 async def search_graduates_service(

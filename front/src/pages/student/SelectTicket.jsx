@@ -20,23 +20,16 @@ const companionsText = (n) => {
 
 /* الباك يرجّع باقات الحفل: [{ companions_count, price }].
    عدد المرافقين فريد ضمن الحفل، فنستخدمه كمعرّف للبطاقة وكقيمة الإرسال. */
-const buildOption = (o, index, all) => {
+const buildOption = (o) => {
   const n = Number(o.companions_count);
-  const isLargest = all.length > 1 && n === Math.max(...all.map((x) => Number(x.companions_count)));
   return {
     id: n,
-    title: `خريج + ${companionsText(n)}`,
-    guestsCount: n,
+    title: `تذكرة الخريج + ${companionsText(n)}`,
     price: o.price,
     features: [
-      { icon: n > 2 ? 'groups' : 'group', text: `${companionsText(n)} في الصالة الشرفية` },
+      { icon: n > 2 ? 'groups' : 'group', text: `عدد الحضور: الخريج + ${companionsText(n)}` },
     ],
-    badge:
-      index === 0
-        ? { className: 'st-badge-popular', dot: true, text: 'الأكثر اختياراً' }
-        : isLargest
-          ? { className: 'st-badge-family', icon: 'family_restroom', text: 'باقة العائلة الموسعة' }
-          : null,
+    description: `دخول الخريج إلى حفل التخرج مع ${companionsText(n)}`,
   };
 };
 
@@ -210,6 +203,7 @@ export default function SelectTicket({ onBack }) {
                       </div>
                       <div>
                         <h3 className="st-option-title">{option.title}</h3>
+                        <p className="st-option-description">{option.description}</p>
                         <div className="st-price-row">
                           <span className="st-price-label">السعر:</span>
                           <span className="st-price-val">{formatPrice(option.price)}</span>
@@ -233,21 +227,6 @@ export default function SelectTicket({ onBack }) {
                     ))}
                   </ul>
 
-                  {option.badge && (
-                    <div className="st-option-footer">
-                      <span className={option.badge.className}>
-                        {option.badge.dot && (
-                          <span className="st-dot" style={{ width: '6px', height: '6px' }}></span>
-                        )}
-                        {option.badge.icon && (
-                          <span className="st-symbol" style={{ fontSize: '14px' }}>
-                            {option.badge.icon}
-                          </span>
-                        )}
-                        {option.badge.text}
-                      </span>
-                    </div>
-                  )}
                 </div>
               ))}
             </section>
