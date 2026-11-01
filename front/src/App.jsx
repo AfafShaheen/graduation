@@ -34,6 +34,7 @@ import AdminColleges from "./pages/admin/AdminColleges";
 import AdminUniversityFiles from "./pages/admin/AdminUniversityFiles";
 import AdminVolunteers from "./pages/admin/AdminVolunteers";
 import { AdminStatsProvider } from "./context/AdminStatsContext";
+import { PENDING_PAYMENTS_POLL_MS, fetchPendingPaymentsTotal } from "./utils/pendingPayments.js";
 import ScannerLogin from "./pages/scanner/ScannerLogin";
 import ScannerCamera from "./pages/scanner/ScannerCamera";
 import ScanSuccessResult from "./pages/scanner/ScanSuccessResult";
@@ -102,11 +103,12 @@ function App() {
 
   usePageMeta({ path: pathname });
 
+  // العدّاد الموحّد: طلبات الدفع بانتظار المراجعة في كل الحفلات (stats/v2 → attention.processing)
+  // نفس الرقم في شارة الشريط الجانبي وفي رأس صفحة طلبات الدفع — لا مصدر ثانٍ.
   const refreshPendingPayments = useCallback(async () => {
     try {
-      const { adminRequest } = await import("./api/admin.js");
-      const res = await adminRequest("/api/admin/stats");
-      setPendingPayments(res?.tickets?.processing ?? 0);
+      const n = await fetchPendingPaymentsTotal();
+      setPendingPayments(n);
     } catch {
       /* نتجاهل الفشل — تبقى الشارة على آخر قيمة */
     }
@@ -133,6 +135,23 @@ function App() {
       refreshPendingPayments();
     }
   }, [pathname, hasValidAdmin, refreshPendingPayments]);
+
+  // تحديث العدّاد كل 30 ثانية أثناء ظهور التبويب، وفوراً عند استعادة التركيز.
+  // التنظيف يزيل المؤقّت والمستمعات حتى لا يبقى أي تسريب بعد الخروج من الجلسة.
+  useEffect(() => {
+    if (!hasValidAdmin) return undefined;
+    const tick = () => {
+      if (document.visibilityState === "visible") refreshPendingPayments();
+    };
+    const timer = setInterval(tick, PENDING_PAYMENTS_POLL_MS);
+    document.addEventListener("visibilitychange", tick);
+    window.addEventListener("focus", tick);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+      window.removeEventListener("focus", tick);
+    };
+  }, [hasValidAdmin, refreshPendingPayments]);
 
   return (
     <AdminStatsProvider pendingPayments={pendingPayments} refreshPendingPayments={refreshPendingPayments}>

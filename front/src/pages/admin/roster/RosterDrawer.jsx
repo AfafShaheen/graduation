@@ -5,6 +5,7 @@ import {
   revertScan,
   revertPayment,
   updateGraduateEmail,
+  verifyGraduateEmail,
 } from '../hooks/useAdminGraduates.js';
 import { ApiError } from '../../../api/admin.js';
 import {
@@ -30,7 +31,7 @@ const formatDateTime = (value) => {
   }).format(d);
 };
 
-// The three exceptional actions. Whether each one is allowed comes from the
+// The exceptional actions. Whether each one is allowed comes from the
 // roster row (`actions`), so the rules live in the API only.
 const ACTIONS = [
   {
@@ -63,6 +64,21 @@ const ACTIONS = [
     blocked: 'متاح فقط للتذكرة المؤكدة.',
     run: (row) => revertPayment(row.ticket.id),
     done: 'تم إرجاع الدفع لقيد المعالجة.',
+  },
+  {
+    key: 'verify_email',
+    label: 'تأكيد الإيميل',
+    icon: 'verified_user',
+    tone: '',
+    // The confirmation panel shows the e-mail itself (dir="ltr") before this
+    // sentence; see the `pending` panel below.
+    confirm:
+      'سيُعتمد هذا البريد كمؤكَّد بدون رمز، وسيتمكن الخريج من تسجيل الدخول مباشرة. تأكّد أن البريد صحيح ويخص الخريج.',
+    showEmail: true,
+    email: (row) => row.registration.email || '',
+    blocked: 'متاح فقط لحساب لم يؤكد بريده بعد.',
+    run: (row) => verifyGraduateEmail(row.registration.graduate_id),
+    done: 'تم تأكيد البريد الإلكتروني للخريج، ويمكنه تسجيل الدخول الآن.',
   },
 ];
 
@@ -203,7 +219,6 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
             <div>
               <span className="exc-info-label">الأوائل</span>
               <div className="exc-info-value">{topLabel(row)}</div>
-              <span className="exc-info-sub">{row.file_name || 'ملف غير معروف'}</span>
             </div>
             <div>
               <span className="exc-info-label">الحفل</span>
@@ -349,6 +364,14 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
               <p>
                 <strong>{pending.label}</strong>
                 <br />
+                {pending.showEmail ? (
+                  <>
+                    <span dir="ltr" className="rost-confirm-email">
+                      {pending.email(row)}
+                    </span>
+                    <br />
+                  </>
+                ) : null}
                 {pending.confirm}
               </p>
               <div className="rost-confirm-buttons">

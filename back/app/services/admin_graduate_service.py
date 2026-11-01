@@ -12,6 +12,8 @@ from app.models.major import MajorModel
 from app.models.event import EventModel
 from app.models.scanner import ScannerModel
 from app.models.volunteer_answer import VolunteerAnswerModel
+from app.models.otp_code import OtpCodeModel, OtpPurposeEnum
+from app.services.auth_service import reset_redis_failed_attempts
 from app.services.qr_service import activate_companion_codes
 from app.services.seat_service import seat_labels
 from app.services.audit_log import ActorType, record_audit
@@ -338,6 +340,65 @@ async def manual_check_in_service(db: AsyncSession, graduate_id: int, admin: dic
     await invalidate_admin_cache()
 
     return {"status": "success", "message": "تم تسجيل الدخول اليدوي وتفعيل رموز المرافقين بنجاح."}
+
+
+async def verify_email_service(db: AsyncSession, graduate_id: int, admin: dict) -> dict:
+    """Exceptional action: confirm a graduate's e-mail without the OTP code.
+
+    The graduate can log in normally right after (login and the token guard
+    only require ``email_verified``). Every open OTP row of purpose
+    EMAIL_VERIFICATION is consumed so a leaked code cannot be replayed, and
+    the Redis failed-attempt counter for the OTP flow is reset. No e-mail or
+    SMS is sent and no note is kept; the audit details never contain the
+    address itself (privacy rule S8).
+    """
+    grad = await db.get(GraduateModel, graduate_id)
+    if not grad:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الخريج.")
+
+    if grad.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=messages.EMAIL_ALREADY_VERIFIED_BY_ADMIN,
+        )
+
+    grad.email_verified = True
+    db.add(grad)
+
+    # Consume every still-open e-mail-verification OTP of this graduate so the
+    # admin override cannot be bypassed by an old code, and clear the OTP
+    # failed-attempt counter keyed by the graduate id.
+    otp_rows = (
+        await db.execute(
+            select(OtpCodeModel).where(
+                OtpCodeModel.graduate_id == graduate_id,
+                OtpCodeModel.purpose == OtpPurposeEnum.EMAIL_VERIFICATION,
+                OtpCodeModel.used_at.is_(None),
+            )
+        )
+    ).scalars().all()
+    now = datetime.now(UTC)
+    for otp_row in otp_rows:
+        otp_row.used_at = now
+        db.add(otp_row)
+    await reset_redis_failed_attempts(str(graduate_id))
+
+    resolved = await resolve_college_event(db, grad.college_id) if grad.college_id else None
+    await record_audit(
+        db,
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "VERIFY_EMAIL",
+        f"Graduate ID {graduate_id}",
+        "Email confirmed by admin override (no OTP code).",
+        event_id=resolved.id if resolved else None,
+        graduate_id=graduate_id,
+    )
+
+    await db.commit()
+    await invalidate_admin_cache()
+
+    return {"message": messages.EMAIL_VERIFIED_BY_ADMIN, "graduate_id": graduate_id}
 
 
 async def revert_scan_service(db: AsyncSession, graduate_id: int, admin: dict) -> dict:

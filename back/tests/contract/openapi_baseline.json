@@ -280,7 +280,7 @@
       "Body_update_shamcash_qr_api_admin_settings_shamcash_qr_put": {
         "properties": {
           "file": {
-            "contentMediaType": "application/octet-stream",
+            "format": "binary",
             "title": "File",
             "type": "string"
           }
@@ -305,7 +305,7 @@
             "title": "Event Id"
           },
           "file": {
-            "contentMediaType": "application/octet-stream",
+            "format": "binary",
             "title": "File",
             "type": "string"
           }
@@ -319,7 +319,7 @@
       "Body_upload_records_api_admin_events__event_id__university_records_post": {
         "properties": {
           "file": {
-            "contentMediaType": "application/octet-stream",
+            "format": "binary",
             "title": "File",
             "type": "string"
           }
@@ -1652,12 +1652,17 @@
           "revert_payment": {
             "title": "Revert Payment",
             "type": "boolean"
+          },
+          "verify_email": {
+            "title": "Verify Email",
+            "type": "boolean"
           }
         },
         "required": [
           "revert_payment",
           "manual_entry",
-          "cancel_scan"
+          "cancel_scan",
+          "verify_email"
         ],
         "title": "RosterActions",
         "type": "object"
@@ -2985,13 +2990,6 @@
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [
@@ -4938,6 +4936,52 @@
           }
         ],
         "summary": "Revert Scan",
+        "tags": [
+          "Admin Graduate Management & Exceptional Actions"
+        ]
+      }
+    },
+    "/api/admin/graduates/{graduate_id}/verify-email": {
+      "post": {
+        "description": "Exceptional action: confirm the graduate e-mail without the OTP code.",
+        "operationId": "verify_graduate_email_api_admin_graduates__graduate_id__verify_email_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "graduate_id",
+            "required": true,
+            "schema": {
+              "title": "Graduate Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify Graduate Email",
         "tags": [
           "Admin Graduate Management & Exceptional Actions"
         ]

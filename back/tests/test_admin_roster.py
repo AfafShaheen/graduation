@@ -352,6 +352,7 @@ async def test_actions_flags_follow_the_backend_rules(client, seed):
         "revert_payment": True,
         "manual_entry": True,
         "cancel_scan": False,
+        "verify_email": False,
     }
     # Confirmed and entered: can return the payment and cancel the scan.
     for uid in ("1006", "1007"):
@@ -359,6 +360,7 @@ async def test_actions_flags_follow_the_backend_rules(client, seed):
             "revert_payment": True,
             "manual_entry": False,
             "cancel_scan": True,
+            "verify_email": False,
         }
     # Nothing is allowed for everybody else.
     for uid in ("1001", "1002", "1003", "1004", "1008", "1009", "2001"):
@@ -366,6 +368,7 @@ async def test_actions_flags_follow_the_backend_rules(client, seed):
             "revert_payment": False,
             "manual_entry": False,
             "cancel_scan": False,
+            "verify_email": uid == "1002",  # the only account without a confirmed e-mail
         }
 
 
@@ -382,7 +385,9 @@ async def test_actions_offered_by_the_roster_really_work(client, seed):
     assert entry.status_code == 200, entry.text
     after = {i["university_id"]: i for i in (await _roster(client, h))["items"]}["1005"]
     assert after["entry"]["entered"] is True and after["entry"]["manual"] is True
-    assert after["actions"] == {"revert_payment": True, "manual_entry": False, "cancel_scan": True}
+    assert after["actions"] == {
+        "revert_payment": True, "manual_entry": False, "cancel_scan": True, "verify_email": False
+    }
 
     # Returning the payment (offered) moves the ticket back to "processing".
     back = await client.post(f"/api/admin/tickets/{ticket.id}/revert-payment", headers=h)

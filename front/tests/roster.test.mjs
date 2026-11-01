@@ -26,7 +26,6 @@ test('no filters set: only paging parameters are sent', () => {
 test('filters use the API parameter names and skip empty or blank values', () => {
   const query = buildRosterFilterQuery({
     search: '  أحمد ',
-    fileId: 7,
     collegeId: '',
     registration: 'verified',
     topRank: 'any',
@@ -37,7 +36,6 @@ test('filters use the API parameter names and skip empty or blank values', () =>
   });
   assert.deepEqual(query, {
     search: 'أحمد',
-    file_id: '7',
     registration: 'verified',
     top_rank: 'any',
     ticket: 'confirmed',

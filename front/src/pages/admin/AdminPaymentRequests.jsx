@@ -11,6 +11,7 @@ import {
   deleteShamcashQr,
 } from './hooks/useAdminSettings.js';
 import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
+import { useAdminStats } from '../../context/AdminStatsContext.jsx';
 import RejectReasonPresets from './RejectReasonPresets.jsx';
 import {
   validateShamCashAccount,
@@ -48,6 +49,9 @@ export default function AdminPaymentRequests({
   onPendingChanged,
 }) {
   const { events, loading: eventsLoading, error: eventsError } = useAdminEvents({ limit: 100 });
+
+  // نفس رقم الشارة في القائمة الجانبية (stats/v2 → attention.processing، كل الحفلات).
+  const { pendingPayments } = useAdminStats();
 
   const [ceremonyFilter, setCeremonyFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('PROCESSING');
@@ -329,7 +333,7 @@ export default function AdminPaymentRequests({
     [items]
   );
 
-  const pendingCount = mapped.filter((i) => i.status === 'pending').length;
+  // العدّاد في الرأس = الرقم الكلي الموحّد من السياق (كل الحفلات)، وليس عدد صفوف هذا الحفل.
   const statValue = (key) => (summary ? fmt(summary[key]) : '—');
   const mismatchCount = summary ? summary.mismatch_processing : 0;
 
@@ -342,6 +346,8 @@ export default function AdminPaymentRequests({
   }, [mapped, searchQuery]);
 
   const selectedEvent = events.find((e) => String(e.id) === String(ceremonyFilter));
+  // البطاقات لكل حفل على حدة — اسم الحفل داخل التسمية حتى لا يُخلط رقم الحفل مع الرقم الكلي في الرأس.
+  const ceremonyName = selectedEvent ? selectedEvent.name : 'بدون حفل';
 
   const handleConfirm = async (item) => {
     setActionError('');
@@ -451,7 +457,12 @@ export default function AdminPaymentRequests({
           <div className="pay-req-pulse-tag">
             <span className="pay-req-mini-dot"></span>
             <span className="pay-req-pulse-label">طلبات الدفع</span>
-            <span className="pay-req-pulse-venue">• بانتظار التدقيق: {pendingCount}</span>
+            <span
+              className="pay-req-pulse-venue"
+              title="عدد طلبات الدفع التي لم تُقبل ولم تُرفض في كل الحفلات — نفس الرقم الظاهر في القائمة الجانبية"
+            >
+              • بانتظار التدقيق في كل الحفلات: {fmt(pendingPayments)}
+            </span>
           </div>
           <h3>تدقيق ومطابقة إشعارات شام كاش</h3>
           <p>قارن المبلغ المُدخل بالسعر المطلوب واسم المرسل، ثم أكّد الدفع لإصدار التذكرة أو ارفضه مع إشعار الطالب.</p>
@@ -492,7 +503,7 @@ export default function AdminPaymentRequests({
         <section className="pay-req-stats-grid">
           <div className="pay-req-stat-card">
             <div>
-              <p className="pay-req-stat-label">إجمالي الطلبات المستلمة</p>
+              <p className="pay-req-stat-label">إجمالي الطلبات المستلمة ({ceremonyName})</p>
               <p className="pay-req-stat-value">{statValue('submitted')}</p>
               <p className="pay-req-stat-note">
                 <span className="pay-req-symbol" style={{ fontSize: '16px' }}>trending_up</span>
@@ -506,7 +517,7 @@ export default function AdminPaymentRequests({
 
           <div className="pay-req-stat-card orange">
             <div>
-              <p className="pay-req-stat-label orange">قيد التدقيق والمعالجة</p>
+              <p className="pay-req-stat-label orange">قيد التدقيق والمعالجة ({ceremonyName})</p>
               <p className="pay-req-stat-value orange">{statValue('processing')}</p>
               <p className="pay-req-stat-note orange">تتطلب مراجعة إشعار شام كاش</p>
             </div>
@@ -517,7 +528,7 @@ export default function AdminPaymentRequests({
 
           <div className="pay-req-stat-card">
             <div>
-              <p className="pay-req-stat-label">حالات عدم تطابق المبلغ</p>
+              <p className="pay-req-stat-label">حالات عدم تطابق المبلغ ({ceremonyName})</p>
               <p className="pay-req-stat-value orange">{statValue('mismatch_processing')}</p>
               <p className="pay-req-stat-note">تفاوت بين السعر والإشعار</p>
             </div>
@@ -528,7 +539,7 @@ export default function AdminPaymentRequests({
 
           <div className="pay-req-stat-card">
             <div>
-              <p className="pay-req-stat-label">المبالغ المؤكدة للاتحاد</p>
+              <p className="pay-req-stat-label">المبالغ المؤكدة للاتحاد ({ceremonyName})</p>
               <p className="pay-req-stat-value small">
                 {summary ? fmt(Number(summary.confirmed_amount)) : '—'} <span className="pay-req-stat-unit">ل.س</span>
               </p>

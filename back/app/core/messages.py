@@ -33,6 +33,9 @@ EMAIL_ALREADY_USED = (
 NO_EVENT_FOR_COLLEGE = "لا يوجد حفل مفتوح لكليتك حالياً"
 OTP_INVALID_GENERIC = "رمز التحقق غير صحيح أو منتهي الصلاحية"
 EMAIL_SEND_FAIL = "تعذّر إرسال رمز التحقق حالياً، يرجى المحاولة بعد قليل"
+# Exceptional admin action: confirm the graduate e-mail without the OTP code.
+EMAIL_VERIFIED_BY_ADMIN = "تم تأكيد البريد الإلكتروني للخريج، ويمكنه تسجيل الدخول الآن."
+EMAIL_ALREADY_VERIFIED_BY_ADMIN = "البريد الإلكتروني مؤكَّد مسبقاً."
 REGISTER_PARTIAL = "تم إنشاء الحساب لكن تعذّر إرسال رمز التحقق، يرجى طلب إعادة الإرسال"
 SERVICE_UNAVAILABLE = "الخدمة غير متاحة مؤقتاً، يرجى المحاولة لاحقاً"
 PASSWORD_POLICY = "كلمة السر يجب ألا تقل عن 8 أحرف وأن تحتوي على حرف ورقم على الأقل"
@@ -141,6 +144,7 @@ AUDIT_ACTION_LABELS = {
     "MANUAL_CHECK_IN": "تسجيل دخول يدوي",
     "REVERT_SCAN": "إلغاء مسح خاطئ",
     "REVERT_PAYMENT": "إرجاع الدفع لقيد المعالجة",
+    "VERIFY_EMAIL": "تأكيد البريد من الأدمن",
     "PAYMENT_CONFIRMED": "تأكيد دفع",
     "PAYMENT_REJECTED": "رفض دفع",
     "SETTINGS_UPDATED": "تحديث الإعدادات",
