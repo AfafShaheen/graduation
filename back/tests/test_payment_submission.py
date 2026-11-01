@@ -379,7 +379,7 @@ async def test_resubmission_with_same_number_updates_row(
         sender_name="قديم",
     )
 
-    body = dict(_PAYMENT_BODY, amount=54321.99, sender_name="جديد")
+    body = dict(_PAYMENT_BODY, amount=100000, sender_name="جديد")
     response = await client.post(
         "/api/graduates/me/payment", headers=_auth(access_value), json=body
     )
@@ -391,7 +391,7 @@ async def test_resubmission_with_same_number_updates_row(
         )
     ).scalars().all()
     assert len(payments) == 1
-    assert payments[0].amount == Decimal("54321.99")
+    assert payments[0].amount == Decimal("100000")
     assert payments[0].sender_name == "جديد"
     assert payments[0].reviewed_at is None
 
@@ -478,7 +478,7 @@ async def test_concurrent_same_number_gives_one_success(
     assert len(payments) == 1
 
 
-async def test_amount_stored_as_entered(
+async def test_amount_mismatch_is_rejected(
     client, db, make_event, make_college, make_graduate
 ):
     _event, _college, _grad, access_value, ticket_id = await _graduate_with_ticket(
@@ -490,10 +490,5 @@ async def test_amount_stored_as_entered(
         "/api/graduates/me/payment", headers=_auth(access_value), json=body
     )
 
-    assert response.status_code == 201, response.text
-    payment = (
-        await db.execute(
-            select(PaymentModel).where(PaymentModel.ticket_id == ticket_id)
-        )
-    ).scalar_one()
-    assert payment.amount == Decimal("54321.99")
+    assert response.status_code == 400, response.text
+    assert "مبلغ الدفع غير صحيح" in response.json()["detail"]

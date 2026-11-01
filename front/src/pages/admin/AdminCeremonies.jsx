@@ -2,7 +2,7 @@
 import "../../style/AdminCeremonies.css";
 import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
-import { useAdminStats } from './hooks/useAdminStats.js';
+import { useAdminStatsV2 } from './hooks/useAdminStatsV2.js';
 
 const STATUS_LABELS = {
   open: "مفتوح للتسجيل",
@@ -23,8 +23,8 @@ export default function AdminCeremonies({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const { events, loading, error } = useAdminEvents({ search: searchQuery });
-  const { stats } = useAdminStats();
-  const perEvent = stats?.per_event || [];
+  const { data: stats } = useAdminStatsV2(null);
+  const perEvent = stats?.by_event || [];
 
   const deriveStatus = (item) => {
     const now = new Date();
@@ -38,7 +38,7 @@ export default function AdminCeremonies({
   const ceremonies = useMemo(() => {
     const base = Array.isArray(ceremoniesProp) ? ceremoniesProp : events;
     return base.map((e) => {
-      const pe = perEvent.find((p) => (p.scope?.event_id ?? p.event_id) === e.id);
+      const pe = perEvent.find((p) => p.event_id === e.id);
       const status = deriveStatus(e);
       const title = e.name || e.title || "-";
       const dateStr = e.event_date ? new Date(e.event_date + "T00:00:00").toLocaleDateString("ar-SA") : "-";
@@ -46,8 +46,8 @@ export default function AdminCeremonies({
       const end = e.registration_end ? new Date(e.registration_end) : null;
       const period = start && end ? `${start.toLocaleDateString("ar-SA")} - ${end.toLocaleDateString("ar-SA")}` : "-";
       const faculties = Array.isArray(e.colleges) ? e.colleges.map((c) => c.name) : (e.faculties || []);
-      const booked = pe?.tickets?.confirmed ?? pe?.tickets_confirmed ?? 0;
-      const totalGrad = pe?.graduates?.expected ?? pe?.graduates_expected ?? 0;
+      const booked = pe?.status?.confirmed ?? 0;
+      const totalGrad = pe?.expected_people ?? 0;
       const location = e.location || "-";
       const form = e.form || null;
       const whatsappLink = e.whatsapp_group_link || e.whatsappLink || "";
@@ -300,7 +300,6 @@ export default function AdminCeremonies({
     </div>
   );
 }
-
 
 
 

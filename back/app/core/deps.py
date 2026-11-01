@@ -11,6 +11,7 @@ from app.models.scanner import ScannerModel
 from app.core.redis import redis_client
 from app.core import messages
 from app.core.security import secret_key, ALGORITHM
+from app.core.security import REFRESH_TOKEN_TYPE
 from jose import jwt, JWTError
 
 logger = logging.getLogger(__name__)
@@ -151,6 +152,11 @@ async def get_current_graduate(
 
     try:
         payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
+        if payload.get("type") == REFRESH_TOKEN_TYPE:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="لا يمكن استخدام رمز تجديد الجلسة للوصول. يرجى تسجيل الدخول مجدداً."
+            )
         jti = payload.get("jti")
         role = payload.get("role")
         graduate_id = payload.get("sub") or payload.get("graduate_id")

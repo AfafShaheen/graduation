@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 from fastapi import HTTPException, status
 from app.models.graduate import GraduateModel
 from app.models.university_record import UniversityRecordModel
@@ -247,15 +247,9 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
         )
 
     token_payload = {
+        "university_record_id": uni_record.id,
         "university_id": data.university_id,
         "college_id": data.college_id,
-        "full_name": uni_record.full_name,
-        "first_name": uni_record.first_name,
-        "last_name": uni_record.last_name,
-        "gender": uni_record.gender,
-        "father_name": uni_record.father_name,
-        "mother_name": uni_record.mother_name,
-        "major_id": uni_record.major_id,
         "gpa": str(gpa_to_store) if gpa_to_store is not None else None,
         "top_rank": data.top_rank,
     }
@@ -281,6 +275,26 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
     gpa_str = payload.get("gpa")
     top_rank = payload.get("top_rank")
     gpa_val = Decimal(gpa_str) if gpa_str is not None else None
+
+    record_id = payload.get("university_record_id")
+    if record_id is not None:
+        record = await db.get(UniversityRecordModel, int(record_id))
+        if (
+            record is None
+            or record.university_id != university_id
+            or record.college_id != college_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="انتهت جلسة التسجيل. يرجى إعادة الخطوة الأولى."
+            )
+        full_name = record.full_name
+        first_name = record.first_name
+        last_name = record.last_name
+        gender = record.gender
+        father_name = record.father_name
+        mother_name = record.mother_name
+        major_id = record.major_id
 
     if not university_id or not college_id:
         raise HTTPException(
@@ -318,8 +332,9 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
         )
     await ensure_registration_open(event)
 
+    normalized_email = str(data.email).strip().lower()
     email_check = await db.execute(
-        select(GraduateModel).where(GraduateModel.email == data.email)
+        select(GraduateModel).where(func.lower(GraduateModel.email) == normalized_email)
     )
     if email_check.scalar_one_or_none():
         raise HTTPException(
@@ -335,7 +350,7 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
         last_name=last_name,
         gender=gender,
         college_id=college_id,
-        email=data.email,
+        email=normalized_email,
         phone=data.phone,
         email_verified=False,
         father_name=father_name,

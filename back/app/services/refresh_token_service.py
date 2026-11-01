@@ -69,3 +69,17 @@ async def revoke_token(jti: str, family: Optional[str] = None) -> None:
     await redis_client.delete(_refresh_key(jti))
     if family:
         await redis_client.srem(_family_key(family), jti)
+
+
+async def revoke_subject(subject: str, role: str) -> None:
+    """Revoke all active refresh tokens issued to one account."""
+    async for key in redis_client.scan_iter(match="refresh:*"):
+        record = await redis_client.get(key)
+        if not record:
+            continue
+        try:
+            payload = json.loads(record)
+        except (TypeError, ValueError):
+            continue
+        if payload.get("subject") == subject and payload.get("role") == role:
+            await redis_client.delete(key)

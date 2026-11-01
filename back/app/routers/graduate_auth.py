@@ -22,7 +22,12 @@ async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(
+    data: RefreshRequest | None = None,
     credentials = Depends(security),
     current_graduate: GraduateModel = Depends(get_current_graduate)
 ):
-    return await logout_graduate(credentials, current_graduate)
+    return await logout_graduate(
+        credentials,
+        current_graduate,
+        data.refresh_token if data else None,
+    )

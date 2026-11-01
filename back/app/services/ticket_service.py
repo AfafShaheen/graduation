@@ -236,6 +236,12 @@ async def submit_payment_service(
         )
     await ensure_registration_open(event)
 
+    if data.amount != ticket.price:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"مبلغ الدفع غير صحيح. المبلغ المطلوب هو {ticket.price}.",
+        )
+
     existing_payment = (
         await db.execute(
             select(PaymentModel).where(
