@@ -1,11 +1,11 @@
-// خيارات الخريج بعد رفض الطلب (القرار D5): عنوان + زر «إعادة الدفع» + رابط «تواصل مع الدعم».
+// خيارات الخريج بعد رفض الطلب: عنوان وزر «إعادة الدفع».
 // كل منطق الإظهار في utils/rejection.js (دوال نقية قابلة للاختبار)؛ هنا عرض فقط.
 // تُعاد استخدام أصناف or-* الموجودة في style/OrderRejected.css مع إضافة القليل فقط.
 import React from 'react';
 import { rejectionActions } from '../utils/rejection';
 
 export default function RejectionOptions({ registrationOpen, phone, onResubmit }) {
-  const { canResubmit, callHref, showClosedNotice, showOfficeText } = rejectionActions({
+  const { canResubmit, showClosedNotice } = rejectionActions({
     registrationOpen,
     phone,
   });
@@ -21,18 +21,6 @@ export default function RejectionOptions({ registrationOpen, phone, onResubmit }
           </span>
           <span>إعادة الدفع</span>
         </button>
-      )}
-
-      {callHref ? (
-        <a className="or-support-link or-support-btn" href={callHref} aria-label="تواصل مع الدعم هاتفياً">
-          <span className="or-symbol" style={{ fontSize: '18px' }} aria-hidden="true">
-            call
-          </span>
-          <span className="or-support-text">تواصل مع الدعم</span>
-          <span className="or-support-number" dir="ltr">{phone}</span>
-        </a>
-      ) : (
-        showOfficeText && <p className="or-office-text">تواصل مع مكتب الاتحاد.</p>
       )}
 
       {showClosedNotice && (

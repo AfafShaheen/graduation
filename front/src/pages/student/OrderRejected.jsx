@@ -110,7 +110,7 @@ export default function OrderRejected() {
             />
           )}
 
-          
+          <HelpFooter phone={contactPhone} />
 
           <footer className="or-footer">
             <p className="or-footer-text">{CEREMONY_TITLE}</p>

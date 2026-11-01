@@ -27,41 +27,40 @@ async function render(props) {
   return renderToStaticMarkup(React.createElement(mod.default, props));
 }
 
-test('RejectionOptions: registration open + phone -> both buttons, correct tel href', async () => {
+test('RejectionOptions: registration open -> resubmit button without support button', async () => {
   const html = await render({ registrationOpen: true, phone: PHONE, onResubmit: () => {} });
   assert.match(html, /ماذا تريد أن تفعل\؟/);
   assert.match(html, /إعادة الدفع/);
-  assert.match(html, /تواصل مع الدعم/);
-  assert.match(html, new RegExp(`href="tel:${escapeRe(PHONE)}"`));
-  assert.match(html, /dir="ltr"/); // the number itself is rendered LTR
+  assert.doesNotMatch(html, /تواصل مع الدعم/);
+  assert.doesNotMatch(html, /href="tel:/);
   // closed sentence and office text must NOT appear
   assert.doesNotMatch(html, /انتهت فترة التسجيل/);
   assert.doesNotMatch(html, /تواصل مع مكتب الاتحاد/);
 });
 
-test('RejectionOptions: registration open + no phone -> resubmit button + office text, no tel link', async () => {
+test('RejectionOptions: registration open + no phone -> resubmit button only', async () => {
   const html = await render({ registrationOpen: true, phone: '', onResubmit: () => {} });
   assert.match(html, /إعادة الدفع/);
-  assert.match(html, /تواصل مع مكتب الاتحاد\./);
+  assert.doesNotMatch(html, /تواصل مع مكتب الاتحاد\./);
   assert.doesNotMatch(html, /href="tel:/);
   assert.doesNotMatch(html, /انتهت فترة التسجيل/);
 });
 
-test('RejectionOptions: registration closed + phone -> support only + closed sentence, no resubmit', async () => {
+test('RejectionOptions: registration closed + phone -> closed sentence only', async () => {
   const html = await render({ registrationOpen: false, phone: '0933123456', onResubmit: () => {} });
   // the resubmit BUTTON is gone (the word also appears inside the closed sentence, so check markup)
   assert.doesNotMatch(html, /<button/);
-  assert.match(html, /تواصل مع الدعم/);
-  assert.match(html, /href="tel:0933123456"/);
+  assert.doesNotMatch(html, /تواصل مع الدعم/);
+  assert.doesNotMatch(html, /href="tel:/);
   assert.match(html, /انتهت فترة التسجيل، لم يعد إعادة الدفع متاحاً\./);
   assert.doesNotMatch(html, /تواصل مع مكتب الاتحاد/);
 });
 
-test('RejectionOptions: registration closed + no phone -> office text + closed sentence only', async () => {
+test('RejectionOptions: registration closed + no phone -> closed sentence only', async () => {
   const html = await render({ registrationOpen: false, phone: null, onResubmit: () => {} });
   assert.doesNotMatch(html, /<button/);
   assert.doesNotMatch(html, /href="tel:/);
-  assert.match(html, /تواصل مع مكتب الاتحاد\./);
+  assert.doesNotMatch(html, /تواصل مع مكتب الاتحاد\./);
   assert.match(html, /انتهت فترة التسجيل، لم يعد إعادة الدفع متاحاً\./);
 });
 
