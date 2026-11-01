@@ -88,7 +88,6 @@ export default function MyTicket() {
 
   const ticket = data?.ticket;
   const event = data?.event;
-  const seat = data?.seat;
   const codes = data?.qr_codes || [];
   const graduateCode = codes.find((c) => c.code_type === 'GRADUATE');
   const companionCodes = codes.filter((c) => c.code_type === 'COMPANION');
@@ -107,8 +106,7 @@ export default function MyTicket() {
     ? {
         codeId: graduateCode.id,
         filename: qrFileName('GRADUATE', 0, universityId),
-        lines: [`رمز الخريج: ${studentName}`, seat?.graduate ? `رقم المقعد: ${seat.graduate}` : eventTitle],
-      }
+        lines: [`رمز الخريج: ${studentName}`, eventTitle],      }
     : null;
   const companionItems = companionCodes.map((code, idx) => ({
     codeId: code.id,
@@ -197,16 +195,6 @@ export default function MyTicket() {
                   <span className="tk-meta-label">الرقم الجامعي</span>
                   <span className="tk-meta-value">{universityId}</span>
                 </div>
-              </div>
-
-              <div className="tk-seat-box" role="note">
-                <span className="tk-seat-label">رقم مقعدك</span>
-                <span className="tk-seat-number" dir="ltr">{seat?.graduate || '—'}</span>
-                <span className="tk-seat-hint">
-                  {seat?.graduate
-                    ? 'يحدّد ترتيبك عند الصعود إلى المسرح'
-                    : 'يُحدَّد رقم المقعد بعد تأكيد الدفع'}
-                </span>
               </div>
 
               {(eventDateText || eventTimeText) && (

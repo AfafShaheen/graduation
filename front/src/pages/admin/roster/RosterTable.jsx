@@ -95,7 +95,6 @@ export default function RosterTable({ items, loading, error, selectedId, onSelec
                       </Badge>
                       <div className="exc-cell-sub">
                         {companionsLabel(ticket.companions_count)}
-                        {ticket.seat ? ` — ${ticket.seat}` : ''}
                       </div>
                     </>
                   ) : (
