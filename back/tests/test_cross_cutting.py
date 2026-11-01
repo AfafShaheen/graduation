@@ -214,7 +214,7 @@ async def test_end_to_end_flow(client, db, make_admin, sent_otps):
         "/api/admin/events",
         json={
             "name": "حفل التخرج",
-            "event_date": "2030-06-01",
+            "event_date": "2032-06-01",
             "registration_start": "2025-01-01T00:00:00Z",
             "registration_end": "2031-01-01T00:00:00Z",
             "whatsapp_group_link": "https://chat.whatsapp.com/e2e",

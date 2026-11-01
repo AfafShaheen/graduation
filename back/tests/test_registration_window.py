@@ -56,7 +56,7 @@ def _register_body(registration_value, email):
 def _create_event_payload(college_names):
     return {
         "name": "حفل جديد",
-        "event_date": "2030-06-01",
+        "event_date": "2032-06-01",
         "registration_start": "2025-01-01T00:00:00+00:00",
         "registration_end": "2031-01-01T00:00:00+00:00",
         "whatsapp_group_link": "https://chat.whatsapp.com/test",
@@ -240,8 +240,7 @@ async def test_public_settings_exposes_only_contact_phone(client, db):
 async def test_create_event_rejects_college_from_other_event(
     client, make_event, make_college, make_admin
 ):
-    """P5.3 supersedes the FR-14 name rule: a shared college is allowed only
-    when the windows never overlap, so an overlapping window is rejected."""
+    """الكلية المرتبطة بحفل قائم لا تُقبل في حفل جديد حتى مع اختلاف بسيط بالاسم."""
     event = await make_event()
     await make_college(event.id, name="كلية الهندسة")
 
@@ -253,7 +252,7 @@ async def test_create_event_rejects_college_from_other_event(
     )
 
     assert resp.status_code == 400
-    assert messages.COLLEGE_WINDOW_OVERLAP in resp.json()["detail"]
+    assert messages.COLLEGE_LINKED_TO_OTHER_EVENT in resp.json()["detail"]
 
 
 async def test_create_event_collapses_duplicate_college_names(
@@ -291,18 +290,19 @@ async def test_create_event_rejects_overlapping_window_for_shared_college(
         headers={"Authorization": f"Bearer {token}"},
     )
     assert overlap.status_code == 400
-    assert messages.COLLEGE_WINDOW_OVERLAP in overlap.json()["detail"]
+    assert messages.COLLEGE_LINKED_TO_OTHER_EVENT in overlap.json()["detail"]
 
 
-async def test_create_event_allows_disjoint_window_for_shared_college(
+async def test_create_event_rejects_shared_college_even_with_disjoint_window(
     client, make_event, make_college, make_admin
 ):
-    """P5.3: the same college may be reused when its windows never overlap."""
+    """الكلية لا تُربط بحفل ثانٍ حتى لو كانت نافذة التسجيل بعيدة عن الأولى."""
     event = await make_event()
     await make_college(event.id, name="كلية العلوم")
 
     token = await _admin_token(client, make_admin)
     payload = _create_event_payload(["كلية العلوم"])
+    payload["event_date"] = "2038-06-01"
     payload["registration_start"] = "2036-01-01T00:00:00+00:00"
     payload["registration_end"] = "2037-01-01T00:00:00+00:00"
     resp = await client.post(
@@ -310,7 +310,8 @@ async def test_create_event_allows_disjoint_window_for_shared_college(
         json=payload,
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert resp.status_code == 201, resp.text
+    assert resp.status_code == 400, resp.text
+    assert messages.COLLEGE_LINKED_TO_OTHER_EVENT in resp.json()["detail"]
 
 
 async def test_register_step2_same_token_twice_with_other_email_is_rejected(

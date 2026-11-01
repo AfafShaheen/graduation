@@ -413,6 +413,18 @@ export default function AdminAddCeremony({
       ? `${ceremonyDate.slice(11, 16)}:00`
       : null;
 
+    if (ceremonyDate && endDate) {
+      const ceremonyKey = ceremonyDate.length >= 16
+        ? ceremonyDate.slice(0, 16)
+        : `${ceremonyDate.slice(0, 10)}T00:00`;
+      const endKey = `${endDate}T23:59`;
+      const startKey = startDate ? `${startDate}T00:00` : null;
+      if (endKey >= ceremonyKey || (startKey && startKey >= ceremonyKey)) {
+        setSubmitError('يجب أن تنتهي فترة التسجيل قبل موعد الحفل.');
+        return;
+      }
+    }
+
     const base = {
       name: ceremonyName,
       event_date: ceremonyDate ? ceremonyDate.slice(0, 10) : ceremonyDate,

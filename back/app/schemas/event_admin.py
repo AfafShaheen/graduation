@@ -20,6 +20,41 @@ def _normalize_seat_prefix(value: Optional[str]) -> Optional[str]:
     return value
 
 
+def registration_before_ceremony(
+    registration_start: datetime | None,
+    registration_end: datetime | None,
+    event_date: date | None,
+    event_time: time | None,
+) -> None:
+    """فترة التسجيل كاملةً يجب أن تقع قبل لحظة الحفل.
+
+    بلا وقت للحفل تُحسب اللحظة عند بداية يوم الحفل بنفس منطقة وقت التسجيل.
+    """
+    if (
+        registration_start is None
+        or registration_end is None
+        or event_date is None
+    ):
+        return
+    tz = registration_end.tzinfo or registration_start.tzinfo
+    start = registration_start
+    end = registration_end
+    if tz is not None:
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=tz)
+        else:
+            start = start.astimezone(tz)
+        if end.tzinfo is None:
+            end = end.replace(tzinfo=tz)
+        else:
+            end = end.astimezone(tz)
+        ceremony = datetime.combine(event_date, event_time or time.min, tzinfo=tz)
+    else:
+        ceremony = datetime.combine(event_date, event_time or time.min)
+    if start >= ceremony or end >= ceremony:
+        raise ValueError("يجب أن تنتهي فترة التسجيل قبل موعد الحفل.")
+
+
 def _validate_seat_prefix(value: Optional[str]) -> Optional[str]:
     value = _normalize_seat_prefix(value)
     if value is not None and not _SEAT_PREFIX_RE.match(value):
@@ -51,6 +86,12 @@ class EventCreate(BaseModel):
     def validate_dates(self) -> "EventCreate":
         if self.registration_end < self.registration_start:
             raise ValueError("تاريخ نهاية التسجيل يجب ألا يكون قبل تاريخ بداية التسجيل.")
+        registration_before_ceremony(
+            self.registration_start,
+            self.registration_end,
+            self.event_date,
+            self.event_time,
+        )
         return self
     @model_validator(mode="after")
     def validate_packages(self) -> "EventCreate":

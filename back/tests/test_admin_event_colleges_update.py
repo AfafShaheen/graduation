@@ -1,8 +1,8 @@
 """Editing a ceremony's colleges after creation.
 
 Covers ``EventUpdate.college_names``: the full new list replaces the existing
-links, additions are validated against overlapping registration windows, and a
-college cannot be removed while graduates of it are registered for the event.
+links. Adding a college that already belongs to another ceremony is rejected,
+and a college cannot be removed while graduates of it are registered for the event.
 """
 
 from sqlalchemy import select
@@ -121,7 +121,7 @@ async def test_adding_a_college_with_overlapping_ceremony_is_conflict(
     )
 
     assert response.status_code == 409, response.text
-    assert messages.COLLEGE_WINDOW_OVERLAP in response.json()["detail"]
+    assert messages.COLLEGE_LINKED_TO_OTHER_EVENT in response.json()["detail"]
 
 
 async def test_omitting_college_names_keeps_the_colleges(
