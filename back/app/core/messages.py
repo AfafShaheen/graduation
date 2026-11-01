@@ -127,7 +127,12 @@ def append_contact_phone(message: str, contact_phone: str | None) -> str:
 
 def payment_note_instruction(university_id: str) -> str:
     """Instruction shown to the graduate before transferring (SRS FR-9)."""
-    return f"يرجى كتابة رقمك الجامعي ({university_id}) في خانة ملاحظة الحوالة"
+    return (
+        "بعد مسح حساب شام كاش وكتابة المبلغ المراد تحويله، ستظهر خانة باسم "
+        "«ملاحظات» أو «Note». يرجى كتابة الاسم والكنية والرقم الجامعي فيها. "
+        f"مثال: محمد المحمد {university_id}. "
+        "في حال عدم وجود هذه الملاحظة، لن يتم تأكيد عملية الدفع."
+    )
 
 
 # --- Audit log viewer (item 3.5.2, D22) --------------------------------------

@@ -401,7 +401,7 @@ export default function ShamCashPayment({ onBack }) {
 
                   <div className="sc-field-group">
                     <label className="sc-label" htmlFor="senderName">
-                      <span>اسم المرسل (الاسم والكنية)</span>
+                      <span>اسم المرسل (اسم المستخدم الذي سيتم إرسال المبلغ منه)</span>
                       <span className="sc-star">*</span>
                     </label>
                     <div className="sc-input-wrapper">
@@ -411,7 +411,7 @@ export default function ShamCashPayment({ onBack }) {
                         type="text"
                         autoComplete="off"
                         className={`sc-input ${errors.senderName ? 'error' : ''}`}
-                        placeholder="الاسم والكنية المسجل بهما الحساب"
+                        placeholder="اسم المستخدم الذي أرسلت منه الحوالة"
                         value={formData.senderName}
                         onChange={handleInputChange}
                         aria-invalid={!!errors.senderName}
