@@ -13,13 +13,13 @@ from app.models.event_ticket_package import EventTicketPackageModel
 from app.models.graduate import GraduateModel
 from app.models.ticket import TicketModel
 from app.models.university_record import UniversityRecordModel
-from app.schemas.event_admin import EventCreate, EventUpdate
+from app.schemas.event_admin import EventCreate, EventUpdate, registration_before_ceremony
 from app.core.redis import redis_client
 from app.core import messages
 from app.services.graduate_service import normalize_arabic
 from app.services.audit_log import ActorType, record_audit
 from app.services.college_links import (
-    assert_windows_do_not_overlap,
+    assert_college_not_on_other_event,
     colleges_for_event,
 )
 
@@ -78,17 +78,23 @@ async def invalidate_events_cache() -> None:
 
 
 async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict) -> dict:
+    try:
+        registration_before_ceremony(
+            data.registration_start,
+            data.registration_end,
+            data.event_date,
+            data.event_time,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
     college_names = _dedupe_college_names(data.college_names)
 
-    # 2. Link catalog colleges (creating missing ones by name). P5.3 allows a
-    # college to be reused as long as the registration windows never overlap,
-    # so the legacy "name linked to another event" rule was removed (P5.4).
+    # كتالوج الكليات: الكلية الواحدة لا تُربط إلا بحفل واحد.
     colleges = await _resolve_colleges_for_event(db, college_names)
-    await assert_windows_do_not_overlap(
+    await assert_college_not_on_other_event(
         db,
         [college.id for college in colleges],
-        data.registration_start,
-        data.registration_end,
     )
 
     # 1. Create Event record
@@ -343,15 +349,26 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
 
         final_college_ids = [college.id for college in desired_colleges]
 
-    # P5.3: a changed registration window may not overlap with another event
-    # that shares one of the event's colleges (after the change).
+    # نافذة التسجيل يجب أن تبقى قبل موعد الحفل حتى لو تغيّر حقل واحد فقط.
     new_start = update_data.get("registration_start", ev.registration_start)
     new_end = update_data.get("registration_end", ev.registration_end)
-    await assert_windows_do_not_overlap(
+    new_date = update_data.get("event_date", ev.event_date)
+    new_time = update_data.get("event_time", ev.event_time)
+    schedule_changed = any(
+        key in update_data
+        for key in ("registration_start", "registration_end", "event_date", "event_time")
+    )
+    if schedule_changed:
+        try:
+            registration_before_ceremony(new_start, new_end, new_date, new_time)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            ) from exc
+
+    await assert_college_not_on_other_event(
         db,
         final_college_ids,
-        new_start,
-        new_end,
         exclude_event_id=event_id,
         status_code=(
             status.HTTP_409_CONFLICT

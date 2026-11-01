@@ -1,8 +1,7 @@
-# College catalog links (P5): a college may be reused by several events.
+# College catalog links: a college belongs to at most one ceremony.
 #
-# A college resolves to exactly one event at a time (P5.3): links are
-# validated so that registration windows never overlap, which keeps
-# event selection deterministic for verification and ticket flows.
+# Registration still resolves the event through the link. Overlapping
+# windows are no longer a special case — a second link is rejected outright.
 
 from datetime import UTC, datetime
 
@@ -81,34 +80,33 @@ async def resolve_college_event(
     return max(events, key=lambda e: (e.registration_end or datetime.min.replace(tzinfo=UTC), e.id))
 
 
-async def assert_windows_do_not_overlap(
+async def assert_college_not_on_other_event(
     db: AsyncSession,
     college_ids: list[int],
-    registration_start: datetime | None,
-    registration_end: datetime | None,
     exclude_event_id: int | None = None,
     *,
     status_code: int = status.HTTP_400_BAD_REQUEST,
 ) -> None:
-    """P5.3: no college may be linked to two events with overlapping windows."""
-    if registration_start is None or registration_end is None or not college_ids:
+    """A college may be linked to one ceremony only."""
+    if not college_ids:
         return
     stmt = (
-        select(EventModel)
+        select(EventModel, CollegeModel)
         .join(EventCollegeModel, EventCollegeModel.event_id == EventModel.id)
+        .join(CollegeModel, CollegeModel.id == EventCollegeModel.college_id)
         .where(EventCollegeModel.college_id.in_(college_ids))
     )
-    others = list((await db.execute(stmt)).scalars().all())
-    for other in others:
+    rows = (await db.execute(stmt)).all()
+    for other, college in rows:
         if exclude_event_id is not None and other.id == exclude_event_id:
             continue
-        other_start = other.registration_start or datetime.min.replace(tzinfo=UTC)
-        other_end = other.registration_end or datetime.max.replace(tzinfo=UTC)
-        if registration_start <= other_end and other_start <= registration_end:
-            raise HTTPException(
-                status_code=status_code,
-                detail=f"{messages.COLLEGE_WINDOW_OVERLAP} (الحفل: {other.name})",
-            )
+        raise HTTPException(
+            status_code=status_code,
+            detail=(
+                f"{messages.COLLEGE_LINKED_TO_OTHER_EVENT}: {college.name} "
+                f"(الحفل: {other.name})"
+            ),
+        )
 
 
 async def ensure_colleges_exist(

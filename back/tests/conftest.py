@@ -247,7 +247,7 @@ def make_event(db):
             registration_start=registration_start
             or datetime.combine(date(2020, 1, 1), time(0, 0), tzinfo=timezone.utc),
             registration_end=registration_end
-            or datetime.combine(date(2035, 1, 1), time(0, 0), tzinfo=timezone.utc),
+            or datetime.combine(date(2030, 5, 1), time(0, 0), tzinfo=timezone.utc),
             whatsapp_group_link=whatsapp_group_link,
         )
         db.add(event)

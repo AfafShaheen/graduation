@@ -20,7 +20,7 @@ _ADMIN_PW = "Admin" + "Pass" + "123!"
 def _event_body(college_names, **overrides):
     body = {
         "name": "حفل جديد",
-        "event_date": "2030-06-01",
+        "event_date": "2032-06-01",
         "registration_start": "2025-01-01T00:00:00+00:00",
         "registration_end": "2031-01-01T00:00:00+00:00",
         "whatsapp_group_link": "https://chat.whatsapp.com/test",
@@ -55,6 +55,37 @@ def _graduate_headers(graduate):
         }
     )
     return {"Authorization": "Bearer " + access_value}
+
+
+async def test_create_event_rejects_registration_after_ceremony(client, make_admin):
+    headers = await _admin_token(client, make_admin)
+    response = await client.post(
+        "/api/admin/events",
+        json=_event_body(
+            ["كلية الحقوق"],
+            event_date="2030-06-01",
+            event_time="18:00:00",
+            registration_start="2030-06-01T00:00:00+00:00",
+            registration_end="2030-06-01T20:00:00+00:00",
+        ),
+        headers=headers,
+    )
+    assert response.status_code == 422, response.text
+    assert "قبل موعد الحفل" in response.text
+
+
+async def test_update_event_rejects_ceremony_before_registration_end(
+    client, make_admin, make_event
+):
+    event = await make_event()
+    headers = await _admin_token(client, make_admin)
+    response = await client.put(
+        f"/api/admin/events/{event.id}",
+        json={"event_date": "2020-01-01", "event_time": "10:00:00"},
+        headers=headers,
+    )
+    assert response.status_code == 400, response.text
+    assert "قبل موعد الحفل" in response.json()["detail"]
 
 
 async def test_create_event_with_time_and_prefix_normalises(client, make_admin):
