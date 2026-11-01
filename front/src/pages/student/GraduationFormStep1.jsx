@@ -353,7 +353,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   type="text"
                   name="lastName"
                   className={`form-input ${errors.lastName ? 'error' : ''}`}
-                  placeholder="مثلاً: العلي"
+                  placeholder="مثلاً: المحمود"
                   value={formData.lastName}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.lastName}
