@@ -29,7 +29,6 @@ const buildOption = (o, index, all) => {
     guestsCount: n,
     price: o.price,
     features: [
-      { icon: 'chair', text: 'مقعد مخصص للخريج في المنصة الرئيسية' },
       { icon: n > 2 ? 'groups' : 'group', text: `${companionsText(n)} في الصالة الشرفية` },
     ],
     badge:

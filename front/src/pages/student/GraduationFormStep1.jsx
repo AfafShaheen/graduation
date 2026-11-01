@@ -288,7 +288,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             </div>
             <div>
               <h2 className="card-title">ألف مبروك التخرج! 🎓</h2>
-              <p className="card-subtitle">سجّل بياناتك لتأكيد حجز مقعدك وتذكرتك الرقمية</p>
+              <p className="card-subtitle">سجّل بياناتك لتأكيد حجز تذكرتك الرقمية</p>
             </div>
           </div>
 

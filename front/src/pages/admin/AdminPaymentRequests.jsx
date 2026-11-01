@@ -327,7 +327,6 @@ export default function AdminPaymentRequests({
           senderName: p.sender_name || '—',
           mismatch: it.amount_mismatch != null ? !!it.amount_mismatch : paid !== required,
           status: STATUS_TO_UI[it.status] || (it.status || '').toLowerCase(),
-          seat: it.seat || null,
         };
       }),
     [items]
@@ -354,11 +353,10 @@ export default function AdminPaymentRequests({
     setPaymentNotice('');
     setBusyId(item.ticketId);
     try {
-      const res = await confirmTicket(item.ticketId);
+      await confirmTicket(item.ticketId);
       await loadPayments();
       await loadSummary();
       if (onPendingChanged) onPendingChanged();
-      if (res && res.seat) setPaymentNotice(`تم التأكيد. المقعد: ${res.seat}`);
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'حدث خطأ غير متوقع.');
       if (e instanceof ApiError && e.status === 409) {
@@ -735,9 +733,6 @@ export default function AdminPaymentRequests({
                               <span className="pay-req-ticket-chip">
                                 {item.status === 'confirmed' ? 'تم التأكيد' : 'تم الرفض'}
                               </span>
-                              {item.status === 'confirmed' && item.seat && (
-                                <span className="pay-req-person-sub">المقعد: {item.seat}</span>
-                              )}
                             </div>
                           )}
                         </td>
