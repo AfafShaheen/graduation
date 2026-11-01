@@ -459,7 +459,7 @@ export default function AdminAddCeremony({
         const cleaned = {};
         for (const [k, v] of Object.entries(err.fieldErrors)) cleaned[k] = cleanServerMessage(v);
         setFieldErrors(cleaned);
-        setSubmitError('يرجى تصحيح الحقول المميّزة بالأحمر ثم إعادة المحاولة.');
+        setSubmitError(err.message || 'يرجى تصحيح الحقول المميّزة بالأحمر ثم إعادة المحاولة.');
       } else if (collegesChanged && err instanceof ApiError && err.status === 409) {
         setCollegeError(err.message || 'تعذّر تعديل كليات الحفل.');
       } else {
@@ -878,7 +878,10 @@ export default function AdminAddCeremony({
               {linkErrors.length > 0 && (
                 <div className="add-cer-file-error" role="alert" style={{ marginTop: '8px' }}>
                   <p style={{ fontWeight: 'bold', margin: '0 0 8px' }}>
-                    لم يتم الاستيراد: {linkErrors.length} أخطاء
+                    لم يتم الاستيراد: {linkErrors.length} أخطاء في المطابقة.
+                  </p>
+                  <p style={{ margin: '0 0 8px' }}>
+                    راجع الصف والحقل والقيمة الموجودة لمعرفة سبب رفض كل سجل.
                   </p>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -886,6 +889,7 @@ export default function AdminAddCeremony({
                         <tr>
                           <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الصف</th>
                           <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الحقل</th>
+                          <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>القيمة الموجودة</th>
                           <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>المشكلة</th>
                         </tr>
                       </thead>
@@ -894,6 +898,7 @@ export default function AdminAddCeremony({
                           <tr key={i}>
                             <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.row ?? '—'}</td>
                             <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.field ?? '—'}</td>
+                            <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.value || 'فارغة'}</td>
                             <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.message ?? ''}</td>
                           </tr>
                         ))}
@@ -955,6 +960,4 @@ export default function AdminAddCeremony({
     </div>
   );
 }
-
-
 

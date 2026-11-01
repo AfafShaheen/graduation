@@ -163,9 +163,10 @@ export async function linkUniversityFile(fileId, eventId) {
   });
 }
 
-export async function deleteUniversityFile(fileId) {
+export async function deleteUniversityFile(fileId, deleteRecords = false) {
   const auth = getAdminToken();
-  return request(`/api/admin/university-files/${fileId}`, {
+  const query = deleteRecords ? '?delete_records=true' : '';
+  return request(`/api/admin/university-files/${fileId}${query}`, {
     method: "DELETE",
     token: auth
   });

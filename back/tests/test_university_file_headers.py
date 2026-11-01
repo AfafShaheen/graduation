@@ -278,7 +278,7 @@ async def test_duplicate_field_mapping_is_rejected(
     assert "university_id" in detail
 
 
-async def test_extra_columns_are_ignored(client, make_event, make_college, make_admin):
+async def test_unknown_columns_are_rejected(client, make_event, make_college, make_admin):
     headers = await _admin_headers(client, make_admin)
     event = await _event(make_event, make_college)
     file_headers = _EN_HEADERS + ["notes", "ملاحظات"]
@@ -288,10 +288,8 @@ async def test_extra_columns_are_ignored(client, make_event, make_college, make_
         client, headers, event.id, "records.csv", _csv_bytes(file_headers, [file_row]), _CSV_CT
     )
 
-    assert response.status_code == 200, response.text
-    body = response.json()
-    assert body["errors"] == []
-    assert body["added"] == 1
+    assert response.status_code == 400, response.text
+    assert "notes" in response.json()["detail"]
 
 
 async def test_csv_encodings_and_separators_import_identically(
@@ -324,4 +322,3 @@ async def test_binary_csv_file_is_rejected(client, make_event, make_college, mak
     )
 
     assert response.status_code == 400, response.text
-

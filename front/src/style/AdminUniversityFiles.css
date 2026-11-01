@@ -176,6 +176,29 @@
   color: #ba1a1a;
 }
 
+.uf-delete-options {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #efb6b0;
+  border-radius: 12px;
+  background: #fff8f7;
+}
+
+.uf-delete-title,
+.uf-delete-warning {
+  margin: 0 0 8px;
+  color: var(--uf-ink);
+}
+
+.uf-delete-title {
+  font-weight: 700;
+}
+
+.uf-delete-warning {
+  font-size: 13px;
+  color: #8d3c36;
+}
+
 .uf-empty {
   margin: 0;
   padding: 18px;

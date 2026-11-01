@@ -289,10 +289,15 @@ export async function request(path, { method = "GET", body = null, token = null 
       } else if (Array.isArray(data.detail)) {
         fieldErrors = {};
         for (const item of data.detail) {
-          const field = item.loc?.[item.loc.length - 1] || "general";
+          const lastLocation = item.loc?.[item.loc.length - 1];
+          const field = lastLocation === "body" || lastLocation === "query" || lastLocation === "path"
+            ? "general"
+            : lastLocation || "general";
           fieldErrors[field] = item.msg;
         }
-        errorMessage = "يرجى التحقق من البيانات المدخلة.";
+        errorMessage = typeof data.message === "string"
+          ? data.message
+          : "يرجى التحقق من البيانات المدخلة.";
       } else if (typeof data.detail === "object" && data.detail !== null) {
         errorMessage = data.detail.message || JSON.stringify(data.detail);
       } else if (typeof data.message === "string") {

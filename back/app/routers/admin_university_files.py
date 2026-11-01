@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_admin
@@ -47,7 +47,11 @@ async def link_file(
 @router.delete("/university-files/{file_id}", status_code=status.HTTP_200_OK)
 async def delete_file(
     file_id: int,
+    delete_records: bool = Query(
+        False,
+        description="حذف سجلات الخريجين التي استوردها الملف أيضاً",
+    ),
     db: AsyncSession = Depends(get_db),
     admin: dict = Depends(get_current_admin),
 ):
-    return await delete_university_file(file_id, admin, db)
+    return await delete_university_file(file_id, admin, db, delete_records)
