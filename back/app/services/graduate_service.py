@@ -226,13 +226,24 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     # Already-registered check runs LAST: the specific message is reachable
     # only after the caller proved knowledge of the full university record,
     # so it cannot be used to probe which university ids are registered.
-    existing_grad = await db.execute(
-        select(GraduateModel).where(GraduateModel.university_id == data.university_id)
-    )
-    if existing_grad.scalar_one_or_none():
+    existing_grad = (
+        await db.execute(
+            select(GraduateModel).where(GraduateModel.university_id == data.university_id)
+        )
+    ).scalar_one_or_none()
+    if existing_grad is not None:
+        # Unverified account: do not issue a new registration token; guide login + OTP.
+        if not existing_grad.email_verified:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "ACCOUNT_UNVERIFIED",
+                    "message": messages.ACCOUNT_UNVERIFIED,
+                },
+            )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=messages.UNIVERSITY_ID_ALREADY_REGISTERED
+            detail=messages.UNIVERSITY_ID_ALREADY_REGISTERED,
         )
 
     token_payload = {
@@ -280,10 +291,20 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
     # One account per graduate: a step-1 token can be reused (it stays in the
     # browser), so re-check here that no account exists for this university id
     # (any college) before creating one with a different email.
-    existing_grad = await db.execute(
-        select(GraduateModel.id).where(GraduateModel.university_id == university_id)
-    )
-    if existing_grad.scalars().first() is not None:
+    existing_grad = (
+        await db.execute(
+            select(GraduateModel).where(GraduateModel.university_id == university_id)
+        )
+    ).scalar_one_or_none()
+    if existing_grad is not None:
+        if not existing_grad.email_verified:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "ACCOUNT_UNVERIFIED",
+                    "message": messages.ACCOUNT_UNVERIFIED,
+                },
+            )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=messages.UNIVERSITY_ID_ALREADY_REGISTERED,

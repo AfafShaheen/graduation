@@ -100,6 +100,7 @@ export default function GraduationFormStep2({
     }
 
     setIsLoading(true);
+    setUnverifiedNotice('');
     try {
       const registrationToken = getRegistrationToken();
       if (!registrationToken) {
@@ -131,7 +132,14 @@ export default function GraduationFormStep2({
       } else if (err.status === 401) {
         setErrors({ general: err.message || 'انتهت الجلسة، يرجى إعادة الخطوة الأولى' });
       } else if (err.status === 400 || err.status === 403) {
-        setErrors({ general: err.message });
+        const detail = err.data?.detail;
+        const code = detail && typeof detail === 'object' ? detail.code : null;
+        if (code === 'ACCOUNT_UNVERIFIED') {
+          setUnverifiedNotice(err.message);
+          setErrors({});
+        } else {
+          setErrors({ general: err.message });
+        }
       } else {
         setErrors({ general: err.message || 'حدث خطأ غير متوقع' });
       }
@@ -203,7 +211,23 @@ export default function GraduationFormStep2({
               <p className="info-text">{notice}</p>
             </div>
           )}
-          {errors.general && (
+                    {unverifiedNotice && (
+            <div className="info-box" style={{ marginBottom: 12 }} role="status">
+              <span className="material-symbols-outlined info-icon">info</span>
+              <div>
+                <p className="info-text">{unverifiedNotice}</p>
+                <button
+                  type="button"
+                  className="login-link-btn"
+                  style={{ marginTop: 8 }}
+                  onClick={onNavigateToLogin}
+                >
+                  لدي حساب
+                </button>
+              </div>
+            </div>
+          )}
+{errors.general && (
             <div className="info-box" style={{ marginBottom: 12, borderColor: '#ba1a1a', background: '#fff5f5' }}>
               <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
             </div>

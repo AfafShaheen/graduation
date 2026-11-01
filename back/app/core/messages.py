@@ -25,6 +25,10 @@ TOP_RANK_MISMATCH = (
     "وفي حال التأكد يرجى مراجعة اتحاد الطلبة."
 )
 UNIVERSITY_ID_ALREADY_REGISTERED = "رقمك الجامعي مسجل مسبقاً"
+# Account exists but email not confirmed yet — guide the graduate to login + OTP.
+ACCOUNT_UNVERIFIED = (
+    "لديك حساب غير مفعّل. اضغط على «لدي حساب» لإكمال التفعيل."
+)
 REGISTER_FAIL = "تعذّر إكمال التسجيل، يرجى مراجعة بياناتك أو التواصل مع الاتحاد"
 EMAIL_ALREADY_USED = (
     "هذا البريد الإلكتروني مستخدم بحساب آخر. إذا كان حسابك، سجّل الدخول أو استخدم "

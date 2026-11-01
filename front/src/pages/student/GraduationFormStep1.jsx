@@ -122,6 +122,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
   });
 
   const [errors, setErrors] = useState({});
+  const [unverifiedNotice, setUnverifiedNotice] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [colleges, setColleges] = useState([]);
@@ -210,6 +211,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     }
 
     setIsLoading(true);
+    setUnverifiedNotice('');
     try {
       const payload = toVerifyStep1Payload(formData, colleges);
       const { registration_token } = await verifyStep1(payload);
@@ -223,7 +225,10 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
       } else if (err.status === 400 || err.status === 403) {
         const detail = err.data?.detail;
         const code = detail && typeof detail === 'object' ? detail.code : null;
-        if (code && TOP_RANK_ERROR_CODES.includes(code)) {
+        if (code === 'ACCOUNT_UNVERIFIED') {
+          setUnverifiedNotice(err.message);
+          setErrors({});
+        } else if (code && TOP_RANK_ERROR_CODES.includes(code)) {
           setErrors({ topRank: err.message });
         } else {
           setErrors({ general: err.message });
@@ -288,7 +293,23 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
           <form onSubmit={handleNextStep} noValidate>
             {/* الاسم والكنية */}
-            {errors.general && (
+                        {unverifiedNotice && (
+              <div className="info-box" style={{ marginBottom: 12 }} role="status">
+                <span className="material-symbols-outlined info-icon">info</span>
+                <div>
+                  <p className="info-text">{unverifiedNotice}</p>
+                  <button
+                    type="button"
+                    className="login-link-btn"
+                    style={{ marginTop: 8 }}
+                    onClick={onNavigateToLogin}
+                  >
+                    لدي حساب
+                  </button>
+                </div>
+              </div>
+            )}
+{errors.general && (
               <div className="form-group">
                 <div className="info-box" style={{ margin: 0, borderColor: '#ba1a1a', background: '#fff5f5' }}>
                   <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
