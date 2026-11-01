@@ -8,11 +8,10 @@ import useFormDraft from '../../hooks/useFormDraft';
 import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
 import { setRegistrationToken } from '../../api/session';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
+import { NAME_REGEX } from '../../utils/validators.js';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 
-/* حروف عربية ومسافات فقط (بدون أرقام أو رموز) */
-const ARABIC_ONLY = /^[\u0621-\u064A\u064B-\u0652\s]+$/;
 /* أرقام فقط، بدون تحديد عدد معين */
 const DIGITS_ONLY = /^[0-9]+$/;
 
@@ -55,14 +54,14 @@ const validators = {
   firstName: (v) => {
     const t = v.trim();
     if (!t) return 'الاسم مطلوب';
-    if (!ARABIC_ONLY.test(t)) return 'يرجى كتابة الاسم بحروف عربية فقط';
+    if (!NAME_REGEX.test(t)) return 'يرجى كتابة الاسم بحروف عربية أو إنجليزية فقط';
     if (t.length < 2) return 'الاسم قصير جداً';
     return '';
   },
   lastName: (v) => {
     const t = v.trim();
     if (!t) return 'الكنية مطلوبة';
-    if (!ARABIC_ONLY.test(t)) return 'يرجى كتابة الكنية بحروف عربية فقط';
+    if (!NAME_REGEX.test(t)) return 'يرجى كتابة الكنية بحروف عربية أو إنجليزية فقط';
     if (t.length < 2) return 'الكنية قصيرة جداً';
     return '';
   },
@@ -72,27 +71,29 @@ const validators = {
     const t = v.trim();
     if (!t) return 'الرقم الجامعي مطلوب';
     if (!DIGITS_ONLY.test(t)) return 'يجب أن يكون الرقم الجامعي أرقاماً فقط';
+    if (t.length > 100) return 'الرقم الجامعي طويل جداً';
     return '';
   },
   gpa: (v) => {
     const t = String(v ?? '').trim();
     if (!t) return ''; // المعدل اختياري (D2)
     const n = Number(t);
-    if (Number.isNaN(n)) return 'يرجى إدخال المعدل كرقم';
+    if (!Number.isFinite(n)) return 'يرجى إدخال المعدل كرقم';
     if (n < 0 || n > 100) return 'المعدل يجب أن يكون بين 0 و 100';
+    if (!/^\d+(?:\.\d{1,2})?$/.test(t)) return 'المعدل يقبل منزلتين عشريتين كحد أقصى';
     return '';
   },
   fatherName: (v) => {
     const t = v.trim();
     if (!t) return 'اسم الأب مطلوب';
-    if (!ARABIC_ONLY.test(t)) return 'يجب أن يتكون اسم الأب من حروف عربية فقط';
+    if (!NAME_REGEX.test(t)) return 'يجب أن يتكون اسم الأب من حروف عربية أو إنجليزية فقط';
     if (t.length < 2) return 'اسم الأب قصير جداً';
     return '';
   },
   motherName: (v) => {
     const t = v.trim();
     if (!t) return 'اسم الأم مطلوب';
-    if (!ARABIC_ONLY.test(t)) return 'يجب أن يتكون اسم الأم من حروف عربية فقط';
+    if (!NAME_REGEX.test(t)) return 'يجب أن يتكون اسم الأم من حروف عربية أو إنجليزية فقط';
     if (t.length < 2) return 'اسم الأم قصير جداً';
     return '';
   },
@@ -352,7 +353,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   type="text"
                   name="lastName"
                   className={`form-input ${errors.lastName ? 'error' : ''}`}
-                  placeholder="مثلاً: العلي"
+                  placeholder="مثلاً: المحمود"
                   value={formData.lastName}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.lastName}

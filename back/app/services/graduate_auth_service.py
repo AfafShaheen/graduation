@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 from fastapi import HTTPException, status
 from app.models.graduate import GraduateModel
 from app.schemas.auth import GraduateLoginRequest
@@ -19,7 +19,7 @@ from app.core.security import (
     REFRESH_TOKEN_TYPE,
 )
 from app.services import refresh_token_service as refresh_store
-from jose import jwt
+from jose import JWTError, jwt
 import uuid
 import logging
 
@@ -30,6 +30,7 @@ _DUMMY_HASH = get_password_hash(uuid.uuid4().hex)
 
 
 async def check_graduate_login_rate_limit(email: str) -> None:
+    email = email.strip().lower()
     key = f"graduate_login_attempts:{email}"
     try:
         attempts = await redis_client.get(key)
@@ -45,6 +46,7 @@ async def check_graduate_login_rate_limit(email: str) -> None:
 
 
 async def increment_graduate_login_failure(email: str) -> None:
+    email = email.strip().lower()
     key = f"graduate_login_attempts:{email}"
     try:
         val = await redis_client.incr(key)
@@ -55,6 +57,7 @@ async def increment_graduate_login_failure(email: str) -> None:
 
 
 async def reset_graduate_login_failure(email: str) -> None:
+    email = email.strip().lower()
     key = f"graduate_login_attempts:{email}"
     try:
         await redis_client.delete(key)
@@ -74,11 +77,12 @@ def create_graduate_access_token(graduate: GraduateModel) -> str:
 
 
 async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
+    email = str(data.email).strip().lower()
     # 1. Check rate limit
-    await check_graduate_login_rate_limit(data.email)
+    await check_graduate_login_rate_limit(email)
 
     # 2. Query graduate by email
-    stmt = select(GraduateModel).where(GraduateModel.email == data.email)
+    stmt = select(GraduateModel).where(func.lower(GraduateModel.email) == email)
     result = await db.execute(stmt)
     graduate = result.scalar_one_or_none()
 
@@ -86,14 +90,14 @@ async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
         # Run a dummy bcrypt check so an unknown email and a wrong password
         # take the same time (do not reveal which emails exist).
         verify_password(data.password, _DUMMY_HASH)
-        await increment_graduate_login_failure(data.email)
+        await increment_graduate_login_failure(email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="البريد الإلكتروني أو كلمة السر غير صحيحة."
         )
 
     if not verify_password(data.password, graduate.password_hash):
-        await increment_graduate_login_failure(data.email)
+        await increment_graduate_login_failure(email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="البريد الإلكتروني أو كلمة السر غير صحيحة."
@@ -112,7 +116,7 @@ async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
         )
 
     # 4. Reset failed attempts
-    await reset_graduate_login_failure(data.email)
+    await reset_graduate_login_failure(email)
 
     # 5. Generate JWT token
     access_value = create_graduate_access_token(graduate)
@@ -127,20 +131,40 @@ async def login_graduate(data: GraduateLoginRequest, db: AsyncSession) -> dict:
     }
 
 
-async def logout_graduate(credentials, current_graduate: GraduateModel) -> dict:
+async def logout_graduate(credentials, current_graduate: GraduateModel, refresh_value: str | None = None) -> dict:
     token = credentials.credentials
     try:
         payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
-        jti = payload.get("jti")
-        exp = payload.get("exp")
-        
-        if jti and exp:
-            now = datetime.now(UTC).timestamp()
-            ttl = int(exp - now)
-            if ttl > 0:
+    except JWTError as exc:
+        logger.warning("Graduate access-token logout rejected (%s)", type(exc).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="رمز المصادقة غير صالح أو انتهت صلاحيته.",
+        )
+
+    jti = payload.get("jti")
+    exp = payload.get("exp")
+    if jti and exp:
+        now = datetime.now(UTC).timestamp()
+        ttl = int(exp - now)
+        if ttl > 0:
+            try:
                 await redis_client.setex(f"token_blacklist:{jti}", ttl, "1")
-    except Exception:
-        pass
+            except Exception as exc:
+                logger.error("Graduate access-token blacklist write failed (%s)", type(exc).__name__)
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="تعذر إنهاء الجلسة حالياً. يرجى المحاولة لاحقاً.",
+                )
+
+    if refresh_value:
+        payload = _decode_refresh(refresh_value, role="graduate")
+        if str(payload.get("sub")) != str(current_graduate.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="لا يمكن إنهاء جلسة حساب آخر."
+            )
+        await refresh_store.revoke_family(payload["family"])
 
     return {"status": "success", "message": "تم تسجيل الخروج بنجاح."}
 

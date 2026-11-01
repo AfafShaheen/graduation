@@ -19,6 +19,7 @@ from app.core.database import AsyncSessionLocal
 from app.core import messages
 from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.services.graduate_auth_service import create_graduate_access_token
+from app.services import refresh_token_service as refresh_store
 import hmac
 import bcrypt
 import logging
@@ -181,7 +182,11 @@ async def issue_and_send_otp(db: AsyncSession, graduate: GraduateModel, purpose:
 
 
 async def check_email_uniqueness(db: AsyncSession, new_email: str, graduate_id: int) -> None:
-    stmt = select(GraduateModel).where(GraduateModel.email == new_email, GraduateModel.id != graduate_id)
+    normalized_email = new_email.strip().lower()
+    stmt = select(GraduateModel).where(
+        func.lower(GraduateModel.email) == normalized_email,
+        GraduateModel.id != graduate_id,
+    )
     result = await db.execute(stmt)
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -199,8 +204,9 @@ async def update_graduate_email_address(db: AsyncSession, graduate_id: int, new_
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="لا يمكن تغيير البريد الإلكتروني بعد تفعيله."
         )
-    await check_email_uniqueness(db, new_email, graduate_id)
-    grad.email = new_email
+    normalized_email = new_email.strip().lower()
+    await check_email_uniqueness(db, normalized_email, graduate_id)
+    grad.email = normalized_email
     db.add(grad)
     await db.commit()
     return grad
@@ -211,6 +217,7 @@ async def update_graduate_password(db: AsyncSession, grad: GraduateModel, new_pa
     grad.password_hash = password_hash
     db.add(grad)
     await db.commit()
+    await refresh_store.revoke_subject(str(grad.id), "graduate")
 
 
 # High-level service orchestrators calling granular task functions
@@ -245,6 +252,11 @@ async def verify_otp_service(db: AsyncSession, graduate_id: int, code: str, purp
         if purpose == OtpPurpose.EMAIL_VERIFICATION:
             await mark_email_verified(db, graduate_id)
             grad = await fetch_graduate(db, graduate_id)
+            if grad is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="لم يتم العثور على حساب الخريج. يرجى التسجيل من جديد."
+                )
             access_value = create_graduate_access_token(grad)
             return {
                 "status": "success",
@@ -283,7 +295,7 @@ async def resend_otp_service(db: AsyncSession, graduate_id: int, purpose: OtpPur
 
 async def change_email_service(db: AsyncSession, graduate_id: int, new_email: str) -> dict:
     grad = await update_graduate_email_address(db, graduate_id, new_email)
-    sent = await issue_and_send_otp(db, grad, OtpPurpose.EMAIL_VERIFICATION, new_email)
+    sent = await issue_and_send_otp(db, grad, OtpPurpose.EMAIL_VERIFICATION, grad.email)
     if not sent:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=messages.EMAIL_SEND_FAIL)
 
@@ -327,7 +339,7 @@ async def forgot_password_service(db: AsyncSession, email: str) -> dict:
     started = time.monotonic()
     try:
         outcome = await asyncio.wait_for(
-            _send_password_reset_otp(email), timeout=FORGOT_PASSWORD_SEND_TIMEOUT
+            _send_password_reset_otp(str(email).strip().lower()), timeout=FORGOT_PASSWORD_SEND_TIMEOUT
         )
     except asyncio.TimeoutError:
         logger.warning("Password-reset OTP timed out after %s seconds", FORGOT_PASSWORD_SEND_TIMEOUT)

@@ -13,6 +13,7 @@ from app.schemas.graduate import RegisterStep2Request
 from app.services.auth_service import resend_otp_service
 from app.services.email_service import OtpPurpose
 from app.services.graduate_service import create_registration_token, register_step2_service
+from app.core.security import create_verification_token
 
 _AT = "@"
 _DOMAIN = "example.com"
@@ -132,6 +133,26 @@ async def test_resend_invalidates_previous_otps(
     # Verifying with the second code should succeed
     res = await verify_otp_service(db, grad.id, second_code, OtpPurpose.EMAIL_VERIFICATION)
     assert res["status"] == "success"
+
+
+async def test_email_verification_endpoint_returns_access_token(
+    client, db, make_event, make_college, make_graduate, sent_otps
+):
+    event = await make_event()
+    college = await make_college(event.id)
+    grad = await make_graduate(college.id, email_verified=False)
+
+    from app.services.auth_service import issue_and_send_otp
+
+    await issue_and_send_otp(db, grad, OtpPurpose.EMAIL_VERIFICATION, grad.email)
+    response = await client.post(
+        "/api/auth/verify-otp",
+        headers={"Authorization": f"Bearer {create_verification_token(grad.id)}"},
+        json={"code": sent_otps[-1][1]},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["access_token"]
 
 
 async def test_registration_with_failing_sender_returns_partial(

@@ -1,6 +1,7 @@
 import io
 import json
 import re
+import asyncio
 import pandas as pd
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -60,8 +61,20 @@ _GENDER_MAP = {
     "f": "أنثى",
 }
 
-_TOP_NOT_HONOR = {"لا", "ليس", "غير", "no", "false", "0"}
+_TOP_NOT_HONOR = {
+    "لا",
+    "لا يوجد",
+    "لايوجد",
+    "ليس",
+    "ليس من الاوائل",
+    "غير",
+    "غير متفوق",
+    "no",
+    "false",
+    "0",
+}
 _TOP_YES = {"نعم", "yes", "true", "y"}
+_ARABIC_NAME_PATTERN = re.compile(r"^[\u0621-\u063A\u0641-\u064A\s]+$")
 
 
 def normalize_gender(value: Any) -> str | None:
@@ -133,6 +146,10 @@ def parse_top_status_from_file(value: Any) -> int | None:
     return None
 
 
+def _is_valid_arabic_name(value: str) -> bool:
+    return bool(value and _ARABIC_NAME_PATTERN.fullmatch(value))
+
+
 def split_full_name(full_name: str | None) -> tuple[str, str]:
     """Split a legacy full name into ``(first_name, last_name)`` (D4)."""
     normalized = normalize_arabic(full_name or "")
@@ -163,6 +180,25 @@ def _cell_text(row: Dict[str, Any], key: str) -> str:
     if text.endswith(".0") and text[:-2].isdigit():
         return text[:-2]
     return text
+
+
+def _record_error(
+    errors: List[Dict[str, Any]],
+    row: int,
+    field: str,
+    message: str,
+    value: Any = "",
+) -> None:
+    """Keep import errors actionable without exposing the whole source row."""
+    display_value = _cell_text({"value": value}, "value") if value is not None else ""
+    errors.append(
+        {
+            "row": row,
+            "field": field,
+            "value": display_value,
+            "message": message,
+        }
+    )
 
 
 async def invalidate_uni_records_cache(event_id: int) -> None:
@@ -251,10 +287,9 @@ def _header_aliases() -> Dict[str, str]:
 def _canonicalize_columns(columns) -> List[str]:
     """Rename recognised columns to their canonical English field name.
 
-    Arabic, English and mixed headers are all accepted. A column that matches
-    nothing keeps the legacy behaviour (stripped and lowercased) and stays
-    ignored by validation. Two source columns mapping to the same field is a
-    hard error, reported together with the two offending headers.
+    Arabic, English and mixed headers are all accepted.     A column that matches nothing is rejected so source data cannot be silently
+    ignored. Two source columns mapping to the same field is a hard error,
+    reported together with the two offending headers.
     """
     aliases = _header_aliases()
     resolved: List[str] = []
@@ -262,8 +297,11 @@ def _canonicalize_columns(columns) -> List[str]:
     for column in columns:
         canonical = aliases.get(_normalize_header(column))
         if canonical is None:
-            resolved.append(str(column).strip().lower())
-            continue
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'العمود "{str(column).strip()}" غير معروف في الملف. '
+                "تحقق من اسم العمود أو احذفه قبل إعادة الرفع.",
+            )
         if canonical in seen:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -303,35 +341,38 @@ def _read_csv(contents: bytes) -> "pd.DataFrame":
     return pd.read_csv(io.StringIO(text), sep=_detect_csv_delimiter(text))
 
 
+def _parse_contents(filename: str, contents: bytes) -> "pd.DataFrame":
+    if filename.endswith(".csv"):
+        return _read_csv(contents)
+    if filename.endswith((".xlsx", ".xls")):
+        return pd.read_excel(io.BytesIO(contents))
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="نوع الملف غير مدعوم. يرجى رفع ملف Excel (.xlsx) أو CSV (.csv).",
+    )
+
+
 async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
     contents = await file.read()
     filename = (file.filename or "").lower()
     try:
-        if filename.endswith(".csv"):
-            df = _read_csv(contents)
-        elif filename.endswith((".xlsx", ".xls")):
-            df = pd.read_excel(io.BytesIO(contents))
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="نوع الملف غير مدعوم. يرجى رفع ملف Excel (.xlsx) أو CSV (.csv).",
-            )
+        df = await asyncio.to_thread(_parse_contents, filename, contents)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"فشل في قراءة الملف: {str(e)}",
+            detail="فشل في قراءة الملف. تأكد من أن الملف غير تالف وبالصيغة المطلوبة.",
         )
 
     try:
         df.columns = _canonicalize_columns(df.columns)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"فشل في قراءة الملف: {str(e)}",
+            detail="فشل في قراءة أعمدة الملف. تأكد من أن الصف الأول يحتوي على أسماء الأعمدة.",
         )
 
     required_cols = {"university_id", "father_name", "mother_name", "college", "gender", "gpa"}
@@ -412,43 +453,104 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
         gender = _cell_text(row, "gender")
         gpa_raw = row.get("gpa")
         major_raw = _cell_text(row, "major")
+        name_fields = (
+            (("الاسم", first_name), ("الكنية", last_name))
+            if has_split_names and not has_full_name
+            else (("الاسم الكامل", full_name),)
+        )
 
         # Check empty required fields
         if not uni_id:
-            errors.append({"row": idx, "field": "الرقم الجامعي", "message": "الرقم الجامعي مطلوب."})
+            _record_error(errors, idx, "الرقم الجامعي", "الرقم الجامعي مطلوب.", uni_id)
+        elif not re.fullmatch(r"[0-9]+", uni_id):
+            _record_error(
+                errors,
+                idx,
+                "الرقم الجامعي",
+                "الرقم الجامعي يجب أن يحتوي على أرقام فقط.",
+                uni_id,
+            )
         if has_split_names and not has_full_name:
             if not first_name:
-                errors.append({"row": idx, "field": "الاسم", "message": "الاسم مطلوب."})
+                _record_error(errors, idx, "الاسم", "الاسم مطلوب.", first_name)
             if not last_name:
-                errors.append({"row": idx, "field": "الكنية", "message": "الكنية مطلوبة."})
+                _record_error(errors, idx, "الكنية", "الكنية مطلوبة.", last_name)
         elif not full_name and not (first_name and last_name):
-            errors.append({"row": idx, "field": "الاسم الكامل", "message": "الاسم الكامل مطلوب."})
+            _record_error(errors, idx, "الاسم الكامل", "الاسم الكامل مطلوب.", full_name)
+        for field, name in name_fields:
+            if name and not _is_valid_arabic_name(name):
+                _record_error(
+                    errors,
+                    idx,
+                    field,
+                    "يجب أن يحتوي الاسم على حروف عربية ومسافات فقط، دون أرقام أو رموز.",
+                    name,
+                )
         if not father_name:
-            errors.append({"row": idx, "field": "اسم الأب", "message": "اسم الأب مطلوب."})
+            _record_error(errors, idx, "اسم الأب", "اسم الأب مطلوب.", father_name)
+        elif not _is_valid_arabic_name(father_name):
+            _record_error(
+                errors,
+                idx,
+                "اسم الأب",
+                "يجب أن يحتوي اسم الأب على حروف عربية ومسافات فقط، دون أرقام أو رموز.",
+                father_name,
+            )
         if not mother_name:
-            errors.append({"row": idx, "field": "اسم الأم", "message": "اسم الأم مطلوب."})
+            _record_error(errors, idx, "اسم الأم", "اسم الأم مطلوب.", mother_name)
+        elif not _is_valid_arabic_name(mother_name):
+            _record_error(
+                errors,
+                idx,
+                "اسم الأم",
+                "يجب أن يحتوي اسم الأم على حروف عربية ومسافات فقط، دون أرقام أو رموز.",
+                mother_name,
+            )
         if not college_name:
-            errors.append({"row": idx, "field": "الكلية", "message": "الكلية مطلوبة."})
+            _record_error(errors, idx, "الكلية", "الكلية مطلوبة.", college_name)
         if not gender:
-            errors.append({"row": idx, "field": "الجنس", "message": "الجنس مطلوب."})
+            _record_error(errors, idx, "الجنس", "الجنس مطلوب.", gender)
 
         # Check GPA
         if gpa_raw is None or str(gpa_raw).strip() == "" or str(gpa_raw).lower() == "nan":
-            errors.append({"row": idx, "field": "المعدل", "message": "المعدل مطلوب."})
+            _record_error(errors, idx, "المعدل", "المعدل مطلوب.", gpa_raw)
         else:
             parsed_gpa = parse_gpa(gpa_raw)
             if parsed_gpa is None:
-                errors.append({"row": idx, "field": "المعدل", "message": "المعدل غير صالح."})
+                _record_error(errors, idx, "المعدل", "المعدل غير صالح. أدخل رقماً بين 0 و100.", gpa_raw)
 
         # Check duplicate university_id within file
-        if uni_id in seen_uni_ids:
-            errors.append({"row": idx, "field": "الرقم الجامعي", "message": f"الرقم الجامعي '{uni_id}' مكرر داخل الملف."})
+        if uni_id and uni_id in seen_uni_ids:
+            _record_error(
+                errors,
+                idx,
+                "الرقم الجامعي",
+                f"الرقم الجامعي '{uni_id}' مكرر داخل الملف.",
+                uni_id,
+            )
         else:
             seen_uni_ids.add(uni_id)
 
         # Check valid gender (accepts the Affairs spellings, item A2.1)
         if gender and normalize_gender(gender) is None:
-            errors.append({"row": idx, "field": "الجنس", "message": f"قيمة الجنس غير صحيحة '{gender}' (يجب أن تكون 'ذكر' أو 'أنثى')."})
+            _record_error(
+                errors,
+                idx,
+                "الجنس",
+                f"قيمة الجنس غير صحيحة '{gender}'. المسموح: ذكر أو أنثى.",
+                gender,
+            )
+
+        if "top_status" in row:
+            top_status_raw = _cell_text(row, "top_status")
+            if top_status_raw and parse_top_status_from_file(top_status_raw) is None:
+                _record_error(
+                    errors,
+                    idx,
+                    "حالة الطالب من الأوائل",
+                    "قيمة غير معروفة. استخدم: لا يوجد، الأول، الثاني، الثالث، أو من الأوائل.",
+                    top_status_raw,
+                )
 
         # Check non-existent college names using normalized lookup
         if college_name and college_name not in file_colleges:
@@ -456,7 +558,13 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
         normalized_college_name = normalize_arabic(college_name)
         college_id = college_map.get(normalized_college_name)
         if not college_id:
-            errors.append({"row": idx, "field": "الكلية", "message": f'الكلية "{college_name}" غير مرتبطة بهذا الحفل.'})
+            _record_error(
+                errors,
+                idx,
+                "الكلية",
+                f'الكلية "{college_name}" غير مرتبطة بهذا الحفل.',
+                college_name,
+            )
             if college_name not in unmatched_colleges:
                 unmatched_colleges.append(college_name)
         else:
@@ -464,21 +572,27 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
             if major_raw and major_raw.lower() not in ["nan", "none", "لا يوجد", ""]:
                 norm_major = normalize_arabic(major_raw)
                 if (college_id, norm_major) not in major_map:
-                    errors.append({"row": idx, "field": "التخصص", "message": f'التخصص "{major_raw}" غير موجود ضمن كلية "{college_name}". يرجى إضافته من إدارة التخصصات أولاً.'})
+                    _record_error(
+                        errors,
+                        idx,
+                        "التخصص",
+                        f'التخصص "{major_raw}" غير موجود ضمن كلية "{college_name}". أضفه من إدارة التخصصات أولاً.',
+                        major_raw,
+                    )
 
     if unmatched_colleges:
         event_college_names = [c.name for c in colleges]
-        errors.append(
-            {
-                "row": 0,
-                "field": "الكلية",
-                "message": (
-                    "كليات وردت في الملف وغير مرتبطة بهذا الحفل: "
-                    + "، ".join(unmatched_colleges)
-                    + " | الكليات المرتبطة بهذا الحفل: "
-                    + ("، ".join(event_college_names) if event_college_names else "لا توجد كليات مرتبطة بهذا الحفل.")
-                ),
-            }
+        _record_error(
+            errors,
+            0,
+            "الكلية",
+            (
+                "كليات وردت في الملف وغير مرتبطة بهذا الحفل: "
+                + "، ".join(unmatched_colleges)
+                + " | الكليات المرتبطة بهذا الحفل: "
+                + ("، ".join(event_college_names) if event_college_names else "لا توجد كليات مرتبطة بهذا الحفل.")
+            ),
+            "، ".join(unmatched_colleges),
         )
 
     return errors

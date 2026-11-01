@@ -9,6 +9,7 @@ import {
   getEvents,
   ApiError,
   downloadBlob,
+  deleteUniversityFile,
 } from '../../api/admin.js';
 
 const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
@@ -48,6 +49,7 @@ export default function AdminUniversityFiles({
   const [linkingId, setLinkingId] = useState(null);
   const [linkEventId, setLinkEventId] = useState('');
   const [report, setReport] = useState(null);
+  const [deleteOptionsId, setDeleteOptionsId] = useState(null);
 
   const loadFiles = useCallback(() => {
     setLoading(true);
@@ -115,7 +117,12 @@ export default function AdminUniversityFiles({
   const buildReport = (res) => {
     const errors = Array.isArray(res?.errors) ? res.errors : [];
     if (errors.length > 0) {
-      return { type: 'error', errors };
+      const byField = errors.reduce((counts, error) => {
+        const field = error?.field || 'عام';
+        counts[field] = (counts[field] || 0) + 1;
+        return counts;
+      }, {});
+      return { type: 'error', errors, byField };
     }
     const imp = res?.import;
     if (imp) {
@@ -131,9 +138,9 @@ export default function AdminUniversityFiles({
   };
 
   const downloadErrorsCsv = (errors) => {
-    const rows = [['الصف', 'الحقل', 'المشكلة']];
+    const rows = [['الصف', 'الحقل', 'القيمة الموجودة', 'المشكلة']];
     for (const e of errors) {
-      rows.push([e?.row ?? '', e?.field ?? '', e?.message ?? '']);
+      rows.push([e?.row ?? '', e?.field ?? '', e?.value ?? '', e?.message ?? '']);
     }
     const csv = rows
       .map((r) =>
@@ -184,6 +191,24 @@ export default function AdminUniversityFiles({
       if (r) setReport(r);
     } catch (err) {
       setError(apiErrorMessage(err, 'تعذّر ربط الملف بالحفل.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async (fileId, deleteRecords) => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await deleteUniversityFile(fileId, deleteRecords);
+      setDeleteOptionsId(null);
+      loadFiles();
+      setReport({
+        type: 'delete-success',
+        message: res?.message || 'تم حذف الملف.',
+      });
+    } catch (err) {
+      setError(apiErrorMessage(err, 'تعذّر حذف الملف.'));
     } finally {
       setBusy(false);
     }
@@ -306,7 +331,15 @@ export default function AdminUniversityFiles({
           {report && report.type === 'error' && (
             <div className="uf-error" role="alert" style={{ marginTop: '12px' }}>
               <p style={{ fontWeight: 'bold', margin: '0 0 8px' }}>
-                لم يتم الاستيراد: {report.errors.length} أخطاء
+                لم يتم الاستيراد: {report.errors.length} أخطاء في المطابقة.
+              </p>
+              <p style={{ margin: '0 0 8px' }}>
+                راجع الصف والحقل والقيمة الموجودة لمعرفة سبب رفض كل سجل.
+              </p>
+              <p style={{ margin: '0 0 10px' }}>
+                {Object.entries(report.byField)
+                  .map(([field, count]) => `${field}: ${count}`)
+                  .join(' · ')}
               </p>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -314,6 +347,7 @@ export default function AdminUniversityFiles({
                     <tr>
                       <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الصف</th>
                       <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الحقل</th>
+                      <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>القيمة الموجودة</th>
                       <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>المشكلة</th>
                     </tr>
                   </thead>
@@ -322,6 +356,7 @@ export default function AdminUniversityFiles({
                       <tr key={i}>
                         <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.row ?? '—'}</td>
                         <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.field ?? '—'}</td>
+                        <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.value || 'فارغة'}</td>
                         <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.message ?? ''}</td>
                       </tr>
                     ))}
@@ -355,6 +390,22 @@ export default function AdminUniversityFiles({
               }}
             >
               أُضيف {report.added}، حُدّث {report.updated}، تُجوهل {report.skipped} من أصل {report.total}
+            </div>
+          )}
+
+          {report && report.type === 'delete-success' && (
+            <div
+              role="status"
+              style={{
+                marginTop: '12px',
+                padding: '10px 12px',
+                background: '#eaf6ef',
+                color: '#1b7a4b',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+              }}
+            >
+              {report.message}
             </div>
           )}
         </section>
@@ -455,6 +506,50 @@ export default function AdminUniversityFiles({
                       >
                         {f.event_id ? 'إعادة الربط' : 'ربط بحفل'}
                       </button>
+                      <button
+                        type="button"
+                        className="uf-btn danger"
+                        disabled={busy}
+                        onClick={() => setDeleteOptionsId(f.id)}
+                      >
+                        حذف الملف
+                      </button>
+                    </div>
+                  )}
+                  {deleteOptionsId === f.id && (
+                    <div className="uf-delete-options" role="dialog" aria-label="خيارات حذف الملف">
+                      <p className="uf-delete-title">
+                        اختر ماذا تريد حذفه من ملف «{f.original_name}»:
+                      </p>
+                      <p className="uf-delete-warning">
+                        حذف السجلات لا يؤثر على سجلات مستوردة من ملفات أخرى.
+                      </p>
+                      <div className="uf-item-actions">
+                        <button
+                          type="button"
+                          className="uf-btn danger"
+                          disabled={busy}
+                          onClick={() => handleDelete(f.id, true)}
+                        >
+                          حذف الملف والسجلات المستوردة
+                        </button>
+                        <button
+                          type="button"
+                          className="uf-btn ghost"
+                          disabled={busy}
+                          onClick={() => handleDelete(f.id, false)}
+                        >
+                          حذف الملف فقط وإبقاء السجلات
+                        </button>
+                        <button
+                          type="button"
+                          className="uf-btn ghost"
+                          disabled={busy}
+                          onClick={() => setDeleteOptionsId(null)}
+                        >
+                          إلغاء
+                        </button>
+                      </div>
                     </div>
                   )}
                 </article>

@@ -1,4 +1,5 @@
 import { request } from "./client.js";
+import { getGraduateRefreshToken } from "./session.js";
 
 export async function getColleges() {
   return request("/api/colleges");
@@ -44,10 +45,11 @@ export async function loginGraduate(data) {
   });
 }
 
-export async function logoutGraduate(token) {
+export async function logoutGraduate(token, refreshToken = getGraduateRefreshToken()) {
   return request("/api/auth/graduate/logout", {
     method: "POST",
     token,
+    body: refreshToken ? { refresh_token: refreshToken } : undefined,
   });
 }
 

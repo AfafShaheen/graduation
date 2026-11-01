@@ -391,8 +391,8 @@ export default function GraduationFormStep2({
               <div className="info-box password-scope-note" role="note">
                 <span className="material-symbols-outlined info-icon">key</span>
                 <p className="info-text">
-                  هذه كلمة سر <strong>جديدة لحسابك على منصة الحفل فقط</strong>، وليست كلمة سر بريدك
-                  الإلكتروني. لا تكتب كلمة سر إيميلك هنا، واختر كلمة سر تتذكرها لتسجيل الدخول لاحقاً.
+                  كلمة سر جديدة لحسابك على منصة الحفل، وليست كلمة سر بريدك الإلكتروني.
+                  <strong> (تستخدمها لاحقاً لتسجيل الدخول إلى الموقع).</strong>
                 </p>
               </div>
             </div>

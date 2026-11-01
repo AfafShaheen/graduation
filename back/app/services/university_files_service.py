@@ -3,7 +3,7 @@ import uuid
 from typing import Any, Dict
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import EventModel
@@ -20,6 +20,7 @@ from app.services.university_records_service import (
 STORAGE_DIR = os.getenv("UNIVERSITY_FILES_DIR", "/app/storage/university_files")
 
 _ALLOWED_EXTENSIONS = (".xlsx", ".xls", ".csv")
+MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
 
 
 def _safe_filename(name: str) -> str:
@@ -123,6 +124,7 @@ async def _import_into_event(
     upload: "_BytesUpload",
     event_id: int,
     admin: dict,
+    previous_event_id: int | None = None,
 ) -> Dict[str, Any]:
     records = await parse_file(upload)
     total = len(records)
@@ -138,6 +140,14 @@ async def _import_into_event(
             "errors": errors,
             "status": "failed",
         }
+
+    if previous_event_id is not None and previous_event_id != event_id:
+        await db.execute(
+            delete(UniversityRecordModel).where(
+                UniversityRecordModel.file_id == record.id,
+                UniversityRecordModel.event_id == previous_event_id,
+            )
+        )
 
     counts = await upsert_records(records, event_id, db, file_id=record.id)
     record.rows_imported = counts["added"]
@@ -156,6 +166,8 @@ async def _import_into_event(
     )
     await db.commit()
     await invalidate_uni_records_cache(event_id)
+    if previous_event_id is not None and previous_event_id != event_id:
+        await invalidate_uni_records_cache(previous_event_id)
 
     return {
         "file": await _build_file_item(db, record),
@@ -189,6 +201,11 @@ async def upload_university_file(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="الملف فارغ أو لا يحتوي على بيانات.",
+        )
+    if len(raw) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="حجم الملف كبير جداً. الحد الأقصى المسموح 25 ميغابايت.",
         )
 
     os.makedirs(STORAGE_DIR, exist_ok=True)
@@ -231,6 +248,7 @@ async def link_university_file(
         )
     await _event_or_404(db, event_id)
 
+    previous_event_id = record.event_id
     record.event_id = event_id
     record.status = "uploaded"
     record.rows_imported = 0
@@ -246,10 +264,17 @@ async def link_university_file(
     with open(path, "rb") as handle:
         raw = handle.read()
     upload = _BytesUpload(record.original_name, record.content_type, raw)
-    return await _import_into_event(db, record, upload, event_id, admin)
+    return await _import_into_event(
+        db, record, upload, event_id, admin, previous_event_id=previous_event_id
+    )
 
 
-async def delete_university_file(file_id: int, admin: dict, db: AsyncSession) -> Dict[str, Any]:
+async def delete_university_file(
+    file_id: int,
+    admin: dict,
+    db: AsyncSession,
+    delete_records: bool = False,
+) -> Dict[str, Any]:
     record = await db.get(UniversityFileModel, file_id)
     if not record:
         raise HTTPException(
@@ -259,6 +284,14 @@ async def delete_university_file(file_id: int, admin: dict, db: AsyncSession) ->
     path = record.storage_path
     original_name = record.original_name
     event_id = record.event_id
+    deleted_records = 0
+    if delete_records:
+        result = await db.execute(
+            delete(UniversityRecordModel).where(
+                UniversityRecordModel.file_id == record.id
+            )
+        )
+        deleted_records = result.rowcount or 0
     await db.delete(record)
     await record_audit(
         db,
@@ -266,7 +299,7 @@ async def delete_university_file(file_id: int, admin: dict, db: AsyncSession) ->
         admin["admin_id"],
         "DELETE_UNIVERSITY_FILE",
         f"file_id={file_id}",
-        f"Deleted file {original_name}",
+        f"Deleted file {original_name}; deleted_records={deleted_records}",
         event_id=event_id,
     )
     await db.commit()
@@ -277,4 +310,12 @@ async def delete_university_file(file_id: int, admin: dict, db: AsyncSession) ->
         pass
     if event_id is not None:
         await invalidate_uni_records_cache(event_id)
-    return {"status": "success", "message": "تم حذف الملف."}
+    return {
+        "status": "success",
+        "message": (
+            "تم حذف الملف والسجلات المستوردة منه."
+            if delete_records
+            else "تم حذف الملف مع إبقاء السجلات المستوردة."
+        ),
+        "deleted_records": deleted_records,
+    }

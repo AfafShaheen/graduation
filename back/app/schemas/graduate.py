@@ -11,7 +11,7 @@ PHONE_REGEX = r"^\+?[0-9]{7,15}$"
 
 class UserVerifyStep1(BaseModel):
     college_id: int = Field(..., gt=0)
-    university_id: str = Field(..., min_length=1, max_length=100)
+    university_id: str = Field(..., min_length=1, max_length=100, pattern=r"^[0-9]+$")
     first_name: Optional[str] = Field(None, pattern=NAME_REGEX, description="First name (الاسم), letters only.")
     last_name: Optional[str] = Field(None, pattern=NAME_REGEX, description="Surname (الكنية), letters only.")
     full_name: str = Field(None, pattern=NAME_REGEX, description="Legacy single name field; kept for backwards compatibility (D4).")
