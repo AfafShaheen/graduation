@@ -315,7 +315,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             )}
 {errors.general && (
               <div className="form-group">
-                <div className="info-box" style={{ margin: 0, borderColor: '#ba1a1a', background: '#fff5f5' }}>
+                <div className="info-box" role="alert" style={{ margin: 0, borderColor: '#ba1a1a', background: '#fff5f5' }}>
                   <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
                 </div>
               </div>
@@ -331,11 +331,12 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
             <div className="form-group grid-two-cols">
               <div>
-                <label className="form-label">
+                <label htmlFor="reg-firstName" className="form-label">
                   الاسم <span className="required-star">*</span>
                 </label>
                 <input
                   type="text"
+                  id="reg-firstName"
                   name="firstName"
                   className={`form-input ${errors.firstName ? 'error' : ''}`}
                   placeholder="مثلاً: مجد"
@@ -346,11 +347,12 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 <FieldError message={errors.firstName} />
               </div>
               <div>
-                <label className="form-label">
+                <label htmlFor="reg-lastName" className="form-label">
                   الكنية <span className="required-star">*</span>
                 </label>
                 <input
                   type="text"
+                  id="reg-lastName"
                   name="lastName"
                   className={`form-input ${errors.lastName ? 'error' : ''}`}
                   placeholder="مثلاً: المحمود"
@@ -364,11 +366,12 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
             {/* الجنس */}
             <div className="form-group">
-              <label className="form-label">
+              <label htmlFor="reg-gender" className="form-label">
                 الجنس <span className="required-star">*</span>
               </label>
               <div className="input-wrapper">
                 <select
+                  id="reg-gender"
                   name="gender"
                   className={`form-select select-with-icon ${errors.gender ? 'error' : ''}`}
                   value={formData.gender}
@@ -386,7 +389,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
             {/* الكلية */}
             <div className="form-group">
-              <label className="form-label">
+              <label htmlFor="reg-faculty" className="form-label">
                 الكلية <span className="required-star">*</span>
               </label>
               <div className="input-wrapper">
@@ -408,6 +411,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 ) : (
                   <>
                     <select
+                      id="reg-faculty"
                       name="faculty"
                       className={`form-select select-with-icon ${errors.faculty ? 'error' : ''}`}
                       value={formData.faculty}
@@ -428,9 +432,10 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
             {/* التخصص (تابع للكلية) */}
             <div className="form-group">
-              <label className="form-label">التخصص</label>
+              <label htmlFor="reg-major" className="form-label">التخصص</label>
               <div className="input-wrapper">
                 <select
+                  id="reg-major"
                   name="major"
                   className="form-select select-with-icon"
                   value={formData.major}
@@ -449,7 +454,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             {/* الرقم الجامعي */}
             <div className="form-group">
               <div className="label-row">
-                <label className="form-label" style={{ margin: 0 }}>
+                <label htmlFor="reg-studentId" className="form-label" style={{ margin: 0 }}>
                   الرقم الجامعي <span className="required-star">*</span>
                 </label>
                 <span className="label-hint">مكتوب على البطاقة الجامعية</span>
@@ -458,6 +463,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 <input
                   type="text"
                   inputMode="numeric"
+                  id="reg-studentId"
                   name="studentId"
                   className={`form-input input-with-icon ${errors.studentId ? 'error' : ''}`}
                   placeholder="مثلاً: 201910432"
@@ -472,9 +478,10 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
             {/* من الثلاثة الأوائل */}
             <div className="form-group">
-              <label className="form-label">هل أنت من الثلاثة الأوائل؟</label>
+              <label htmlFor="reg-topRank" className="form-label">هل أنت من الثلاثة الأوائل؟</label>
               <div className="input-wrapper">
                 <select
+                  id="reg-topRank"
                   name="topRank"
                   className="form-select select-with-icon"
                   value={formData.topRank}
@@ -494,7 +501,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             {/* المعدل كنسبة مئوية */}
             <div className="form-group">
               <div className="label-row">
-                <label className="form-label" style={{ margin: 0 }}>
+                <label htmlFor="reg-gpa" className="form-label" style={{ margin: 0 }}>
                   المعدل (نسبة مئوية)
                 </label>
                 <span className="label-hint">اختياري، من 0 إلى 100</span>
@@ -503,6 +510,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 <input
                   type="text"
                   inputMode="decimal"
+                  id="reg-gpa"
                   name="gpa"
                   className={`form-input input-with-icon ${errors.gpa ? 'error' : ''}`}
                   placeholder="مثلاً: 82.5"
@@ -518,11 +526,12 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             {/* اسم الأب والأم */}
             <div className="form-group grid-two-cols">
               <div>
-                <label className="form-label">
+                <label htmlFor="reg-fatherName" className="form-label">
                   اسم الأب <span className="required-star">*</span>
                 </label>
                 <input
                   type="text"
+                  id="reg-fatherName"
                   name="fatherName"
                   className={`form-input ${errors.fatherName ? 'error' : ''}`}
                   placeholder="اسم الوالد"
@@ -533,11 +542,12 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 <FieldError message={errors.fatherName} />
               </div>
               <div>
-                <label className="form-label">
+                <label htmlFor="reg-motherName" className="form-label">
                   اسم الأم <span className="required-star">*</span>
                 </label>
                 <input
                   type="text"
+                  id="reg-motherName"
                   name="motherName"
                   className={`form-input ${errors.motherName ? 'error' : ''}`}
                   placeholder="اسم الوالدة"

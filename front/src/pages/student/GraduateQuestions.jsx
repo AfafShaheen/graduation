@@ -154,12 +154,12 @@ export default function GraduateQuestions({ onDone }) {
 
           <form onSubmit={handleSubmit} noValidate style={{ marginTop: '4px' }}>
             {loadError && (
-              <div className="info-box" style={{ borderColor: '#ba1a1a', background: '#fff5f5' }}>
+              <div className="info-box" role="alert" style={{ borderColor: '#ba1a1a', background: '#fff5f5' }}>
                 <p className="info-text" style={{ color: '#ba1a1a' }}>{loadError}</p>
               </div>
             )}
             {errors.general && (
-              <div className="info-box" style={{ borderColor: '#ba1a1a', background: '#fff5f5' }}>
+              <div className="info-box" role="alert" style={{ borderColor: '#ba1a1a', background: '#fff5f5' }}>
                 <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
               </div>
             )}

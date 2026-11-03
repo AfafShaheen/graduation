@@ -39,7 +39,14 @@ export default function AdminUniversityFiles({
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const errorRef = useRef(null);
   const [busy, setBusy] = useState(false);
+
+  // The alert sits above the file list, while link/delete are triggered far
+  // below it: bring it into view so the failure is not missed.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [error]);
 
   const [uploadEventId, setUploadEventId] = useState('');
   const [uploadError, setUploadError] = useState('');
@@ -263,7 +270,7 @@ export default function AdminUniversityFiles({
         </section>
 
         {error && (
-          <p className="uf-error" role="alert">{error}</p>
+          <p className="uf-error" role="alert" ref={errorRef}>{error}</p>
         )}
 
         <section className="uf-card">

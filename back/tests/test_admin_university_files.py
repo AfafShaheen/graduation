@@ -166,3 +166,38 @@ async def test_delete_file_removes_record(client, db, make_event, make_college, 
     assert deleted.status_code == 200
     listing = await client.get("/api/admin/university-files", headers=headers)
     assert listing.json()["total"] == 0
+
+
+async def test_file_college_counts_only_cover_that_file(
+    client, db, make_event, make_college, make_admin
+):
+    event = await make_event()
+    await make_college(event.id, name="كلية العلوم")
+    await make_college(event.id, name="كلية الآداب")
+    token = await _admin_token(client, make_admin)
+    headers = {"Authorization": f"Bearer {token}"}
+    mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+    async def upload(name, rows):
+        resp = await client.post(
+            "/api/admin/university-files",
+            files={"file": (name, _make_xlsx(rows), mime)},
+            data={"event_id": str(event.id)},
+            headers=headers,
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()["file"]
+
+    first = await upload(
+        "a.xlsx", [("700010", "سامر", "أ", "ب", "كلية العلوم", "ذكر", "70.00", None)]
+    )
+    second = await upload(
+        "b.xlsx",
+        [
+            ("700011", "ليلى", "ج", "د", "كلية الآداب", "أنثى", "75.00", None),
+            ("700012", "هدى", "ج", "د", "كلية الآداب", "أنثى", "76.00", None),
+        ],
+    )
+
+    assert [(c["name"], c["rows"]) for c in first["colleges"]] == [("كلية العلوم", 1)]
+    assert [(c["name"], c["rows"]) for c in second["colleges"]] == [("كلية الآداب", 2)]

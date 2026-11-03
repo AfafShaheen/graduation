@@ -232,7 +232,7 @@ export default function GraduationFormStep2({
             </div>
           )}
 {errors.general && (
-            <div className="info-box" style={{ marginBottom: 12, borderColor: '#ba1a1a', background: '#fff5f5' }}>
+            <div className="info-box" role="alert" style={{ marginBottom: 12, borderColor: '#ba1a1a', background: '#fff5f5' }}>
               <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
             </div>
           )}

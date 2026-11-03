@@ -79,7 +79,7 @@ async def _build_file_item(db: AsyncSession, record: UniversityFileModel) -> Dic
                 UniversityRecordModel.college_id,
                 func.count(UniversityRecordModel.id),
             )
-            .where(UniversityRecordModel.event_id == record.event_id)
+            .where(UniversityRecordModel.file_id == record.id)
             .group_by(UniversityRecordModel.college_id)
         )
     ).all()

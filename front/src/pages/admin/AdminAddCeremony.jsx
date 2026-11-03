@@ -37,7 +37,13 @@ const makePackage = (companions = '2', price = '') => ({
 });
 
 /* باقة بديلة ثابتة: بتضمن وجود بطاقة واحدة على الأقل حتى لو المسودة فاضية */
-const FALLBACK_PACKAGE = { id: 'pkg-fallback', companions: '2', price: '' };
+// Server error keys that have a spot next to a form field (see errFor below).
+const FIELD_ERROR_KEYS = new Set([
+  'name', 'event_date', 'event_time', 'registration_start', 'registration_end',
+  'college_names', 'colleges', 'whatsapp_group_link', 'packages', 'companions_count', 'price',
+]);
+
+const FALLBACK_PACKAGE ={ id: 'pkg-fallback', companions: '2', price: '' };
 
 /* مقارنة مجموعتَي معرّفات بغض النظر عن الترتيب */
 const sameIdSet = (a, b) => {
@@ -471,7 +477,17 @@ export default function AdminAddCeremony({
         const cleaned = {};
         for (const [k, v] of Object.entries(err.fieldErrors)) cleaned[k] = cleanServerMessage(v);
         setFieldErrors(cleaned);
-        setSubmitError(err.message || 'يرجى تصحيح الحقول المميّزة بالأحمر ثم إعادة المحاولة.');
+        // Errors about the form as a whole (loc "body", e.g. end date before
+        // start date) belong to no field, so the reason goes in the banner.
+        const general = Object.entries(cleaned)
+          .filter(([k]) => !FIELD_ERROR_KEYS.has(k))
+          .map(([, v]) => v)
+          .filter(Boolean);
+        setSubmitError(
+          general.length
+            ? general.join(' ')
+            : err.message || 'يرجى تصحيح الحقول المميّزة بالأحمر ثم إعادة المحاولة.',
+        );
       } else if (collegesChanged && err instanceof ApiError && err.status === 409) {
         setCollegeError(err.message || 'تعذّر تعديل كليات الحفل.');
       } else {

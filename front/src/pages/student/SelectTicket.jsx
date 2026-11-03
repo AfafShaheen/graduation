@@ -11,9 +11,9 @@ import HelpFooter from '../../components/HelpFooter';
 import GuideLinkButton from '../../components/GuideLinkButton';
 
 /* صيغة العدد بالعربي: 1 مرافق، 2 مرافقان، 3-10 مرافقين، 11+ مرافقاً */
-const companionsText = (n) => {
+const companionsText = (n, afterPreposition = false) => {
   if (n === 1) return 'مرافق واحد';
-  if (n === 2) return 'مرافقان';
+  if (n === 2) return afterPreposition ? 'مرافقَين' : 'مرافقان';
   if (n >= 3 && n <= 10) return `${n.toLocaleString('en-US')} مرافقين`;
   return `${n.toLocaleString('en-US')} مرافقاً`;
 };
@@ -29,7 +29,7 @@ const buildOption = (o) => {
     features: [
       { icon: n > 2 ? 'groups' : 'group', text: `عدد الحضور: الخريج + ${companionsText(n)}` },
     ],
-    description: `دخول الخريج إلى حفل التخرج مع ${companionsText(n)}`,
+    description: `دخول الخريج إلى حفل التخرج مع ${companionsText(n, true)}`,
   };
 };
 
