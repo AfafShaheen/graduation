@@ -20,7 +20,7 @@ async def _admin_login(client, make_admin):
 async def test_admin_login_returns_refresh_pair(client, make_admin):
     body = await _admin_login(client, make_admin)
     assert body["refresh_token"]
-    assert body["refresh_expires_in"] == 30 * 86400
+    assert body["refresh_expires_in"] == 12 * 3600
 
 
 async def test_admin_refresh_rotates_and_returns_new_pair(client, make_admin):
@@ -104,7 +104,7 @@ async def test_scanner_refresh_keeps_event(client, make_admin, make_event, make_
     assert login.status_code == 200
     body = login.json()
     # The scanner session lasts 24 hours (it was 30 days before).
-    assert body["refresh_expires_in"] == 1 * 86400
+    assert body["refresh_expires_in"] == 12 * 3600
 
     resp = await client.post(
         "/api/scanner/auth/refresh", json={"refresh_token": body["refresh_token"]}

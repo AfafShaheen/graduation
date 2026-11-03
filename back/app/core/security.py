@@ -18,8 +18,11 @@ secret_key = _jwt_key.strip()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 120
 REFRESH_TOKEN_TYPE = "refresh"
-ADMIN_REFRESH_TOKEN_EXPIRE_DAYS = 30
-SCANNER_REFRESH_TOKEN_EXPIRE_DAYS = 1  # the scanner session lasts 24 hours
+# Admin: 12 hours of INACTIVITY (every refresh rotation renews the window, so an
+# active admin stays signed in). Scanner: fixed 12 hours from login. Graduate: 7
+# days from login. Fractional days are fine (timedelta / refresh_expires_in).
+ADMIN_REFRESH_TOKEN_EXPIRE_DAYS = 0.5
+SCANNER_REFRESH_TOKEN_EXPIRE_DAYS = 0.5
 GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS = 7
 EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES = 30
 
@@ -56,7 +59,9 @@ def create_refresh_token(data: dict, days: int, family_exp: Optional[int] = None
     ``family_exp`` (epoch seconds) is the absolute end of the whole session: the
     first token of a login sets it to ``now + days`` and every rotated token
     inherits it, so rotating never extends a session beyond its original limit
-    (scanner 24 hours, graduate 7 days, admin 30 days from the login).
+    (scanner 12 hours, graduate 7 days from the login). The admin session
+    slides instead: its caller passes no ``family_exp`` so each rotation
+    restarts the 12-hour window.
 
     The token carries ``type='refresh'`` so access-token and registration-token
     dependencies reject it, plus a fresh ``jti`` that is stored in Redis for
@@ -80,7 +85,7 @@ def create_refresh_token(data: dict, days: int, family_exp: Optional[int] = None
 
 def refresh_expires_in(days: int, family_exp: Optional[int] = None) -> int:
     """Seconds a freshly issued refresh token lives (capped by the session end)."""
-    full = days * 86400
+    full = int(days * 86400)
     if family_exp is None:
         return full
     remaining = int(family_exp - datetime.now(timezone.utc).timestamp())

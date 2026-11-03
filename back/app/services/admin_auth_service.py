@@ -85,13 +85,15 @@ async def login_admin(data: AdminLoginRequest, db: AsyncSession) -> dict:
 
     await reset_login_failure(data.username)
 
+    family = uuid.uuid4().hex
     token = create_access_token({
         "sub": str(admin.id),
         "role": "admin",
-        "username": admin.username
+        "username": admin.username,
+        "family": family,
     })
 
-    refresh_value, refresh_expires_in = await _issue_refresh(admin, uuid.uuid4().hex)
+    refresh_value, refresh_expires_in = await _issue_refresh(admin, family)
 
     return {
         "access_token": token,
@@ -114,6 +116,12 @@ async def logout_admin(credentials, admin: dict) -> dict:
             ttl = int(exp - now)
             if ttl > 0:
                 await redis_client.setex(f"token_blacklist:{jti}", ttl, "1")
+        # End the whole session: the refresh token must not outlive the logout.
+        family = payload.get("family")
+        if family:
+            await refresh_store.revoke_family(family)
+        else:
+            await refresh_store.revoke_subject(str(admin["admin_id"]), "admin")
     except Exception:
         logger.warning("Admin logout token revocation failed", exc_info=True)
 
@@ -165,8 +173,11 @@ async def refresh_admin_session(refresh_value: str, db: AsyncSession) -> dict:
         "sub": str(admin.id),
         "role": "admin",
         "username": admin.username,
+        "family": family,
     })
-    rotation, rotation_expires = await _issue_refresh(admin, family, payload.get("fexp"))
+    # Sliding session: each rotation restarts the 12-hour window, so an active
+    # admin stays signed in and an idle one is signed out after 12 hours.
+    rotation, rotation_expires = await _issue_refresh(admin, family)
     return {
         "access_token": access_value,
         "token_type": "bearer",

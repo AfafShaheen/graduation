@@ -25,7 +25,7 @@ const RESET_EMAIL_KEY = "reset.email";
 const RESET_CODE_KEY = "reset.code";
 
 // Admin, graduate and scanner sessions must survive closing the tab or the browser
-// (they last 30 days, 7 days and 24 hours), so they live in localStorage. Reads fall
+// (admin 12 hours of inactivity, graduate 7 days, scanner 12 hours), so they live in localStorage. Reads fall
 // back to sessionStorage so a session saved by an older build is still understood;
 // removing a key clears both. Short registration/reset flows keep using sessionStorage.
 const persistent = {

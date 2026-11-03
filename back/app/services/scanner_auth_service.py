@@ -73,19 +73,22 @@ async def reset_scanner_login_failure(username: str) -> None:
         logger.warning("Redis scanner login failure reset failed (%s); failing open", exc)
 
 
-def create_scanner_access_token(scanner: ScannerModel) -> str:
+def create_scanner_access_token(scanner: ScannerModel, family: str | None = None) -> str:
     """Build a scanner token (D11).
 
     The event is carried for convenience only; every protected route must read
     the scanner row from the database rather than trust this claim.
     """
+    claims = {
+        "sub": str(scanner.id),
+        "scanner_id": scanner.id,
+        "role": "scanner",
+        "event_id": scanner.event_id,
+    }
+    if family:
+        claims["family"] = family
     return create_access_token(
-        {
-            "sub": str(scanner.id),
-            "scanner_id": scanner.id,
-            "role": "scanner",
-            "event_id": scanner.event_id,
-        },
+        claims,
         expires_delta=timedelta(hours=SCANNER_TOKEN_EXPIRE_HOURS),
     )
 
@@ -151,11 +154,12 @@ async def login_scanner(data: ScannerLoginRequest, db: AsyncSession) -> dict:
 
     await reset_scanner_login_failure(data.username)
 
-    access_value = create_scanner_access_token(scanner)
+    family = uuid.uuid4().hex
+    access_value = create_scanner_access_token(scanner, family)
 
     event = await db.get(EventModel, scanner.event_id)
 
-    refresh_value, refresh_expires_in = await _issue_refresh(scanner, uuid.uuid4().hex)
+    refresh_value, refresh_expires_in = await _issue_refresh(scanner, family)
 
     return {
         "access_token": access_value,
@@ -179,6 +183,12 @@ async def logout_scanner(credentials, scanner: ScannerModel) -> dict:
             ttl = int(exp - now)
             if ttl > 0:
                 await redis_client.setex(f"token_blacklist:{jti}", ttl, "1")
+        # End the whole session: the refresh token must not outlive the logout.
+        family = payload.get("family")
+        if family:
+            await refresh_store.revoke_family(family)
+        else:
+            await refresh_store.revoke_subject(str(scanner.id), "scanner")
     except Exception:
         logger.warning("Scanner logout token revocation failed", exc_info=True)
 
@@ -227,7 +237,7 @@ async def refresh_scanner_session(refresh_value: str, db: AsyncSession) -> dict:
     scanner = await db.get(ScannerModel, int(payload["sub"]))
     if not scanner:
         raise _session_unauthorized()
-    access_value = create_scanner_access_token(scanner)
+    access_value = create_scanner_access_token(scanner, family)
     event = await db.get(EventModel, scanner.event_id)
     rotation, rotation_expires = await _issue_refresh(scanner, family, payload.get("fexp"))
     return {

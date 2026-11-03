@@ -37,6 +37,16 @@ async def _blacklist_lookup(jti: str):
 
 security = HTTPBearer()
 
+
+def _reject_refresh_token(payload: dict) -> None:
+    """A refresh token only works on the refresh endpoint, never as an access token."""
+    if payload.get("type") == REFRESH_TOKEN_TYPE:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="لا يمكن استخدام رمز تجديد الجلسة للوصول. يرجى تسجيل الدخول مجدداً."
+        )
+
+
 async def get_current_admin(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
@@ -50,6 +60,7 @@ async def get_current_admin(
 
     try:
         payload = jwt.decode(credentials.credentials, secret_key, algorithms=[ALGORITHM])
+        _reject_refresh_token(payload)
         jti = payload.get("jti")
         role = payload.get("role")
         admin_id = payload.get("sub")
@@ -97,6 +108,7 @@ async def get_current_scanner(
 
     try:
         payload = jwt.decode(credentials.credentials, secret_key, algorithms=[ALGORITHM])
+        _reject_refresh_token(payload)
         jti = payload.get("jti")
         role = payload.get("role")
         scanner_id = payload.get("sub") or payload.get("scanner_id")

@@ -16,9 +16,9 @@ def _credentials(username: str, password: str) -> dict:
 
 
 def test_session_lengths_match_the_requirement():
-    assert security.SCANNER_REFRESH_TOKEN_EXPIRE_DAYS == 1  # 24 hours
+    assert security.SCANNER_REFRESH_TOKEN_EXPIRE_DAYS == 0.5  # 12 hours
     assert security.GRADUATE_REFRESH_TOKEN_EXPIRE_DAYS == 7
-    assert security.ADMIN_REFRESH_TOKEN_EXPIRE_DAYS == 30
+    assert security.ADMIN_REFRESH_TOKEN_EXPIRE_DAYS == 0.5  # 12 hours, sliding
 
 
 def test_first_refresh_token_sets_the_session_end():
@@ -80,16 +80,22 @@ async def _assert_rotation_keeps_the_session_end(client, url, login_body, full_s
         previous = rotated
 
 
-async def test_admin_rotation_keeps_the_30_day_session_end(client, make_admin):
+async def test_admin_session_is_12_hours_and_slides_on_refresh(client, make_admin):
     await make_admin(username="admin", pw=_ADMIN_PW)
     login = await client.post("/api/admin/auth/login", json=_credentials("admin", _ADMIN_PW))
     assert login.status_code == 200
-    await _assert_rotation_keeps_the_session_end(
-        client, "/api/admin/auth/refresh", login.json(), 30 * 86400
-    )
+    body = login.json()
+    assert body["refresh_expires_in"] == 12 * 3600
+
+    previous = body
+    for _ in range(3):
+        rotated = await _rotate(client, "/api/admin/auth/refresh", previous["refresh_token"])
+        # An active admin is renewed for another full 12 hours each time.
+        assert rotated["refresh_expires_in"] == 12 * 3600
+        previous = rotated
 
 
-async def test_scanner_rotation_keeps_the_24_hour_session_end(
+async def test_scanner_rotation_keeps_the_12_hour_session_end(
     client, make_admin, make_event, make_scanner
 ):
     admin = await make_admin(username="admin", pw=_ADMIN_PW)
@@ -98,7 +104,7 @@ async def test_scanner_rotation_keeps_the_24_hour_session_end(
     login = await client.post("/api/scanner/auth/login", json=_credentials("scanner1", _SCAN_PW))
     assert login.status_code == 200
     await _assert_rotation_keeps_the_session_end(
-        client, "/api/scanner/auth/refresh", login.json(), 86400
+        client, "/api/scanner/auth/refresh", login.json(), 12 * 3600
     )
 
 
