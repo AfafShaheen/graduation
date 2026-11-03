@@ -14,14 +14,14 @@ from app.services.audit_log import ActorType, record_audit
 from app.services.university_records_service import (
     invalidate_uni_records_cache,
     parse_file,
+    read_upload_limited,
     upsert_records,
     validate_records,
 )
 
 STORAGE_DIR = os.getenv("UNIVERSITY_FILES_DIR", "/app/storage/university_files")
 
-_ALLOWED_EXTENSIONS = (".xlsx", ".xls", ".csv")
-MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+_ALLOWED_EXTENSIONS = (".xlsx", ".csv")
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,14 @@ def _storage_path(stored_name: str) -> str:
     return os.path.join(STORAGE_DIR, stored_name)
 
 
+def _remove_stored_file(path: str | None) -> None:
+    try:
+        if path and os.path.exists(path):
+            os.remove(path)
+    except OSError:
+        logger.warning("Failed to remove university file from disk", exc_info=True)
+
+
 class _BytesUpload:
     """غلاف بسيط يقلّد UploadFile ليمرَّر إلى parse_file المحلي."""
 
@@ -42,9 +50,13 @@ class _BytesUpload:
         self.filename = filename
         self.content_type = content_type
         self._data = data
+        self._pos = 0
 
-    async def read(self) -> bytes:
-        return self._data
+    async def read(self, size: int = -1) -> bytes:
+        end = len(self._data) if size is None or size < 0 else self._pos + size
+        chunk = self._data[self._pos:end]
+        self._pos += len(chunk)
+        return chunk
 
     async def seek(self, _pos: int) -> None:
         return None
@@ -128,6 +140,7 @@ async def _import_into_event(
     event_id: int,
     admin: dict,
     previous_event_id: int | None = None,
+    discard_file_on_failure: bool = False,
 ) -> Dict[str, Any]:
     records = await parse_file(upload)
     total = len(records)
@@ -137,6 +150,10 @@ async def _import_into_event(
     if errors:
         record.status = "failed"
         await db.commit()
+        if discard_file_on_failure:
+            # A fresh upload that failed validation is not kept on disk; the
+            # "failed" row stays in the database for the admin to review.
+            _remove_stored_file(record.storage_path)
         return {
             "file": await _build_file_item(db, record),
             "import": None,
@@ -196,19 +213,14 @@ async def upload_university_file(
     if not original_name.lower().endswith(_ALLOWED_EXTENSIONS):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="صيغة الملف غير مدعومة. المسموح: xlsx أو xls أو csv.",
+            detail="صيغة الملف غير مدعومة. المسموح: xlsx أو csv.",
         )
 
-    raw = await file.read()
+    raw = await read_upload_limited(file)
     if not raw:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="الملف فارغ أو لا يحتوي على بيانات.",
-        )
-    if len(raw) > MAX_FILE_SIZE_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="حجم الملف كبير جداً. الحد الأقصى المسموح 25 ميغابايت.",
         )
 
     os.makedirs(STORAGE_DIR, exist_ok=True)
@@ -237,7 +249,14 @@ async def upload_university_file(
         return {"file": await _build_file_item(db, record), "import": None, "errors": [], "status": "uploaded"}
 
     upload = _BytesUpload(original_name, record.content_type, raw)
-    return await _import_into_event(db, record, upload, event_id, admin)
+    try:
+        return await _import_into_event(
+            db, record, upload, event_id, admin, discard_file_on_failure=True
+        )
+    except BaseException:
+        # The request rolls back, so no row will point at this file: drop it.
+        _remove_stored_file(path)
+        raise
 
 
 async def link_university_file(
