@@ -748,7 +748,7 @@ export default function AdminPaymentRequests({
           )}
 
           {!loading && !error && filtered.length === 0 && (
-            <div className="pay-req-empty">ما في طلبات مطابقة</div>
+            <div className="pay-req-empty">لا توجد طلبات مطابقة</div>
           )}
 
           <div className="pay-req-table-footer">
@@ -917,7 +917,7 @@ export default function AdminPaymentRequests({
                     ) : (
                       <>
                         <span className="scan-set-symbol" style={{ fontSize: '40px' }}>qr_code_2</span>
-                        <span>ما في صورة QR مرفوعة</span>
+                        <span>لا توجد صورة QR مرفوعة</span>
                       </>
                     )}
                   </div>

@@ -33,7 +33,7 @@ const NAV_ITEMS = [
   - currentId: الصفحة الحالية فعلياً (الافتراضي = activeId). الضغط عليها ما بيعمل تنقل.
     بتفيد للصفحات الفرعية، مثلاً قائمة المتطوعين: activeId="dashboard" و currentId="volunteers"
   - open / onClose: فتح وإغلاق القائمة على الشاشات الصغيرة (الصفحة بتمسك الحالة)
-  - شارة "طلبات الدفع" بتنقرأ تلقائياً من AdminStatsProvider (بـ App.jsx)، فما في رقم داخل الكومبوننت
+  - شارة "طلبات الدفع" تُقرأ تلقائياً من AdminStatsProvider (في App.jsx)، فلا رقم داخل المكوّن
 */
 export default function AdminSidebar({
   activeId,

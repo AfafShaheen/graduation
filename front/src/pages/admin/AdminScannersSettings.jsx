@@ -4,6 +4,7 @@ import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
 import { useAdminScanners, createScanner, deleteScanner } from './hooks/useAdminScanners.js';
 import { ApiError } from '../../api/admin.js';
+import { countLabel } from '../../utils/countLabel.js';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -141,7 +142,7 @@ export default function AdminScannersSettings({
           <div className="scan-set-pulse-tag">
             <span className="scan-set-mini-dot"></span>
             <span className="scan-set-pulse-label">الماسحون</span>
-            <span className="scan-set-pulse-venue">• {scannersCount} حساب ماسح</span>
+            <span className="scan-set-pulse-venue">• {countLabel(scannersCount, "حساب", "حسابان", "حسابات", "حساباً")}</span>
           </div>
           <h3>إدارة الماسحين الميدانيين</h3>
           <p>أضف حسابات الماسحين الميدانيين وتحكم بها، وتابع صلاحياتهم على حفلات التخرج.</p>
@@ -219,7 +220,7 @@ export default function AdminScannersSettings({
                       value={scannerEventId}
                       onChange={(e) => setScannerEventId(e.target.value)}
                     >
-                      {events.length === 0 && <option value="">ما في حفلات متاحة</option>}
+                      {events.length === 0 && <option value="">لا توجد حفلات متاحة</option>}
                       {events.map((ev) => (
                         <option key={ev.id} value={String(ev.id)}>{ev.name}</option>
                       ))}
@@ -245,7 +246,7 @@ export default function AdminScannersSettings({
               <div className="scan-set-card-head padded">
                 <div className="scan-set-card-title">
                   <h4>جدول الماسحين المعتمدين والمشرفين</h4>
-                  <span className="scan-set-count-pill">{scannersCount} حسابات مسجلة</span>
+                  <span className="scan-set-count-pill">{countLabel(scannersCount, "حساب", "حسابان", "حسابات", "حساباً")}</span>
                 </div>
                 <button type="button" className="scan-set-refresh-btn" onClick={() => refetchScanners()}>
                   <span className="scan-set-symbol" style={{ fontSize: '18px' }}>refresh</span>
@@ -305,7 +306,7 @@ export default function AdminScannersSettings({
               </div>
 
               {!scannersLoading && scannersCount === 0 && !scannersError && (
-                <div className="scan-set-empty">ما في ماسحين مسجلين بعد</div>
+                <div className="scan-set-empty">لا يوجد ماسحون مسجلون بعد</div>
               )}
 
               <div className="scan-set-table-footer">

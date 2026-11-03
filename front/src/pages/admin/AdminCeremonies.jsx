@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useMemo } from "react";
+import { countLabel } from '../../utils/countLabel.js';
 import "../../style/AdminCeremonies.css";
 import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
@@ -129,7 +130,7 @@ export default function AdminCeremonies({
               <span className="cer-mini-dot"></span>
               <span className="cer-pulse-label">الحفلات</span>
               <span className="cer-pulse-venue">
-                • {ceremonies.length} حفلات مسجلة
+                • {countLabel(ceremonies.length, "حفل", "حفلان", "حفلات", "حفلاً")} مسجّل
               </span>
             </div>
             <h3>إدارة حفلات التخرج وفترات التسجيل</h3>
@@ -291,7 +292,7 @@ export default function AdminCeremonies({
           </div>
 
           {filtered.length === 0 && !loading && !error && (
-            <div className="cer-empty">ما في حفلات مطابقة للبحث</div>
+            <div className="cer-empty">لا توجد حفلات مطابقة للبحث</div>
           )}
         </div>
       </main>

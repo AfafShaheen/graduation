@@ -56,9 +56,9 @@ export function closeIn(registration, generatedAt) {
   const left = new Date(registration.ends_at).getTime() - new Date(generatedAt).getTime();
   if (!(left > 0)) return { closed: true, value: '', unit: '' };
   const days = Math.ceil(left / 86400000);
-  if (left >= 86400000) return { closed: false, value: days, unit: days === 1 ? 'يوم' : 'أيام' };
+  if (left >= 86400000) return { closed: false, value: days, unit: days === 1 ? 'يوم' : days <= 10 ? 'أيام' : 'يوماً' };
   const hours = Math.max(1, Math.ceil(left / 3600000));
-  return { closed: false, value: hours, unit: hours === 1 ? 'ساعة' : 'ساعات' };
+  return { closed: false, value: hours, unit: hours === 1 ? 'ساعة' : hours <= 10 ? 'ساعات' : 'ساعة' };
 }
 
 // Rate of a college: confirmed ÷ expected, and the colour family of its bar.

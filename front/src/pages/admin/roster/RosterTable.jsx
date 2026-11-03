@@ -47,7 +47,7 @@ export default function RosterTable({ items, loading, error, selectedId, onSelec
           )}
           {!loading && error && <Message icon="error" text={error} role="alert" />}
           {!loading && !error && items.length === 0 && (
-            <Message icon="inbox" text="ما في نتائج مطابقة للفلاتر الحالية." />
+            <Message icon="inbox" text="لا توجد نتائج مطابقة للفلاتر الحالية." />
           )}
 
           {items.map((item) => {

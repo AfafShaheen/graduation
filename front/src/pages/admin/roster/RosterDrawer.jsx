@@ -314,7 +314,7 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
 
           {!registered && (
             <p className="rost-note">
-              لم يسجّل هذا الشخص بعد، فما في إجراءات متاحة له. بيانات الشؤون فوق هي يلي رح تُطابَق
+              لم يسجّل هذا الشخص بعد، فلا توجد إجراءات متاحة له. بيانات الشؤون أعلاه هي التي ستُطابَق
               عند تسجيله.
             </p>
           )}

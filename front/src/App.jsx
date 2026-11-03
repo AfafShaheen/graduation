@@ -350,7 +350,7 @@ function App() {
           }
         />
 
-        {/* ===== الإدارة: بتنفتح من الرابط /admin فقط، وما في أي رابط إلها بصفحات الطلاب ===== */}
+        {/* ===== الإدارة: تُفتح من الرابط /admin فقط، ولا يوجد أي رابط إليها في صفحات الطلاب ===== */}
         <Route
           path="/admin"
           element={<AdminLogin onLoginSuccess={() => navigate("/admin/dashboard")} />}
@@ -531,7 +531,7 @@ function App() {
           element={<Navigate to="/admin/dashboard" replace />}
         />
 
-        {/* ===== الماسح: بتنفتح من الرابط /scanner فقط، وما في أي رابط إلها بصفحات الطلاب ===== */}
+        {/* ===== الماسح: تُفتح من الرابط /scanner فقط، ولا يوجد أي رابط إليها في صفحات الطلاب ===== */}
         <Route
           path="/scanner"
           element={

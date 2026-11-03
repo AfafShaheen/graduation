@@ -305,7 +305,7 @@ export default function AdminAddCeremony({
     if (!file || file.event_id == null) return true;
     if (isEdit && String(file.event_id) === String(eventId)) return true;
     return window.confirm(
-      `الملف «${file.original_name}» مرتبط حالياً بحفل تاني. ربطه بهاد الحفل بينقل بيانات الخريجين ويلغي ارتباطه بالحفل السابق.\nهل تريد المتابعة؟`,
+      `الملف «${file.original_name}» مرتبط حالياً بحفل آخر. ربطه بهذا الحفل سينقل بيانات الخريجين ويلغي ارتباطه بالحفل السابق.\nهل تريد المتابعة؟`,
     );
   };
 
@@ -356,7 +356,7 @@ export default function AdminAddCeremony({
     }
   };
 
-  // اختيار الملف من القائمة: بالحفل الجديد بينربط بعد الحفظ، وبالتعديل بينربط فوراً
+  // اختيار الملف من القائمة: في الحفل الجديد يُربط بعد الحفظ، وفي التعديل يُربط فوراً
   const handleFileSelect = async (e) => {
     const value = e.target.value;
     if (!value) return;
@@ -446,7 +446,7 @@ export default function AdminAddCeremony({
       let result;
       if (isEdit) {
         const payload = { ...base };
-        // الباقات ما بتتعدّل بعد بدء التسجيل (الخادم بيرفض الطلب عندها)
+        // الباقات لا تُعدَّل بعد بدء التسجيل (الخادم يرفض الطلب عندها)
         if (!packagesLocked) payload.packages = pkgPayload;
         // نرسل الكليات فقط إذا تغيّرت القائمة، حتى ما نلمسها بطلب لا يخصها
         if (collegesChanged) payload.college_names = collegeNames;
@@ -461,7 +461,7 @@ export default function AdminAddCeremony({
 
       const id = eventId ?? result?.id ?? result?.event_id;
 
-      // ربط ملف بيانات الخريجين بالحفل الجديد (بعد ما ينشأ الحفل ويصير له رقم)
+      // ربط ملف بيانات الخريجين بالحفل الجديد (بعد إنشاء الحفل وحصوله على رقم)
       if (!isEdit && selectedFileId && id != null) {
         await linkSelectedFile(selectedFileId, id, { skipConfirm: true });
       }
@@ -556,7 +556,7 @@ export default function AdminAddCeremony({
                 <p>
                   {isEdit
                     ? 'عدّل بيانات الحفل والكليات المرتبطة به، مع مراعاة شروط الإضافة والإزالة.'
-                    : 'عبّي بيانات الفوج الجديد برواق، وبتنزل التذاكر فوراً عالمنظومة للطلاب.'}
+                    : 'أدخل بيانات الفوج الجديد بهدوء، وستظهر التذاكر فوراً في المنظومة للطلاب.'}
                 </p>
               </div>
             </div>
@@ -613,7 +613,7 @@ export default function AdminAddCeremony({
                 <p className="add-cer-file-error" role="alert">{errFor('name')}</p>
               )}
               <p className="add-cer-hint">
-                هذا الاسم رح يظهر بمنتصف التذكرة الإلكترونية وعلى شاشات التحقق عند بوابات المدرج.
+                هذا الاسم سيظهر في منتصف التذكرة الإلكترونية وعلى شاشات التحقق عند بوابات المدرج.
               </p>
             </div>
 
@@ -741,7 +741,7 @@ export default function AdminAddCeremony({
               <p className="add-cer-hint with-icon">
                 <span className="add-cer-symbol">info</span>
                 <span>
-                  الرابط بيروح تلقائياً للطالب بعد تثبيت الدفع مشان التنسيق واستلام أرواب التخرج ومواعيد البروفات.
+                  يصل الرابط تلقائياً إلى الطالب بعد تثبيت الدفع من أجل التنسيق واستلام أرواب التخرج ومواعيد البروفات.
                 </span>
               </p>
             </div>
@@ -757,7 +757,7 @@ export default function AdminAddCeremony({
                     <span>تسعير باقات التذاكر</span>
                   </h4>
                   <p className="add-cer-hint" style={{ marginTop: '2px' }}>
-                    حدّد عدد المرافقين وسعر كل باقة، والباقة تطلع للطالب أثناء الحجز.
+                    حدّد عدد المرافقين وسعر كل باقة، وتظهر الباقة للطالب أثناء الحجز.
                   </p>
                 </div>
                 <span className="add-cer-currency">العملة: ليرة سورية (ل.س)</span>
@@ -870,7 +870,7 @@ export default function AdminAddCeremony({
                     <span>ملف بيانات الخريجين</span>
                   </h4>
                   <p className="add-cer-hint" style={{ marginTop: '2px' }}>
-                    اختار الملف يلي رفعته بصفحة «ملفات البيانات» وربطو بهاد الحفل، وبتتم استيراد أسماء الخريجين تبعا لو فوراً.
+                    اختر الملف الذي رفعته في صفحة «ملفات البيانات» وسيُربط بهذا الحفل، وتُستورد أسماء الخريجين منه فوراً.
                   </p>
                 </div>
               </div>
@@ -948,7 +948,7 @@ export default function AdminAddCeremony({
                 <span>
                   {isEdit
                     ? 'الملف بيتربط بالحفل مباشرة وبتستورد بياناتو فوراً.'
-                    : 'الحفل الجديد بينحفظ أولاً، وبعدها بينربط الملف المختار، أو بينحفظ بدون ملف بيانات.'}
+                    : 'يُحفظ الحفل الجديد أولاً، ثم يُربط الملف المختار، أو يُحفظ بدون ملف بيانات.'}
                 </span>
               </p>
             </div>
