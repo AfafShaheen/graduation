@@ -47,7 +47,8 @@ import { hasScannerSession, hasGraduateSession, hasAdminSession, clearScannerSes
   true  = أي صفحة بتفتح مباشرة من شريط العنوان بدون شروط، بقيم تجريبية.
   false = الشروط شغالة (مثلاً الدفع لا يُفتح بدون باقة)، وهذا هو الوضع الصحيح عند الإطلاق.
 */
-const PREVIEW = import.meta.env.VITE_PREVIEW === "true";
+// Preview mode opens every page without a session: development builds only.
+const PREVIEW = import.meta.env.DEV && import.meta.env.VITE_PREVIEW === "true";
 
 const GUIDE_SKIP_KEY = "grad.skipGuide";
 
@@ -548,7 +549,6 @@ function App() {
               <ScannerCamera
                 onLogout={() => {
                   clearScannerSession();
-                  clearScannerSession();
                   navigate("/scanner", { replace: true });
                 }}
               />
@@ -612,7 +612,6 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    clearScannerSession();
                     clearScannerSession();
                     navigate("/scanner", { replace: true });
                   }}

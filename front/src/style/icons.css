@@ -1,0 +1,10 @@
+/* Icon font: a local subset of Material Symbols Outlined (only the icons the app
+   uses, weight 400, no fill). No external request. font-display: block hides the
+   ligature text until the font is ready. */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('../assets/fonts/material-symbols-subset.woff2') format('woff2');
+}

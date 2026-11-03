@@ -556,6 +556,7 @@ export default function AdminPaymentRequests({
               type="text"
               autoComplete="off"
               className="pay-req-search-input"
+              aria-label="بحث في طلبات الدفع"
               placeholder="ابحث بالاسم، الرقم الجامعي، أو رقم الإشعار..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

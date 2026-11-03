@@ -8,7 +8,7 @@ import { ApiError } from '../../api/admin.js';
 function formatDate(value) {
   if (!value) return '—';
   try {
-    return new Date(value).toLocaleDateString('ar-SY', {
+    return new Date(value).toLocaleDateString('ar-SY-u-nu-latn', {
       timeZone: 'Asia/Damascus',
       year: 'numeric',
       month: '2-digit',

@@ -22,10 +22,13 @@ test('the token refresh is serialized and does not end the session on network er
   assert.match(client, /createSingleFlight\(\)/);
   assert.match(client, /navigator\.locks/);
   assert.match(client, /reuseFreshToken\(/);
-  // inside performRefresh a failed fetch throws instead of returning null (which logs out)
+  // inside performRefresh a failed or timed-out fetch throws instead of returning null
+  // (which logs out): it goes through fetchWithTimeout, which throws ApiError(0, ...).
   const refresh = client.slice(client.indexOf('async function performRefresh'));
-  const fetchCatch = refresh.slice(refresh.indexOf('} catch {'), refresh.indexOf('if (!response.ok)'));
-  assert.match(fetchCatch, /throw new ApiError\(0/);
+  assert.match(refresh.slice(0, refresh.indexOf('if (!response.ok)')), /await fetchWithTimeout\(/);
+  const helper = client.slice(client.indexOf('async function fetchWithTimeout'), client.indexOf('const refreshFlights'));
+  assert.match(helper, /throw new ApiError\(0/);
+  assert.match(helper, /AbortController/);
 });
 
 test('admin, graduate and scanner tokens are not kept in sessionStorage', () => {

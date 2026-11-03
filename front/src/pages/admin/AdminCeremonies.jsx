@@ -39,10 +39,10 @@ export default function AdminCeremonies({
       const pe = perEvent.find((p) => p.event_id === e.id);
       const status = deriveStatus(e);
       const title = e.name || e.title || "-";
-      const dateStr = e.event_date ? new Date(e.event_date + "T00:00:00").toLocaleDateString("ar-SA") : "-";
+      const dateStr = e.event_date ? new Date(e.event_date + "T00:00:00").toLocaleDateString("ar-SY-u-nu-latn") : "-";
       const start = e.registration_start ? new Date(e.registration_start) : null;
       const end = e.registration_end ? new Date(e.registration_end) : null;
-      const period = start && end ? `${start.toLocaleDateString("ar-SA")} - ${end.toLocaleDateString("ar-SA")}` : "-";
+      const period = start && end ? `${start.toLocaleDateString("ar-SY-u-nu-latn")} - ${end.toLocaleDateString("ar-SY-u-nu-latn")}` : "-";
       const faculties = Array.isArray(e.colleges) ? e.colleges.map((c) => c.name) : (e.faculties || []);
       const booked = pe?.status?.confirmed ?? 0;
       const totalGrad = pe?.expected_people ?? 0;

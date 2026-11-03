@@ -14,8 +14,8 @@ import GuideLinkButton from '../../components/GuideLinkButton';
 const companionsText = (n) => {
   if (n === 1) return 'مرافق واحد';
   if (n === 2) return 'مرافقان';
-  if (n >= 3 && n <= 10) return `${n.toLocaleString('ar-SY')} مرافقين`;
-  return `${n.toLocaleString('ar-SY')} مرافقاً`;
+  if (n >= 3 && n <= 10) return `${n.toLocaleString('en-US')} مرافقين`;
+  return `${n.toLocaleString('en-US')} مرافقاً`;
 };
 
 /* الباك يرجّع باقات الحفل: [{ companions_count, price }].
@@ -33,7 +33,7 @@ const buildOption = (o) => {
   };
 };
 
-const formatPrice = (value) => Number(value).toLocaleString('ar-SY');
+const formatPrice = (value) => Number(value).toLocaleString('en-US');
 
 export default function SelectTicket({ onBack }) {
   const navigate = useNavigate();

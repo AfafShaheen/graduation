@@ -75,8 +75,6 @@ function seoPlugin({ base = '/' } = {}) {
       `<link rel="icon" type="image/png" sizes="32x32" href="${escapeAttr(`${base}favicon-32.png`)}" />`,
       `<link rel="icon" type="image/png" sizes="192x192" href="${escapeAttr(`${base}favicon-192.png`)}" />`,
       `<link rel="apple-touch-icon" href="${escapeAttr(`${base}apple-touch-icon.png`)}" />`,
-      `<link rel="preconnect" href="https://fonts.googleapis.com" />`,
-      `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />`,
     ].filter(Boolean)
 
     const ld = {

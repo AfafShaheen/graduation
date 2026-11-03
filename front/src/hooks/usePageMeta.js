@@ -53,7 +53,13 @@ export function canonicalUrl(path = "/") {
 
 export default function usePageMeta({ path = "/", title, description, robots } = {}) {
   const route = (seoConfig.publicRoutes || []).find((item) => item.path === path);
-  const resolvedTitle = title ?? route?.title;
+  // Private areas get their own tab title so several tabs stay distinguishable.
+  const privateTitle = path.startsWith("/admin")
+    ? "لوحة الإدارة"
+    : path.startsWith("/scanner")
+      ? "ماسح التذاكر"
+      : undefined;
+  const resolvedTitle = title ?? route?.title ?? privateTitle;
   const resolvedDescription = description ?? route?.description ?? DEFAULT_DESCRIPTION;
   const resolvedRobots =
     robots ?? (route ? "index, follow, max-image-preview:large" : "noindex, nofollow");

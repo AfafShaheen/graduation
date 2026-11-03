@@ -44,6 +44,25 @@ function roleOfPath(path) {
   return null;
 }
 
+// A request that never answers must not hang the screen forever (scanner at the gate).
+const REQUEST_TIMEOUT_MS = 30000;
+const LONG_REQUEST_TIMEOUT_MS = 120000;
+
+async function fetchWithTimeout(url, config = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...config, signal: controller.signal });
+  } catch (err) {
+    if (err?.name === "AbortError") {
+      throw new ApiError(0, "انتهت مهلة الاتصال بالخادم، أعد المحاولة.");
+    }
+    throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const refreshFlights = createSingleFlight();
 
 // One refresh at a time per role (the backend rotates refresh tokens and revokes the
@@ -137,17 +156,12 @@ async function performRefresh(path, token) {
   const payload = {};
   payload[RT_FIELD] = refreshValue;
 
-  let response;
-  try {
-    response = await fetch(`${baseUrl}${refreshPath}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    // No connection is not the end of the session: keep it and let the caller retry.
-    throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
-  }
+  // No connection is not the end of the session: keep it and let the caller retry.
+  const response = await fetchWithTimeout(`${baseUrl}${refreshPath}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
   if (!response.ok) {
     // Only a refusal of the refresh token ends the session; a server hiccup does not.
@@ -223,14 +237,11 @@ async function handleUnauthorized(path) {
 async function refreshAndRetry(path, token, url, config) {
   const refreshed = await refreshSession(path, token);
   if (!refreshed) return null;
-  try {
-    return await fetch(url, {
-      ...config,
-      headers: { ...config.headers, Authorization: `Bearer ${refreshed}` },
-    });
-  } catch {
-    throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
-  }
+  return fetchWithTimeout(
+    url,
+    { ...config, headers: { ...config.headers, Authorization: `Bearer ${refreshed}` } },
+    config.body instanceof FormData ? LONG_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+  );
 }
 
 export async function request(path, { method = "GET", body = null, token = null } = {}) {
@@ -256,12 +267,11 @@ export async function request(path, { method = "GET", body = null, token = null 
     config.body = isMultipart ? body : JSON.stringify(body);
   }
 
-  let response;
-  try {
-    response = await fetch(url, config);
-  } catch {
-    throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
-  }
+  const response = await fetchWithTimeout(
+    url,
+    config,
+    isMultipart ? LONG_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+  );
 
   let data = null;
   const contentType = response.headers.get("content-type");
@@ -342,12 +352,7 @@ export async function requestBlob(path, { token } = {}) {
     headers["Authorization"] = `Bearer ${effectiveToken}`;
   }
 
-  let response;
-  try {
-    response = await fetch(url, { headers });
-  } catch {
-    throw new ApiError(0, "تعذّر الاتصال بالخادم، حاول لاحقاً.");
-  }
+  const response = await fetchWithTimeout(url, { headers }, LONG_REQUEST_TIMEOUT_MS);
 
   if (!response.ok) {
     let errorMessage = "فشل تنزيل الملف.";

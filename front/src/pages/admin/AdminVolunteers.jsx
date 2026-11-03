@@ -12,7 +12,7 @@ const fmt = (n) => Number(n || 0).toLocaleString('en-US');
 
 const formatDate = (iso) =>
   iso
-    ? new Date(iso).toLocaleDateString('ar-SY', {
+    ? new Date(iso).toLocaleDateString('ar-SY-u-nu-latn', {
         timeZone: 'Asia/Damascus',
         year: 'numeric',
         month: '2-digit',

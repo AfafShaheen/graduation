@@ -10,6 +10,7 @@ import ScanErrorResult from './ScanErrorResult';
 import WrongCeremoniesWarning from './WrongCeremoniesWarning';
 import { eventTitle, formatEventDate } from '../../utils/eventLabel';
 import { CEREMONY_TITLE } from '../../config/brand';
+import { cameraErrorText } from '../../utils/cameraError';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -272,17 +273,17 @@ export default function ScannerCamera({ onLogout }) {
         } catch {}
       } catch (err) {
         if (!isMounted) return;
-        const errName = err?.name || err?.message || '';
+        const errName = cameraErrorText(err);
         if (errName.includes('OverconstrainedError') || errName.includes('NotFoundError')) {
           try {
             await runStart('user');
           } catch (fallbackErr) {
             console.error('Camera fallback failed:', fallbackErr);
             if (isMounted) {
-              setCameraError('تعذّر تشغيل الكاميرا: ' + (fallbackErr.message || err.message));
+              setCameraError('تعذّر تشغيل الكاميرا: ' + (cameraErrorText(fallbackErr).trim() || cameraErrorText(err).trim() || 'خطأ غير معروف'));
             }
           }
-        } else if (errName.includes('NotAllowedError')) {
+        } else if (errName.includes('NotAllowedError') || /permission|denied/i.test(errName)) {
           setCameraError('تم رفض إذن الوصول للكاميرا. يرجى السماح بصلاحيات الكاميرا من إعدادات المتصفح.');
         } else if (errName.includes('NotReadableError')) {
           setTimeout(async () => {
@@ -296,7 +297,11 @@ export default function ScannerCamera({ onLogout }) {
             }
           }, 500);
         } else {
-          setCameraError('تعذّر تشغيل الكاميرا: ' + (err.message || 'خطأ غير معروف'));
+          setCameraError(
+            /secure|https|mediaDevices|undefined/i.test(errName)
+              ? 'الكاميرا تحتاج اتصالاً آمناً (HTTPS). افتح الموقع عبر رابط https.'
+              : 'تعذّر تشغيل الكاميرا: ' + (errName.trim() || 'خطأ غير معروف')
+          );
         }
       }
     };
