@@ -154,8 +154,13 @@ async def test_event_one_every_number(client, world):
     assert s["entry"]["graduates_entered"] == 1 and s["entry"]["companions_entered"] == 1
     assert s["entry"]["entered"] == 2 and s["entry"]["manual"] == 0 and s["entry"]["expected"] == 3
     assert s["entry"]["last_entry_at"] is not None
-    assert s["finance"]["confirmed_amount"] == "100.00" and s["finance"]["processing_amount"] == "150.00"
-    assert s["finance"]["by_package"] == [{"companions_count": 2, "tickets": 1, "amount": "100.00"}]
+    assert "finance" not in s
+    assert s["packages"] == [{"companions_count": 2, "tickets": 1}]
+    assert s["funnel"] == {"accounts": 5, "verified": 4, "paid": 3, "confirmed": 1}
+    assert len(s["timeline"]) == 14 and s["timeline"][-1]["count"] == 4
+    assert [r["count"] for r in s["rejections"]] == [1]
+    assert s["arrivals"]["by_scanner"] == [{"name": "scan1", "count": 2}]
+    assert sum(h["count"] for h in s["arrivals"]["by_hour"]) == 2
     assert s["top_students"] == {"total": 2, "registered": 2, "confirmed": 1}
     assert s["representation"] == {"answered": 3, "wants": 2, "experienced": 2, "both": 1}
     colleges = _by_name(s["colleges"])
@@ -178,8 +183,7 @@ async def test_event_two_every_number(client, world):
     assert s["attendance"] == {"graduates": 1, "companions": 3, "expected": 4}
     assert s["entry"]["graduates_entered"] == 1 and s["entry"]["manual"] == 1
     assert s["entry"]["companions_entered"] == 0 and s["entry"]["entered"] == 1 and s["entry"]["expected"] == 4
-    assert s["finance"]["confirmed_amount"] == "150.00" and s["finance"]["processing_amount"] == "100.00"
-    assert s["finance"]["by_package"] == [{"companions_count": 3, "tickets": 1, "amount": "150.00"}]
+    assert s["packages"] == [{"companions_count": 3, "tickets": 1}]
     assert s["top_students"] == {"total": 1, "registered": 1, "confirmed": 0}
     assert s["representation"] == {"answered": 2, "wants": 2, "experienced": 2, "both": 2}
     colleges = _by_name(s["colleges"])
@@ -200,10 +204,9 @@ async def test_all_ceremonies_count_people_once_and_each_college_once(client, wo
     assert s["attendance"] == {"graduates": 2, "companions": 5, "expected": 7}
     assert s["entry"]["graduates_entered"] == 2 and s["entry"]["companions_entered"] == 1
     assert s["entry"]["entered"] == 3 and s["entry"]["manual"] == 1 and s["entry"]["expected"] == 7
-    assert s["finance"]["confirmed_amount"] == "250.00" and s["finance"]["processing_amount"] == "250.00"
-    assert s["finance"]["by_package"] == [
-        {"companions_count": 2, "tickets": 1, "amount": "100.00"},
-        {"companions_count": 3, "tickets": 1, "amount": "150.00"},
+    assert s["packages"] == [
+        {"companions_count": 2, "tickets": 1},
+        {"companions_count": 3, "tickets": 1},
     ]
     assert s["top_students"] == {"total": 3, "registered": 3, "confirmed": 1}
     assert s["representation"] == {"answered": 4, "wants": 3, "experienced": 3, "both": 2}
@@ -296,7 +299,10 @@ async def test_an_empty_system_returns_zeros_not_errors(client, make_admin):
     assert s["status"] == {"confirmed": 0, "processing": 0, "awaiting_payment": 0, "rejected": 0, "no_ticket": 0}
     assert s["attendance"]["expected"] == 0 and s["entry"]["entered"] == 0
     assert s["colleges"] == [] and s["by_event"] == []
-    assert s["finance"]["confirmed_amount"] == "0.00" and s["finance"]["by_package"] == []
+    assert s["packages"] == [] and s["rejections"] == []
+    assert s["funnel"] == {"accounts": 0, "verified": 0, "paid": 0, "confirmed": 0}
+    assert len(s["timeline"]) == 14 and sum(d["count"] for d in s["timeline"]) == 0
+    assert s["arrivals"] == {"by_hour": [], "by_scanner": []}
     assert s["footer"]["avg_review_hours"] is None and s["footer"]["registration"] is None
 
 

@@ -539,14 +539,12 @@ export default function AdminPaymentRequests({
 
           <div className="pay-req-stat-card">
             <div>
-              <p className="pay-req-stat-label">المبالغ المؤكدة للاتحاد ({ceremonyName})</p>
-              <p className="pay-req-stat-value small">
-                {summary ? fmt(Number(summary.confirmed_amount)) : '—'} <span className="pay-req-stat-unit">ل.س</span>
-              </p>
-              <p className="pay-req-stat-note">{summary ? fmt(summary.confirmed) : '—'} خريج مسدد بنجاح</p>
+              <p className="pay-req-stat-label">التذاكر المؤكدة ({ceremonyName})</p>
+              <p className="pay-req-stat-value small">{summary ? fmt(summary.confirmed) : '—'}</p>
+              <p className="pay-req-stat-note">خريج مسدد بنجاح</p>
             </div>
             <div className="pay-req-stat-icon">
-              <span className="pay-req-symbol" style={{ fontSize: '24px' }}>account_balance_wallet</span>
+              <span className="pay-req-symbol" style={{ fontSize: '24px' }}>check_circle</span>
             </div>
           </div>
         </section>

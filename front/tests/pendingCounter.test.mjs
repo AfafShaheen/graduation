@@ -65,7 +65,7 @@ test('the ceremony cards are labelled with the ceremony name', () => {
   assert.match(page, /قيد التدقيق والمعالجة \(\{ceremonyName\}\)/);
   assert.match(page, /إجمالي الطلبات المستلمة \(\{ceremonyName\}\)/);
   assert.match(page, /حالات عدم تطابق المبلغ \(\{ceremonyName\}\)/);
-  assert.match(page, /المبالغ المؤكدة للاتحاد \(\{ceremonyName\}\)/);
+  assert.match(page, /التذاكر المؤكدة \(\{ceremonyName\}\)/);
 });
 
 test('confirm/reject still refresh the shared counter through onPendingChanged', () => {

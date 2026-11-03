@@ -698,7 +698,6 @@ async def test_payments_summary_counts_and_amounts(
         "processing": 2,
         "confirmed": 1,
         "rejected": 1,
-        "confirmed_amount": "100000.00",
         "mismatch_processing": 1,
     }
 
@@ -735,7 +734,7 @@ async def test_payments_summary_empty_event(client, make_event, make_admin):
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["total_tickets"] == 0
-    assert body["confirmed_amount"] == "0.00"
+    assert "confirmed_amount" not in body
 
 
 async def test_payments_summary_unknown_event_404(client, make_admin):

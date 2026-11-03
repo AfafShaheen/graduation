@@ -17,7 +17,12 @@ Definitions (written for the Arabic labels of the dashboard):
 * attendance        confirmed tickets: the graduates plus the sum of their companions.
 * entry             scanned QR codes of confirmed tickets (graduate and companions);
                     "manual" = the graduate was checked in by an admin, not scanned.
-* finance           sum of the ticket prices (confirmed / processing).
+* packages          confirmed tickets per companions package (no money: the amounts are
+                    deliberately NOT part of this shared dashboard).
+* timeline          confirmed accounts created per day (Damascus time), last 14 days.
+* funnel            accounts -> confirmed e-mail -> payment sent -> confirmed ticket.
+* rejections        current rejection reasons (free text written by the reviewer).
+* arrivals          scans per Damascus hour and per scanner (empty before the event).
 * top students      records with an effective top rank (file value, else GPA rank).
 * representation    answers of confirmed accounts to the two volunteer questions.
 * colleges          per college: expected = people in the files, registered =
@@ -32,7 +37,6 @@ from __future__ import annotations
 import json
 import logging
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 from typing import Any, Dict, List
 
 from fastapi import HTTPException, status
@@ -61,10 +65,6 @@ REVIEW_WINDOW_DAYS = 7
 _R = UniversityRecordModel
 _T = TicketModel
 _S = TicketStatusEnum
-
-
-def _money(value) -> str:
-    return f"{Decimal(value or 0):.2f}"
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -112,8 +112,6 @@ async def _per_event(db: AsyncSession, event_id: int | None, now: datetime) -> L
             _count(c["rejected"]).label("s_rejected"),
             _count(c["no_ticket"]).label("s_none"),
             func.coalesce(func.sum(_T.companions_count).filter(c["confirmed"]), 0).label("companions"),
-            func.coalesce(func.sum(_T.price).filter(c["confirmed"]), 0).label("money_confirmed"),
-            func.coalesce(func.sum(_T.price).filter(c["processing"]), 0).label("money_processing"),
             _count(and_(c["confirmed"], qr.scanned_at.is_not(None))).label("grad_entered"),
             _count(
                 and_(c["confirmed"], qr.scanned_at.is_not(None), qr.scanned_by_scanner_id.is_(None))
@@ -178,8 +176,6 @@ async def _per_event(db: AsyncSession, event_id: int | None, now: datetime) -> L
                     "expected": expected,
                     "last_entry_at": _iso(last),
                 },
-                "money_confirmed": _money(r.money_confirmed),
-                "money_processing": _money(r.money_processing),
                 "oldest_pending_at": _iso(oldest),
             }
         )
@@ -234,7 +230,6 @@ async def _by_package(db: AsyncSession, event_id: int | None) -> List[Dict[str, 
             select(
                 _T.companions_count.label("companions_count"),
                 func.count().label("tickets"),
-                func.coalesce(func.sum(_T.price), 0).label("amount"),
             )
         )
         .where(c["confirmed"])
@@ -243,7 +238,7 @@ async def _by_package(db: AsyncSession, event_id: int | None) -> List[Dict[str, 
     )
     rows = (await db.execute(_scope(stmt, event_id))).all()
     return [
-        {"companions_count": r.companions_count, "tickets": r.tickets, "amount": _money(r.amount)}
+        {"companions_count": r.companions_count, "tickets": r.tickets}
         for r in rows
     ]
 
@@ -271,6 +266,74 @@ async def _colleges(db: AsyncSession, event_id: int | None) -> List[Dict[str, An
          "registered": r.registered, "confirmed": r.confirmed}
         for r in rows
     ]
+
+
+TIMELINE_DAYS = 14
+DAMASCUS = "Asia/Damascus"
+
+
+async def _timeline(db: AsyncSession, event_id: int | None, now: datetime) -> List[Dict[str, Any]]:
+    """Confirmed accounts created per Damascus day, zero-filled for the last days."""
+    parts = _Parts()
+    c = _conditions(parts)
+    person = func.concat(_R.college_id, "-", _R.university_id)
+    day = func.date(func.timezone(DAMASCUS, GraduateModel.created_at))
+    today = (now + timedelta(hours=3)).date()
+    first = today - timedelta(days=TIMELINE_DAYS - 1)
+    stmt = (
+        parts.join(select(day.label("day"), func.count(distinct(person)).label("n")))
+        .where(c["verified"], day >= first)
+        .group_by(day)
+    )
+    counts = {r.day: r.n for r in (await db.execute(_scope(stmt, event_id))).all()}
+    return [
+        {"date": (first + timedelta(days=i)).isoformat(), "count": int(counts.get(first + timedelta(days=i), 0))}
+        for i in range(TIMELINE_DAYS)
+    ]
+
+
+async def _rejections(db: AsyncSession, event_id: int | None, limit: int = 5) -> List[Dict[str, Any]]:
+    """Reasons of the tickets that are rejected right now, most frequent first."""
+    reason = func.coalesce(func.nullif(func.trim(_T.rejection_reason), ""), "بدون سبب")
+    stmt = (
+        select(reason.label("reason"), func.count().label("n"))
+        .where(_T.status == _S.REJECTED)
+        .group_by(reason)
+        .order_by(func.count().desc(), reason)
+        .limit(limit)
+    )
+    if event_id is not None:
+        stmt = stmt.where(_T.event_id == event_id)
+    return [{"reason": r.reason, "count": int(r.n)} for r in (await db.execute(stmt)).all()]
+
+
+async def _arrivals(db: AsyncSession, event_id: int | None) -> Dict[str, Any]:
+    """Scans (graduates and companions) per Damascus hour and per scanner."""
+    from app.models.scanner import ScannerModel
+
+    base = (
+        select(QrCodeModel)
+        .join(_T, _T.id == QrCodeModel.ticket_id)
+        .where(QrCodeModel.scanned_at.is_not(None))
+    )
+    if event_id is not None:
+        base = base.where(_T.event_id == event_id)
+    scope = base.subquery()
+    hours_stmt = (
+        select(func.date_trunc("hour", func.timezone(DAMASCUS, scope.c.scanned_at)).label("h"), func.count().label("n"))
+        .group_by("h")
+        .order_by("h")
+    )
+    scanners_stmt = (
+        select(ScannerModel.username.label("name"), func.count().label("n"))
+        .select_from(scope)
+        .outerjoin(ScannerModel, ScannerModel.id == scope.c.scanned_by_scanner_id)
+        .group_by(ScannerModel.username)
+        .order_by(func.count().desc())
+    )
+    hours = [{"hour": r.h.strftime("%Y-%m-%dT%H:00"), "count": int(r.n)} for r in (await db.execute(hours_stmt)).all()]
+    scanners = [{"name": r.name, "count": int(r.n)} for r in (await db.execute(scanners_stmt)).all()]
+    return {"by_hour": hours[-24:], "by_scanner": scanners}
 
 
 async def _review_speed(db: AsyncSession, event_id: int | None, now: datetime) -> Dict[str, Any]:
@@ -317,6 +380,9 @@ async def compute_stats_v2(db: AsyncSession, event_id: int | None) -> Dict[str, 
     colleges = await _colleges(db, event_id)
     review = await _review_speed(db, event_id, now)
     closing = await _registration_close(db, event_id, now)
+    timeline = await _timeline(db, event_id, now)
+    rejections = await _rejections(db, event_id)
+    arrivals = await _arrivals(db, event_id)
 
     def total(path: str, key: str) -> int:
         return sum(e[path][key] for e in events)
@@ -367,11 +433,16 @@ async def compute_stats_v2(db: AsyncSession, event_id: int | None) -> Dict[str, 
         "by_event": events,
         "attendance": attendance,
         "entry": entry,
-        "finance": {
-            "confirmed_amount": _money(sum(Decimal(e["money_confirmed"]) for e in events)),
-            "processing_amount": _money(sum(Decimal(e["money_processing"]) for e in events)),
-            "by_package": packages,
+        "packages": packages,
+        "timeline": timeline,
+        "funnel": {
+            "accounts": people["confirmed_accounts"] + people["unverified_accounts"],
+            "verified": people["confirmed_accounts"],
+            "paid": status_total["processing"] + status_total["confirmed"] + status_total["rejected"],
+            "confirmed": status_total["confirmed"],
         },
+        "rejections": rejections,
+        "arrivals": arrivals,
         "top_students": {
             "total": people["top_total"],
             "registered": people["top_registered"],

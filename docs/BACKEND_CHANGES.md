@@ -846,3 +846,9 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 - **`revoke_subject`**: بدل مسح كل مفاتيح `refresh:*` صار هناك فهرس لكل حساب (`refresh_subject:{role}:{subject}`) يُملأ عند إصدار الرمز. الرموز الصادرة قبل هذا التحديث غير مفهرسة وتنتهي صلاحيتها خلال 7 أيام كحد أقصى.
 - **`university_files`**: عدّ الكليات داخل الملف صار حسب `file_id` لا حسب الحفل.
 - **`requirements.txt`**: أُزيل `pytest` (مكانه `requirements-dev.txt`).
+
+## الإحصائيات: إزالة المالية وإضافة مؤشرات جديدة
+
+- **أُزيلت** الأرقام المالية التجميعية من `GET /api/admin/stats/v2` (`finance` و`money_*` لكل حفل) ومن `GET /api/admin/events/{id}/payments/summary` (`confirmed_amount`)، لأن حساب الأدمن مشترك. مبلغ كل دفعة منفردة يبقى ظاهراً لمراجع الدفع.
+- **المالية لمن يحتاجها:** `docker compose exec back python -m scripts.finance_report [--xlsx ملف.xlsx]` يطبع مجاميع كل حفل (مؤكدة وقيد المراجعة وحسب الباقة).
+- **حقول جديدة** في `stats/v2`: `packages` (تذاكر مؤكدة لكل باقة بلا مبالغ)، `timeline` (حسابات مؤكدة يومياً لآخر 14 يوماً بتوقيت دمشق)، `funnel` (حساب ← بريد مؤكد ← دفع مرسل ← تذكرة مؤكدة)، `rejections` (أكثر 5 أسباب رفض حالية)، `arrivals` (مسح كل ساعة وحسب الماسح).

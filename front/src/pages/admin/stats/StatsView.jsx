@@ -5,7 +5,10 @@ import { companionsLabel } from '../../../utils/companions';
 import {
   fmt,
   pct,
-  money,
+  funnelSteps,
+  sparkline,
+  hourLabel,
+  dayLabel,
   statusSegments,
   statusTotal,
   ageLabel,
@@ -82,7 +85,10 @@ export default function StatsView({ data, onGo }) {
   const go = (kind, extra) => onGo(drillSection({ ...drillFilters(kind, eventId), ...extra }));
   const goEvent = (id, extra) => onGo(drillSection({ event_id: id, ...extra }));
 
-  const { attention, attendance, entry, finance, top_students: top, representation: rep, footer } = data;
+  const { attention, attendance, entry, top_students: top, representation: rep, footer } = data;
+  const steps = funnelSteps(data.funnel);
+  const spark = sparkline(data.timeline);
+  const hourMax = Math.max(1, ...data.arrivals.by_hour.map((h) => h.count));
   const colleges = sortColleges(data.colleges, sort);
   const visibleColleges = showAllColleges ? colleges : colleges.slice(0, 6);
   const closing = closeIn(footer.registration, data.generated_at);
@@ -96,29 +102,63 @@ export default function StatsView({ data, onGo }) {
         </div>
       )}
 
-      {/* الدخول: بارز دائماً، ويتبع الفلتر العلوي */}
-      <section className="st2-card st2-entry" aria-label="الدخول">
-        <div className="st2-head">
-          <h4>
-            الدخول {all ? '(كل الحفلات)' : '(الحفل المحدد)'}
+      {/* الأرقام الأهم: أربع بطاقات ملوّنة تتبع الفلتر العلوي */}
+      <div className="st2-hero">
+        <section className="st2-tile green" aria-label="تذاكر مؤكدة">
+          <div className="st2-tile-label">
+            تذاكر مؤكدة
+            <InfoTip text={STATS_HELP.confirmed} />
+          </div>
+          <Num value={fmt(attention.confirmed)} onClick={() => go('confirmed')} className="st2-tile-num" />
+          <div className="st2-tile-sub">من {fmt(footer.confirmed_accounts)} حساباً مؤكداً</div>
+        </section>
+
+        <section className={`st2-tile ${attention.processing > 0 ? 'orange' : 'calm'}`} aria-label="بانتظار مراجعتك">
+          <div className="st2-tile-label">
+            بانتظار مراجعتك
+            <InfoTip text={STATS_HELP.processing} />
+          </div>
+          <Num value={fmt(attention.processing)} onClick={() => go('processing')} className="st2-tile-num" />
+          <div className="st2-tile-sub">
+            {attention.processing > 0 && attention.oldest_pending_hours !== null
+              ? `أقدمها منذ ${ageLabel(attention.oldest_pending_hours)}`
+              : 'لا طلبات معلّقة'}
+          </div>
+        </section>
+
+        <section className="st2-tile mint" aria-label="الحضور المتوقع">
+          <div className="st2-tile-label">
+            الحضور المتوقع
+            <InfoTip text={STATS_HELP.attendance} />
+          </div>
+          <Num value={fmt(attendance.expected)} onClick={() => go('confirmed')} className="st2-tile-num" />
+          <div className="st2-tile-sub">
+            {fmt(attendance.graduates)} من الخريجين · {fmt(attendance.companions)} مرافقاً
+            {all ? ' · الخريج بحفلين = حضوران' : ''}
+          </div>
+        </section>
+
+        <section className="st2-tile sand" aria-label="الدخول">
+          <div className="st2-tile-label">
+            {all ? 'الدخول (كل الحفلات)' : 'الدخول'}
             <InfoTip text={STATS_HELP.entry} />
-          </h4>
-          <span className="st2-muted">
+          </div>
+          <Num value={`${fmt(entry.entered)} من ${fmt(entryExpected)}`} onClick={() => go('entered')} className="st2-tile-num" />
+          <div className="st2-progress" aria-hidden="true">
+            <span style={{ width: `${pct(entry.entered, entryExpected)}%` }} />
+          </div>
+          <div className="st2-tile-sub">
             {entry.entered > 0 ? `آخر دخول ${clock(entry.last_entry_at)}` : 'لم يبدأ المسح بعد'}
-          </span>
-        </div>
-        <div className="st2-entry-main">
-          <Num value={fmt(entry.entered)} onClick={() => go('entered')} className="st2-big" />
-          <span className="st2-muted">
-            دخلوا من أصل {fmt(entryExpected)} · خريجون {fmt(entry.graduates_entered)} · مرافقون{' '}
-            {fmt(entry.companions_entered)}
-            {entry.manual > 0 ? ` · منهم دخول يدوي ${fmt(entry.manual)}` : ''}
-          </span>
-        </div>
-        <div className="st2-progress" aria-hidden="true">
-          <span style={{ width: `${pct(entry.entered, entryExpected)}%` }} />
-        </div>
-        {all && data.by_event.length > 1 && (
+            {entry.manual > 0 ? ` · يدوي ${fmt(entry.manual)}` : ''}
+          </div>
+        </section>
+      </div>
+
+      {all && data.by_event.length > 1 && (
+        <section className="st2-card" aria-label="الدخول حسب الحفل">
+          <div className="st2-head">
+            <h4>الدخول حسب الحفل</h4>
+          </div>
           <ul className="st2-rows">
             {data.by_event.map((e) => (
               <li key={e.event_id}>
@@ -129,12 +169,12 @@ export default function StatsView({ data, onGo }) {
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
 
       <div className="st2-two">
         <div className="st2-col">
-          <section className="st2-card" aria-label="حالة الخريجين المسجلين">
+          <section className="st2-card accent-green" aria-label="حالة الخريجين المسجلين">
             <div className="st2-head">
               <h4>
                 حالة الخريجين المسجلين
@@ -160,53 +200,94 @@ export default function StatsView({ data, onGo }) {
           </section>
 
           <section className="st2-strip" aria-label="أرقام تحتاج متابعة">
-            <Chip tone={attention.processing > 0 ? 'warn' : ''} help={STATS_HELP.processing} onClick={() => go('processing')}>
-              <b>{fmt(attention.processing)}</b> طلب دفع بانتظار المراجعة
-              {attention.oldest_pending_hours !== null && ` · أقدمها منذ ${ageLabel(attention.oldest_pending_hours)}`}
-            </Chip>
             <Chip tone={attention.rejected > 0 ? 'bad' : ''} help={STATS_HELP.rejected} onClick={() => go('rejected')}>
               <b>{fmt(attention.rejected)}</b> مرفوضة
             </Chip>
             <Chip help={STATS_HELP.unverified} onClick={() => go('unverified')}>
               <b>{fmt(attention.unverified)}</b> بانتظار تأكيد البريد
             </Chip>
-            <Chip tone="good" help={STATS_HELP.confirmed} onClick={() => go('confirmed')}>
-              <b>{fmt(attention.confirmed)}</b> طلب تم تأكيده
-            </Chip>
           </section>
         </div>
 
-        <section className="st2-card st2-attend" aria-label="الحضور المتوقع">
+        <section className="st2-card accent-orange" aria-label="رحلة الخريج">
           <h4>
-            الحضور المتوقع
-            <InfoTip text={STATS_HELP.attendance} />
+            رحلة الخريج: أين نخسر؟
+            <InfoTip text={STATS_HELP.funnel} />
           </h4>
-          <div>
-            <Num value={fmt(attendance.expected)} onClick={() => go('confirmed')} className="st2-big" />
-            <span className="st2-unit"> شخصاً</span>
+          <ul className="st2-funnel">
+            {steps.map((step) => (
+              <li key={step.key}>
+                <div className="st2-funnel-line">
+                  <span>{step.label}</span>
+                  <b>{fmt(step.count)}</b>
+                </div>
+                <div className="st2-meter" aria-hidden="true">
+                  <span style={{ width: `${step.share}%`, background: step.color }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <div className="st2-two even">
+        <section className="st2-card accent-green" aria-label="التسجيل اليومي">
+          <h4>
+            التسجيل خلال آخر 14 يوماً
+            <InfoTip text={STATS_HELP.timeline} />
+          </h4>
+          <svg className="st2-spark" viewBox="0 0 260 80" preserveAspectRatio="none" role="img" aria-label="عدد الحسابات المؤكدة في كل يوم">
+            <path d={spark.area} fill="#124d44" fillOpacity="0.12" />
+            <path d={spark.line} fill="none" stroke="#124d44" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+          <div className="st2-spark-axis">
+            <span>{dayLabel(data.timeline[0]?.date)}</span>
+            <span>{dayLabel(data.timeline[data.timeline.length - 1]?.date)}</span>
           </div>
-          <div className="st2-muted">
-            {fmt(attendance.graduates)} من الخريجين
-            <br />
-            {fmt(attendance.companions)} مرافقاً
-            <br />
-            <small>تذاكر مؤكدة فقط{all ? ' · الخريج بحفلين = حضوران' : ''}</small>
+          <div className="st2-muted st2-small">
+            {spark.total > 0
+              ? `${fmt(spark.total)} تسجيلاً · أعلى يوم ${dayLabel(spark.peak?.date)} (${fmt(spark.peak?.count)})`
+              : 'لا تسجيلات في هذه الفترة'}
           </div>
+        </section>
+
+        <section className="st2-card accent-red" aria-label="أسباب الرفض">
+          <h4>
+            أسباب الرفض الحالية
+            <InfoTip text={STATS_HELP.rejections} />
+          </h4>
+          {data.rejections.length === 0 ? (
+            <p className="st2-muted">لا توجد تذاكر مرفوضة حالياً.</p>
+          ) : (
+            <ul className="st2-reasons">
+              {data.rejections.map((r) => (
+                <li key={r.reason}>
+                  <span>{r.reason}</span>
+                  <b>{fmt(r.count)}</b>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
 
       <div className="st2-three">
-        <section className="st2-mini" aria-label="المالية">
+        <section className="st2-mini" aria-label="باقات التذاكر">
           <div className="st2-muted">
-            المالية (مؤكدة)
-            <InfoTip text={STATS_HELP.finance} />
+            باقات التذاكر (مؤكدة)
+            <InfoTip text={STATS_HELP.packages} />
           </div>
-          <Num value={money(finance.confirmed_amount)} onClick={() => go('confirmed')} className="st2-mid" />
-          <div className="st2-muted st2-small">قيد المراجعة {money(finance.processing_amount)}</div>
-          {finance.by_package.length > 0 && (
-            <div className="st2-muted st2-small">
-              {finance.by_package.map((p) => `${companionsLabel(p.companions_count)}: ${fmt(p.tickets)}`).join(' · ')}
-            </div>
+          {data.packages.length === 0 ? (
+            <div className="st2-muted st2-small">لا تذاكر مؤكدة بعد</div>
+          ) : (
+            <ul className="st2-reasons tight">
+              {data.packages.map((p) => (
+                <li key={p.companions_count}>
+                  <span>{companionsLabel(p.companions_count)}</span>
+                  <b>{fmt(p.tickets)}</b>
+                </li>
+              ))}
+            </ul>
           )}
         </section>
 
@@ -237,7 +318,7 @@ export default function StatsView({ data, onGo }) {
         </section>
       </div>
 
-      <section className="st2-card" aria-label="حسب الكلية">
+      <section className="st2-card accent-green" aria-label="حسب الكلية">
         <div className="st2-head">
           <h4>
             حسب الكلية
@@ -301,6 +382,32 @@ export default function StatsView({ data, onGo }) {
           </button>
         )}
       </section>
+
+      {data.arrivals.by_hour.length > 0 && (
+        <section className="st2-card accent-orange" aria-label="الوصول يوم الحفل">
+          <h4>
+            الوصول يوم الحفل
+            <InfoTip text={STATS_HELP.arrivals} />
+          </h4>
+          <div className="st2-hours" role="img" aria-label="عدد الداخلين في كل ساعة">
+            {data.arrivals.by_hour.map((h) => (
+              <div key={h.hour} className="st2-hour">
+                <span className="st2-hour-n">{fmt(h.count)}</span>
+                <span className="st2-hour-bar" style={{ height: `${Math.max(6, (h.count / hourMax) * 70)}px` }} />
+                <span className="st2-hour-t">{hourLabel(h.hour)}</span>
+              </div>
+            ))}
+          </div>
+          <ul className="st2-reasons">
+            {data.arrivals.by_scanner.map((sc) => (
+              <li key={sc.name || 'manual'}>
+                <span>{sc.name || 'دخول يدوي من الإدارة'}</span>
+                <b>{fmt(sc.count)}</b>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="st2-three">
         <section className="st2-mini" aria-label="الحسابات المؤكدة">

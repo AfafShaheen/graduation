@@ -6,15 +6,6 @@ export const fmt = (n) => Number(n || 0).toLocaleString('en-US');
 // Whole percentage of part in total (0 when the total is 0).
 export const pct = (part, total) => (total > 0 ? Math.round((part / total) * 100) : 0);
 
-// Syrian pounds. The API sends decimal strings such as "13500000.00".
-export function money(value) {
-  const n = Number(value || 0);
-  const text = Number.isInteger(n)
-    ? n.toLocaleString('en-US')
-    : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `${text} ل.س`;
-}
-
 // The five exclusive states of a confirmed account in one ceremony (colours of the app).
 export const STATUS_SEGMENTS = [
   { key: 'confirmed', label: 'مؤكدة', color: '#124d44', ticket: 'confirmed' },
@@ -105,3 +96,45 @@ export function drillFilters(kind, eventId) {
   };
   return { ...event, ...(map[kind] || {}) };
 }
+
+// Steps of the registration journey: how many people reached each one and how much
+// of the first step that is (the bars of the funnel card).
+export const FUNNEL_STEPS = [
+  { key: 'accounts', label: 'أنشأوا حساباً', color: '#124d44' },
+  { key: 'verified', label: 'أكدوا البريد', color: '#2f7a63' },
+  { key: 'paid', label: 'أرسلوا الدفع', color: '#5fa08a' },
+  { key: 'confirmed', label: 'تأكدت تذاكرهم', color: '#ca4b00' },
+];
+
+export function funnelSteps(funnel = {}) {
+  const top = Number(funnel.accounts || 0);
+  return FUNNEL_STEPS.map((s) => {
+    const count = Number(funnel[s.key] || 0);
+    return { ...s, count, share: pct(count, top) };
+  });
+}
+
+// The line of the "registrations per day" card as SVG paths in a width x height box.
+export function sparkline(points = [], width = 260, height = 80, pad = 6) {
+  const values = points.map((p) => Number(p.count || 0));
+  const max = Math.max(1, ...values);
+  const step = values.length > 1 ? width / (values.length - 1) : 0;
+  const coords = values.map((v, i) => [
+    Math.round(i * step * 10) / 10,
+    Math.round((height - pad - (v / max) * (height - pad * 2)) * 10) / 10,
+  ]);
+  const line = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ');
+  const last = coords[coords.length - 1] || null;
+  const area = coords.length ? `${line} L${last[0]} ${height} L0 ${height} Z` : '';
+  const peak = points.reduce((best, p) => (Number(p.count) > Number(best?.count || 0) ? p : best), null);
+  return { line, area, last, max, peak, total: values.reduce((a, b) => a + b, 0) };
+}
+
+// "2027-01-02T14:00" (Damascus hour from the server) -> "14:00".
+export const hourLabel = (value) => String(value || '').slice(11, 16);
+
+// "2026-11-03" -> "3/11"
+export const dayLabel = (value) => {
+  const [, m, d] = String(value || '').split('-');
+  return m && d ? `${Number(d)}/${Number(m)}` : '';
+};

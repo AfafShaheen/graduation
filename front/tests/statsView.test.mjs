@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { fmt, money } from '../src/utils/stats.js';
+import { fmt } from '../src/utils/stats.js';
 
 // The view is rendered with REAL answers of the statistics API (saved by the backend tests).
 const load = (name) => JSON.parse(fs.readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf-8'));
@@ -32,40 +32,38 @@ const count = (html, text) => html.split(text).length - 1;
 
 test('one ceremony: every section is there and says what it counts', () => {
   const html = render(single);
-  for (const title of ['الدخول (الحفل المحدد)', 'حالة الخريجين المسجلين', 'الحضور المتوقع', 'المالية (مؤكدة)', 'الأوائل', 'تمثيل الدفعة', 'حسب الكلية', 'الحسابات المؤكدة', 'إغلاق التسجيل', 'متوسط وقت المراجعة']) {
+  for (const title of ['الدخول', 'تذاكر مؤكدة', 'بانتظار مراجعتك', 'حالة الخريجين المسجلين', 'الحضور المتوقع', 'رحلة الخريج', 'التسجيل خلال آخر 14 يوماً', 'أسباب الرفض الحالية', 'باقات التذاكر', 'الأوائل', 'تمثيل الدفعة', 'حسب الكلية', 'الحسابات المؤكدة', 'إغلاق التسجيل', 'متوسط وقت المراجعة']) {
     assert.ok(html.includes(title), `missing: ${title}`);
   }
   assert.ok(!html.includes('الأرقام هنا مجموع كل الحفلات'), 'the all-ceremonies note belongs to the all view only');
 });
 
-test('the strip sits under the status card, the entry card is above, and the old title is gone', () => {
+test('the four tiles come first, then the status card and the small strip under it', () => {
   const html = render(single);
   assert.ok(!html.includes('مطلوب منك الآن'));
   const at = (label) => html.indexOf(`aria-label="${label}"`);
-  const [entry, status, strip, attendance] = ['الدخول', 'حالة الخريجين المسجلين', 'أرقام تحتاج متابعة', 'الحضور المتوقع'].map(at);
-  assert.ok([entry, status, strip, attendance].every((i) => i >= 0), 'a section is missing');
-  assert.ok(entry < status && status < strip && strip < attendance, 'wrong order of the sections');
+  const [tiles, status, strip, journey] = ['تذاكر مؤكدة', 'حالة الخريجين المسجلين', 'أرقام تحتاج متابعة', 'رحلة الخريج'].map(at);
+  assert.ok([tiles, status, strip, journey].every((i) => i >= 0), 'a section is missing');
+  assert.ok(tiles < status && status < strip && strip < journey, 'wrong order of the sections');
 });
 
-test('the strip shows the four numbers of the data', () => {
+test('the tiles and the strip show the numbers of the data', () => {
   const html = render(single);
   const a = single.attention;
-  assert.ok(html.includes(`<b>${fmt(a.processing)}</b> طلب دفع بانتظار المراجعة`));
+  assert.ok(html.includes(`>${fmt(a.processing)}</button>`));
+  assert.ok(html.includes(`>${fmt(a.confirmed)}</button>`));
   assert.ok(html.includes(`<b>${fmt(a.rejected)}</b> مرفوضة`));
   assert.ok(html.includes(`<b>${fmt(a.unverified)}</b> بانتظار تأكيد البريد`));
-  assert.ok(html.includes(`<b>${fmt(a.confirmed)}</b> طلب تم تأكيده`));
   assert.ok(html.includes('أقدمها منذ'));
 });
 
-test('attendance, entry and money show the numbers of the data', () => {
+test('attendance, entry and the rest show the numbers of the data', () => {
   const html = render(single);
   assert.ok(html.includes('الحضور المتوقع'));
   assert.ok(html.includes(`>${fmt(single.attendance.expected)}</button>`));
   assert.ok(html.includes(`${fmt(single.attendance.graduates)} من الخريجين`));
   assert.ok(html.includes(`${fmt(single.attendance.companions)} مرافقاً`));
-  assert.ok(html.includes(`دخلوا من أصل ${fmt(single.entry.expected)}`));
-  assert.ok(html.includes(money(single.finance.confirmed_amount)));
-  assert.ok(html.includes(`قيد المراجعة ${money(single.finance.processing_amount)}`));
+  assert.ok(html.includes(`${fmt(single.entry.entered)} من ${fmt(single.entry.expected)}`));
   assert.ok(html.includes(`من ${fmt(single.representation.answered)} أجابوا`));
   assert.ok(html.includes(`من ${fmt(single.top_students.total)} سجّلوا`));
 });
@@ -117,7 +115,11 @@ test('an empty system renders without errors and without invented numbers', () =
     attention: { processing: 0, oldest_pending_hours: null, rejected: 0, unverified: 0, confirmed: 0 },
     attendance: { graduates: 0, companions: 0, expected: 0 },
     entry: { entered: 0, graduates_entered: 0, companions_entered: 0, manual: 0, expected: 0, last_entry_at: null },
-    finance: { confirmed_amount: '0.00', processing_amount: '0.00', by_package: [] },
+    packages: [],
+    funnel: { accounts: 0, verified: 0, paid: 0, confirmed: 0 },
+    timeline: [],
+    rejections: [],
+    arrivals: { by_hour: [], by_scanner: [] },
     footer: { confirmed_accounts: 0, registration: null, avg_review_hours: null, reviewed_count: 0 },
   };
   const html = render(empty);
@@ -131,6 +133,33 @@ test('an empty system renders without errors and without invented numbers', () =
 
 test('a manual entry is shown only when there is one', () => {
   const withManual = { ...single, entry: { ...single.entry, entered: 2, manual: 1 } };
-  assert.ok(render(withManual).includes('منهم دخول يدوي 1'));
-  assert.ok(!render({ ...single, entry: { ...single.entry, manual: 0 } }).includes('دخول يدوي'));
+  assert.ok(render(withManual).includes(' · يدوي 1'));
+  assert.ok(!render({ ...single, entry: { ...single.entry, manual: 0 } }).includes(' · يدوي'));
+});
+
+test('no money totals anywhere in the shared dashboard', () => {
+  for (const data of [single, all]) {
+    assert.equal(data.finance, undefined);
+    const html = render(data);
+    assert.ok(!html.includes('ل.س'), 'the dashboard must not show amounts');
+    assert.ok(!html.includes('المالية'));
+  }
+});
+
+test('funnel, trend, reasons and packages are drawn from the data', () => {
+  const html = render(single);
+  for (const step of ['أنشأوا حساباً', 'أكدوا البريد', 'أرسلوا الدفع', 'تأكدت تذاكرهم']) assert.ok(html.includes(step), step);
+  assert.ok(html.includes('<svg class="st2-spark"'));
+  for (const r of single.rejections) assert.ok(html.includes(r.reason), r.reason);
+  for (const p of single.packages) assert.ok(html.includes(`<b>${fmt(p.tickets)}</b>`));
+});
+
+test('the arrivals card shows only once somebody was scanned', () => {
+  const none = render({ ...single, arrivals: { by_hour: [], by_scanner: [] } });
+  assert.ok(!none.includes('الوصول يوم الحفل'));
+  const some = render({
+    ...single,
+    arrivals: { by_hour: [{ hour: '2027-01-02T14:00', count: 7 }], by_scanner: [{ name: 'scan1', count: 5 }, { name: null, count: 2 }] },
+  });
+  assert.ok(some.includes('الوصول يوم الحفل') && some.includes('14:00') && some.includes('scan1') && some.includes('دخول يدوي من الإدارة'));
 });

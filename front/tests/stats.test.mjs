@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
-  fmt, pct, money, statusSegments, statusTotal, ageLabel, closeIn, collegeRate, rateTone,
+  fmt, pct, funnelSteps, sparkline, statusSegments, statusTotal, ageLabel, closeIn, collegeRate, rateTone,
   sortColleges, drillSection, drillFilters, STATUS_SEGMENTS,
 } from '../src/utils/stats.js';
 import { filtersFromSearch } from '../src/utils/roster.js';
@@ -13,13 +13,6 @@ test('numbers are written with thousands separators and percentages never divide
   assert.equal(pct(1, 3), 33);
   assert.equal(pct(2, 3), 67);
   assert.equal(pct(5, 0), 0);
-});
-
-test('money is in Syrian pounds and drops useless decimals', () => {
-  assert.equal(money('13500000.00'), '13,500,000 ل.س');
-  assert.equal(money('100.00'), '100 ل.س');
-  assert.equal(money('2500.50'), '2,500.50 ل.س');
-  assert.equal(money(null), '0 ل.س');
 });
 
 test('the five states add up to the total and the shares add up to 100', () => {
@@ -106,4 +99,20 @@ test('links only use parameters and values of the roster API contract', { skip: 
       if (values.length) assert.ok(values.includes(value), `"${name}=${value}" is not accepted by the API`);
     });
   });
+});
+
+test('funnel steps are shares of the first step', () => {
+  const steps = funnelSteps({ accounts: 10, verified: 8, paid: 5, confirmed: 2 });
+  assert.deepEqual(steps.map((x) => x.share), [100, 80, 50, 20]);
+  assert.deepEqual(funnelSteps({}).map((x) => x.share), [0, 0, 0, 0]);
+});
+
+test('sparkline stays inside its box and finds the peak', () => {
+  const days = [{ date: '2026-11-01', count: 1 }, { date: '2026-11-02', count: 4 }, { date: '2026-11-03', count: 2 }];
+  const sp = sparkline(days, 260, 80, 6);
+  assert.equal(sp.total, 7);
+  assert.equal(sp.peak.date, '2026-11-02');
+  assert.ok(sp.line.startsWith('M0 '));
+  assert.ok(sp.last[0] === 260 && sp.last[1] >= 0 && sp.last[1] <= 80);
+  assert.equal(sparkline([]).line, '');
 });

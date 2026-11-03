@@ -149,13 +149,10 @@ async def get_event_payments_summary_service(db: AsyncSession, event_id: int) ->
     ).all()
 
     counts = {"AWAITING_PAYMENT": 0, "PROCESSING": 0, "CONFIRMED": 0, "REJECTED": 0}
-    confirmed_amount = Decimal("0")
     mismatch_processing = 0
     for st, price, amount in rows:
         key = st.value if hasattr(st, "value") else str(st)
         counts[key] = counts.get(key, 0) + 1
-        if key == "CONFIRMED" and amount is not None:
-            confirmed_amount += amount
         if key == "PROCESSING" and amount is not None and amount != price:
             mismatch_processing += 1
 
@@ -166,7 +163,6 @@ async def get_event_payments_summary_service(db: AsyncSession, event_id: int) ->
         "processing": counts["PROCESSING"],
         "confirmed": counts["CONFIRMED"],
         "rejected": counts["REJECTED"],
-        "confirmed_amount": format(confirmed_amount, ".2f"),
         "mismatch_processing": mismatch_processing,
     }
 

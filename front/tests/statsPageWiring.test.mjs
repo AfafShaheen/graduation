@@ -34,8 +34,8 @@ test('the page only uses the colours of the app', () => {
   const dashboard = fs.readFileSync(new URL('../src/style/AdminDashboard.css', import.meta.url), 'utf-8');
   const stats = fs.readFileSync(new URL('../src/style/AdminStats.css', import.meta.url), 'utf-8');
   const hexes = (css) => new Set((css.match(/#[0-9a-fA-F]{3,6}\b/g) || []).map((h) => h.toLowerCase()));
-  // soft tints of the app's own red, orange and green for the strip chips
-  const tints = new Set(['#fff1e6', '#fdecea', '#e8f5f1']);
+  // soft tints and two intermediate greens (funnel) of the app's own red, orange and green
+  const tints = new Set(['#fff1e6', '#fdecea', '#e8f5f1', '#fbe6d4', '#e1f0ea', '#8a3200', '#2f7a63', '#5fa08a']);
   const allowed = new Set([...hexes(dashboard), ...tints, '#fff']);
   const foreign = [...hexes(stats)].filter((h) => !allowed.has(h));
   assert.deepEqual(foreign, [], `colours that are not in the app: ${foreign.join(', ')}`);
