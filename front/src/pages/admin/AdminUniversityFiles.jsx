@@ -12,8 +12,8 @@ import {
   deleteUniversityFile,
 } from '../../api/admin.js';
 
-const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
-const MAX_SIZE_MB = 25;
+const ACCEPTED_EXTENSIONS = ['.xlsx', '.csv'];
+const MAX_SIZE_MB = 10;
 
 const STATUS_LABELS = {
   uploaded: 'مرفوع بدون ربط',
@@ -96,7 +96,7 @@ export default function AdminUniversityFiles({
     if (!file) return 'اختر ملفاً أولاً.';
     const name = file.name.toLowerCase();
     if (!ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-      return 'صيغة الملف غير مدعومة. المسموح: xlsx أو xls أو csv.';
+      return 'صيغة الملف غير مدعومة. المسموح: xlsx أو csv.';
     }
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       return `حجم الملف يتجاوز الحد المسموح (${MAX_SIZE_MB} ميغابايت).`;
@@ -302,7 +302,7 @@ export default function AdminUniversityFiles({
             <span className="adm-symbol uf-drop-icon">upload_file</span>
             <p className="uf-drop-text">اسحب الملف هنا أو اختره من جهازك</p>
             <p className="uf-drop-hint">
-              الصيغ المسموحة: xlsx / xls / csv — الحد الأقصى {MAX_SIZE_MB} ميغابايت
+              الصيغ المسموحة: xlsx / csv — الحد الأقصى {MAX_SIZE_MB} ميغابايت
             </p>
             <input
               ref={fileInputRef}

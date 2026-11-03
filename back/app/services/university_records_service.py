@@ -22,6 +22,30 @@ from app.core.redis import delete_matching, redis_client
 
 logger = logging.getLogger(__name__)
 
+# One limit for every university-data upload (records and files endpoints).
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+_READ_CHUNK_BYTES = 1024 * 1024
+FILE_TOO_LARGE_MESSAGE = "حجم الملف كبير جداً. الحد الأقصى المسموح 10 ميغابايت."
+
+
+async def read_upload_limited(file) -> bytes:
+    """Read an upload in chunks and stop as soon as it passes the size limit,
+    so an oversized file is never fully loaded into memory."""
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(_READ_CHUNK_BYTES)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=FILE_TOO_LARGE_MESSAGE,
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
 
 def parse_gpa(val: Any) -> Decimal | None:
     """Parse the Affairs ``المعدل`` cell into a 0-100 percentage.
@@ -342,7 +366,7 @@ def _read_csv(contents: bytes) -> "pd.DataFrame":
 def _parse_contents(filename: str, contents: bytes) -> "pd.DataFrame":
     if filename.endswith(".csv"):
         return _read_csv(contents)
-    if filename.endswith((".xlsx", ".xls")):
+    if filename.endswith(".xlsx"):
         return pd.read_excel(io.BytesIO(contents))
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
@@ -351,7 +375,7 @@ def _parse_contents(filename: str, contents: bytes) -> "pd.DataFrame":
 
 
 async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
-    contents = await file.read()
+    contents = await read_upload_limited(file)
     filename = (file.filename or "").lower()
     try:
         df = await asyncio.to_thread(_parse_contents, filename, contents)
