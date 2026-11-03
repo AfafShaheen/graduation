@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import {
   Routes,
   Route,
@@ -22,25 +22,27 @@ import ShamCashPayment from "./pages/student/ShamCashPayment";
 import OrderStatus from "./pages/student/OrderStatus";
 import OrderRejected from "./pages/student/OrderRejected";
 import MyTicket from "./pages/student/MyTicket";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminCeremonies from "./pages/admin/AdminCeremonies";
-import AdminAddCeremony from "./pages/admin/AdminAddCeremony";
-import AdminEditCeremonyRoute from "./pages/admin/AdminEditCeremonyRoute";
-import AdminPaymentRequests from "./pages/admin/AdminPaymentRequests";
-import AdminScannersSettings from "./pages/admin/AdminScannersSettings";
-import AdminExceptions from "./pages/admin/AdminExceptions";
-import AdminColleges from "./pages/admin/AdminColleges";
-import AdminUniversityFiles from "./pages/admin/AdminUniversityFiles";
-import AdminVolunteers from "./pages/admin/AdminVolunteers";
 import { AdminStatsProvider } from "./context/AdminStatsContext";
 import { PENDING_PAYMENTS_POLL_MS, fetchPendingPaymentsTotal } from "./utils/pendingPayments.js";
-import ScannerLogin from "./pages/scanner/ScannerLogin";
-import ScannerCamera from "./pages/scanner/ScannerCamera";
-import ScanSuccessResult from "./pages/scanner/ScanSuccessResult";
-import ScanErrorResult from "./pages/scanner/ScanErrorResult";
-import WrongCeremoniesWarning from "./pages/scanner/WrongCeremoniesWarning";
 import { hasScannerSession, hasGraduateSession, hasAdminSession, clearScannerSession, clearAdminSession, getAdminUsername, getVerificationToken, getRegistrationToken, isRegistrationTokenExpired, getResetEmail, setResetEmail, getResetCode, getGraduateEmail } from "./api/session";
+
+// Admin and scanner screens are loaded on demand so graduates do not download them.
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminCeremonies = lazy(() => import("./pages/admin/AdminCeremonies"));
+const AdminAddCeremony = lazy(() => import("./pages/admin/AdminAddCeremony"));
+const AdminEditCeremonyRoute = lazy(() => import("./pages/admin/AdminEditCeremonyRoute"));
+const AdminPaymentRequests = lazy(() => import("./pages/admin/AdminPaymentRequests"));
+const AdminScannersSettings = lazy(() => import("./pages/admin/AdminScannersSettings"));
+const AdminExceptions = lazy(() => import("./pages/admin/AdminExceptions"));
+const AdminColleges = lazy(() => import("./pages/admin/AdminColleges"));
+const AdminUniversityFiles = lazy(() => import("./pages/admin/AdminUniversityFiles"));
+const AdminVolunteers = lazy(() => import("./pages/admin/AdminVolunteers"));
+const ScannerLogin = lazy(() => import("./pages/scanner/ScannerLogin"));
+const ScannerCamera = lazy(() => import("./pages/scanner/ScannerCamera"));
+const ScanSuccessResult = lazy(() => import("./pages/scanner/ScanSuccessResult"));
+const ScanErrorResult = lazy(() => import("./pages/scanner/ScanErrorResult"));
+const WrongCeremoniesWarning = lazy(() => import("./pages/scanner/WrongCeremoniesWarning"));
 
 /*
   وضع المعاينة (للتصميم فقط):
@@ -150,6 +152,7 @@ function App() {
 
   return (
     <AdminStatsProvider pendingPayments={pendingPayments} refreshPendingPayments={refreshPendingPayments}>
+      <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: 24, textAlign: "center" }}>جارٍ التحميل...</div>}>
       <Routes>
         {/* ===== التسجيل ===== */}
         <Route
@@ -653,6 +656,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </AdminStatsProvider>
   );
 }

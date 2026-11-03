@@ -40,7 +40,7 @@ async def read_upload_limited(file) -> bytes:
         total += len(chunk)
         if total > MAX_UPLOAD_BYTES:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail=FILE_TOO_LARGE_MESSAGE,
             )
         chunks.append(chunk)

@@ -122,3 +122,23 @@ async def test_refresh_token_role_isolated(client, make_admin):
         "/api/auth/graduate/refresh", json={"refresh_token": admin_refresh}
     )
     assert resp.status_code == 401
+
+
+async def test_revoke_subject_uses_the_account_index_not_a_scan(monkeypatch):
+    from app.core.redis import redis_client
+    from app.services import refresh_token_service as svc
+
+    await svc.store_refresh_token("jti-a", "fam-a", "admin", "7", 1)
+    await svc.store_refresh_token("jti-b", "fam-b", "admin", "7", 1)
+    await svc.store_refresh_token("jti-c", "fam-c", "admin", "8", 1)
+
+    async def no_scan(*args, **kwargs):
+        raise AssertionError("revoke_subject must not scan every token")
+        yield
+
+    monkeypatch.setattr(redis_client, "scan_iter", no_scan)
+    await svc.revoke_subject("7", "admin")
+
+    assert await redis_client.get("refresh:jti-a") is None
+    assert await redis_client.get("refresh:jti-b") is None
+    assert await redis_client.get("refresh:jti-c") is not None

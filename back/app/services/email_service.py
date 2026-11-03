@@ -22,6 +22,8 @@ from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, Text,
 from sqlalchemy.orm import Session
 
 OTP_LENGTH = 6
+# Per socket operation; the request waits for the mail server, so keep it short.
+SMTP_TIMEOUT_SECONDS = float(os.environ.get("SMTP_TIMEOUT_SECONDS", "10"))
 OTP_TTL_MINUTES = 10
 MAX_FAILED_ATTEMPTS = 5
 RESEND_COOLDOWN_SECONDS = 60
@@ -186,7 +188,7 @@ body {{ font-family: Tahoma, Arial, sans-serif; direction: rtl; text-align: righ
     message.add_alternative(body_html, subtype="html")
 
     try:
-        with smtplib.SMTP(host, port, timeout=15) as server:
+        with smtplib.SMTP(host, port, timeout=SMTP_TIMEOUT_SECONDS) as server:
             if use_tls:
                 server.starttls()
             server.login(user, auth)

@@ -190,8 +190,6 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     healthy = all(value == "ok" for value in details.values())
     return JSONResponse(
         status_code=200 if healthy else 503,
-        content={
-            "status": "healthy" if healthy else "unhealthy",
-            "details": details,
-        },
+        # Which dependency failed is only logged: this endpoint is public.
+        content={"status": "healthy" if healthy else "unhealthy"},
     )

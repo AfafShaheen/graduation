@@ -99,7 +99,7 @@ export default function AdminVolunteers({
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [collegeId, setCollegeId] = useState('all');
-  const [responsibility, setResponsibility] = useState('yes'); // افتراضياً: الراغبون بتولّي مسؤولية
+  const [responsibility, setResponsibility] = useState('all');
   const [experience, setExperience] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [page, setPage] = useState(1);
@@ -161,7 +161,7 @@ export default function AdminVolunteers({
     setQuery('');
     setDebouncedQuery('');
     setCollegeId('all');
-    setResponsibility('yes');
+    setResponsibility('all');
     setExperience('all');
     setSortBy('newest');
     setPage(1);

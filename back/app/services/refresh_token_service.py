@@ -14,6 +14,7 @@ from app.core.redis import redis_client
 
 _REFRESH_KEY = "refresh:{jti}"
 _FAMILY_KEY = "refresh_family:{family}"
+_SUBJECT_KEY = "refresh_subject:{role}:{subject}"
 
 
 def _refresh_key(jti: str) -> str:
@@ -22,6 +23,10 @@ def _refresh_key(jti: str) -> str:
 
 def _family_key(family: str) -> str:
     return _FAMILY_KEY.format(family=family)
+
+
+def _subject_key(role: str, subject: str) -> str:
+    return _SUBJECT_KEY.format(role=role, subject=subject)
 
 
 async def store_refresh_token(
@@ -34,6 +39,9 @@ async def store_refresh_token(
     await redis_client.set(_refresh_key(jti), payload, ex=ttl)
     await redis_client.sadd(_family_key(family), jti)
     await redis_client.expire(_family_key(family), ttl)
+    # Per-account index so revoke_subject does not have to scan every token.
+    await redis_client.sadd(_subject_key(role, subject), jti)
+    await redis_client.expire(_subject_key(role, subject), ttl)
 
 
 async def consume_refresh_token(jti: str, family: str, role: str) -> str:
@@ -73,13 +81,7 @@ async def revoke_token(jti: str, family: Optional[str] = None) -> None:
 
 async def revoke_subject(subject: str, role: str) -> None:
     """Revoke all active refresh tokens issued to one account."""
-    async for key in redis_client.scan_iter(match="refresh:*"):
-        record = await redis_client.get(key)
-        if not record:
-            continue
-        try:
-            payload = json.loads(record)
-        except (TypeError, ValueError):
-            continue
-        if payload.get("subject") == subject and payload.get("role") == role:
-            await redis_client.delete(key)
+    index = _subject_key(role, subject)
+    for jti in await redis_client.smembers(index):
+        await redis_client.delete(_refresh_key(jti))
+    await redis_client.delete(index)

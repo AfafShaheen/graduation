@@ -67,5 +67,5 @@ async def test_health_returns_503_when_redis_unavailable(client, monkeypatch):
     assert resp.status_code == 503
     body = resp.json()
     assert body["status"] == "unhealthy"
-    assert body["details"]["redis"] == "error"
-    assert body["details"]["database"] == "ok"
+    # the public body does not say which dependency failed
+    assert "details" not in body

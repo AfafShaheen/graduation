@@ -23,7 +23,7 @@ export default function AdminCeremonies({
   const [searchQuery, setSearchQuery] = useState("");
   const { events, loading, error } = useAdminEvents({ search: searchQuery });
   const { data: stats } = useAdminStatsV2(null);
-  const perEvent = stats?.by_event || [];
+  const perEvent = useMemo(() => stats?.by_event || [], [stats]);
 
   const deriveStatus = (item) => {
     const now = new Date();

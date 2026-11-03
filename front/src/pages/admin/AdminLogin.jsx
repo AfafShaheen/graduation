@@ -230,8 +230,6 @@ export default function AdminLogin({ onLoginSuccess }) {
             <span>{CEREMONY_TITLE}</span>
             <span className="ad-dot-sep"></span>
             <span>نظام إدارة تذاكر التخرج الرقمي © 2026</span>
-            <span className="ad-dot-sep"></span>
-            <span className="ad-version-highlight">الإصدار 2.4</span>
           </div>
         </footer>
       </div>

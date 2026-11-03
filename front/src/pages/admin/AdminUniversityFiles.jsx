@@ -28,6 +28,16 @@ function formatSize(bytes) {
   return `${Math.max(1, Math.round(bytes / 1024))} كيلوبايت`;
 }
 
+function apiErrorMessage(err, fallback) {
+  if (err instanceof ApiError) {
+    if (err.status >= 500) {
+      return `حدث خطأ في الخادم (${err.status}). أرسل وقت المحاولة للدعم. ${new Date().toISOString()}`;
+    }
+    if (err.message) return err.message;
+  }
+  return fallback;
+}
+
 export default function AdminUniversityFiles({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
@@ -109,16 +119,6 @@ export default function AdminUniversityFiles({
       return `حجم الملف يتجاوز الحد المسموح (${MAX_SIZE_MB} ميغابايت).`;
     }
     return '';
-  };
-
-  const apiErrorMessage = (err, fallback) => {
-    if (err instanceof ApiError) {
-      if (err.status >= 500) {
-        return `حدث خطأ في الخادم (${err.status}). أرسل وقت المحاولة للدعم. ${new Date().toISOString()}`;
-      }
-      if (err.message) return err.message;
-    }
-    return fallback;
   };
 
   const buildReport = (res) => {

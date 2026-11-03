@@ -19,7 +19,7 @@
 | `POST /api/auth/resend-otp` | الجسم: `{graduate_id, purpose}` | **بدون جسم**، مع `Authorization: Bearer <verification_token>`. |
 | `POST /api/auth/change-email` | الجسم: `{graduate_id, new_email}` | الجسم: `{new_email}` فقط، مع `Authorization: Bearer <verification_token>`. |
 | `POST /api/auth/graduate/login` | عند بريد غير مؤكَّد: 403 برسالة نصية | عند بريد غير مؤكَّد: 403 والتفصيل كائن `{message, verification_token}` ليستكمل المستخدم التأكيد. |
-| `GET /health` | `{"status": "healthy"}` ثابت | يفحص قاعدة البيانات و Redis: 200 مع `{"status":"healthy","details":{...}}` أو 503 `{"status":"unhealthy","details":{...}}`. |
+| `GET /health` | `{"status": "healthy"}` ثابت | يفحص قاعدة البيانات و Redis: 200 مع `{"status":"healthy"}` أو 503 `{"status":"unhealthy"}`؛ تفاصيل الفشل تُسجَّل في السجل فقط ولا تظهر للعامة. |
 
 **المرحلة 3 / M1 — نقاط جديدة:**
 
@@ -838,3 +838,11 @@ docker compose exec back python -m scripts.create_admin --username admin --reset
 - **صفحة الخريجين (Roster)**: حقل إضافي جديد `actions.verify_email` (true فقط عندما يوجد حساب مؤكد… بل غير مؤكَّد بريده؛ false للحسابات المؤكدة ولغير المسجلين). تحديث additive لعقد OpenAPI (`tests/contract/openapi_baseline.json`) — لا هجرة قاعدة بيانات.
 - **الكاش**: يُنادى `invalidate_admin_cache()` بعد النجاح فتنخفض `registered.unverified_accounts` ويرتفع عدد الطلبات الظاهر في الشريط الجانبي فوراً.
 - **الاختبارات**: ملف جديد `back/tests/test_admin_verify_email.py` (9 اختبارات): التأكيد الفعلي والرسالة، 400 عند التكرار، 404 للمجهول، 401 بدون توكن، صف التدقيق (الفعل والتسمية ومعرف الخريج وبدون نص البريد في التفاصيل) وظهوره في قائمة الإجراءات الاستثنائية، استهلاك صفوف OTP المفتوحة، تسجيل دخول الخريج 200 فوراً بعد الإجراء (كان مرفوضاً قبله)، انخفاض `unverified_accounts` بمقدار 1 فوراً، وأعلام الـ roster الأربعة.
+
+## تحسينات أخيرة (فرع `fix/frontend-hardening`)
+
+- **`/health`**: الجواب العام صار `{"status": ...}` فقط (200/503)؛ اسم الخدمة الفاشلة يُسجَّل ولا يُعرض.
+- **SMTP**: مهلة الاتصال صارت `SMTP_TIMEOUT_SECONDS` (الافتراضي 10 ثوانٍ بدل 15).
+- **`revoke_subject`**: بدل مسح كل مفاتيح `refresh:*` صار هناك فهرس لكل حساب (`refresh_subject:{role}:{subject}`) يُملأ عند إصدار الرمز. الرموز الصادرة قبل هذا التحديث غير مفهرسة وتنتهي صلاحيتها خلال 7 أيام كحد أقصى.
+- **`university_files`**: عدّ الكليات داخل الملف صار حسب `file_id` لا حسب الحفل.
+- **`requirements.txt`**: أُزيل `pytest` (مكانه `requirements-dev.txt`).
