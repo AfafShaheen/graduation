@@ -90,7 +90,7 @@
 }
 
 .exc-topbar-title span {
-  font-size: 11px;
+  font-size: 12px;
   color: #725b51;
   font-weight: 600;
 }
@@ -213,7 +213,7 @@
 
 .exc-pulse-venue {
   font-size: 13px;
-  color: #8d7166;
+  color: #7F655A;
 }
 
 .exc-notice {
@@ -343,7 +343,7 @@
 }
 
 .exc-quick-label {
-  color: #8d7166;
+  color: #7F655A;
   font-weight: 600;
 }
 
@@ -366,7 +366,7 @@
 .exc-empty {
   padding: 36px 16px;
   text-align: center;
-  color: #8d7166;
+  color: #7F655A;
   font-size: 14px;
   font-weight: 600;
   display: flex;
@@ -419,7 +419,7 @@
 }
 
 .exc-ticket-head p {
-  font-size: 11px;
+  font-size: 12px;
   color: rgba(181, 238, 226, 0.9);
   margin: 2px 0 0 0;
   direction: ltr;
@@ -431,7 +431,7 @@
   border-radius: 9999px;
   background-color: #ca4b00;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -466,9 +466,9 @@
 }
 
 .exc-info-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: #8d7166;
+  color: #7F655A;
   display: block;
 }
 
@@ -488,7 +488,7 @@
 }
 
 .exc-info-sub {
-  font-size: 11px;
+  font-size: 12px;
   color: #725b51;
   line-height: 1.6;
 }
@@ -516,13 +516,13 @@
   gap: 4px;
   padding: 2px 10px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .exc-pay-chip.confirmed {
   background-color: rgba(30, 138, 90, 0.12);
-  color: #1e8a5a;
+  color: #19794F;
 }
 
 .exc-pay-chip.pending {
@@ -742,9 +742,9 @@
 .exc-table td[data-label]::before {
   content: attr(data-label);
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: #8d7166;
+  color: #7F655A;
   margin-bottom: 4px;
 }
 
@@ -780,8 +780,8 @@
 }
 
 .exc-cell-sub {
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   line-height: 1.5;
 }
 
@@ -831,8 +831,8 @@
 
 .exc-footer-note {
   text-align: center;
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   margin: 0;
 }
 

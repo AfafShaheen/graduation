@@ -14,6 +14,7 @@ import { adminBlob, downloadBlob, ApiError } from '../../api/admin.js';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 import { useAdminStats } from '../../context/AdminStatsContext.jsx';
 import RejectReasonPresets from './RejectReasonPresets.jsx';
+import useDialogA11y from '../../hooks/useDialogA11y';
 import {
   validateShamCashAccount,
   validateReceiverName,
@@ -67,6 +68,7 @@ export default function AdminPaymentRequests({
   const [busyId, setBusyId] = useState(null);
 
   const [rejectTarget, setRejectTarget] = useState(null);
+  useDialogA11y(Boolean(rejectTarget));
   const [rejectReason, setRejectReason] = useState('');
   const [rejectError, setRejectError] = useState('');
   const [rejecting, setRejecting] = useState(false);

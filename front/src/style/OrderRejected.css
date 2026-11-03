@@ -134,9 +134,9 @@
 }
 
 .or-badge-batch {
-  background-color: #d94e00;
+  background-color: #C74600;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 9999px;
@@ -402,7 +402,7 @@
 }
 
 .or-footer-text {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 14px;
   color: #725b51;
   margin: 0;

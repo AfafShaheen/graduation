@@ -90,7 +90,7 @@
   }
   
   .scan-set-topbar-title span {
-    font-size: 11px;
+    font-size: 12px;
     color: #725b51;
     font-weight: 600;
   }
@@ -199,7 +199,7 @@
   
   .scan-set-pulse-venue {
     font-size: 13px;
-    color: #8d7166;
+    color: #7F655A;
   }
   
   /* إشعار نجاح */
@@ -263,7 +263,7 @@
     border-radius: 9999px;
     background-color: #ca4b00;
     color: #ffffff;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
   }
   
@@ -289,7 +289,7 @@
     width: 8px;
     height: 8px;
     border-radius: 9999px;
-    background-color: #1e8a5a;
+    background-color: #19794F;
   }
   
   /* البطاقات */
@@ -362,15 +362,15 @@
   }
   
   .scan-set-hint {
-    font-size: 11px;
-    color: #8d7166;
+    font-size: 12px;
+    color: #7F655A;
     margin: 0;
     line-height: 1.6;
   }
 
   /* B5.1: خطأ ميداني صغير تحت الحقل (نفس حجم scan-set-hint) */
   .scan-set-field-error {
-    font-size: 11px;
+    font-size: 12px;
     color: #ba1a1a;
     margin: 0;
     line-height: 1.6;
@@ -459,7 +459,7 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    color: #8d7166;
+    color: #7F655A;
     pointer-events: none;
     font-size: 18px;
   }
@@ -610,9 +610,9 @@
   .scan-set-table td[data-label]::before {
     content: attr(data-label);
     display: block;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    color: #8d7166;
+    color: #7F655A;
     margin-bottom: 4px;
   }
   
@@ -701,7 +701,7 @@
   .scan-set-empty {
     padding: 40px 16px;
     text-align: center;
-    color: #8d7166;
+    color: #7F655A;
     font-size: 14px;
     font-weight: 600;
   }
@@ -755,7 +755,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #8d7166;
+    color: #7F655A;
     flex-direction: column;
     gap: 6px;
     font-size: 12px;

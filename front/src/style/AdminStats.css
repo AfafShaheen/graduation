@@ -76,7 +76,7 @@
 .st2-tip { position: relative; display: inline-block; margin-inline-start: 6px; vertical-align: middle; }
 .st2-tip-btn {
   width: 17px; height: 17px; border-radius: 9999px; border: 1px solid #b9a79e; background: transparent; color: #594138;
-  font: inherit; font-size: 11px; font-weight: 700; line-height: 1; padding: 0; cursor: help;
+  font: inherit; font-size: 12px; font-weight: 700; line-height: 1; padding: 0; cursor: help;
 }
 .st2-tip-box {
   position: absolute; z-index: 60; top: 130%; inset-inline-start: 0; width: 260px; max-width: 70vw; background: #201b0f; color: #fff;

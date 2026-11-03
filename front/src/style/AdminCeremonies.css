@@ -92,7 +92,7 @@
 }
 
 .cer-topbar-title span {
-  font-size: 11px;
+  font-size: 12px;
   color: #725b51;
   font-weight: 600;
 }
@@ -180,8 +180,8 @@
 }
 
 .cer-profile-role {
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
 }
 
 .cer-profile-avatar {
@@ -236,7 +236,7 @@
 
 .cer-pulse-venue {
   font-size: 13px;
-  color: #8d7166;
+  color: #7F655A;
 }
 
 .cer-hero-titles h3 {
@@ -317,7 +317,7 @@
   right: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #8d7166;
+  color: #7F655A;
   pointer-events: none;
 }
 
@@ -384,9 +384,9 @@
 .cer-table td[data-label]::before {
   content: attr(data-label);
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: #8d7166;
+  color: #7F655A;
   margin-bottom: 6px;
 }
 
@@ -398,7 +398,7 @@
 .cer-empty {
   padding: 40px 16px;
   text-align: center;
-  color: #8d7166;
+  color: #7F655A;
   font-size: 14px;
   font-weight: 600;
 }
@@ -431,8 +431,8 @@
 }
 
 .cer-name-code {
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   margin-top: 4px;
   display: flex;
   align-items: center;
@@ -481,7 +481,7 @@
 
 .cer-info-line .cer-symbol {
   font-size: 16px;
-  color: #8d7166;
+  color: #7F655A;
 }
 
 .cer-info-line.strong .cer-symbol {
@@ -546,7 +546,7 @@
   background-color: #f8edd9;
   border: 1px solid #eedebd;
   color: #124d44;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -572,8 +572,8 @@
 }
 
 .cer-capacity-total {
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
 }
 
 .cer-capacity-bar {
@@ -598,7 +598,7 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   color: #594138;
 }
 

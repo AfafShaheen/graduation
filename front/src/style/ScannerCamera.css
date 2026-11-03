@@ -79,7 +79,7 @@
   }
   
   .scan-cam-header-sub {
-    font-size: 11px;
+    font-size: 12px;
     color: #b5d6cf;
     margin: 2px 0 0 0;
   }
@@ -151,7 +151,7 @@
     border-radius: 9999px;
     background-color: var(--sc-orange);
     color: #ffffff;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
   }
   
@@ -534,7 +534,7 @@
   
   .scan-cam-supervisor {
     text-align: center;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--sc-muted);
     margin: 0;
   }
@@ -733,7 +733,7 @@
   /* سطر تاريخ الحفل تحت اسمه في رأس شاشة المسح */
   .scan-cam-header-date {
     opacity: 0.75;
-    font-size: 11px;
+    font-size: 12px;
     margin-top: 1px;
   }
   

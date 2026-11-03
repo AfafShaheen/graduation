@@ -151,9 +151,9 @@
 }
 
 .ev-badge-batch {
-  background-color: #d94e00;
+  background-color: #C74600;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 9999px;
@@ -361,8 +361,8 @@
 
 /* رمز صحيح: المربعات تصير خضراء */
 .ev-otp-field.success {
-  background-color: #1e8a5a;
-  border-color: #1e8a5a;
+  background-color: #19794F;
+  border-color: #19794F;
   color: #ffffff;
   -webkit-text-fill-color: #ffffff;
   opacity: 1;
@@ -403,7 +403,7 @@
 }
 
 .ev-success-text {
-  color: #1e8a5a;
+  color: #19794F;
 }
 
 /* العدّاد وإعادة الإرسال */
@@ -443,7 +443,7 @@
   font-family: inherit;
   font-size: 12px;
   font-weight: 700;
-  color: #8d7166;
+  color: #7F655A;
   background: transparent;
   border: none;
   display: flex;
@@ -481,7 +481,7 @@
 }
 
 .ev-info-text {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
   color: #594138;
   margin: 0;
@@ -558,7 +558,7 @@
 
 .ev-institutional-label {
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   color: #725b51;
   margin: 8px 0 0 0;
 }

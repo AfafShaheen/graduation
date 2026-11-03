@@ -178,7 +178,9 @@ export default function AdminLogin({ onLoginSuccess }) {
                   <label className="ad-label" htmlFor="admin-password">
                     كلمة السر
                   </label>
-                  <span className="ad-protocol-tag">اتصال مشفَّر</span>
+                  {window.location.protocol === 'https:' && (
+                    <span className="ad-protocol-tag">اتصال مشفَّر</span>
+                  )}
                 </div>
                 <div className={`ad-input-wrapper ${errors.password ? 'error' : ''}`}>
                   {/* new-password: بتمنع المتصفح من تعبئة كلمات محفوظة */}

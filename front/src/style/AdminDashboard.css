@@ -95,7 +95,7 @@
 }
 
 .adm-topbar-title span {
-  font-size: 11px;
+  font-size: 12px;
   color: #725b51;
   font-weight: 600;
 }
@@ -202,7 +202,7 @@
 
 .adm-pulse-venue {
   font-size: 13px;
-  color: #8d7166;
+  color: #7F655A;
 }
 
 .adm-hero-titles h3 {
@@ -408,7 +408,7 @@
 .adm-big-number-unit {
   font-size: 14px;
   font-weight: 700;
-  color: #8d7166;
+  color: #7F655A;
 }
 
 .adm-metric-pills {
@@ -483,7 +483,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: #b5eee2;
   margin-top: 4px;
 }
@@ -618,12 +618,12 @@
 }
 
 .adm-stat-unit {
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
 }
 
 .adm-stat-meta {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
   color: #594138;
   margin: 0;
@@ -656,7 +656,7 @@
 .adm-tiny-badge {
   padding: 2px 8px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -689,8 +689,8 @@
 }
 
 .adm-split-label {
-  font-size: 10px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   display: block;
 }
 
@@ -711,7 +711,7 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   padding: 6px 10px;
   border-radius: 8px;
   background-color: #f8edd9;
@@ -822,14 +822,14 @@
 }
 
 .adm-verif-desc {
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
 }
 
 .adm-chip {
   padding: 4px 10px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -873,7 +873,7 @@
 
 .adm-table-count {
   font-size: 12px;
-  color: #8d7166;
+  color: #7F655A;
   font-weight: 600;
 }
 
@@ -981,8 +981,8 @@
 
 .adm-student-id {
   display: block;
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   direction: ltr;
   text-align: right;
 }
@@ -996,7 +996,7 @@
 .adm-faculty-major {
   display: block;
   font-size: 12px;
-  color: #8d7166;
+  color: #7F655A;
 }
 
 .adm-ticket-pill {
@@ -1172,7 +1172,7 @@
 }
 
 .adm-page-gap {
-  color: #8d7166;
+  color: #7F655A;
   padding: 0 2px;
 }
 

@@ -17,6 +17,7 @@ import {
   entryLabel,
 } from '../../../utils/roster.js';
 import { companionsLabel } from '../../../utils/companions';
+import useDialogA11y from '../../../hooks/useDialogA11y';
 
 const QR_TYPE_LABELS = { GRADUATE: 'رمز الخريج', COMPANION: 'رمز مرافق' };
 
@@ -83,6 +84,7 @@ const ACTIONS = [
 ];
 
 export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice }) {
+  useDialogA11y(true);
   const graduateId = row.registration.graduate_id;
   const [detail, setDetail] = useState(null);
   const [detailError, setDetailError] = useState('');

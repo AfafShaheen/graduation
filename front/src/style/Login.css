@@ -153,9 +153,9 @@
 }
 
 .lg-badge-batch {
-  background-color: #d94e00;
+  background-color: #C74600;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 9999px;
@@ -298,7 +298,7 @@
   display: flex;
   align-items: center;
   pointer-events: none;
-  color: #8d7166;
+  color: #7F655A;
 }
 
 .lg-input-icon-left {
@@ -311,7 +311,7 @@
   align-items: center;
   background: transparent;
   border: none;
-  color: #8d7166;
+  color: #7F655A;
   cursor: pointer;
   transition: color 0.15s ease;
 }
@@ -438,14 +438,14 @@
 }
 
 .lg-footer-org {
-  font-size: 11px;
+  font-size: 12px;
   color: #725b51;
   margin: 0;
 }
 
 .lg-footer-copy {
-  font-size: 10px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   margin: 0;
 }
 

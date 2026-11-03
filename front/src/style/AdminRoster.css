@@ -116,7 +116,7 @@
   text-align: right;
 }
 .rost-name-btn:hover { text-decoration: underline; }
-.rost-dash { color: #a89c86; font-size: 12px; }
+.rost-dash { color: #766A5A; font-size: 12px; }
 
 /* Badges */
 .rost-badges { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -125,7 +125,7 @@
   align-items: center;
   padding: 3px 10px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.5;
 }
@@ -160,7 +160,7 @@
 }
 .rost-page-btn.active { background: #124d44; border-color: #124d44; color: #fff; }
 .rost-page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.rost-page-gap { padding: 0 4px; color: #a89c86; }
+.rost-page-gap { padding: 0 4px; color: #766A5A; }
 .rost-pager-size { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b6150; }
 .rost-pager-size select {
   padding: 6px 10px;

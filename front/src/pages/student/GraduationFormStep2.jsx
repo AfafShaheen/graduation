@@ -452,7 +452,7 @@ export default function GraduationFormStep2({
             {CEREMONY_TITLE}
           </p>
           <p
-            style={{ fontSize: "10px", color: "#8d7166", margin: "2px 0 0 0" }}
+            style={{ fontSize: "10px", color: "#7F655A", margin: "2px 0 0 0" }}
           >
             منظومة الحفلات والبطاقات الرقمية 2026
           </p>

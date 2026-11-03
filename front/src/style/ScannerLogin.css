@@ -129,9 +129,9 @@
 }
 
 .scan-login-badge-batch {
-  background-color: #d94e00;
+  background-color: #C74600;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 9999px;
@@ -330,7 +330,7 @@
   display: flex;
   align-items: center;
   pointer-events: none;
-  color: #8d7166;
+  color: #7F655A;
 }
 
 .scan-login-toggle-btn {
@@ -342,7 +342,7 @@
   border: none;
   padding: 4px;
   border-radius: 9999px;
-  color: #8d7166;
+  color: #7F655A;
   cursor: pointer;
   transition: color 0.15s ease;
 }

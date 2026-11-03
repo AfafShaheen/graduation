@@ -95,7 +95,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 2px 4px;
-  font-size: 11px;
+  font-size: 12px;
   color: #725b51;
   font-weight: 600;
 }
@@ -352,8 +352,8 @@
 }
 
 .add-cer-hint {
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   margin: 0;
 }
 
@@ -452,7 +452,7 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  color: #8d7166;
+  color: #7F655A;
   pointer-events: none;
 }
 
@@ -470,7 +470,7 @@
   gap: 4px;
   padding: 2px 10px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   background-color: #ffffff;
   color: #ca4b00;
@@ -545,7 +545,7 @@
   border-radius: 9999px;
   border: 1px solid #eedebd;
   background-color: #f8edd9;
-  color: #8d7166;
+  color: #7F655A;
   font-size: 13px;
   font-weight: 600;
   cursor: not-allowed;
@@ -553,7 +553,7 @@
 }
 
 .add-cer-chip-note {
-  font-size: 10px;
+  font-size: 12px;
   padding: 2px 8px;
   border-radius: 9999px;
   background-color: #ffffff;
@@ -670,7 +670,7 @@
   border-radius: 9999px;
   border: 1px solid #eedebd;
   background-color: #ffffff;
-  color: #8d7166;
+  color: #7F655A;
   cursor: pointer;
   font-family: inherit;
   transition:
@@ -715,7 +715,7 @@
 }
 
 .add-cer-pkg-badge {
-  font-size: 11px;
+  font-size: 12px;
   padding: 2px 10px;
   border-radius: 9999px;
   font-weight: 700;
@@ -741,12 +741,12 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 12px;
-  color: #8d7166;
+  color: #7F655A;
   pointer-events: none;
 }
 
 .add-cer-currency {
-  font-size: 11px;
+  font-size: 12px;
   padding: 4px 12px;
   border-radius: 9999px;
   background-color: #f8edd9;
@@ -830,8 +830,8 @@
   width: 100%;
   max-width: 1100px;
   text-align: center;
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -998,8 +998,8 @@
   text-align: right;
 }
 
-.add-cer-file-size { color: #8d7166; font-size: 12px; }
-.add-cer-file-ok { color: #1e8a5a; }
+.add-cer-file-size { color: #7F655A; font-size: 12px; }
+.add-cer-file-ok { color: #19794F; }
 
 .add-cer-file-remove {
   display: inline-flex;
@@ -1007,7 +1007,7 @@
   border: none;
   border-radius: 9999px;
   background: transparent;
-  color: #8d7166;
+  color: #7F655A;
   cursor: pointer;
 }
 

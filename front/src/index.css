@@ -1,6 +1,11 @@
 :root {
   color-scheme: only light;
 }
+
+/* <small> defaults to 83% of its parent, which can fall under 12px. */
+small {
+  font-size: max(12px, 0.8333em);
+}
 @font-face {
   font-family: 'Ghroob';
   src: url('./assets/fonts/itfGhroobArabic-Light.otf') format('opentype');

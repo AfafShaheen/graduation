@@ -154,9 +154,9 @@
 }
 
 .sc-badge-batch {
-  background-color: #d94e00;
+  background-color: #C74600;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 9999px;
@@ -227,7 +227,7 @@
 }
 
 .sc-recipient-subtitle {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 14px;
   font-weight: 700;
   color: #725b51;
@@ -266,7 +266,7 @@
 }
 
 .sc-qr-caption {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 14px;
   font-weight: 700;
   color: #725b51;
@@ -296,7 +296,7 @@
 }
 
 .sc-account-label {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 14px;
   font-weight: 700;
   color: #725b51;
@@ -488,7 +488,7 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #8d7166;
+  color: #7F655A;
   pointer-events: none;
 }
 
@@ -562,14 +562,14 @@
 }
 
 .sc-footer-main {
-  font-size: 11px;
+  font-size: 12px;
   color: #725b51;
   margin: 0;
 }
 
 .sc-footer-sub {
-  font-size: 10px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   margin: 0;
 }
 

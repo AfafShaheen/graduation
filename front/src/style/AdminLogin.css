@@ -134,9 +134,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background-color: #d94e00;
+  background-color: #C74600;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 9999px;
@@ -272,8 +272,8 @@
 }
 
 .ad-protocol-tag {
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
 }
 
 .ad-input-wrapper {
@@ -285,7 +285,7 @@
 .ad-input-icon-right {
   position: absolute;
   right: 14px;
-  color: #8d7166;
+  color: #7F655A;
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -378,7 +378,7 @@
 }
 
 .ad-support-text {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
   margin: 0;
   text-align: right;
@@ -399,7 +399,7 @@
   flex-wrap: wrap;
   gap: 4px 10px;
   color: #725b51;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .ad-dot-sep {

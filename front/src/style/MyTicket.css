@@ -153,9 +153,9 @@
 }
 
 .tk-badge-batch {
-  background-color: #d94e00;
+  background-color: #C74600;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 9999px;
@@ -199,7 +199,7 @@
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 700;
-  background-color: #1e8a5a;
+  background-color: #19794F;
   color: #ffffff;
 }
 
@@ -224,7 +224,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 14px;
   font-weight: 700;
 }
@@ -234,7 +234,7 @@
   color: #ffffff;
   padding: 2px 10px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -284,8 +284,8 @@
 }
 
 .tk-meta-label {
-  font-size: 11px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   display: block;
 }
 
@@ -351,7 +351,7 @@
 .tk-ticket-code {
   margin-top: 8px;
   font-family: monospace;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #594138;
   letter-spacing: 0.08em;
@@ -447,7 +447,7 @@
 }
 
 .tk-companions-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: #ca4b00;
   font-weight: 700;
   display: flex;
@@ -539,9 +539,9 @@
 
 .tk-download-note {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
-  color: #8d7166;
+  color: #7F655A;
   text-align: center;
 }
 
@@ -558,14 +558,14 @@
 }
 
 .tk-companion-name {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   color: #201b0f;
 }
 
 .tk-companion-status {
-  font-size: 10px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   margin-top: 2px;
 }
 
@@ -640,15 +640,15 @@
 }
 
 .tk-footer-main {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: #725b51;
   margin: 0;
 }
 
 .tk-footer-sub {
-  font-size: 10px;
-  color: #8d7166;
+  font-size: 12px;
+  color: #7F655A;
   margin: 0;
 }
 

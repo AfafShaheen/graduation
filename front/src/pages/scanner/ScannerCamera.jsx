@@ -11,6 +11,7 @@ import WrongCeremoniesWarning from './WrongCeremoniesWarning';
 import { eventTitle, formatEventDate } from '../../utils/eventLabel';
 import { CEREMONY_TITLE } from '../../config/brand';
 import { cameraErrorText } from '../../utils/cameraError';
+import useDialogA11y from '../../hooks/useDialogA11y';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -38,6 +39,7 @@ export default function ScannerCamera({ onLogout }) {
     }
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  useDialogA11y(isModalOpen);
   const [manualCode, setManualCode] = useState('');
   const [manualError, setManualError] = useState('');
 
