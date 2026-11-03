@@ -18,7 +18,7 @@ from app.models.major import MajorModel
 from app.services.graduate_service import normalize_arabic
 from app.services.college_links import colleges_for_event
 from app.services.audit_log import ActorType, record_audit
-from app.core.redis import redis_client
+from app.core.redis import delete_matching, redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -206,12 +206,7 @@ def _record_error(
 
 async def invalidate_uni_records_cache(event_id: int) -> None:
     try:
-        keys = await redis_client.keys(f"uni_records:{event_id}:*")
-        if keys:
-            await redis_client.delete(*keys)
-        admin_keys = await redis_client.keys("admin:graduates:*")
-        if admin_keys:
-            await redis_client.delete(*admin_keys)
+        await delete_matching(f"uni_records:{event_id}:*", "admin:graduates:*")
     except Exception:
         logger.warning("University records cache invalidation failed", exc_info=True)
 
@@ -623,7 +618,31 @@ async def upsert_records(
     added = 0
     updated = 0
     skipped = 0
+    skipped_registered = 0
     now = datetime.now(UTC)
+
+    # A graduate who already registered keeps the data they were verified
+    # against: re-uploading the file never rewrites their university record.
+    registered_ids = set(
+        (
+            await db.execute(
+                select(GraduateModel.university_id).where(
+                    GraduateModel.college_id.in_([c.id for c in colleges])
+                )
+            )
+        ).scalars()
+    )
+
+    existing_by_uni_id = {
+        rec.university_id: rec
+        for rec in (
+            await db.execute(
+                select(UniversityRecordModel).where(
+                    UniversityRecordModel.event_id == event_id
+                )
+            )
+        ).scalars()
+    }
 
     for row in records:
         uni_id = _cell_text(row, "university_id")
@@ -661,13 +680,11 @@ async def upsert_records(
             norm_major = normalize_arabic(major_raw)
             major_id = major_map.get((college_id, norm_major))
 
-        existing_res = await db.execute(
-            select(UniversityRecordModel).where(
-                UniversityRecordModel.event_id == event_id,
-                UniversityRecordModel.university_id == uni_id
-            )
-        )
-        existing = existing_res.scalar_one_or_none()
+        existing = existing_by_uni_id.get(uni_id)
+
+        if existing and uni_id in registered_ids:
+            skipped_registered += 1
+            continue
 
         if existing:
             existing.full_name = full_name
@@ -705,9 +722,15 @@ async def upsert_records(
                 imported_at=now
             )
             db.add(new_rec)
+            existing_by_uni_id[uni_id] = new_rec
             added += 1
 
-    return {"added": added, "updated": updated, "skipped": skipped}
+    return {
+        "added": added,
+        "updated": updated,
+        "skipped": skipped,
+        "skipped_registered": skipped_registered,
+    }
 
 
 async def upload_university_records(
@@ -763,6 +786,7 @@ async def upload_university_records(
         "added": counts["added"],
         "updated": counts["updated"],
         "skipped": counts["skipped"],
+        "skipped_registered": counts["skipped_registered"],
         "errors": [],
         "summary": {
             "total": total,
@@ -850,7 +874,7 @@ async def list_university_records(
     result = {"total": total, "items": items_data}
 
     try:
-        await redis_client.setex(cache_key, 300, json.dumps(result))
+        await redis_client.set(cache_key, json.dumps(result), ex=300)
     except Exception:
         logger.warning("University records cache write failed", exc_info=True)
 

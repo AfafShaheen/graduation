@@ -15,7 +15,7 @@ from app.models.graduate import GraduateModel
 from app.models.ticket import TicketModel
 from app.models.university_record import UniversityRecordModel
 from app.schemas.event_admin import EventCreate, EventUpdate, registration_before_ceremony
-from app.core.redis import redis_client
+from app.core.redis import delete_matching, redis_client
 from app.core import messages
 from app.services.graduate_service import normalize_arabic
 from app.services.audit_log import ActorType, record_audit
@@ -73,9 +73,7 @@ async def _resolve_colleges_for_event(
 async def invalidate_events_cache() -> None:
     try:
         await redis_client.delete("public:registration:colleges")
-        keys = await redis_client.keys("events:*")
-        if keys:
-            await redis_client.delete(*keys)
+        await delete_matching("events:*")
     except Exception:
         logger.warning("Event cache invalidation failed", exc_info=True)
 
@@ -213,7 +211,7 @@ async def list_events_service(
     result = {"total": total, "items": items}
 
     try:
-        await redis_client.setex(cache_key, 300, json.dumps(result))
+        await redis_client.set(cache_key, json.dumps(result), ex=300)
     except Exception:
         logger.warning("Event list cache write failed for %s", cache_key, exc_info=True)
 
@@ -260,7 +258,7 @@ async def get_event_details_service(db: AsyncSession, event_id: int) -> dict:
     }
 
     try:
-        await redis_client.setex(cache_key, 300, json.dumps(result))
+        await redis_client.set(cache_key, json.dumps(result), ex=300)
     except Exception:
         logger.warning("Event detail cache write failed for %s", cache_key, exc_info=True)
 
@@ -334,12 +332,11 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
         ]
 
         for college in to_remove:
+            # Count registered graduates, not only ticket holders: a graduate who
+            # has an account but no ticket yet would otherwise be locked out.
             registered = await db.scalar(
-                select(func.count(TicketModel.id))
-                .join(GraduateModel, GraduateModel.id == TicketModel.graduate_id)
-                .where(
-                    TicketModel.event_id == event_id,
-                    GraduateModel.college_id == college.id,
+                select(func.count(GraduateModel.id)).where(
+                    GraduateModel.college_id == college.id
                 )
             )
             if registered:

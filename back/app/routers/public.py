@@ -99,7 +99,7 @@ async def list_registration_colleges(db: AsyncSession = Depends(get_db)):
         })
 
     try:
-        await redis_client.setex(cache_key, 60, json.dumps(output))
+        await redis_client.set(cache_key, json.dumps(output), ex=60)
     except Exception:
         logger.warning("Public college cache write failed", exc_info=True)
 

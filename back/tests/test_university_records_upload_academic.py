@@ -87,7 +87,7 @@ async def test_upload_major_under_different_college_reports_error(client, db, ma
     event = await make_event()
     college1 = await make_college(event.id, name="كلية 1")
     college2 = await make_college(event.id, name="كلية 2")
-    make_major(college2.id, name="حاسبات")
+    await make_major(college2.id, name="حاسبات")
     token = await _admin_token(client, make_admin)
 
     file_content = _make_xlsx([("300004", "رامي", "أ", "ب", "كلية 1", "ذكر", "90.00", "حاسبات")])

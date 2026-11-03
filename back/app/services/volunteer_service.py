@@ -10,6 +10,8 @@ personal, so the admin endpoints are admin-only and the export is audited
 """
 
 from datetime import UTC, datetime
+
+from sqlalchemy.exc import IntegrityError
 from io import BytesIO
 
 from fastapi import HTTPException, status
@@ -110,7 +112,22 @@ async def upsert_volunteer_answer_service(
             wants_responsibility=wants,
             has_experience=has_experience,
         )
-        db.add(row)
+        try:
+            # Savepoint: two first answers at once must not fail the request.
+            async with db.begin_nested():
+                db.add(row)
+                await db.flush()
+        except IntegrityError:
+            row = (
+                await db.execute(
+                    select(VolunteerAnswerModel)
+                    .where(VolunteerAnswerModel.graduate_id == graduate.id)
+                    .with_for_update()
+                )
+            ).scalar_one()
+            row.wants_responsibility = wants
+            row.has_experience = has_experience
+            row.updated_at = datetime.now(UTC)
     else:
         row.wants_responsibility = wants
         row.has_experience = has_experience

@@ -179,6 +179,7 @@ async def _import_into_event(
             "added": counts["added"],
             "updated": counts["updated"],
             "skipped": counts["skipped"],
+            "skipped_registered": counts["skipped_registered"],
             "error_count": 0,
         },
         "errors": [],

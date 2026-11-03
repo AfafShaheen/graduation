@@ -335,8 +335,13 @@ async def test_register_step2_same_token_twice_with_other_email_is_rejected(
         "/api/graduates/register",
         json=_register_body(signup_value, _email("second-account")),
     )
+    # The first account is still unverified, so the graduate is guided to finish
+    # activating it instead of being told the id is simply taken.
     assert second.status_code == 400
-    assert second.json()["detail"] == messages.UNIVERSITY_ID_ALREADY_REGISTERED
+    assert second.json()["detail"] == {
+        "code": "ACCOUNT_UNVERIFIED",
+        "message": messages.ACCOUNT_UNVERIFIED,
+    }
 
     rows = (
         await db.execute(
@@ -353,7 +358,12 @@ async def test_register_step2_rejects_university_id_registered_in_other_college(
     event = await make_event()
     college_a = await make_college(event.id)
     college_b = await make_college(event.id)
-    await make_graduate(college_a.id, university_id="800011", email=_email("in-college-a"))
+    await make_graduate(
+        college_a.id,
+        university_id="800011",
+        email=_email("in-college-a"),
+        email_verified=True,
+    )
 
     signup_value = create_registration_token(_payload(college_b.id, "800011"))
     resp = await client.post(

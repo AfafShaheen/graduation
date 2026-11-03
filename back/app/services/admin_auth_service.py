@@ -18,6 +18,7 @@ from app.core.security import (
     verify_password,
 )
 from app.services import refresh_token_service as refresh_store
+from app.services import login_throttle
 from jose import jwt
 import logging
 
@@ -26,41 +27,23 @@ logger = logging.getLogger(__name__)
 _DUMMY_HASH = get_password_hash(uuid.uuid4().hex)
 
 
-async def check_login_rate_limit(username: str) -> None:
-    key = f"admin_login_attempts:{username}"
-    try:
-        attempts = await redis_client.get(key)
-        if attempts and int(attempts) >= 5:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="تم إيقاف محاولات الدخول مؤقتاً بسبب تكرار الأخطاء. يرجى الانتظار 15 دقيقة."
-            )
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.warning("Redis admin login rate-limit check failed (%s); failing open", exc)
+async def check_login_rate_limit(value: str, ip: str | None = None) -> None:
+    identifier = value
+    await login_throttle.check("admin", identifier, ip)
 
 
-async def increment_login_failure(username: str) -> None:
-    key = f"admin_login_attempts:{username}"
-    try:
-        val = await redis_client.incr(key)
-        if val == 1:
-            await redis_client.expire(key, 900)  # 15 minutes TTL
-    except Exception as exc:
-        logger.warning("Redis admin login failure increment failed (%s); failing open", exc)
+async def increment_login_failure(value: str, ip: str | None = None) -> None:
+    identifier = value
+    await login_throttle.record_failure("admin", identifier, ip)
 
 
-async def reset_login_failure(username: str) -> None:
-    key = f"admin_login_attempts:{username}"
-    try:
-        await redis_client.delete(key)
-    except Exception as exc:
-        logger.warning("Redis admin login failure reset failed (%s); failing open", exc)
+async def reset_login_failure(value: str, ip: str | None = None) -> None:
+    identifier = value
+    await login_throttle.reset("admin", identifier, ip)
 
 
-async def login_admin(data: AdminLoginRequest, db: AsyncSession) -> dict:
-    await check_login_rate_limit(data.username)
+async def login_admin(data: AdminLoginRequest, db: AsyncSession, client_ip: str | None = None) -> dict:
+    await check_login_rate_limit(data.username, client_ip)
 
     stmt = select(AdminModel).where(AdminModel.username == data.username)
     result = await db.execute(stmt)
@@ -70,20 +53,20 @@ async def login_admin(data: AdminLoginRequest, db: AsyncSession) -> dict:
         # Run a dummy bcrypt check so an unknown username and a wrong password
         # take the same time (do not reveal which usernames exist).
         verify_password(data.password, _DUMMY_HASH)
-        await increment_login_failure(data.username)
+        await increment_login_failure(data.username, client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="اسم المستخدم أو كلمة السر غير صحيحة."
         )
 
     if not verify_password(data.password, admin.password_hash):
-        await increment_login_failure(data.username)
+        await increment_login_failure(data.username, client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="اسم المستخدم أو كلمة السر غير صحيحة."
         )
 
-    await reset_login_failure(data.username)
+    await reset_login_failure(data.username, client_ip)
 
     family = uuid.uuid4().hex
     token = create_access_token({
@@ -115,7 +98,7 @@ async def logout_admin(credentials, admin: dict) -> dict:
             now = datetime.now(UTC).timestamp()
             ttl = int(exp - now)
             if ttl > 0:
-                await redis_client.setex(f"token_blacklist:{jti}", ttl, "1")
+                await redis_client.set(f"token_blacklist:{jti}", "1", ex=ttl)
         # End the whole session: the refresh token must not outlive the logout.
         family = payload.get("family")
         if family:

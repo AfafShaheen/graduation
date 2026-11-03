@@ -51,7 +51,7 @@ async def check_redis_cooldown(identifier: str, action: str) -> None:
 async def set_redis_cooldown(identifier: str, action: str, seconds: int = 60) -> None:
     key = f"cooldown:{action}:{identifier}"
     try:
-        await redis_client.setex(key, seconds, "1")
+        await redis_client.set(key, "1", ex=seconds)
     except Exception as exc:
         logger.warning("Redis cooldown write failed (%s); failing open", exc)
 

@@ -31,7 +31,7 @@ async def store_refresh_token(
     """Register a refresh token's jti as active for ``days`` days (or ``ttl_seconds``)."""
     payload = json.dumps({"family": family, "role": role, "subject": subject})
     ttl = ttl_seconds if ttl_seconds is not None else int(timedelta(days=days).total_seconds())
-    await redis_client.setex(_refresh_key(jti), ttl, payload)
+    await redis_client.set(_refresh_key(jti), payload, ex=ttl)
     await redis_client.sadd(_family_key(family), jti)
     await redis_client.expire(_family_key(family), ttl)
 

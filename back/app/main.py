@@ -10,10 +10,16 @@ from app.core.database import get_db
 from app.core.redis import redis_client
 from app.routers import graduates, auth, admin_graduates, admin_university_records, admin_university_files, admin_auth, admin_events, admin_settings, admin_payments, admin_scanners, admin_stats, admin_export, admin_audit, admin_volunteers, scanner, graduate_auth, public, admin_majors, admin_roster
 
+# The interactive docs and the schema are for development only.
+_is_production = (os.getenv("APP_ENV") or "").strip().lower() == "production"
+
 app = FastAPI(
     title="Graduation Ticket System API",
     description="API for issuing and scanning graduation ceremony tickets.",
     version="1.0.0",
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
+    openapi_url=None if _is_production else "/openapi.json",
 )
 
 _VALIDATION_FIELD_LABELS = {
@@ -128,6 +134,15 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    return response
+
 
 from app.models import all_models  # noqa: F401  (registers every model, including MajorModel)
 from sqlalchemy.orm import configure_mappers; configure_mappers()

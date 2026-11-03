@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
+from app.services.login_throttle import client_ip
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import security, get_current_graduate
@@ -13,8 +14,8 @@ from app.models.graduate import GraduateModel
 router = APIRouter(prefix="/api/auth/graduate", tags=["Graduate Authentication"])
 
 @router.post("/login", response_model=GraduateTokenResponse, status_code=status.HTTP_200_OK)
-async def login(data: GraduateLoginRequest, db: AsyncSession = Depends(get_db)):
-    return await login_graduate(data, db)
+async def login(data: GraduateLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    return await login_graduate(data, db, client_ip(request))
 
 @router.post("/refresh", response_model=GraduateTokenResponse, status_code=status.HTTP_200_OK)
 async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):

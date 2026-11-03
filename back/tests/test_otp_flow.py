@@ -67,14 +67,14 @@ async def test_registration_at_minute_55_sets_expiry_ten_minutes(
     await make_university_record(event.id, college.id)
 
     payload = _registration_payload(college.id)
-    with freezegun.freeze_time("2030-06-01 12:55:00"):
+    with freezegun.freeze_time("2030-04-30 12:55:00"):
         registration_value = create_registration_token(payload)
         req = RegisterStep2Request(**_register_body(registration_value, _email("expires")))
         result = await register_step2_service(db, req)
 
     assert result["otp_sent"] is True
     row = await _latest_otp(db, result["graduate_id"])
-    assert row.expires_at == datetime(2030, 6, 1, 13, 5, 0, tzinfo=UTC)
+    assert row.expires_at == datetime(2030, 4, 30, 13, 5, 0, tzinfo=UTC)
 
 
 async def test_resend_blocked_immediately_then_allowed_after_cooldown(

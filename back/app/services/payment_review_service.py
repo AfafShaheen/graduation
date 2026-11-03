@@ -300,6 +300,8 @@ async def confirm_payment_service(
         ticket_id=ticket_id,
     )
 
+    # Commit first so a concurrent request cannot re-cache pre-commit data.
+    await db.commit()
     await invalidate_admin_cache()
     return {"status": "success", "message": messages.PAYMENT_CONFIRMED, "seat": seat_range}
 
@@ -355,5 +357,7 @@ async def reject_payment_service(
         ticket_id=ticket_id,
     )
 
+    # Commit first so a concurrent request cannot re-cache pre-commit data.
+    await db.commit()
     await invalidate_admin_cache()
     return {"status": "success", "message": messages.PAYMENT_REJECTED}

@@ -402,7 +402,7 @@ async def get_stats_v2_service(db: AsyncSession, event_id: int | None) -> Dict[s
     data = await compute_stats_v2(db, event_id)
     ttl = CACHE_TTL_EVENT_DAY_SECONDS if data["scope"]["event_day"] else CACHE_TTL_SECONDS
     try:
-        await redis_client.setex(key, ttl, json.dumps(data))
+        await redis_client.set(key, json.dumps(data), ex=ttl)
     except Exception:
         logger.warning("Stats v2 cache write failed for %s", key, exc_info=True)
     return data

@@ -170,6 +170,8 @@ async def select_ticket_service(
             db.add(existing)
             await db.flush()
             await db.refresh(existing)
+            # Commit first so a concurrent request cannot re-cache pre-commit data.
+            await db.commit()
             await invalidate_admin_cache()
         return existing
 
@@ -192,6 +194,8 @@ async def select_ticket_service(
         )
     await db.refresh(ticket)
 
+    # Commit first so a concurrent request cannot re-cache pre-commit data.
+    await db.commit()
     await invalidate_admin_cache()
     return ticket
 
@@ -292,6 +296,8 @@ async def submit_payment_service(
             detail=messages.TRANSACTION_ALREADY_USED,
         )
 
+    # Commit first so a concurrent request cannot re-cache pre-commit data.
+    await db.commit()
     await invalidate_admin_cache()
     return {"status": "PROCESSING", "message": messages.PAYMENT_SUBMITTED}
 

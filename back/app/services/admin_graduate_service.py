@@ -20,7 +20,7 @@ from app.services.seat_service import seat_labels
 from app.services.audit_log import ActorType, record_audit
 from app.services.college_links import colleges_of_event_filter, resolve_college_event
 from app.core import messages
-from app.core.redis import STATS_V2_CACHE_PREFIX, redis_client
+from app.core.redis import STATS_V2_CACHE_PREFIX, delete_matching, redis_client
 from app.core.sql_utils import escape_like
 
 logger = logging.getLogger(__name__)
@@ -29,10 +29,7 @@ logger = logging.getLogger(__name__)
 async def invalidate_admin_cache() -> None:
     """Invalidate all admin graduation and ticket related Redis caches."""
     try:
-        keys = await redis_client.keys("admin:graduates:*")
-        keys += await redis_client.keys(f"{STATS_V2_CACHE_PREFIX}:*")
-        if keys:
-            await redis_client.delete(*keys)
+        await delete_matching("admin:graduates:*", f"{STATS_V2_CACHE_PREFIX}:*")
     except Exception:
         logger.warning("Admin graduate cache invalidation failed", exc_info=True)
 
@@ -304,10 +301,12 @@ async def manual_check_in_service(db: AsyncSession, graduate_id: int, admin: dic
         )
 
     qr_res = await db.execute(
-        select(QrCodeModel).where(
+        select(QrCodeModel)
+        .where(
             QrCodeModel.ticket_id == ticket_id,
-            QrCodeModel.code_type == QrCodeTypeEnum.GRADUATE
+            QrCodeModel.code_type == QrCodeTypeEnum.GRADUATE,
         )
+        .with_for_update()
     )
     grad_qr = qr_res.scalar_one_or_none()
     if not grad_qr:
@@ -413,20 +412,24 @@ async def revert_scan_service(db: AsyncSession, graduate_id: int, admin: dict) -
     ticket_id = tickets[0].id
 
     qr_res = await db.execute(
-        select(QrCodeModel).where(
+        select(QrCodeModel)
+        .where(
             QrCodeModel.ticket_id == ticket_id,
-            QrCodeModel.code_type == QrCodeTypeEnum.GRADUATE
+            QrCodeModel.code_type == QrCodeTypeEnum.GRADUATE,
         )
+        .with_for_update()
     )
     grad_qr = qr_res.scalar_one_or_none()
     if not grad_qr:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="رمز الاستجابة السريعة للخريج غير موجود.")
 
     comp_res = await db.execute(
-        select(QrCodeModel).where(
+        select(QrCodeModel)
+        .where(
             QrCodeModel.ticket_id == ticket_id,
-            QrCodeModel.code_type == QrCodeTypeEnum.COMPANION
+            QrCodeModel.code_type == QrCodeTypeEnum.COMPANION,
         )
+        .with_for_update()
     )
     comp_qrs = comp_res.scalars().all()
 
@@ -467,7 +470,7 @@ async def revert_scan_service(db: AsyncSession, graduate_id: int, admin: dict) -
 
 
 async def revert_payment_service(db: AsyncSession, ticket_id: int, admin: dict) -> dict:
-    ticket = await db.get(TicketModel, ticket_id)
+    ticket = await db.get(TicketModel, ticket_id, with_for_update=True)
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على التذكرة.")
 

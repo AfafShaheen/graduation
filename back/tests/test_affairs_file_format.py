@@ -457,7 +457,7 @@ async def test_already_registered_is_checked_after_top_status(
         db, make_event, make_college, make_university_record, 2
     )
     await make_graduate(
-        college.id, university_id="410001", email="[REDACTED]"
+        college.id, university_id="410001", email="[REDACTED]", email_verified=True
     )
 
     # Correct identity + correct top choice -> the already-registered message.

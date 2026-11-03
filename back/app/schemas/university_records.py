@@ -29,6 +29,7 @@ class UniversityRecordUploadResponse(BaseModel):
     added: int
     updated: int
     skipped: int
+    skipped_registered: int = 0
     errors: List[UniversityRecordUploadError]
     summary: Optional[UniversityRecordUploadSummary] = None
 

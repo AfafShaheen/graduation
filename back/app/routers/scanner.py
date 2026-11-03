@@ -1,6 +1,7 @@
 """Scanner-facing endpoints: login, logout and the unified scan (FR-23/24/25)."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
+from app.services.login_throttle import client_ip
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -28,8 +29,8 @@ router = APIRouter(prefix="/api/scanner", tags=["Scanner"])
     response_model=ScannerTokenResponse,
     status_code=status.HTTP_200_OK,
 )
-async def login(data: ScannerLoginRequest, db: AsyncSession = Depends(get_db)):
-    return await login_scanner(data, db)
+async def login(data: ScannerLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    return await login_scanner(data, db, client_ip(request))
 
 
 @router.post(

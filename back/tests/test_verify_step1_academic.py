@@ -175,7 +175,7 @@ async def test_dense_ranking_and_top_ranks(client, make_event, make_college, mak
     major = await make_major(college.id)
 
     # GPAs: 95 (rank 1), 92 (rank 2), 92 (rank 2), 88 (rank 3), 80 (rank None / >3)
-    uids = ["R1", "R2a", "R2b", "R3", "R4"]
+    uids = ["9101", "9102", "9103", "9104", "9105"]
     gpas = ["95.00", "92.00", "92.00", "88.00", "80.00"]
     expected_ranks = [1, 2, 2, 3, None]
 

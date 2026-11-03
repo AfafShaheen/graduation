@@ -8,6 +8,7 @@ for 12 hours (D11) instead of the regular 2-hour access-token lifetime.
 """
 
 import logging
+from app.services import login_throttle
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -40,37 +41,19 @@ SCANNER_TOKEN_EXPIRE_HOURS = 12
 _DUMMY_HASH = get_password_hash(uuid.uuid4().hex)
 
 
-async def check_scanner_login_rate_limit(username: str) -> None:
-    key = f"scanner_login_attempts:{username}"
-    try:
-        attempts = await redis_client.get(key)
-        if attempts and int(attempts) >= 5:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="تم إيقاف محاولات الدخول مؤقتاً بسبب تكرار الأخطاء. يرجى الانتظار 15 دقيقة.",
-            )
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.warning("Redis scanner login rate-limit check failed (%s); failing open", exc)
+async def check_scanner_login_rate_limit(value: str, ip: str | None = None) -> None:
+    identifier = value
+    await login_throttle.check("scanner", identifier, ip)
 
 
-async def increment_scanner_login_failure(username: str) -> None:
-    key = f"scanner_login_attempts:{username}"
-    try:
-        val = await redis_client.incr(key)
-        if val == 1:
-            await redis_client.expire(key, 900)
-    except Exception as exc:
-        logger.warning("Redis scanner login failure increment failed (%s); failing open", exc)
+async def increment_scanner_login_failure(value: str, ip: str | None = None) -> None:
+    identifier = value
+    await login_throttle.record_failure("scanner", identifier, ip)
 
 
-async def reset_scanner_login_failure(username: str) -> None:
-    key = f"scanner_login_attempts:{username}"
-    try:
-        await redis_client.delete(key)
-    except Exception as exc:
-        logger.warning("Redis scanner login failure reset failed (%s); failing open", exc)
+async def reset_scanner_login_failure(value: str, ip: str | None = None) -> None:
+    identifier = value
+    await login_throttle.reset("scanner", identifier, ip)
 
 
 def create_scanner_access_token(scanner: ScannerModel, family: str | None = None) -> str:
@@ -93,8 +76,8 @@ def create_scanner_access_token(scanner: ScannerModel, family: str | None = None
     )
 
 
-async def login_scanner(data: ScannerLoginRequest, db: AsyncSession) -> dict:
-    await check_scanner_login_rate_limit(data.username)
+async def login_scanner(data: ScannerLoginRequest, db: AsyncSession, client_ip: str | None = None) -> dict:
+    await check_scanner_login_rate_limit(data.username, client_ip)
 
     result = await db.execute(
         select(ScannerModel).where(ScannerModel.username == data.username)
@@ -103,7 +86,7 @@ async def login_scanner(data: ScannerLoginRequest, db: AsyncSession) -> dict:
 
     if not candidates:
         verify_password(data.password, _DUMMY_HASH)
-        await increment_scanner_login_failure(data.username)
+        await increment_scanner_login_failure(data.username, client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=messages.SCANNER_LOGIN_FAILED,
@@ -119,7 +102,7 @@ async def login_scanner(data: ScannerLoginRequest, db: AsyncSession) -> dict:
         matches = [scanner for scanner in matches if scanner.event_id == data.event_id]
 
     if not matches:
-        await increment_scanner_login_failure(data.username)
+        await increment_scanner_login_failure(data.username, client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=messages.SCANNER_LOGIN_FAILED,
@@ -152,7 +135,7 @@ async def login_scanner(data: ScannerLoginRequest, db: AsyncSession) -> dict:
 
     scanner = matches[0]
 
-    await reset_scanner_login_failure(data.username)
+    await reset_scanner_login_failure(data.username, client_ip)
 
     family = uuid.uuid4().hex
     access_value = create_scanner_access_token(scanner, family)
@@ -182,7 +165,7 @@ async def logout_scanner(credentials, scanner: ScannerModel) -> dict:
             now = datetime.now(UTC).timestamp()
             ttl = int(exp - now)
             if ttl > 0:
-                await redis_client.setex(f"token_blacklist:{jti}", ttl, "1")
+                await redis_client.set(f"token_blacklist:{jti}", "1", ex=ttl)
         # End the whole session: the refresh token must not outlive the logout.
         family = payload.get("family")
         if family:
