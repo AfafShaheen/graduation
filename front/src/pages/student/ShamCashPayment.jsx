@@ -6,8 +6,8 @@ import '../../style/BrandHeader.css';
 import { getPaymentInfo, submitPayment, getShamcashQr } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import { parseAmount, formatAmount } from '../../utils/amount.js';
-import { CEREMONY_TITLE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
+import PaymentConfirmDialog from '../../components/PaymentConfirmDialog';
 import { validateTransactionId } from '../../utils/payments';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 
@@ -73,6 +73,8 @@ export default function ShamCashPayment({ onBack }) {
   const [qrSrc, setQrSrc] = useState(null);
 
   const [copied, setCopied] = useState(false);
+  const [noteCopied, setNoteCopied] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [formData, setFormData] = useState({ transactionId: '', transferAmount: '', senderName: '' });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -124,14 +126,12 @@ export default function ShamCashPayment({ onBack }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCopy = async () => {
-    const accountValue = info?.account_number ? String(info.account_number) : '';
-    if (!accountValue) return;
+  const copyText = async (text) => {
     try {
-      await navigator.clipboard.writeText(accountValue);
+      await navigator.clipboard.writeText(text);
     } catch {
       const el = document.createElement('textarea');
-      el.value = accountValue;
+      el.value = text;
       el.style.position = 'fixed';
       el.style.opacity = '0';
       document.body.appendChild(el);
@@ -143,8 +143,21 @@ export default function ShamCashPayment({ onBack }) {
       }
       document.body.removeChild(el);
     }
+  };
+
+  const handleCopy = async () => {
+    const accountValue = info?.account_number ? String(info.account_number) : '';
+    if (!accountValue) return;
+    await copyText(accountValue);
     setCopied(true);
     setTimeout(() => mounted.current && setCopied(false), 2000);
+  };
+
+  const handleCopyNote = async () => {
+    if (!info?.note_text) return;
+    await copyText(info.note_text);
+    setNoteCopied(true);
+    setTimeout(() => mounted.current && setNoteCopied(false), 2000);
   };
 
   const handleInputChange = (e) => {
@@ -179,6 +192,11 @@ export default function ShamCashPayment({ onBack }) {
       return;
     }
 
+    setConfirming(true);
+  };
+
+  const doSubmit = async () => {
+    if (submitting) return;
     const accessValue = getGraduateToken();
     if (!accessValue) {
       navigate('/login');
@@ -222,7 +240,10 @@ export default function ShamCashPayment({ onBack }) {
         setSubmitError(err?.message || 'تعذّر إرسال بيانات الدفع، حاول لاحقاً.');
       }
     } finally {
-      if (mounted.current) setSubmitting(false);
+      if (mounted.current) {
+        setSubmitting(false);
+        setConfirming(false);
+      }
     }
   };
 
@@ -301,7 +322,17 @@ export default function ShamCashPayment({ onBack }) {
               {info.note_instruction && (
                 <div className="sc-notice-box">
                   <span className="sc-symbol sc-notice-icon">info</span>
-                  <p className="sc-notice-text">{info.note_instruction}</p>
+                  <div className="sc-notice-body">
+                    <p className="sc-notice-text">{info.note_instruction}</p>
+                    {info.note_text && (
+                      <div className="sc-note-copy">
+                        <span className="sc-note-copy-text">{info.note_text}</span>
+                        <button type="button" className="sc-note-copy-btn" onClick={handleCopyNote}>
+                          {noteCopied ? 'تم النسخ' : 'نسخ'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -420,15 +451,23 @@ export default function ShamCashPayment({ onBack }) {
                     <span>تغيير الباقة والرجوع لاختيار التذكرة</span>
                   </button>
                 </form>
+
+                <PaymentConfirmDialog
+                  open={confirming}
+                  busy={submitting}
+                  onCancel={() => setConfirming(false)}
+                  onConfirm={doSubmit}
+                  rows={[
+                    { label: 'رقم العملية', value: normalizeTx(formData.transactionId), ltr: true },
+                    { label: 'المبلغ المحوّل', value: `${Number(parseAmount(formData.transferAmount) || 0).toLocaleString('en-US')} ل.س` },
+                    { label: 'اسم المرسل', value: formData.senderName.trim().replace(/\s+/g, ' ') },
+                  ]}
+                />
               </div>
             </section>
           )}
 
-          <footer className="sc-footer">
-            <HelpFooter />
-            <p className="sc-footer-main">{CEREMONY_TITLE}</p>
-            <p className="sc-footer-sub">إصدار البطاقة الإلكترونية مؤمَّن ومعتمد رسمياً</p>
-          </footer>
+          <GraduateFooter />
         </div>
       </main>
     </div>

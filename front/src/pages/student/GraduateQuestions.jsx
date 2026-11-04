@@ -5,8 +5,7 @@ import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import { getVolunteerAnswers, saveVolunteerAnswers } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
-import { CEREMONY_TITLE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
 
 /* نص السؤالين: عدّلهما من هنا */
 const QUESTIONS = [
@@ -188,10 +187,7 @@ export default function GraduateQuestions({ onDone }) {
         </div>
 
         {/* التذييل */}
-        <div style={{ textAlign: 'center', marginTop: 'auto', padding: '16px 16px 8px' }}>
-          <HelpFooter />
-          <p className="footer-copy">{CEREMONY_TITLE}</p>
-        </div>
+        <GraduateFooter />
       </main>
     </div>
   );

@@ -1,0 +1,16 @@
+.gf {
+  margin-top: auto;
+  padding: 16px 16px 12px;
+  text-align: center;
+}
+.gf-title {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #594138;
+}
+.gf-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #7f655a;
+}

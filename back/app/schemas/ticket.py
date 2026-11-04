@@ -61,6 +61,8 @@ class PaymentInfoResponse(BaseModel):
     account_number: Optional[str] = None
     qr_image_url: Optional[str] = None
     note_instruction: str
+    # ready to paste into the Sham Cash note field: first name, last name, university id
+    note_text: Optional[str] = None
 
 
 class PaymentSubmitRequest(BaseModel):

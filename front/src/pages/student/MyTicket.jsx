@@ -8,7 +8,8 @@ import { getMyProfile } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
 import { CEREMONY_TITLE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
+import { ID_PROOF_TEXT } from '../../config/graduateTexts';
 import { downloadQrPng, downloadQrPngs, qrFileName } from '../../utils/qrDownload';
 
 const formatEventDate = (value) => {
@@ -248,14 +249,7 @@ export default function MyTicket() {
             <span className="tk-symbol tk-id-reminder-icon" aria-hidden="true">badge</span>
             <div className="tk-id-reminder-body">
               <h3 className="tk-id-reminder-title">لا تنسَ إحضار إثبات شخصيتك</h3>
-              <p className="tk-id-reminder-text">
-                أحضر معك <strong>هويتك الشخصية</strong> أو <strong>إخراج قيد</strong> أو أي وثيقة
-                رسمية تثبت أنك الخريج صاحب هذه التذكرة، فالتحقق من هويتك يتم عند الدخول.
-              </p>
-              <p className="tk-id-reminder-text">
-                <strong>تُستلم هويتك أو إخراج القيد عند الدخول</strong> ويُسلَّم لك لباس التخرج، وتُعاد إليك بعد
-                انتهاء الحفل وإرجاع اللباس.
-              </p>
+              <p className="tk-id-reminder-text">{ID_PROOF_TEXT}</p>
             </div>
           </section>
 
@@ -353,10 +347,7 @@ export default function MyTicket() {
             </p>
           </div>
 
-          <footer className="tk-footer">
-            <HelpFooter />
-            <p className="tk-footer-main">{CEREMONY_TITLE}</p>
-          </footer>
+          <GraduateFooter />
         </div>
       </main>
     </div>

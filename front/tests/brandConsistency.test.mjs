@@ -63,6 +63,8 @@ test('every page that showed the old header now imports the brand constants', ()
   ];
   for (const rel of pages) {
     const text = readFileSync(join(srcDir, rel), 'utf8');
+    // the graduate pages get the title and the badge from the shared header and footer
+    if (/<StageHeader|<GraduateFooter/.test(text)) continue;
     assert.ok(/from\s+['"][^'"]*config\/brand['"]/.test(text), `${rel} does not import config/brand`);
     assert.ok(/CEREMONY_TITLE|BATCH_BADGE/.test(text), `${rel} does not use brand constants`);
   }

@@ -7,7 +7,7 @@ import { loginGraduate } from '../../api/graduate';
 import { setGraduateSession, setVerificationToken, setGraduateEmail } from '../../api/session';
 import { extractVerificationToken } from '../../utils/extractVerificationToken.js';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -296,11 +296,7 @@ export default function Login({
           </section>
 
           {/* تذييل الصفحة */}
-          <footer className="lg-footer">
-            <HelpFooter />
-            <p className="lg-footer-org">{CEREMONY_TITLE}</p>
-            <p className="lg-footer-copy">منظومة الحجز والتحقق الإلكتروني لتذاكر التخرج © 2026</p>
-          </footer>
+          <GraduateFooter />
         </div>
       </main>
     </div>

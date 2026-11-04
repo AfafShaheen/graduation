@@ -8,8 +8,7 @@ import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
 import { setRegistrationToken } from '../../api/session';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 import { NAME_REGEX } from '../../utils/validators.js';
-import { CEREMONY_TITLE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
 
 /* أرقام فقط، بدون تحديد عدد معين */
 const DIGITS_ONLY = /^[0-9]+$/;
@@ -567,9 +566,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             </button>
           </p>
 
-          <HelpFooter />
-
-          <p className="footer-copy">{CEREMONY_TITLE}</p>
+          <GraduateFooter />
         </div>
       </main>
     </div>

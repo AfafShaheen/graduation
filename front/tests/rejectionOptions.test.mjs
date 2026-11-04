@@ -79,9 +79,8 @@ test('OrderRejected.jsx static checks: D6 wording in, old claims out, wiring kep
   assert.ok(src.includes('RejectionOptions'), 'page must use RejectionOptions');
   assert.ok(src.includes('rejectionReasonText'), 'page must use rejectionReasonText');
   // HelpFooter imported exactly once and rendered exactly once (graduate pages rule)
-  assert.equal((src.match(/from '.*HelpFooter'/g) || []).length, 1);
-  assert.equal((src.match(/<HelpFooter/g) || []).length, 1);
+  assert.equal((src.match(/from '.*GraduateFooter'/g) || []).length, 1);
+  assert.equal((src.match(/<GraduateFooter/g) || []).length, 1);
   // kept features
   assert.ok(src.includes('or-retry-link'), 'reload button must stay');
-  assert.ok(src.includes('CEREMONY_TITLE'), 'footer brand string must stay');
 });

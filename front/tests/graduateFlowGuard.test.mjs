@@ -23,8 +23,7 @@ test('ShamCashPayment keeps the transaction-number fixes, the brand, the help fo
   assert.match(page, /validateTransactionId/);
   assert.match(page, /inputMode="text"/);
   assert.doesNotMatch(page, /toUpperCase/);
-  assert.match(page, /CEREMONY_TITLE/);
-  assert.match(page, /<HelpFooter/);
+  assert.match(page, /<GraduateFooter/);
   assert.match(page, /navigate\('\/tickets'\)/);
   assert.match(page, /sc-secondary-btn/);
   assert.match(read('style/ShamCashPayment.css'), /sc-secondary-btn/);

@@ -10,7 +10,7 @@ import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegi
 import { phoneError, passwordError } from "../../utils/validators";
 import { cleanServerMessage } from "../../utils/cleanServerMessage.js";
 import { CEREMONY_TITLE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -382,43 +382,7 @@ export default function GraduationFormStep2({
         </div>
 
         {/* رابط تسجيل الدخول */}
-        <div style={{ textAlign: "center", margin: "16px 0" }}>
-          <p style={{ fontSize: "13px", color: "#725b51", margin: 0 }}>
-            هل لديك حساب مسبقاً؟{" "}
-            <Link
-              to="/login"
-              className="login-link"
-              onClick={(e) => {
-                if (onNavigateToLogin) {
-                  e.preventDefault();
-                  onNavigateToLogin();
-                }
-              }}
-            >
-              سجّل دخولك &lsaquo;
-             </Link>
-          </p>
-        </div>
-
-        {/* التذييل */}
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: "auto",
-            padding: "8px 16px",
-          }}
-        >
-          <HelpFooter />
-
-          <p className="footer-copy">
-            {CEREMONY_TITLE}
-          </p>
-          <p
-            style={{ fontSize: "10px", color: "#7F655A", margin: "2px 0 0 0" }}
-          >
-            منظومة الحفلات والبطاقات الرقمية 2026
-          </p>
-        </div>
+        <GraduateFooter />
       </main>
     </div>
   );

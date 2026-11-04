@@ -88,6 +88,7 @@ async def _build_payment_info(
         "account_number": account,
         "qr_image_url": "/api/settings/shamcash-qr" if qr_image else None,
         "note_instruction": messages.payment_note_instruction(graduate.university_id),
+        "note_text": messages.payment_note_text(graduate),
     }
 
 

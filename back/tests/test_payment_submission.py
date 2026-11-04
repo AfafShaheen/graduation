@@ -64,6 +64,8 @@ async def test_payment_info_when_awaiting(
     body = response.json()
     assert body["amount"] == "100000.00"
     assert graduate.university_id in body["note_instruction"]
+    # the fixture has only a full name, so the note falls back to it
+    assert body["note_text"] == f"{graduate.full_name} {graduate.university_id}"
     assert body.get("qr_image_url") is None
 
 

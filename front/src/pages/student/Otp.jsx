@@ -5,7 +5,7 @@ import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
 import { verifyOtp, resendOtp, changeEmail, forgotPassword } from '../../api/graduate';
 import { setGraduateSession, clearVerificationToken, setGraduateEmail, getVerificationToken, getGraduateEmail, setResetCode } from '../../api/session';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 
@@ -558,7 +558,7 @@ export default function Otp({
             </form>
           </div>
 
-          <HelpFooter />
+          <GraduateFooter />
         </div>
 
         {/* الشريط السفلي والزر */}

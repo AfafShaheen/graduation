@@ -6,9 +6,10 @@ export const ID_PROOF_TEXT =
 
 export const NO_REFUND_TEXT = 'بعد تأكيد الدفع لا يمكن تعديل التذكرة أو إلغاؤها، ولا يُسترجع المبلغ.';
 
+// the payment page shows the same sentence from the server, with the graduate's own number
 export const PAYMENT_NOTE_TEXT =
-  'اكتب في خانة «ملاحظات» أو «Note»: الاسم والكنية والرقم الجامعي (مثال: محمد المحمد 1234). بدون هذه الملاحظة لن يتم تأكيد الدفع.';
+  'بعد كتابة المبلغ في شام كاش ستظهر خانة «ملاحظات» أو «Note»: اكتب فيها الاسم والكنية والرقم الجامعي (مثال: محمد المحمد 1234). بدون هذه الملاحظة لن يتم تأكيد الدفع.';
 
-export const QR_REQUIRED_TEXT = 'من لا يملك رمز QR لن يُسمح له بدخول الحفل.';
+export const QR_REQUIRED_TEXT = 'من لا يملك رمز QR لن يُسمح له بدخول الحفل، والاتحاد غير مسؤول عن ذلك.';
 
 export const GROUP_TEXT = 'ننشر في مجموعة واتساب الحفل مكان الحفل وأي تعليمات طارئة.';

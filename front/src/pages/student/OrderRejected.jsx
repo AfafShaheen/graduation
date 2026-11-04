@@ -5,8 +5,7 @@ import '../../style/OrderRejected.css';
 import '../../style/BrandHeader.css';
 import useMyTicket from '../../hooks/useMyTicket';
 import { getPublicSettings } from '../../api/graduate';
-import { CEREMONY_TITLE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
 import RejectionOptions from '../../components/RejectionOptions';
 import { rejectionReasonText } from '../../utils/rejection';
 
@@ -95,11 +94,7 @@ export default function OrderRejected() {
             />
           )}
 
-          <HelpFooter phone={contactPhone} />
-
-          <footer className="or-footer">
-            <p className="or-footer-text">{CEREMONY_TITLE}</p>
-          </footer>
+          <GraduateFooter />
         </div>
       </main>
     </div>

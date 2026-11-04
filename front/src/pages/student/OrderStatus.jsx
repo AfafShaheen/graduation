@@ -6,8 +6,8 @@ import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { companionsLabel } from '../../utils/companions';
-import { CEREMONY_TITLE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
+import { QR_REQUIRED_TEXT, GROUP_TEXT } from '../../config/graduateTexts';
 import { routeForTicket, ORDER_POLL_MS } from '../../utils/ticketRoute';
 
 /* تنسيق التاريخ والوقت بالعربية مع أرقام إنجليزية */
@@ -99,7 +99,7 @@ export default function OrderStatus() {
                   <strong>«مؤكدة»</strong> وأن <strong>رمز QR</strong> ظهر لك.
                 </p>
                 <p className="os-critical-text strong">
-                  من لا يملك رمز QR لن يُسمح له بدخول الحفل، والاتحاد غير مسؤول عن ذلك.
+                  {QR_REQUIRED_TEXT}
                 </p>
                 <p className="os-critical-text">
                   وإن تأخّر طلبك أو واجهتك أي مشكلة، راجعنا قبل موعد الحفل بوقت كافٍ.
@@ -176,7 +176,7 @@ export default function OrderStatus() {
                       </div>
 
                       <p className="os-community-text">
-                        تابع آخر إعلانات البروفات ومواعيد استلام روب التخرج أولاً بأول عبر مجموعة واتساب الرسمية.
+                        {GROUP_TEXT}
                       </p>
 
                       <a
@@ -203,11 +203,7 @@ export default function OrderStatus() {
           )}
         </div>
 
-        <footer className="os-footer">
-          <HelpFooter />
-          <p className="os-footer-main">{CEREMONY_TITLE}</p>
-          <p className="os-footer-sub">لجنة تنظيم وتنسيق حفلات التخرج المركزية</p>
-        </footer>
+        <GraduateFooter />
       </main>
     </div>
   );

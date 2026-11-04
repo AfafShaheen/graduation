@@ -84,7 +84,10 @@ SCANNER_NOT_FOUND = "لم يتم العثور على الماسح الضوئي"
 SCANNER_DELETED = "تم حذف حساب الماسح الضوئي"
 EVENT_NOT_FOUND = "لم يتم العثور على الحفل"
 INVALID_IMAGE = "الصورة غير صالحة، المسموح PNG أو JPEG أو WEBP بحد أقصى 1 ميغابايت"
-TICKET_INFO_TEXT = "التذكرة تمنحك أنت ومرافقيك دخول حفل التخرج. لا يمكن تعديل التذكرة أو استرجاع قيمتها بعد تأكيد الدفع."
+TICKET_INFO_TEXT = (
+    "التذكرة تمنحك أنت ومرافقيك دخول حفل التخرج. "
+    "بعد تأكيد الدفع لا يمكن تعديل التذكرة أو إلغاؤها، ولا يُسترجع المبلغ."
+)
 SETTINGS_UPDATED = "تم تحديث الإعدادات بنجاح"
 SETTINGS_ACCOUNT_INVALID = (
     "رقم الحساب يقبل أحرفاً وأرقاماً إنجليزية وشرطة (-) فقط (من 4 إلى 100 خانة) بدون مسافات"
@@ -128,11 +131,17 @@ def append_contact_phone(message: str, contact_phone: str | None) -> str:
 def payment_note_instruction(university_id: str) -> str:
     """Instruction shown to the graduate before transferring (SRS FR-9)."""
     return (
-        "بعد مسح حساب شام كاش وكتابة المبلغ المراد تحويله، ستظهر خانة باسم "
-        "«ملاحظات» أو «Note». يرجى كتابة الاسم والكنية والرقم الجامعي فيها. "
-        f"مثال: محمد المحمد {university_id}. "
-        "في حال عدم وجود هذه الملاحظة، لن يتم تأكيد عملية الدفع."
+        "بعد كتابة المبلغ في شام كاش ستظهر خانة «ملاحظات» أو «Note»: "
+        "اكتب فيها الاسم والكنية والرقم الجامعي "
+        f"(مثال: محمد المحمد {university_id}). "
+        "بدون هذه الملاحظة لن يتم تأكيد الدفع."
     )
+
+
+def payment_note_text(graduate) -> str:
+    """The note the graduate pastes into Sham Cash: name, last name and university id."""
+    name = " ".join(part for part in (graduate.first_name, graduate.last_name) if part) or graduate.full_name
+    return f"{name} {graduate.university_id}".strip()
 
 
 # --- Audit log viewer (item 3.5.2, D22) --------------------------------------

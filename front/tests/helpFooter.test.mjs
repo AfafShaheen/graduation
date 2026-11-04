@@ -20,10 +20,11 @@ test("every graduate page imports and renders HelpFooter exactly once", () => {
   assert.ok(files.length >= 12, `expected at least 12 student pages, got ${files.length}`);
   for (const f of files) {
     const src = readFileSync(join(studentDir, f), "utf8");
-    const imports = (src.match(/import\s+HelpFooter\s+from\s+["'].*components\/HelpFooter["']/g) || []).length;
-    const renders = (src.match(/<HelpFooter\b/g) || []).length;
-    assert.equal(imports, 1, `${f} must import HelpFooter exactly once`);
-    assert.equal(renders, 1, `${f} must render <HelpFooter /> exactly once`);
+    // GraduateFooter wraps HelpFooter (help block + ceremony name + committee line)
+    const imports = (src.match(/import\s+(HelpFooter|GraduateFooter)\s+from\s+["'].*components\/(HelpFooter|GraduateFooter)["']/g) || []).length;
+    const renders = (src.match(/<(HelpFooter|GraduateFooter)\b/g) || []).length;
+    assert.equal(imports, 1, `${f} must import the footer exactly once`);
+    assert.equal(renders, 1, `${f} must render the footer exactly once`);
   }
 });
 

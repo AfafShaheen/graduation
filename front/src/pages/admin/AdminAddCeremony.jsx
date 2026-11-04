@@ -741,7 +741,7 @@ export default function AdminAddCeremony({
               <p className="add-cer-hint with-icon">
                 <span className="add-cer-symbol">info</span>
                 <span>
-                  يصل الرابط تلقائياً إلى الطالب بعد تثبيت الدفع من أجل التنسيق واستلام أرواب التخرج ومواعيد البروفات.
+                  يصل الرابط تلقائياً إلى الخريج بعد تثبيت الدفع، وننشر فيه مكان الحفل وأي تعليمات طارئة.
                 </span>
               </p>
             </div>
