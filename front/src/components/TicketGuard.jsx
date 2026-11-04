@@ -4,6 +4,7 @@ import { pendingGuideFor } from "../utils/guideAck";
 import { guidePath } from "../utils/stage";
 import { routeForTicket } from "../utils/ticketRoute";
 import useMyTicket from "../hooks/useMyTicket";
+import PageSkeleton from "./PageSkeleton";
 
 export { routeForTicket };
 
@@ -36,11 +37,7 @@ function TicketGuardInner({ children }) {
     return <Navigate to="/login" replace />;
   }
   if (loading) {
-    return (
-      <div className="route-guard-loading" role="status">
-        جارٍ التحميل...
-      </div>
-    );
+    return <PageSkeleton />;
   }
   if (error) {
     return <Navigate to="/login" replace />;

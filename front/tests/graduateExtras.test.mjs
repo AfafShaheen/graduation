@@ -122,3 +122,15 @@ test('the review and the rejected pages say the ceremony is over', () => {
   }
   assert.match(read('components/EndedNotice.jsx'), /انتهى الحفل\./);
 });
+
+test('each companion code can be sent through the share sheet, with a download fallback', async () => {
+  const { shareQrPng } = await import('../src/utils/qrDownload.js');
+  assert.equal(typeof shareQrPng, 'function');
+  assert.equal(await shareQrPng(null, 'x.png', []), 'cancelled');
+  const page = read('pages/student/MyTicket.jsx');
+  assert.ok(page.includes('إرسال لمرافقك'));
+  assert.ok(page.includes('shareOne(companionItems[idx])'));
+  const util = read('utils/qrDownload.js');
+  assert.ok(util.includes('navigator.canShare'));
+  assert.ok(util.includes("'downloaded'"));
+});

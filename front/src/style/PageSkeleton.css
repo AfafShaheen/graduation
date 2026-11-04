@@ -1,0 +1,19 @@
+.skel { min-height: 100dvh; background: #fcf6ed; display: flex; flex-direction: column; }
+.skel-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skel-header { height: 112px; background: #124d44; border-top: 3px solid #ca4b00; }
+.skel-body { width: 100%; max-width: 640px; margin: 0 auto; padding: 14px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
+.skel-tabs, .skel-card, .skel-line {
+  border-radius: 16px;
+  background: linear-gradient(90deg, #efe6d5 25%, #f8f0e1 50%, #efe6d5 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+}
+.skel-tabs { height: 56px; }
+.skel-card { height: 120px; }
+.skel-card.tall { height: 180px; }
+.skel-line { height: 14px; border-radius: 7px; }
+.skel-line.short { width: 60%; }
+@keyframes skel-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .skel-tabs, .skel-card, .skel-line { animation: none; }
+}

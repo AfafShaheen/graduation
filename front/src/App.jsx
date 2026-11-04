@@ -17,6 +17,7 @@ import GraduateQuestions from "./pages/student/GraduateQuestions";
 import Login from "./pages/student/Login";
 import GraduateGuide from "./pages/student/GraduateGuide";
 import StageGuide from "./pages/student/StageGuide";
+import PageSkeleton from "./components/PageSkeleton";
 import ResetPassword from "./pages/student/ResetPassword";
 import SelectTicket from "./pages/student/SelectTicket";
 import ShamCashPayment from "./pages/student/ShamCashPayment";
@@ -135,7 +136,7 @@ function App() {
 
   return (
     <AdminStatsProvider pendingPayments={pendingPayments} refreshPendingPayments={refreshPendingPayments}>
-      <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: 24, textAlign: "center" }}>جارٍ التحميل...</div>}>
+      <Suspense fallback={<PageSkeleton />}>
       <Routes>
         {/* ===== التسجيل ===== */}
         <Route

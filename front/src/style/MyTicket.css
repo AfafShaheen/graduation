@@ -713,3 +713,6 @@
 }
 .tk-welcome-text { margin: 0; font-size: 14px; font-weight: 800; line-height: 1.8; }
 .tk-countdown { margin: 6px 0 0; font-size: 13px; font-weight: 700; color: #8a3200; }
+
+.tk-share-note { margin: 10px 0 0; font-size: 13px; line-height: 1.7; color: #124d44; font-weight: 700; }
+.tk-qr-share { margin-top: 6px; }

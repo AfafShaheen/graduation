@@ -13,7 +13,7 @@ import { ID_PROOF_TEXT } from '../../config/graduateTexts';
 import { welcomeText } from '../../utils/welcome';
 import { daysUntil, eventCountdownText } from '../../utils/countdown';
 import { ceremonyEnded } from '../../utils/ceremonyState';
-import { downloadQrPng, downloadQrPngs, qrFileName } from '../../utils/qrDownload';
+import { downloadQrPng, downloadQrPngs, shareQrPng, qrFileName } from '../../utils/qrDownload';
 
 const formatEventDate = (value) => {
   if (!value) return '';
@@ -30,10 +30,13 @@ const formatEventTime = (value) => {
   return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
 };
 
+const SHARE_TEXT = 'رمز دخولك إلى حفل التخرج. أبرزه عند الباب بعد دخول الخريج.';
+
 export default function MyTicket() {
   const { data, loading, error, reload } = useMyTicket();
   const [profile, setProfile] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const [shareNote, setShareNote] = useState('');
   const qrRefs = useRef({});
 
   useEffect(() => {
@@ -133,6 +136,11 @@ export default function MyTicket() {
   };
   const downloadOne = (item) => {
     downloadQrPng(svgFor(item.codeId), item.filename, item.lines);
+  };
+  // sends the companion his own code through the phone's share sheet (WhatsApp...)
+  const shareOne = async (item) => {
+    const result = await shareQrPng(svgFor(item.codeId), item.filename, item.lines, SHARE_TEXT);
+    setShareNote(result === 'downloaded' ? 'تم تنزيل الصورة على جهازك، أرسلها لمرافقك من الاستديو أو من واتساب.' : '');
   };
 
   return (
@@ -318,9 +326,20 @@ export default function MyTicket() {
                       <span className="tk-symbol" style={{ fontSize: '16px' }}>download</span>
                       <span>تنزيل كصورة</span>
                     </button>
+                    <button
+                      type="button"
+                      className="tk-qr-download tk-qr-share"
+                      onClick={() => shareOne(companionItems[idx])}
+                    >
+                      <span className="tk-symbol" style={{ fontSize: '16px' }}>share</span>
+                      <span>إرسال لمرافقك</span>
+                    </button>
                   </div>
                 ))}
               </div>
+              {shareNote && (
+                <p className="tk-share-note" role="status">{shareNote}</p>
+              )}
             </section>
           )}
 

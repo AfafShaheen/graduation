@@ -32,8 +32,8 @@ function triggerDownload(blob, filename) {
  * يحوّل عنصر SVG لرمز QR إلى PNG وينزّله.
  * lines: سطور نص تُكتب تحت الرمز (الأول عريض).
  */
-export async function downloadQrPng(svg, filename, lines = []) {
-  if (!svg) return;
+async function renderQrPng(svg, lines = []) {
+  if (!svg) return null;
   const img = await svgToImage(svg);
   const qrSize = 720;
   const pad = 72; // هامش أبيض حول الرمز
@@ -56,8 +56,33 @@ export async function downloadQrPng(svg, filename, lines = []) {
     ctx.fillText(String(text), canvas.width / 2, qrSize + pad * 2 + 8 + lineHeight * (i + 0.7));
   });
 
-  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+
+export async function downloadQrPng(svg, filename, lines = []) {
+  const blob = await renderQrPng(svg, lines);
   if (blob) triggerDownload(blob, filename);
+}
+
+/**
+ * Opens the phone's share sheet (WhatsApp, Telegram...) with the QR image so the graduate can send
+ * it to the companion. Where files cannot be shared it downloads the image instead.
+ * Returns 'shared', 'downloaded' or 'cancelled'.
+ */
+export async function shareQrPng(svg, filename, lines = [], text = '') {
+  const blob = await renderQrPng(svg, lines);
+  if (!blob) return 'cancelled';
+  const file = new File([blob], filename, { type: 'image/png' });
+  if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], text });
+      return 'shared';
+    } catch (err) {
+      return err && err.name === 'AbortError' ? 'cancelled' : 'downloaded';
+    }
+  }
+  triggerDownload(blob, filename);
+  return 'downloaded';
 }
 
 /** ينزّل عدة صور واحدة تلو الأخرى (بفاصل قصير حتى لا يحجبها المتصفح). */
