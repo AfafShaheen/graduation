@@ -1,6 +1,6 @@
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import GraduateGuide from './GraduateGuide';
-import { hasGraduateSession, getGraduateEmail } from '../../api/session';
+import { hasGraduateSession, getGraduateId } from '../../api/session';
 import { GUIDE_STAGES, pathForStage, guidePath } from '../../utils/stage';
 import { ackGuide, hasAckedGuide } from '../../utils/guideAck';
 
@@ -24,7 +24,7 @@ export default function StageGuide() {
   if (!hasGraduateSession()) return <Navigate to="/login" replace />;
   if (!GUIDE_STAGES.includes(stage)) return <Navigate to="/tickets" replace />;
 
-  const email = getGraduateEmail();
+  const email = getGraduateId();
   const acked = hasAckedGuide(email, stage);
   const fallback = pathForStage(stage);
 

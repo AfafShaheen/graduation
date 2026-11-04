@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { Buffer } from 'node:buffer';
 import { stageForPath, pathForStage, guidePath, GUIDE_STAGES } from '../src/utils/stage.js';
 import { ackGuide, hasAckedGuide, pendingGuideFor, ackKey } from '../src/utils/guideAck.js';
 
@@ -38,7 +39,7 @@ test('a blocked storage never traps the graduate in a guide', () => {
 
 test('the ticket guard sends a graduate to the guide of a stage he has not read', () => {
   const guard = read('components/TicketGuard.jsx');
-  assert.match(guard, /pendingGuideFor\(location\.pathname, getGraduateEmail\(\)\)/);
+  assert.match(guard, /pendingGuideFor\(location\.pathname, getGraduateId\(\)\)/);
   assert.match(guard, /guidePath\(guide\)/);
   const app = read('App.jsx');
   assert.match(app, /path="\/guide\/:stage"/);
@@ -81,4 +82,18 @@ test('every graduate page of the journey uses the shared header', () => {
     assert.match(src, /<StageHeader\b/, file);
     assert.doesNotMatch(src, /GuideLinkButton/, file);
   }
+});
+
+test('the guide mark belongs to the graduate in the token, not to a per-tab e-mail', async () => {
+  const store = new Map();
+  globalThis.window = { localStorage: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v), removeItem: (k) => store.delete(k) }, sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} } };
+  globalThis.localStorage = globalThis.window.localStorage;
+  globalThis.sessionStorage = globalThis.window.sessionStorage;
+  const { getGraduateId } = await import('../src/api/session.js');
+  const token = `x.${Buffer.from(JSON.stringify({ sub: '42', role: 'graduate' })).toString('base64url')}.y`;
+  store.set('access_token', token);
+  assert.equal(getGraduateId(), '42');
+  store.set('access_token', 'broken');
+  assert.equal(getGraduateId(), null);
+  delete globalThis.window; delete globalThis.localStorage; delete globalThis.sessionStorage;
 });

@@ -52,15 +52,15 @@ const validators = {
   firstName: (v) => {
     const t = v.trim();
     if (!t) return 'الاسم مطلوب';
-    if (!NAME_REGEX.test(t)) return 'يرجى كتابة الاسم بحروف عربية أو إنجليزية فقط';
     if (t.length < 2) return 'الاسم قصير جداً';
+    if (!NAME_REGEX.test(t)) return 'يرجى كتابة الاسم بحروف عربية أو إنجليزية فقط';
     return '';
   },
   lastName: (v) => {
     const t = v.trim();
     if (!t) return 'الكنية مطلوبة';
-    if (!NAME_REGEX.test(t)) return 'يرجى كتابة الكنية بحروف عربية أو إنجليزية فقط';
     if (t.length < 2) return 'الكنية قصيرة جداً';
+    if (!NAME_REGEX.test(t)) return 'يرجى كتابة الكنية بحروف عربية أو إنجليزية فقط';
     return '';
   },
   faculty: (v) => (v ? '' : 'اختر الكلية'),
@@ -84,15 +84,15 @@ const validators = {
   fatherName: (v) => {
     const t = v.trim();
     if (!t) return 'اسم الأب مطلوب';
-    if (!NAME_REGEX.test(t)) return 'يجب أن يتكون اسم الأب من حروف عربية أو إنجليزية فقط';
     if (t.length < 2) return 'اسم الأب قصير جداً';
+    if (!NAME_REGEX.test(t)) return 'يجب أن يتكون اسم الأب من حروف عربية أو إنجليزية فقط';
     return '';
   },
   motherName: (v) => {
     const t = v.trim();
     if (!t) return 'اسم الأم مطلوب';
-    if (!NAME_REGEX.test(t)) return 'يجب أن يتكون اسم الأم من حروف عربية أو إنجليزية فقط';
     if (t.length < 2) return 'اسم الأم قصير جداً';
+    if (!NAME_REGEX.test(t)) return 'يجب أن يتكون اسم الأم من حروف عربية أو إنجليزية فقط';
     return '';
   },
 };

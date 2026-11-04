@@ -166,6 +166,18 @@ export function setGraduateEmail(email) {
   sessionStorage.setItem(GRADUATE_EMAIL_KEY, email);
 }
 
+// Who the graduate is, read from the access token ("sub"): stays the same across tabs,
+// reloads and token refreshes, unlike the e-mail kept in sessionStorage. null when unknown.
+export function getGraduateId() {
+  const token = persistent.getItem(GRADUATE_ACCESS_TOKEN_KEY);
+  try {
+    const payload = JSON.parse(atob(String(token).split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return payload.sub ? String(payload.sub) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getGraduateToken() {
   return persistent.getItem(GRADUATE_ACCESS_TOKEN_KEY);
 }

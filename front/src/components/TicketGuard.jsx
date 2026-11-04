@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { hasGraduateSession, getGraduateEmail } from "../api/session";
+import { hasGraduateSession, getGraduateId } from "../api/session";
 import { pendingGuideFor } from "../utils/guideAck";
 import { guidePath } from "../utils/stage";
 import { routeForTicket } from "../utils/ticketRoute";
@@ -62,7 +62,7 @@ function TicketGuardInner({ children }) {
   }
 
   /* the graduate is on the right page: the guide of this stage must have been read first */
-  const guide = pendingGuideFor(location.pathname, getGraduateEmail());
+  const guide = pendingGuideFor(location.pathname, getGraduateId());
   if (guide) {
     return <Navigate to={guidePath(guide)} replace state={{ next: location.pathname }} />;
   }
