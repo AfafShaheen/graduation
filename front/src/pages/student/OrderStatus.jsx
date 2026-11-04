@@ -9,6 +9,8 @@ import { companionsLabel } from '../../utils/companions';
 import GraduateFooter from '../../components/GraduateFooter';
 import { QR_REQUIRED_TEXT, GROUP_TEXT } from '../../config/graduateTexts';
 import { routeForTicket, ORDER_POLL_MS } from '../../utils/ticketRoute';
+import EndedNotice from '../../components/EndedNotice';
+import { ceremonyEnded, ENDED_PENDING_TEXT } from '../../utils/ceremonyState';
 import useContactPhone from '../../hooks/useContactPhone';
 import { REVIEW_USUAL_TEXT, isReviewDelayed, sentAtLabel, delayWhatsappHref } from '../../utils/reviewTime';
 
@@ -36,6 +38,7 @@ export default function OrderStatus() {
   const sentAt = data?.payment_submitted_at || ticket?.created_at;
   const delayed = isReviewDelayed(sentAt, openedAt);
   const delayHref = delayWhatsappHref(contactPhone);
+  const ended = ceremonyEnded(event?.event_date);
 
   // تحديث تلقائي بصمت كل 15 ثانية أثناء ظهور الصفحة، وفوراً عند العودة للتبويب
   // أو رجوع الاتصال، حتى يظهر قبول الأدمن أو رفضه بدون ما يضغط الخريج شي.
@@ -97,6 +100,8 @@ export default function OrderStatus() {
               </div>
 
               {/* تحذير واضح: على الخريج متابعة حالة طلبه بنفسه */}
+              {ended && <EndedNotice>{ENDED_PENDING_TEXT}</EndedNotice>}
+
               <section className="os-critical-warning" role="alert">
                 <div className="os-critical-head">
                   <span className="os-symbol os-critical-icon" aria-hidden="true">warning</span>

@@ -1,0 +1,11 @@
+.ended-notice {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #f2e7d3;
+  border: 1px solid #e2bfb2;
+  color: #594138;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.ended-notice strong { color: #124d44; }

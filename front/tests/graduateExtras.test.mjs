@@ -113,3 +113,12 @@ test('a confirmed ticket after the ceremony keeps the normal page with a closing
   assert.ok(!read('pages/student/Login.jsx').includes('albaath'));
   assert.ok(!read('pages/student/GraduationFormStep2.jsx').includes('albaath'));
 });
+
+test('the review and the rejected pages say the ceremony is over', () => {
+  for (const file of ['OrderStatus', 'OrderRejected']) {
+    const src = read(`pages/student/${file}.jsx`);
+    assert.match(src, /<EndedNotice>/, file);
+    assert.match(src, /ceremonyEnded\(/, file);
+  }
+  assert.match(read('components/EndedNotice.jsx'), /انتهى الحفل\./);
+});

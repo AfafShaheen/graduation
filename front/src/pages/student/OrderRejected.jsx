@@ -1,4 +1,6 @@
 import StageHeader from '../../components/StageHeader';
+import EndedNotice from '../../components/EndedNotice';
+import { ceremonyEnded, ENDED_REJECTED_TEXT } from '../../utils/ceremonyState';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/OrderRejected.css';
@@ -29,6 +31,7 @@ export default function OrderRejected() {
   // سبب الرفض كما كتبه المسؤول (D2/D6) أو النص الافتراضي للطلبات القديمة — في utils/rejection.
   const rejectionReason = rejectionReasonText(data?.ticket);
   const registrationOpen = Boolean(data?.registration?.is_open);
+  const ended = ceremonyEnded(data?.event?.event_date);
 
   return (
     <div className="or-app-container">
@@ -49,6 +52,8 @@ export default function OrderRejected() {
               <span className="or-badge-dot"></span>
               <span className="or-badge-text">الطلب مرفوض</span>
             </div>
+
+            {ended && <EndedNotice>{ENDED_REJECTED_TEXT}</EndedNotice>}
 
             <h2 className="or-card-headline">تم رفض طلب الدفع</h2>
             <p className="or-card-subtext">

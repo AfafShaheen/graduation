@@ -35,3 +35,6 @@ export function registrationNotice(registration, eventDate, now = new Date()) {
   }
   return { kind: 'closed', headline: 'التسجيل مغلق', body: CLOSED_TEXT };
 }
+
+export const ENDED_PENDING_TEXT = 'إن كان لديك استفسار عن دفعتك فتواصل معنا على الواتساب (الرقم في أسفل الصفحة).';
+export const ENDED_REJECTED_TEXT = 'لم يعد بالإمكان إعادة إرسال الدفع. للاستفسار تواصل معنا على الواتساب (الرقم في أسفل الصفحة).';
