@@ -1,6 +1,5 @@
 import StageHeader from '../../components/StageHeader';
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import "../../style/GraduationForm.css";
 import '../../style/BrandHeader.css';
 import universityLogo from "../../assets/homs-university-white.png";
