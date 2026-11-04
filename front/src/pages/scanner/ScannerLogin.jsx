@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import '../../style/ScannerLogin.css';
 import '../../style/BrandHeader.css';
-import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { request } from '../../api/client';
 import { setScannerSession } from '../../api/session';
@@ -157,11 +156,7 @@ export default function ScannerLogin({ onLoginSuccess, errorMessage = '' }) {
 
           {/* بطاقة نموذج تسجيل الدخول */}
           <section className="scan-login-card">
-            <div className="scan-login-logo-wrapper">
-              <img src={universityLogo} alt="شعار جامعة حمص" />
-            </div>
-
-            <div className="scan-login-titles">
+<div className="scan-login-titles">
               <h2>بوابة الدخول — ماسح التذاكر</h2>
               <p>سجّل دخولك باسم الحساب المخصص لبوابتك</p>
             </div>

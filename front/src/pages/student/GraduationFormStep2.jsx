@@ -3,7 +3,6 @@ import StageHeader from '../../components/StageHeader';
 import React, { useState } from "react";
 import "../../style/GraduationForm.css";
 import '../../style/BrandHeader.css';
-import universityLogo from "../../assets/homs-university-white.png";
 import useFormDraft from "../../hooks/useFormDraft";
 import { registerStep2 } from "../../api/graduate";
 import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegistrationToken } from "../../api/session";
@@ -173,9 +172,6 @@ export default function GraduationFormStep2({
         {/* بطاقة النموذج */}
         <div className="form-card">
           <div className="card-header">
-            <div className="logo-circle">
-              <img src={universityLogo} alt="شعار جامعة حمص" />
-            </div>
             <div>
               <h2 className="card-title">بيانات الدخول والأمان</h2>
               <p className="card-subtitle">{CEREMONY_TITLE}</p>

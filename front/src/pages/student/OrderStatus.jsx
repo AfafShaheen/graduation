@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/OrderStatus.css';
 import '../../style/BrandHeader.css';
-import universityLogo from '../../assets/homs-university-white.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { companionsLabel } from '../../utils/companions';
 import GraduateFooter from '../../components/GraduateFooter';
@@ -120,11 +119,7 @@ export default function OrderStatus() {
               </section>
 
               <section className="os-card-box">
-                <div className="os-logo-wrapper">
-                  <img alt="شعار جامعة حمص" className="os-logo-img" src={universityLogo} />
-                </div>
-
-                <div className="os-badge-pending">
+<div className="os-badge-pending">
                   <span className="os-symbol os-spin-icon">hourglass_top</span>
                   <span>قيد المعالجة</span>
                 </div>

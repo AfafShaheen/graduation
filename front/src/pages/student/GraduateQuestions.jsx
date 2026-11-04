@@ -3,7 +3,6 @@ import StageHeader from '../../components/StageHeader';
 import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
 import '../../style/BrandHeader.css';
-import universityLogo from '../../assets/homs-university-white.png';
 import { getVolunteerAnswers, saveVolunteerAnswers } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import GraduateFooter from '../../components/GraduateFooter';
@@ -119,9 +118,6 @@ export default function GraduateQuestions({ onDone }) {
         {/* بطاقة النموذج */}
         <div className="form-card">
           <div className="card-header">
-            <div className="logo-circle">
-              <img src={universityLogo} alt="شعار جامعة حمص" />
-            </div>
             <div>
               <h2 className="card-title">سؤالان قبل المتابعة</h2>
               <p className="card-subtitle">إجاباتك تساعدنا في تنظيم الحفل وتوزيع المهام</p>

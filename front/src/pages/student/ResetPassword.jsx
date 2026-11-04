@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import '../../style/GraduationForm.css';
 import '../../style/BrandHeader.css';
-import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import { resetPassword } from '../../api/graduate';
 import { clearResetFlow, getResetEmail, getResetCode } from '../../api/session';
@@ -230,9 +229,6 @@ export default function ResetPassword({ onBack, onDone }) {
         {/* بطاقة النموذج */}
         <div className="form-card">
           <div className="card-header">
-            <div className="logo-circle">
-              <img src={universityLogo} alt="شعار جامعة حمص" />
-            </div>
             <div>
               <h2 className="card-title">كلمة سر جديدة</h2>
               <p className="card-subtitle">تم تأكيد بريدك، اختر كلمة سر قوية لحسابك</p>

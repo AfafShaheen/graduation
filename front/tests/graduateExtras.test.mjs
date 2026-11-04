@@ -180,3 +180,15 @@ test('an error far from the button he pressed is brought into view', () => {
     assert.ok(src.includes('ref={generalRef}'), file);
   }
 });
+
+test('the university logo stays only on the graduate login page', () => {
+  const pagesDir = new URL('../src/pages/', import.meta.url);
+  const withLogo = [];
+  for (const dir of ['student', 'scanner', 'admin']) {
+    for (const f of fs.readdirSync(new URL(dir + '/', pagesDir))) {
+      if (!f.endsWith('.jsx')) continue;
+      if (fs.readFileSync(new URL(dir + '/' + f, pagesDir), 'utf-8').includes('homs-university-white')) withLogo.push(f);
+    }
+  }
+  assert.deepEqual(withLogo, ['Login.jsx']);
+});

@@ -3,7 +3,6 @@ import StageHeader from '../../components/StageHeader';
 import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
 import '../../style/BrandHeader.css';
-import universityLogo from '../../assets/homs-university-white.png';
 import useFormDraft from '../../hooks/useFormDraft';
 import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
 import { setRegistrationToken } from '../../api/session';
@@ -266,9 +265,6 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
         {/* بطاقة النموذج */}
         <div className="form-card">
           <div className="card-header">
-            <div className="logo-circle">
-              <img src={universityLogo} alt="شعار جامعة حمص" />
-            </div>
             <div>
               <h2 className="card-title">ألف مبروك التخرج! 🎓</h2>
               <p className="card-subtitle">سجّل بياناتك لتأكيد حجز تذكرتك الرقمية. تستغرق نحو 3 دقائق.</p>

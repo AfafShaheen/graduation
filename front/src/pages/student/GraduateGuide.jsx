@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import '../../style/GraduationForm.css';
 import '../../style/GraduateGuide.css';
 import '../../style/BrandHeader.css';
-import universityLogo from '../../assets/homs-university-white.png';
 import unionLogo from '../../assets/only-logo.png';
 import useContactPhone from '../../hooks/useContactPhone';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
@@ -280,9 +279,6 @@ export default function GraduateGuide({ phase = 'package', mode = 'required', on
         <div className="guide-body">
           {/* مقدمة */}
           <section className="form-card guide-intro">
-            <div className="logo-circle">
-              <img src={universityLogo} alt="شعار جامعة حمص" />
-            </div>
             <div>
               <h2 className="card-title">{phaseConfig.title}</h2>
               <p className="card-subtitle">{phaseConfig.subtitle}</p>
