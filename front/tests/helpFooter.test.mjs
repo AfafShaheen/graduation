@@ -15,7 +15,8 @@ const { helpLines } = await import("../src/components/helpFooterLogic.js");
 const { HELP_QUESTION, HELP_EMERGENCY_LABEL } = await import("../src/config/brand.js");
 
 test("every graduate page imports and renders HelpFooter exactly once", () => {
-  const files = readdirSync(studentDir).filter((f) => f.endsWith(".jsx"));
+  // StageGuide only wraps GraduateGuide, which renders the footer itself
+  const files = readdirSync(studentDir).filter((f) => f.endsWith(".jsx") && f !== "StageGuide.jsx");
   assert.ok(files.length >= 12, `expected at least 12 student pages, got ${files.length}`);
   for (const f of files) {
     const src = readFileSync(join(studentDir, f), "utf8");

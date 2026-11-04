@@ -264,7 +264,7 @@ export default function ShamCashPayment({ onBack }) {
             </span>
           </div>
 
-          <GuideLinkButton to="/guide" label="إرشادات الدفع عبر شام كاش" className="sc-guide-btn" />
+          <GuideLinkButton to="/guide/payment" label="إرشادات الدفع عبر شام كاش" className="sc-guide-btn" />
 
           {loading && <p className="sc-qr-caption">جارٍ تحميل معلومات الدفع...</p>}
 

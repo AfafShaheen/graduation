@@ -16,6 +16,7 @@ import Otp from "./pages/student/Otp";
 import GraduateQuestions from "./pages/student/GraduateQuestions";
 import Login from "./pages/student/Login";
 import GraduateGuide from "./pages/student/GraduateGuide";
+import StageGuide from "./pages/student/StageGuide";
 import ResetPassword from "./pages/student/ResetPassword";
 import SelectTicket from "./pages/student/SelectTicket";
 import ShamCashPayment from "./pages/student/ShamCashPayment";
@@ -51,24 +52,6 @@ const WrongCeremoniesWarning = lazy(() => import("./pages/scanner/WrongCeremonie
 */
 // Preview mode opens every page without a session: development builds only.
 const PREVIEW = import.meta.env.DEV && import.meta.env.VITE_PREVIEW === "true";
-
-const GUIDE_SKIP_KEY = "grad.skipGuide";
-
-function readSkipGuide() {
-  try {
-    return window.localStorage.getItem(GUIDE_SKIP_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function saveSkipGuide() {
-  try {
-    window.localStorage.setItem(GUIDE_SKIP_KEY, "1");
-  } catch {
-    /* التخزين المحلي غير متاح */
-  }
-}
 
 const GUIDE_START_SEEN_KEY = "grad.guide.start.seen";
 
@@ -209,7 +192,7 @@ function App() {
             hasValidGraduate || PREVIEW ? (
               <GraduateQuestions
                 onDone={() => {
-                  navigate("/guide", { replace: true }); // الدليل أولاً، ومنه لاختيار التذكرة
+                  navigate("/tickets", { replace: true }); // الحارس يعرض دليل الباقة أولاً
                 }}
               />
             ) : (
@@ -231,7 +214,7 @@ function App() {
               }
               onBack={() => navigate("/")}
               onNavigateToRegister={() => navigate("/")}
-              // بعد الدخول: دليل التذكرة أولاً (إلا إذا اختار الخريج "لا تعرضها مرة أخرى")
+              // بعد الدخول: الحارس يوجّهه لصفحة مرحلته، ويعرض دليلها إن لم يقرأه
               onLoginSuccess={(info) => {
                 // حساب غير مؤكد: الباك رجّع 403 مع رمز تحقق جديد ولم يعطِ جلسة دخول،
                 // فنرجّعه لصفحة الـ OTP ليكمل التأكيد (أو يعيد الإرسال / يغيّر البريد).
@@ -239,7 +222,7 @@ function App() {
                   navigate("/otp", { replace: true });
                   return;
                 }
-                navigate(readSkipGuide() ? "/tickets" : "/guide", { replace: true });
+                navigate("/tickets", { replace: true });
               }}
               onForgotPassword={async (em) => {
                 await forgotPassword(em);
@@ -279,25 +262,6 @@ function App() {
               <ResetPassword
                 onBack={() => navigate("/login")}
                 onDone={() => navigate("/login", { state: { passwordReset: true } })}
-              />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-
-        {/* ===== بعد الدخول: دليل التذكرة، ثم اختيار التذكرة ===== */}
-        <Route
-          path="/guide"
-          element={
-            hasValidGraduate || PREVIEW ? (
-              <GraduateGuide
-                phase="registered"
-                onContinue={({ dontShowAgain }) => {
-                  if (dontShowAgain) saveSkipGuide();
-                  // فُتح من زر الإرشادات بصفحة التذكرة/الدفع: نرجع لنفس الصفحة
-                  navigate(location.state?.from || "/tickets", { replace: true });
-                }}
               />
             ) : (
               <Navigate to="/login" replace />
@@ -643,16 +607,8 @@ function App() {
             />
           }
         />
-        <Route
-          path="/guide/ticket"
-          element={
-            hasValidGraduate || PREVIEW ? (
-              <GraduateGuide phase="paid" onBack={() => navigate(location.state?.from || "/my-ticket")} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
+        <Route path="/guide/:stage" element={<StageGuide />} />
+        <Route path="/guide" element={<Navigate to="/tickets" replace />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

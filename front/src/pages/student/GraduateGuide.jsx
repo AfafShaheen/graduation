@@ -7,6 +7,13 @@ import unionLogo from '../../assets/only-logo.png';
 import useContactPhone from '../../hooks/useContactPhone';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import {
+  ID_PROOF_TEXT,
+  NO_REFUND_TEXT,
+  PAYMENT_NOTE_TEXT,
+  QR_REQUIRED_TEXT,
+  GROUP_TEXT,
+} from '../../config/graduateTexts';
 
 /* ==========================================================================
    دليل التذكرة: صفحة إرشادات بتظهر بعد تسجيل الدخول وقبل اختيار التذكرة
@@ -60,49 +67,81 @@ const PHASES = {
         bullets: [
           'لكل خريج حساب واحد وتذكرة واحدة.',
           'لا تسجّل لصديقك ببريدك، ولا تعطِ بياناتك لأحد.',
-          'عند الدخول تُطابَق الهوية الشخصية لكل خريج.',
         ],
       },
       {
         icon: 'priority_high',
-        title: 'ملاحظات مهمة',
-        bullets: [
-          'إذا لم يصلك رمز التحقق، تحقّق من مجلد الرسائل غير المرغوب فيها (Spam).',
-          'فترة التسجيل محدودة، فلا تؤجّل.',
-          'يوم الحفل أحضر معك هويتك الشخصية أو إخراج قيد أو أي وثيقة رسمية تثبت أنك الخريج.',
-        ],
+        title: 'ملاحظة مهمة',
+        bullets: ['فترة التسجيل محدودة، فلا تؤجّل.'],
       },
     ],
   },
 
-  registered: {
-    subband: 'اختيار التذكرة والدفع',
-    title: 'دليلك لاختيار التذكرة والدفع',
-    subtitle: 'تم إنشاء حسابك بنجاح. هذه خطواتك التالية.',
+  package: {
+    subband: 'اختيار الباقة',
+    title: 'اختيار الباقة',
+    subtitle: 'تم إنشاء حسابك بنجاح. الخطوة التالية اختيار الباقة.',
     sections: [
       {
         icon: 'confirmation_number',
-        title: 'اختيار الباقة',
+        title: 'كيف تختار؟',
         bullets: [
           'اختر باقة واحدة حسب عدد المرافقين، ولكل باقة سعرها.',
+          'يحصل كل شخص (أنت ومرافقوك) على رمز QR خاص به.',
           'يمكنك تغيير الباقة طالما لم ترسل بيانات الدفع بعد.',
         ],
       },
-      {
-        icon: 'payments',
-        title: 'الدفع عبر شام كاش',
-        bullets: [
-          'امسح رمز QR أو انسخ رقم حساب شام كاش من صفحة الدفع.',
-          'بعد مسح حساب شام كاش وكتابة المبلغ، اكتب في خانة «ملاحظات» أو «Note» الاسم والكنية والرقم الجامعي. مثال: محمد المحمد 1234. بدون الملاحظة لن يتم تأكيد الدفع.',
-          'أدخل رقم العملية والمبلغ واسم المستخدم الذي أرسلت منه الحوالة كما تظهر في إشعار التحويل.',
-        ],
-      },
-      { icon: 'pending_actions', title: 'حالة طلبك', statuses: true },
     ],
-    warning: { tone: 'red', text: 'بعد تأكيد الدفع لا يمكن تعديل التذكرة أو إلغاؤها، ولا يُسترجع المبلغ.' },
+    warning: { tone: 'red', text: NO_REFUND_TEXT },
   },
 
-  paid: {
+  payment: {
+    subband: 'الدفع عبر شام كاش',
+    title: 'الدفع عبر شام كاش',
+    subtitle: 'حوّل المبلغ ثم أدخل بيانات التحويل.',
+    sections: [
+      {
+        icon: 'payments',
+        title: 'خطوات الدفع',
+        steps: [
+          'امسح رمز QR أو انسخ رقم حساب شام كاش من صفحة الدفع.',
+          'اكتب المبلغ المطلوب كما يظهر في الصفحة.',
+          PAYMENT_NOTE_TEXT,
+          'عُد إلى الصفحة وأدخل: رقم العملية، والمبلغ المحوّل، واسم المرسل كما يظهر في إشعار التحويل.',
+        ],
+      },
+    ],
+    warning: { tone: 'orange', text: 'راجع المبلغ والملاحظة قبل التحويل، فالتحويل الخاطئ يؤخر تأكيد تذكرتك.' },
+  },
+
+  submitted: {
+    subband: 'حالة الطلب',
+    title: 'تم استلام دفعتك',
+    subtitle: 'هذا ما سيحدث الآن.',
+    sections: [
+      {
+        icon: 'pending_actions',
+        title: 'ماذا يحدث الآن؟',
+        bullets: [
+          'يراجع الاتحاد دفعتك ويطابقها مع إشعار شام كاش.',
+          'تستغرق المراجعة عادةً من ساعتين إلى 24 ساعة.',
+          'لن يصلك إشعار تلقائي: عُد إلى الموقع وتحقّق بنفسك. عندما تصبح الحالة «مؤكدة» يظهر رمز QR.',
+        ],
+        statuses: true,
+      },
+      {
+        icon: 'priority_high',
+        title: 'إن حدث تأخير أو رفض',
+        bullets: [
+          'إن رُفض الدفع يظهر لك السبب، ويمكنك إعادة الإرسال ما دام التسجيل مفتوحاً.',
+          'إن تأخّر طلبك أكثر من 24 ساعة، تواصل معنا على الواتساب (الرقم في أسفل الصفحة).',
+        ],
+      },
+    ],
+    warning: { tone: 'red', text: QR_REQUIRED_TEXT },
+  },
+
+  ticket: {
     subband: 'يوم الحفل',
     title: 'تذكرتك جاهزة: ماذا بعد؟',
     subtitle: 'تم تأكيد دفعك. احتفظ بهذه الإرشادات ليوم الحفل.',
@@ -122,14 +161,15 @@ const PHASES = {
         bullets: [
           'الخريج يدخل أولاً: رموز المرافقين لا تعمل قبل مسح رمز الخريج، فاحضروا معاً.',
           'لا يمكن إدخال مرافقين أكثر من العدد المحدّد في تذكرتك.',
-          'أحضر هويتك الشخصية أو إخراج قيد أو أي وثيقة رسمية تثبت أنك الخريج صاحب التذكرة.',
         ],
       },
+      {
+        icon: 'forum',
+        title: 'مجموعة الحفل',
+        bullets: [GROUP_TEXT],
+      },
     ],
-    warning: {
-      tone: 'orange',
-      text: 'إثبات الشخصية إلزامي: أحضر هويتك أو إخراج القيد أو أي وثيقة رسمية تثبت أنك الخريج. تُستلم عند الدخول ويُسلَّم لك لباس التخرج، وتُعاد إليك بعد انتهاء الحفل وإرجاع اللباس.',
-    },
+    warning: { tone: 'orange', text: `إثبات الشخصية إلزامي: ${ID_PROOF_TEXT}` },
   },
 };
 
@@ -162,19 +202,22 @@ function Warning({ children, tone = 'orange' }) {
   );
 }
 
-export default function GraduateGuide({ phase = 'registered', onContinue, onBack, supportPhone = '' }) {
+/*
+  phase: before | package | payment | submitted | ticket
+  mode:  required (first time: must tick "read and understood") | review (already read: just go back)
+*/
+export default function GraduateGuide({ phase = 'package', mode = 'required', onContinue, onBack, supportPhone = '' }) {
   const cachedContactPhone = useContactPhone();
   const contactPhone = supportPhone || cachedContactPhone;
 
-  const resolvedPhase = PHASES[phase] ? phase : 'registered';
+  const resolvedPhase = PHASES[phase] ? phase : 'package';
   const phaseConfig = PHASES[resolvedPhase];
 
   const [acknowledged, setAcknowledged] = useState(false);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const handleContinue = () => {
     if (!acknowledged) return;
-    if (onContinue) onContinue({ dontShowAgain });
+    if (onContinue) onContinue();
   };
 
   const renderSection = (section, number) => (
@@ -266,7 +309,14 @@ export default function GraduateGuide({ phase = 'registered', onContinue, onBack
 
         {/* الشريط السفلي: الموافقة والمتابعة */}
         <div className="footer-deck guide-dock">
-          {resolvedPhase === 'registered' && (
+          {resolvedPhase === 'before' && (
+            <button className="submit-btn" type="button" onClick={() => onContinue && onContinue()}>
+              <span>ابدأ التسجيل</span>
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+          )}
+
+          {resolvedPhase !== 'before' && mode === 'required' && (
             <>
               <label className="guide-check">
                 <input
@@ -278,35 +328,17 @@ export default function GraduateGuide({ phase = 'registered', onContinue, onBack
                   قرأت الإرشادات وفهمتها <span className="required-star">*</span>
                 </span>
               </label>
-
-              <label className="guide-check muted">
-                <input
-                  type="checkbox"
-                  checked={dontShowAgain}
-                  onChange={(e) => setDontShowAgain(e.target.checked)}
-                />
-                <span>لا تعرض لي هذه الصفحة عند تسجيل الدخول مرة أخرى</span>
-              </label>
+              <button className="submit-btn" type="button" disabled={!acknowledged} onClick={handleContinue}>
+                <span>فهمت، متابعة</span>
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+              {!acknowledged && <p className="guide-dock-hint">أكّد القراءة لتتابع.</p>}
             </>
           )}
 
-          {resolvedPhase === 'before' && (
-            <button className="submit-btn" type="button" onClick={() => onContinue && onContinue()}>
-              <span>ابدأ التسجيل</span>
-              <span className="material-symbols-outlined">arrow_back</span>
-            </button>
-          )}
-
-          {resolvedPhase === 'registered' && (
-            <button className="submit-btn" type="button" disabled={!acknowledged} onClick={handleContinue}>
-              <span>فهمت، متابعة لاختيار التذكرة</span>
-              <span className="material-symbols-outlined">arrow_back</span>
-            </button>
-          )}
-
-          {resolvedPhase === 'paid' && (
+          {resolvedPhase !== 'before' && mode === 'review' && (
             <button className="submit-btn" type="button" onClick={() => onBack && onBack()}>
-              <span>العودة إلى تذكرتي</span>
+              <span>رجوع</span>
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
           )}

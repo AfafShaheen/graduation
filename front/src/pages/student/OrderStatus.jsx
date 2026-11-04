@@ -209,7 +209,7 @@ export default function OrderStatus() {
                 )}
               </section>
 
-              <GuideLinkButton to="/guide/ticket" label="ماذا بعد تأكيد الدفع؟" />
+              <GuideLinkButton to="/guide/submitted" label="ماذا يحدث الآن؟" />
 
               <div className="os-reassurance-bar">
                 <span className="os-symbol" style={{ color: '#ca4b00', fontSize: '19px', flexShrink: 0 }}>

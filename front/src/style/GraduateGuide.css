@@ -331,16 +331,26 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #201b0f;
+  padding: 12px 14px;
+  background: #e8f5f1;
+  border: 1.5px solid #124d44;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #124d44;
   cursor: pointer;
   user-select: none;
 }
 
-.guide-check.muted {
+.guide-check:focus-within {
+  outline: 2px solid #ca4b00;
+  outline-offset: 2px;
+}
+
+.guide-dock-hint {
+  margin: 2px 0 0;
+  text-align: center;
   font-size: 12px;
-  font-weight: 600;
   color: #725b51;
 }
 

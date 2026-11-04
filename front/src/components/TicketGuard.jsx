@@ -1,5 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { hasGraduateSession } from "../api/session";
+import { hasGraduateSession, getGraduateEmail } from "../api/session";
+import { pendingGuideFor } from "../utils/guideAck";
+import { guidePath } from "../utils/stage";
 import { routeForTicket } from "../utils/ticketRoute";
 import useMyTicket from "../hooks/useMyTicket";
 
@@ -16,6 +18,7 @@ export function hasValidGraduateSession() {
  *   (فلو فتح رابطاً خاطئاً بالخطأ يُعاد توجيهه تلقائياً للصفحة الصحيحة).
  * - استثناء: الخريج بانتظار الدفع أو مرفوض الدفع يقدر يفتح /tickets ليغيّر الباقة.
  * - استثناء: المرفوض يقدر يفتح /payment ليعيد إرسال الدفع (زر «إعادة الدفع»).
+ * - أول مرة تُفتح فيها مرحلة (باقة، دفع، انتظار، تذكرة) يظهر دليلها إلزامياً قبل الصفحة.
  */
 export default function TicketGuard({ children }) {
   // React reuses the same TicketGuard instance when moving between ticket routes
@@ -56,6 +59,12 @@ function TicketGuardInner({ children }) {
 
   if (!canChangePackage && !canResubmitPayment && target !== location.pathname) {
     return <Navigate to={target} replace />;
+  }
+
+  /* the graduate is on the right page: the guide of this stage must have been read first */
+  const guide = pendingGuideFor(location.pathname, getGraduateEmail());
+  if (guide) {
+    return <Navigate to={guidePath(guide)} replace state={{ next: location.pathname }} />;
   }
   return children;
 }

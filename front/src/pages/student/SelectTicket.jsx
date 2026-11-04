@@ -155,7 +155,7 @@ export default function SelectTicket({ onBack }) {
             </div>
           </section>
 
-          <GuideLinkButton to="/guide" label="إرشادات اختيار التذكرة والدفع" className="st-guide-btn" />
+          <GuideLinkButton to="/guide/package" label="إرشادات اختيار التذكرة والدفع" className="st-guide-btn" />
 
           {!loading && !error && !registrationOpen && (
             <section className="st-notice-card" aria-live="polite">
