@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/SelectTicket.css';
 import '../../style/BrandHeader.css';
-import universityLogo from '../../assets/homs-university-white.png';
 import { getTicketOptions, selectTicket } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import { CEREMONY_TITLE } from '../../config/brand';
@@ -118,6 +117,7 @@ export default function SelectTicket({ onBack }) {
         <StageHeader current="package" guide="package" onBack={() => (onBack ? onBack() : window.history.back())} />
 
         <main className="st-main-stage">
+          {registrationOpen && (
           <section className="st-hero-card">
             <div className="st-hero-content">
               <div className="st-hero-tag">
@@ -129,10 +129,8 @@ export default function SelectTicket({ onBack }) {
               <h2 className="st-hero-headline">حدّد باقة الحضور المناسبة لك ولعائلتك</h2>
               <p className="st-hero-subtext">خطوة واحدة وتصبح تذكرتك الرسمية جاهزة</p>
             </div>
-            <div className="st-hero-logo-box">
-              <img alt="شعار جامعة حمص" className="st-hero-logo-img" src={universityLogo} />
-            </div>
           </section>
+          )}
 
 
           {!loading && !error && registrationOpen && closesInText(data?.registration?.end) && (

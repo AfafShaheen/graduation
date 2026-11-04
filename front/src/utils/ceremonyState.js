@@ -22,8 +22,10 @@ export const CLOSED_TEXT = 'لم يعد التسجيل متاحاً لهذه ا�
 
 // kind: open | not_started | closed | ended (headline and body are what the package page shows)
 export function registrationNotice(registration, eventDate, now = new Date()) {
-  if (ceremonyEnded(eventDate, now)) return { kind: 'ended', headline: 'انتهى الحفل', body: ENDED_TEXT };
+  // the server decides: while it says registration is open, the page is open (even if the date saved
+  // for the ceremony is old, which is a data mistake to fix in the admin panel, not the graduate's problem)
   if (registration?.is_open) return { kind: 'open', headline: '', body: '' };
+  if (ceremonyEnded(eventDate, now)) return { kind: 'ended', headline: 'انتهى الحفل', body: ENDED_TEXT };
   const start = registration?.start ? new Date(registration.start).getTime() : null;
   if (start && start > now.getTime()) {
     const when = dateLabel(registration.start);

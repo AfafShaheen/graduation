@@ -1,3 +1,4 @@
+import useRevealOnShow from "../../hooks/useRevealOnShow";
 import StageHeader from '../../components/StageHeader';
 import React, { useState } from "react";
 import "../../style/GraduationForm.css";
@@ -59,6 +60,9 @@ export default function GraduationFormStep2({
   const [isLoading, setIsLoading] = useState(false);
   const [notice, setNotice] = useState('');
   const [unverifiedNotice, setUnverifiedNotice] = useState('');
+  const noticeRef = useRevealOnShow(notice);
+  const unverifiedRef = useRevealOnShow(unverifiedNotice);
+  const generalRef = useRevealOnShow(errors.general);
 
   const handleInputChange = (e) => {
     let { name, value } = e.target;
@@ -179,13 +183,13 @@ export default function GraduationFormStep2({
           </div>
 
           {notice && (
-            <div className="info-box" style={{ marginBottom: 12 }}>
+            <div className="info-box" ref={noticeRef} style={{ marginBottom: 12 }}>
               <span className="material-symbols-outlined info-icon">info</span>
               <p className="info-text">{notice}</p>
             </div>
           )}
                     {unverifiedNotice && (
-            <div className="info-box" style={{ marginBottom: 12 }} role="status">
+            <div className="info-box" ref={unverifiedRef} style={{ marginBottom: 12 }} role="status">
               <span className="material-symbols-outlined info-icon">info</span>
               <div>
                 <p className="info-text">{unverifiedNotice}</p>
@@ -201,7 +205,7 @@ export default function GraduationFormStep2({
             </div>
           )}
 {errors.general && (
-            <div className="info-box" role="alert" style={{ marginBottom: 12, borderColor: '#ba1a1a', background: '#fff5f5' }}>
+            <div className="info-box" role="alert" ref={generalRef} style={{ marginBottom: 12, borderColor: '#ba1a1a', background: '#fff5f5' }}>
               <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
             </div>
           )}

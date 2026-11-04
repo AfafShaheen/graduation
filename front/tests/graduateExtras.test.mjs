@@ -96,8 +96,9 @@ test('after the ceremony, or with registration closed, the package page says so'
   assert.match(early.body, /2027/);
 
   assert.equal(registrationNotice({ is_open: true }, '2027-01-09', now).kind, 'open');
-  // the ceremony being over wins even if the registration window was never closed
-  assert.equal(registrationNotice({ is_open: true }, '2027-01-02', now).kind, 'ended');
+  // the server decides: registration open means open, even if the ceremony date saved is old
+  assert.equal(registrationNotice({ is_open: true }, '2027-01-02', now).kind, 'open');
+  assert.equal(registrationNotice({ is_open: false }, '2027-01-02', now).kind, 'ended');
 });
 
 test('a confirmed ticket after the ceremony keeps the normal page with a closing sentence', () => {
@@ -161,4 +162,21 @@ test('the help link on the payment page carries his name and number', () => {
   assert.ok(page.includes('paymentHelpHref(contactPhone, info?.note_text)'));
   assert.ok(page.includes('<span>اسمك في شام كاش</span>'));
   assert.ok(!page.includes('اسم المستخدم الذي سيتم إرسال المبلغ منه'));
+});
+
+test('the package page shows no "choose a package" intro and no university logo when it is closed', () => {
+  const page = read('pages/student/SelectTicket.jsx');
+  const hero = page.indexOf('st-hero-card');
+  assert.ok(page.slice(hero - 80, hero).includes('registrationOpen &&'), 'the intro only shows while registration is open');
+  assert.ok(!page.includes('st-hero-logo'), 'no logo in the intro');
+  assert.ok(!page.includes('universityLogo'));
+});
+
+test('an error far from the button he pressed is brought into view', () => {
+  assert.ok(read('hooks/useRevealOnShow.js').includes('scrollIntoView'));
+  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'GraduateQuestions']) {
+    const src = read('pages/student/' + file + '.jsx');
+    assert.ok(src.includes('useRevealOnShow(errors.general)'), file);
+    assert.ok(src.includes('ref={generalRef}'), file);
+  }
 });

@@ -1,3 +1,4 @@
+import useRevealOnShow from '../../hooks/useRevealOnShow';
 import StageHeader from '../../components/StageHeader';
 import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
@@ -49,6 +50,7 @@ export default function GraduateQuestions({ onDone }) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [alreadyAnswered, setAlreadyAnswered] = useState(false);
+  const generalRef = useRevealOnShow(errors.general);
 
   useEffect(() => {
     let mounted = true;
@@ -133,7 +135,7 @@ export default function GraduateQuestions({ onDone }) {
               </div>
             )}
             {errors.general && (
-              <div className="info-box" role="alert" style={{ borderColor: '#ba1a1a', background: '#fff5f5' }}>
+              <div className="info-box" role="alert" ref={generalRef} style={{ borderColor: '#ba1a1a', background: '#fff5f5' }}>
                 <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
               </div>
             )}

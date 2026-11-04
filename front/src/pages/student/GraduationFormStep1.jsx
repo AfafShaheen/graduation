@@ -1,3 +1,4 @@
+import useRevealOnShow from '../../hooks/useRevealOnShow';
 import StageHeader from '../../components/StageHeader';
 import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
@@ -123,6 +124,8 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
   const [errors, setErrors] = useState({});
   const [unverifiedNotice, setUnverifiedNotice] = useState('');
+  const noticeRef = useRevealOnShow(unverifiedNotice);
+  const generalRef = useRevealOnShow(errors.general);
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [colleges, setColleges] = useState([]);
@@ -276,7 +279,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
           <form onSubmit={handleNextStep} onBlur={handleBlur} noValidate>
             {/* الاسم والكنية */}
                         {unverifiedNotice && (
-              <div className="info-box" style={{ marginBottom: 12 }} role="status">
+              <div className="info-box" ref={noticeRef} style={{ marginBottom: 12 }} role="status">
                 <span className="material-symbols-outlined info-icon">info</span>
                 <div>
                   <p className="info-text">{unverifiedNotice}</p>
@@ -293,7 +296,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             )}
 {errors.general && (
               <div className="form-group">
-                <div className="info-box" role="alert" style={{ margin: 0, borderColor: '#ba1a1a', background: '#fff5f5' }}>
+                <div className="info-box" role="alert" ref={generalRef} style={{ margin: 0, borderColor: '#ba1a1a', background: '#fff5f5' }}>
                   <p className="info-text" style={{ color: '#ba1a1a' }}>{errors.general}</p>
                 </div>
               </div>
