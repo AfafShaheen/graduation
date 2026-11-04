@@ -1,11 +1,11 @@
+import StageHeader from '../../components/StageHeader';
 import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
-import unionLogo from '../../assets/only-logo.png';
 import { getVolunteerAnswers, saveVolunteerAnswers } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
-import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 
 /* نص السؤالين: عدّلهما من هنا */
@@ -112,33 +112,8 @@ export default function GraduateQuestions({ onDone }) {
     <div className="app-container">
       <main className="mobile-shell">
         {/* الهيدر العلوي (نفس بقية الصفحات، بلا سهم رجوع لأن البريد تأكد) */}
-        <header className="header-main">
-          <div className="header-top">
-            <div className="icon-btn" aria-hidden="true"></div>
-            <h1 className="header-title">{CEREMONY_TITLE}</h1>
-            <div className="icon-btn">
-              <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
-            </div>
-          </div>
-          <div className="header-subband">
-            <span className="subband-title">إنشاء حساب</span>
-            <span className="badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
+        <StageHeader current="register" guide="before" sub="الخطوة 4 من 4 · أسئلة إضافية" />
 
-        {/* شريط التقدم 100% */}
-        <section className="progress-section">
-          <div className="progress-labels">
-            <span className="progress-title">خطوة 4 من 4: أسئلة إضافية</span>
-            <span className="progress-percent">100%</span>
-          </div>
-          <div className="progress-bar-bg">
-            <div className="progress-bar-fill"></div>
-            <div className="progress-bar-fill"></div>
-            <div className="progress-bar-fill"></div>
-            <div className="progress-bar-fill"></div>
-          </div>
-        </section>
 
         {/* بطاقة النموذج */}
         <div className="form-card">

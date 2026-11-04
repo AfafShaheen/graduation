@@ -1,15 +1,15 @@
+import StageHeader from '../../components/StageHeader';
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import "../../style/GraduationForm.css";
 import '../../style/BrandHeader.css';
 import universityLogo from "../../assets/homs-university-white.png";
-import unionLogo from "../../assets/only-logo.png";
 import useFormDraft from "../../hooks/useFormDraft";
 import { registerStep2 } from "../../api/graduate";
 import { setVerificationToken, setGraduateEmail, clearRegistrationToken, getRegistrationToken } from "../../api/session";
 import { phoneError, passwordError } from "../../utils/validators";
 import { cleanServerMessage } from "../../utils/cleanServerMessage.js";
-import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -156,46 +156,8 @@ export default function GraduationFormStep2({
     <div className="app-container">
       <main className="mobile-shell">
         {/* الهيدر العلوي (نفس الخطوة 1) */}
-        <header className="header-main">
-          <div className="header-top">
-            <button
-              className="icon-btn"
-              aria-label="الرجوع للخطوة السابقة"
-              type="button"
-              onClick={onBack}
-            >
-              <span className="material-symbols-outlined">arrow_forward</span>
-            </button>
-            <h1 className="header-title">{CEREMONY_TITLE}</h1>
-            <div className="icon-btn">
-              <img
-                className="header-logo"
-                src={unionLogo}
-                alt="شعار اتحاد الطلبة"
-              />
-            </div>
-          </div>
-          <div className="header-subband">
-            <span className="subband-title">إنشاء حساب</span>
-            <span className="badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
+        <StageHeader current="register" guide="before" sub="الخطوة 2 من 4 · معلومات الحساب والأمان" onBack={onBack} />
 
-        {/* شريط التقدم 66% */}
-        <section className="progress-section">
-          <div className="progress-labels">
-            <span className="progress-title">
-              خطوة 2 من 4: معلومات الحساب والأمان
-            </span>
-            <span className="progress-percent">50%</span>
-          </div>
-          <div className="progress-bar-bg">
-            <div className="progress-bar-fill"></div>
-            <div className="progress-bar-fill"></div>
-            <div className="progress-bar-empty"></div>
-            <div className="progress-bar-empty"></div>
-          </div>
-        </section>
 
         {/* بطاقة النموذج */}
         <div className="form-card">

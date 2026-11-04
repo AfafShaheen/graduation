@@ -206,7 +206,7 @@ function Warning({ children, tone = 'orange' }) {
   phase: before | package | payment | submitted | ticket
   mode:  required (first time: must tick "read and understood") | review (already read: just go back)
 */
-export default function GraduateGuide({ phase = 'package', mode = 'required', onContinue, onBack, supportPhone = '' }) {
+export default function GraduateGuide({ phase = 'package', mode = 'required', onContinue, onBack, previous = [], supportPhone = '' }) {
   const cachedContactPhone = useContactPhone();
   const contactPhone = supportPhone || cachedContactPhone;
 
@@ -295,6 +295,21 @@ export default function GraduateGuide({ phase = 'package', mode = 'required', on
             <div className="guide-warning-wrap">
               <Warning tone={phaseConfig.warning.tone}>{phaseConfig.warning.text}</Warning>
             </div>
+          )}
+
+          {mode === 'review' && previous.length > 0 && (
+            <section className="guide-section" aria-label="إرشادات المراحل السابقة">
+              <h2 className="guide-section-title">إرشادات المراحل السابقة</h2>
+              <ul className="guide-previous">
+                {previous.map((item) => (
+                  <li key={item.key}>
+                    <button type="button" className="guide-previous-btn" onClick={item.onOpen}>
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           {/* الختام */}

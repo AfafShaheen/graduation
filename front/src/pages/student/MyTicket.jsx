@@ -1,15 +1,14 @@
+import StageHeader from '../../components/StageHeader';
 import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import '../../style/MyTicket.css';
 import '../../style/BrandHeader.css';
-import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { getMyProfile } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
-import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
-import GuideLinkButton from '../../components/GuideLinkButton';
 import { downloadQrPng, downloadQrPngs, qrFileName } from '../../utils/qrDownload';
 
 const formatEventDate = (value) => {
@@ -133,31 +132,7 @@ export default function MyTicket() {
   return (
     <div className="tk-app-container">
       <main className="tk-mobile-shell">
-        <header className="tk-header-main">
-          <div className="tk-header-top">
-            <div className="tk-icon-btn static">
-              <img className="tk-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
-            </div>
-
-            <h1 className="tk-header-title">{CEREMONY_TITLE}</h1>
-
-            <button
-              aria-label="مشاركة التذكرة"
-              className="tk-icon-btn"
-              type="button"
-              onClick={handleShare}
-            >
-              <span className="tk-symbol" style={{ fontSize: '20px' }}>
-                share
-              </span>
-            </button>
-          </div>
-
-          <div className="tk-header-subband">
-            <span className="tk-subband-title">تذكرتي</span>
-            <span className="tk-badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
+        <StageHeader current="ticket" guide="ticket" action={{ label: 'مشاركة التذكرة', icon: 'share', onClick: handleShare }} />
 
         <div className="tk-main-stage">
           <div className="tk-status-header">
@@ -284,7 +259,6 @@ export default function MyTicket() {
             </div>
           </section>
 
-          <GuideLinkButton to="/guide/ticket" label="إرشادات يوم الحفل" />
 
           {companionCodes.length > 0 && (
             <section className="tk-companions-box">

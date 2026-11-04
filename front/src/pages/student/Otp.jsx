@@ -1,3 +1,4 @@
+import StageHeader from '../../components/StageHeader';
 import React, { useState, useRef, useEffect } from 'react';
 import '../../style/Otp.css';
 import '../../style/BrandHeader.css';
@@ -350,49 +351,55 @@ export default function Otp({
   return (
     <div className="ev-app-container">
       <main className="ev-mobile-shell">
+        {isResetMode ? (
+          <>
         {/* الهيدر العلوي (نفس صفحات التسجيل) */}
-        <header className="ev-header-main">
-          <div className="ev-header-top">
-            <button
-              className="ev-icon-btn"
-              aria-label="الرجوع للخطوة السابقة"
-              type="button"
-              onClick={onBack}
-            >
-              <span className="ev-symbol" style={{ fontSize: '22px' }}>arrow_forward</span>
-            </button>
-
-            <h1 className="ev-header-title">{CEREMONY_TITLE}</h1>
-
-            <div className="ev-icon-btn static">
-              <img className="ev-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
+          <header className="ev-header-main">
+            <div className="ev-header-top">
+              <button
+                className="ev-icon-btn"
+                aria-label="الرجوع للخطوة السابقة"
+                type="button"
+                onClick={onBack}
+              >
+                <span className="ev-symbol" style={{ fontSize: '22px' }}>arrow_forward</span>
+              </button>
+  
+              <h1 className="ev-header-title">{CEREMONY_TITLE}</h1>
+  
+              <div className="ev-icon-btn static">
+                <img className="ev-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
+              </div>
             </div>
-          </div>
-
-          <div className="ev-header-subband">
-            <span className="ev-subband-title">{flow.subtitle}</span>
-            <span className="ev-badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
-
-        {/* شريط التقدم */}
-        <section className="ev-progress-section">
-          <div className="ev-progress-labels">
-            <span className="ev-progress-title">{flow.progressTitle}</span>
-            <span className="ev-progress-percent">{flow.percent}</span>
-          </div>
-          <div
-            className="ev-progress-bar"
-            style={{ gridTemplateColumns: `repeat(${flow.total}, 1fr)` }}
-          >
-            {Array.from({ length: flow.total }).map((_, i) => (
-              <div
-                key={i}
-                className={i < flow.done ? 'ev-progress-fill' : 'ev-progress-empty'}
-              ></div>
-            ))}
-          </div>
-        </section>
+  
+            <div className="ev-header-subband">
+              <span className="ev-subband-title">{flow.subtitle}</span>
+              <span className="ev-badge-batch">{BATCH_BADGE}</span>
+            </div>
+          </header>
+  
+          {/* شريط التقدم */}
+          <section className="ev-progress-section">
+            <div className="ev-progress-labels">
+              <span className="ev-progress-title">{flow.progressTitle}</span>
+              <span className="ev-progress-percent">{flow.percent}</span>
+            </div>
+            <div
+              className="ev-progress-bar"
+              style={{ gridTemplateColumns: `repeat(${flow.total}, 1fr)` }}
+            >
+              {Array.from({ length: flow.total }).map((_, i) => (
+                <div
+                  key={i}
+                  className={i < flow.done ? 'ev-progress-fill' : 'ev-progress-empty'}
+                ></div>
+              ))}
+            </div>
+          </section>
+          </>
+        ) : (
+          <StageHeader current="register" guide="before" sub="الخطوة 3 من 4 · تأكيد البريد الإلكتروني" onBack={onBack} />
+        )}
 
         {/* محتوى الصفحة الرئيسي */}
         <div className="ev-main-stage">

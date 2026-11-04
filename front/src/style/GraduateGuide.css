@@ -383,3 +383,18 @@
   .guide-warning-wrap { margin: 0 24px; }
   .guide-section { padding: 20px; }
 }
+.guide-previous { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.guide-previous-btn {
+  width: 100%;
+  text-align: right;
+  padding: 10px 12px;
+  border: 1px solid #eedebd;
+  border-radius: 12px;
+  background: #fff;
+  color: #124d44;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.guide-previous-btn:hover { background: #f8edd9; }

@@ -1,14 +1,13 @@
+import StageHeader from '../../components/StageHeader';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/SelectTicket.css';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
-import unionLogo from '../../assets/only-logo.png';
 import { getTicketOptions, selectTicket } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
-import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
-import GuideLinkButton from '../../components/GuideLinkButton';
 
 /* صيغة العدد بالعربي: 1 مرافق، 2 مرافقان، 3-10 مرافقين، 11+ مرافقاً */
 const companionsText = (n, afterPreposition = false) => {
@@ -112,31 +111,7 @@ export default function SelectTicket({ onBack }) {
   return (
     <div className="st-app-container">
       <div className="st-mobile-shell">
-        <header className="st-header-main">
-          <div className="st-header-top">
-            <button
-              aria-label="الرجوع"
-              className="st-icon-btn"
-              type="button"
-              onClick={() => (onBack ? onBack() : window.history.back())}
-            >
-              <span className="st-symbol" style={{ fontSize: '22px' }}>
-                arrow_forward
-              </span>
-            </button>
-
-            <h1 className="st-header-title">{CEREMONY_TITLE}</h1>
-
-            <div className="st-icon-btn static">
-              <img className="st-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
-            </div>
-          </div>
-
-          <div className="st-header-subband">
-            <span className="st-subband-title">اختيار التذكرة</span>
-            <span className="st-badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
+        <StageHeader current="package" guide="package" onBack={() => (onBack ? onBack() : window.history.back())} />
 
         <main className="st-main-stage">
           <section className="st-hero-card">
@@ -155,7 +130,6 @@ export default function SelectTicket({ onBack }) {
             </div>
           </section>
 
-          <GuideLinkButton to="/guide/package" label="إرشادات اختيار التذكرة والدفع" className="st-guide-btn" />
 
           {!loading && !error && !registrationOpen && (
             <section className="st-notice-card" aria-live="polite">

@@ -1,14 +1,13 @@
+import StageHeader from '../../components/StageHeader';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/ShamCashPayment.css';
 import '../../style/BrandHeader.css';
-import unionLogo from '../../assets/only-logo.png';
 import { getPaymentInfo, submitPayment, getShamcashQr } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import { parseAmount, formatAmount } from '../../utils/amount.js';
-import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
-import GuideLinkButton from '../../components/GuideLinkButton';
 import { validateTransactionId } from '../../utils/payments';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 
@@ -230,31 +229,7 @@ export default function ShamCashPayment({ onBack }) {
   return (
     <div className="sc-app-container">
       <main className="sc-mobile-shell">
-        <header className="sc-header-main">
-          <div className="sc-header-top">
-            <button
-              aria-label="الرجوع للخلف"
-              className="sc-icon-btn"
-              type="button"
-              onClick={() => (onBack ? onBack() : window.history.back())}
-            >
-              <span className="sc-symbol" style={{ fontSize: '22px' }}>
-                arrow_forward
-              </span>
-            </button>
-
-            <h1 className="sc-header-title">{CEREMONY_TITLE}</h1>
-
-            <div className="sc-icon-btn static">
-              <img className="sc-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
-            </div>
-          </div>
-
-          <div className="sc-header-subband">
-            <span className="sc-subband-title">الدفع عبر شام كاش</span>
-            <span className="sc-badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
+        <StageHeader current="payment" guide="payment" canChangePackage onBack={() => (onBack ? onBack() : window.history.back())} />
 
         <div className="sc-main-stage">
           <div className="sc-status-row">
@@ -264,7 +239,6 @@ export default function ShamCashPayment({ onBack }) {
             </span>
           </div>
 
-          <GuideLinkButton to="/guide/payment" label="إرشادات الدفع عبر شام كاش" className="sc-guide-btn" />
 
           {loading && <p className="sc-qr-caption">جارٍ تحميل معلومات الدفع...</p>}
 

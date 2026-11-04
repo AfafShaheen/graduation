@@ -1,8 +1,15 @@
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import GraduateGuide from './GraduateGuide';
 import { hasGraduateSession, getGraduateEmail } from '../../api/session';
-import { GUIDE_STAGES, pathForStage } from '../../utils/stage';
+import { GUIDE_STAGES, pathForStage, guidePath } from '../../utils/stage';
 import { ackGuide, hasAckedGuide } from '../../utils/guideAck';
+
+const PREVIOUS_LABELS = {
+  before: 'إرشادات التسجيل',
+  package: 'اختيار الباقة',
+  payment: 'الدفع عبر شام كاش',
+  submitted: 'حالة الطلب',
+};
 
 /*
  * /guide/:stage — the guide of one stage after registration (package, payment, submitted, ticket).
@@ -21,10 +28,21 @@ export default function StageGuide() {
   const acked = hasAckedGuide(email, stage);
   const fallback = pathForStage(stage);
 
+  // review mode: the guides of the earlier stages he already reached (never the coming ones)
+  const earlier = GUIDE_STAGES.slice(0, GUIDE_STAGES.indexOf(stage)).filter((s) => hasAckedGuide(email, s));
+  const previous = [
+    { key: 'before', label: PREVIOUS_LABELS.before, to: '/guide/start' },
+    ...earlier.map((s) => ({ key: s, label: PREVIOUS_LABELS[s], to: guidePath(s) })),
+  ].map((item) => ({
+    ...item,
+    onOpen: () => navigate(item.to, { state: { from: location.state?.from || fallback } }),
+  }));
+
   return (
     <GraduateGuide
       phase={stage}
       mode={acked ? 'review' : 'required'}
+      previous={previous}
       onContinue={() => {
         ackGuide(email, stage);
         navigate(location.state?.next || fallback, { replace: true });

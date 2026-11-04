@@ -1,14 +1,13 @@
+import StageHeader from '../../components/StageHeader';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/OrderStatus.css';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
-import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { companionsLabel } from '../../utils/companions';
-import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
-import GuideLinkButton from '../../components/GuideLinkButton';
 import { routeForTicket, ORDER_POLL_MS } from '../../utils/ticketRoute';
 
 /* تنسيق التاريخ والوقت بالعربية مع أرقام إنجليزية */
@@ -62,22 +61,7 @@ export default function OrderStatus() {
   return (
     <div className="os-app-container">
       <main className="os-mobile-shell">
-        <header className="os-header-main">
-          <div className="os-header-top">
-            <div className="os-icon-btn static" aria-hidden="true"></div>
-
-            <h1 className="os-header-title">{CEREMONY_TITLE}</h1>
-
-            <div className="os-icon-btn static">
-              <img className="os-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
-            </div>
-          </div>
-
-          <div className="os-header-subband">
-            <span className="os-subband-title">حالة الطلب</span>
-            <span className="os-badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
+        <StageHeader current="payment" guide="submitted" sub="قيد المراجعة" />
 
         <div className="os-main-stage">
           {loading && !data && <p className="os-card-subtext">جارٍ تحميل حالة الطلب...</p>}
@@ -209,7 +193,6 @@ export default function OrderStatus() {
                 )}
               </section>
 
-              <GuideLinkButton to="/guide/submitted" label="ماذا يحدث الآن؟" />
 
               <div className="os-reassurance-bar">
                 <span className="os-symbol" style={{ color: '#ca4b00', fontSize: '19px', flexShrink: 0 }}>

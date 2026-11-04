@@ -56,3 +56,29 @@ test('the guide has no "do not show again" box and the five guides exist', () =>
   assert.match(guide, /mode === 'required'/);
   assert.match(guide, /mode === 'review'/);
 });
+
+import { stageTabs, DONE_NOTE, PACKAGE_LOCKED_NOTE } from '../src/utils/stageTabs.js';
+
+test('the tabs: done, current and todo, and when the package tab opens again', () => {
+  const states = (current, opts) => stageTabs(current, opts).map((t) => t.state);
+  assert.deepEqual(states('register'), ['current', 'todo', 'todo', 'todo']);
+  assert.deepEqual(states('payment'), ['done', 'done', 'current', 'todo']);
+  assert.deepEqual(states('ticket'), ['done', 'done', 'done', 'current']);
+
+  const open = stageTabs('payment', { canChangePackage: true });
+  assert.equal(open[1].clickable, true);
+  assert.equal(open[0].clickable, false, 'registration is never reopened');
+  assert.equal(open[0].note, DONE_NOTE);
+
+  const locked = stageTabs('payment', { canChangePackage: false });
+  assert.equal(locked[1].clickable, false);
+  assert.equal(locked[1].note, PACKAGE_LOCKED_NOTE);
+});
+
+test('every graduate page of the journey uses the shared header', () => {
+  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'GraduateQuestions', 'Otp', 'SelectTicket', 'ShamCashPayment', 'OrderStatus', 'OrderRejected', 'MyTicket']) {
+    const src = read(`pages/student/${file}.jsx`);
+    assert.match(src, /<StageHeader\b/, file);
+    assert.doesNotMatch(src, /GuideLinkButton/, file);
+  }
+});

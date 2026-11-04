@@ -1,11 +1,11 @@
+import StageHeader from '../../components/StageHeader';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/OrderRejected.css';
 import '../../style/BrandHeader.css';
-import unionLogo from '../../assets/only-logo.png';
 import useMyTicket from '../../hooks/useMyTicket';
 import { getPublicSettings } from '../../api/graduate';
-import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 import RejectionOptions from '../../components/RejectionOptions';
 import { rejectionReasonText } from '../../utils/rejection';
@@ -34,22 +34,7 @@ export default function OrderRejected() {
   return (
     <div className="or-app-container">
       <main className="or-mobile-shell">
-        <header className="or-header-main">
-          <div className="or-header-top">
-            <div className="or-icon-btn static" aria-hidden="true"></div>
-
-            <h1 className="or-header-title">{CEREMONY_TITLE}</h1>
-
-            <div className="or-icon-btn static">
-              <img className="or-header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
-            </div>
-          </div>
-
-          <div className="or-header-subband">
-            <span className="or-subband-title">حالة الطلب</span>
-            <span className="or-badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
+        <StageHeader current="payment" guide="payment" canChangePackage sub="تم رفض الدفع" />
 
         <div className="or-content-body">
           <section className="or-card-box">

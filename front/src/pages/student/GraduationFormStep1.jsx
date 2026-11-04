@@ -1,15 +1,14 @@
+import StageHeader from '../../components/StageHeader';
 import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
-import GuideLinkButton from '../../components/GuideLinkButton';
 import '../../style/BrandHeader.css';
 import universityLogo from '../../assets/homs-university-white.png';
-import unionLogo from '../../assets/only-logo.png';
 import useFormDraft from '../../hooks/useFormDraft';
 import { getRegistrationColleges, verifyStep1 } from '../../api/graduate';
 import { setRegistrationToken } from '../../api/session';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 import { NAME_REGEX } from '../../utils/validators.js';
-import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 
 /* أرقام فقط، بدون تحديد عدد معين */
@@ -251,35 +250,8 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     <div className="app-container">
       <main className="mobile-shell">
         {/* الهيدر العلوي */}
-        <header className="header-main">
-          <div className="header-top">
-            <button className="icon-btn" aria-label="الرجوع للخلف" type="button">
-              <span className="material-symbols-outlined">arrow_forward</span>
-            </button>
-            <h1 className="header-title">{CEREMONY_TITLE}</h1>
-            <div className="icon-btn">
-              <img className="header-logo" src={unionLogo} alt="شعار اتحاد الطلبة" />
-            </div>
-          </div>
-          <div className="header-subband">
-            <span className="subband-title">إنشاء حساب</span>
-            <span className="badge-batch">{BATCH_BADGE}</span>
-          </div>
-        </header>
+        <StageHeader current="register" guide="before" sub="الخطوة 1 من 4 · معلومات التخرج الأساسية" />
 
-        {/* شريط التقدم */}
-        <section className="progress-section">
-          <div className="progress-labels">
-            <span className="progress-title">خطوة 1 من 4: معلومات التخرج الأساسية</span>
-            <span className="progress-percent">25%</span>
-          </div>
-          <div className="progress-bar-bg">
-            <div className="progress-bar-fill"></div>
-            <div className="progress-bar-empty"></div>
-            <div className="progress-bar-empty"></div>
-            <div className="progress-bar-empty"></div>
-          </div>
-        </section>
 
         {/* بطاقة النموذج */}
         <div className="form-card">
@@ -293,7 +265,6 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             </div>
           </div>
 
-          <GuideLinkButton to="/guide/start" label="العودة لإرشادات التسجيل" />
 
           <form onSubmit={handleNextStep} noValidate>
             {/* الاسم والكنية */}
