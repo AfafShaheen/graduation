@@ -8,6 +8,7 @@ import { getTicketOptions, selectTicket } from '../../api/graduate';
 import { getGraduateToken } from '../../api/session';
 import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import { closesInText } from '../../utils/countdown';
 
 /* صيغة العدد بالعربي: 1 مرافق، 2 مرافقان، 3-10 مرافقين، 11+ مرافقاً */
 const companionsText = (n, afterPreposition = false) => {
@@ -130,6 +131,10 @@ export default function SelectTicket({ onBack }) {
             </div>
           </section>
 
+
+          {!loading && !error && registrationOpen && closesInText(data?.registration?.end) && (
+            <p className="st-closes" role="status">{closesInText(data?.registration?.end)}</p>
+          )}
 
           {!loading && !error && !registrationOpen && (
             <section className="st-notice-card" aria-live="polite">

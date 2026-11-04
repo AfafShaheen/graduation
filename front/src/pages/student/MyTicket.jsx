@@ -10,6 +10,8 @@ import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
 import { CEREMONY_TITLE } from '../../config/brand';
 import GraduateFooter from '../../components/GraduateFooter';
 import { ID_PROOF_TEXT } from '../../config/graduateTexts';
+import { welcomeText } from '../../utils/welcome';
+import { daysUntil, eventCountdownText } from '../../utils/countdown';
 import { downloadQrPng, downloadQrPngs, qrFileName } from '../../utils/qrDownload';
 
 const formatEventDate = (value) => {
@@ -100,6 +102,7 @@ export default function MyTicket() {
   const eventDateText = formatEventDate(event?.event_date);
   const eventTimeText = formatEventTime(event?.event_time);
   const topRank = topRankLabel(data?.top_rank);
+  const countdown = eventCountdownText(daysUntil(event?.event_date));
 
   // ===== تنزيل رموز QR كصور =====
   const graduateItem = graduateCode
@@ -136,6 +139,11 @@ export default function MyTicket() {
         <StageHeader current="ticket" guide="ticket" action={{ label: 'مشاركة التذكرة', icon: 'share', onClick: handleShare }} />
 
         <div className="tk-main-stage">
+          <section className="tk-welcome" aria-label="ترحيب">
+            <p className="tk-welcome-text">{welcomeText(faculty)}</p>
+            {countdown && <p className="tk-countdown">{countdown}</p>}
+          </section>
+
           <div className="tk-status-header">
             <div className="tk-status-group">
               <span className="tk-symbol" style={{ color: '#124d44', fontSize: '20px' }}>

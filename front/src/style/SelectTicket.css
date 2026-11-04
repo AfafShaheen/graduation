@@ -548,3 +548,14 @@
   .st-app-container { padding: 40px 0; }
   .st-mobile-shell { max-width: 640px; }
 }
+.st-closes {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 9999px;
+  background: #fff1e6;
+  border: 1px solid #ca4b00;
+  color: #8a3200;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}

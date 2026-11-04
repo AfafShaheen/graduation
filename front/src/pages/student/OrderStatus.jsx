@@ -1,5 +1,5 @@
 import StageHeader from '../../components/StageHeader';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/OrderStatus.css';
 import '../../style/BrandHeader.css';
@@ -9,6 +9,8 @@ import { companionsLabel } from '../../utils/companions';
 import GraduateFooter from '../../components/GraduateFooter';
 import { QR_REQUIRED_TEXT, GROUP_TEXT } from '../../config/graduateTexts';
 import { routeForTicket, ORDER_POLL_MS } from '../../utils/ticketRoute';
+import useContactPhone from '../../hooks/useContactPhone';
+import { REVIEW_USUAL_TEXT, isReviewDelayed, sentAtLabel, delayWhatsappHref } from '../../utils/reviewTime';
 
 /* تنسيق التاريخ والوقت بالعربية مع أرقام إنجليزية */
 const formatDate = (value) => {
@@ -28,6 +30,12 @@ export default function OrderStatus() {
   const event = data?.event;
   // الرابط بيجي على المستوى الأعلى من الرد (مو جوا event)
   const whatsappLink = data?.whatsapp_group_link;
+  const contactPhone = useContactPhone();
+  // the clock is read when the page opens (and when the data refreshes): nothing ticks on screen
+  const [openedAt] = useState(() => Date.now());
+  const sentAt = data?.payment_submitted_at || ticket?.created_at;
+  const delayed = isReviewDelayed(sentAt, openedAt);
+  const delayHref = delayWhatsappHref(contactPhone);
 
   // تحديث تلقائي بصمت كل 15 ثانية أثناء ظهور الصفحة، وفوراً عند العودة للتبويب
   // أو رجوع الاتصال، حتى يظهر قبول الأدمن أو رفضه بدون ما يضغط الخريج شي.
@@ -119,9 +127,19 @@ export default function OrderStatus() {
                 <h2 className="os-card-headline">تم استلام طلبك وجارٍ التحقق منه</h2>
                 <p className="os-card-subtext">
                   يقوم الاتحاد بمراجعة دفعتك والتأكد من إشعار التحويل من تطبيق{' '}
-                  <strong>شام كاش</strong>. تستغرق العملية عادةً من{' '}
-                  <span className="highlight">ساعتين إلى 24 ساعة</span>.
+                  <strong>شام كاش</strong>. <span className="highlight">{REVIEW_USUAL_TEXT}</span>
                 </p>
+
+                {delayed && (
+                  <div className="os-delay-box" role="note">
+                    <p>مضى على إرسال دفعتك أكثر من 24 ساعة. تأخّر طلبك؟ تواصل معنا.</p>
+                    {delayHref && (
+                      <a className="os-whatsapp-btn" href={delayHref} target="_blank" rel="noopener noreferrer">
+                        <span>تواصل عبر واتساب</span>
+                      </a>
+                    )}
+                  </div>
+                )}
 
                 <div className="os-dashed-divider"></div>
 
@@ -153,9 +171,9 @@ export default function OrderStatus() {
                       <span className="os-symbol" style={{ fontSize: '16px', color: '#124d44' }}>
                         calendar_today
                       </span>
-                      تاريخ الطلب:
+                      وقت إرسال الدفع:
                     </span>
-                    <span className="os-meta-val">{formatDate(ticket?.created_at)}</span>
+                    <span className="os-meta-val">{sentAtLabel(sentAt) || formatDate(sentAt)}</span>
                   </div>
                 </div>
 

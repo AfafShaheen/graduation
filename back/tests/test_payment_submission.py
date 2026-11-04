@@ -494,3 +494,21 @@ async def test_amount_mismatch_is_rejected(
 
     assert response.status_code == 400, response.text
     assert "مبلغ الدفع غير صحيح" in response.json()["detail"]
+
+
+async def test_my_ticket_reports_when_the_payment_was_sent(
+    client, make_event, make_college, make_graduate
+):
+    _event, _college, _grad, access_value, _ticket_id = await _graduate_with_ticket(
+        client, make_event, make_college, make_graduate
+    )
+    before = await client.get("/api/graduates/me/ticket", headers=_auth(access_value))
+    assert before.status_code == 200, before.text
+    assert before.json().get("payment_submitted_at") is None
+
+    await client.post(
+        "/api/graduates/me/payment", headers=_auth(access_value), json=_PAYMENT_BODY
+    )
+    after = await client.get("/api/graduates/me/ticket", headers=_auth(access_value))
+    assert after.status_code == 200, after.text
+    assert after.json()["payment_submitted_at"] is not None

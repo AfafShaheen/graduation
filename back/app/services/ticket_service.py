@@ -324,6 +324,17 @@ async def get_my_ticket_service(db: AsyncSession, graduate: GraduateModel) -> di
         "top_rank": graduate.top_rank,
     }
 
+    latest_payment = (
+        await db.execute(
+            select(PaymentModel.submitted_at)
+            .where(PaymentModel.ticket_id == ticket.id)
+            .order_by(PaymentModel.id.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if latest_payment is not None:
+        result["payment_submitted_at"] = latest_payment
+
     if ticket.status in _PAYABLE_STATUSES:
         result["payment_info"] = await _build_payment_info(db, graduate, ticket)
     elif ticket.status == TicketStatusEnum.CONFIRMED:

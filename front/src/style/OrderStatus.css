@@ -569,3 +569,14 @@
   .os-app-container { padding: 40px 0; }
   .os-mobile-shell { max-width: 640px; }
 }
+.os-delay-box {
+  margin: 12px 0 0;
+  padding: 12px;
+  border: 1px solid #ca4b00;
+  border-radius: 14px;
+  background: #fff1e6;
+  color: #8a3200;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.os-delay-box p { margin: 0 0 8px; font-weight: 700; }

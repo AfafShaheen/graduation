@@ -139,3 +139,5 @@ class MyTicketResponse(BaseModel):
     qr_codes: Optional[List[QrCodeItem]] = None
     whatsapp_group_link: Optional[str] = None
     seat: Optional[SeatInfo] = None
+    # when the graduate sent the payment data (the review time is counted from here)
+    payment_submitted_at: Optional[datetime] = None
