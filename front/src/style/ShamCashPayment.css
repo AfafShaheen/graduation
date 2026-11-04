@@ -708,3 +708,14 @@
 .sc-confirm-yes { background: #124d44; color: #ffffff; border: 0; }
 .sc-confirm-no { background: #ffffff; color: #124d44; border: 1.5px solid #124d44; }
 .sc-confirm-yes:disabled, .sc-confirm-no:disabled { opacity: 0.6; cursor: default; }
+
+.sc-help-link {
+  display: block;
+  margin-top: 4px;
+  padding: 10px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #124d44;
+  text-decoration: underline;
+}

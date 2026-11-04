@@ -9,6 +9,8 @@ import { parseAmount, formatAmount } from '../../utils/amount.js';
 import GraduateFooter from '../../components/GraduateFooter';
 import PaymentConfirmDialog from '../../components/PaymentConfirmDialog';
 import { validateTransactionId } from '../../utils/payments';
+import { senderNameFromNote, paymentHelpHref } from '../../utils/paymentFill';
+import useContactPhone from '../../hooks/useContactPhone';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
 
 /* تحويل الأرقام العربية لإنجليزية وإزالة أي رمز غير رقمي */
@@ -74,6 +76,7 @@ export default function ShamCashPayment({ onBack }) {
 
   const [copied, setCopied] = useState(false);
   const [noteCopied, setNoteCopied] = useState(false);
+  const contactPhone = useContactPhone();
   const [confirming, setConfirming] = useState(false);
   const [formData, setFormData] = useState({ transactionId: '', transferAmount: '', senderName: '' });
   const [errors, setErrors] = useState({});
@@ -108,6 +111,8 @@ export default function ShamCashPayment({ onBack }) {
         setFormData((prev) => ({
           ...prev,
           transferAmount: prev.transferAmount || formatAmount(result.amount),
+          // his own name is already known: he only changes it when his Sham Cash name differs
+          senderName: prev.senderName || senderNameFromNote(result.note_text),
         }));
         // The QR is a data URI from the JSON endpoint; never use qr_image_url as <img src>.
         try {
@@ -170,6 +175,8 @@ export default function ShamCashPayment({ onBack }) {
       setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
     }
   };
+
+  const helpHref = paymentHelpHref(contactPhone, info?.note_text);
 
   const amountMismatch =
     submitted && !errors.transferAmount && parseAmount(formData.transferAmount) !== amountValue;
@@ -344,7 +351,7 @@ export default function ShamCashPayment({ onBack }) {
                 <form className="sc-form-body" onSubmit={handleSubmit} noValidate autoComplete="off">
                   <div className="sc-field-group">
                     <label className="sc-label" htmlFor="transactionId">
-                      <span>رقم العملية (رقم الإشعار من تطبيق شام كاش)</span>
+                      <span>رقم العملية</span>
                       <span className="sc-star">*</span>
                     </label>
                     <div className="sc-input-wrapper">
@@ -368,14 +375,14 @@ export default function ShamCashPayment({ onBack }) {
                       <span className="sc-symbol sc-input-icon-left">pin</span>
                     </div>
                     <p className="sc-field-hint" style={{ margin: '4px 0 0', fontSize: '12px', color: '#725b51' }}>
-                      اكتب رقم العملية كما ظهر في تطبيق شام كاش بالضبط (حروف إنجليزية وأرقام وشرطة، بدون مسافات).
+                      يظهر في إشعار التحويل بعد نجاحه في تطبيق شام كاش. انسخه كما هو (حروف إنجليزية وأرقام وشرطة، بدون مسافات).
                     </p>
                     <FieldError message={errors.transactionId} />
                   </div>
 
                   <div className="sc-field-group">
                     <label className="sc-label" htmlFor="transferAmount">
-                      <span>المبلغ المحوّل (ل.س)</span>
+                      <span>المبلغ الذي حوّلته (ل.س)</span>
                       <span className="sc-star">*</span>
                     </label>
                     <div className="sc-input-wrapper">
@@ -404,7 +411,7 @@ export default function ShamCashPayment({ onBack }) {
 
                   <div className="sc-field-group">
                     <label className="sc-label" htmlFor="senderName">
-                      <span>اسم المرسل (اسم المستخدم الذي سيتم إرسال المبلغ منه)</span>
+                      <span>اسمك في شام كاش</span>
                       <span className="sc-star">*</span>
                     </label>
                     <div className="sc-input-wrapper">
@@ -421,6 +428,9 @@ export default function ShamCashPayment({ onBack }) {
                       />
                       <span className="sc-symbol sc-input-icon-left">person</span>
                     </div>
+                    <p className="sc-field-hint" style={{ margin: '4px 0 0', fontSize: '12px', color: '#725b51' }}>
+                      هذا اسمك كما نعرفه. غيّره إن كان الاسم الظاهر في حسابك بشام كاش مختلفاً.
+                    </p>
                     <FieldError message={errors.senderName} />
                   </div>
 
@@ -450,6 +460,12 @@ export default function ShamCashPayment({ onBack }) {
                     <span className="sc-symbol">arrow_forward</span>
                     <span>تغيير الباقة والرجوع لاختيار التذكرة</span>
                   </button>
+
+                  {helpHref && (
+                    <a className="sc-help-link" href={helpHref} target="_blank" rel="noopener noreferrer">
+                      لا تفهم شيئاً هنا؟ اطلب مساعدتنا على واتساب
+                    </a>
+                  )}
                 </form>
 
                 <PaymentConfirmDialog

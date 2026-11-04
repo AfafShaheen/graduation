@@ -134,3 +134,31 @@ test('each companion code can be sent through the share sheet, with a download f
   assert.ok(util.includes('navigator.canShare'));
   assert.ok(util.includes("'downloaded'"));
 });
+
+import { senderNameFromNote, amountDigits, prefillPaymentForm, paymentHelpHref } from '../src/utils/paymentFill.js';
+
+test('the payment form starts with the name and the amount, and never overwrites what he typed', () => {
+  assert.equal(senderNameFromNote('محمد الشامي 9000001'), 'محمد الشامي');
+  assert.equal(senderNameFromNote(''), '');
+  assert.equal(amountDigits('50.00'), '50');
+  assert.equal(amountDigits('0'), '');
+  const info = { amount: '50.00', note_text: 'محمد الشامي 9000001' };
+  assert.deepEqual(
+    prefillPaymentForm({ transactionId: '', transferAmount: '', senderName: '' }, info),
+    { transactionId: '', transferAmount: '50', senderName: 'محمد الشامي' },
+  );
+  const typed = prefillPaymentForm({ transferAmount: '45', senderName: 'أبو محمد' }, info);
+  assert.equal(typed.transferAmount, '45');
+  assert.equal(typed.senderName, 'أبو محمد');
+});
+
+test('the help link on the payment page carries his name and number', () => {
+  const href = paymentHelpHref('0944123456', 'محمد الشامي 9000001');
+  assert.ok(href.startsWith('https://wa.me/963944123456?text='));
+  assert.ok(decodeURIComponent(href).includes('أنا محمد الشامي، رقمي الجامعي 9000001'));
+  assert.equal(paymentHelpHref('', 'x'), null);
+  const page = read('pages/student/ShamCashPayment.jsx');
+  assert.ok(page.includes('paymentHelpHref(contactPhone, info?.note_text)'));
+  assert.ok(page.includes('<span>اسمك في شام كاش</span>'));
+  assert.ok(!page.includes('اسم المستخدم الذي سيتم إرسال المبلغ منه'));
+});
