@@ -57,3 +57,12 @@ test('every graduate page ends with the same footer', () => {
     assert.match(read(`pages/student/${file}.jsx`), /<GraduateFooter\b/, file);
   }
 });
+
+test('the footer is never inside the sticky bottom bar of the first step', () => {
+  const step1 = read('pages/student/GraduationFormStep1.jsx');
+  const start = step1.indexOf('className="footer-deck"');
+  const deck = step1.slice(start, step1.indexOf('</div>', start));
+  assert.ok(start > 0 && deck.includes('submit-btn'));
+  assert.ok(!deck.includes('<GraduateFooter'), 'the footer would take half of a short phone screen');
+  assert.ok(step1.indexOf('<GraduateFooter') > start);
+});

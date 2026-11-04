@@ -576,9 +576,10 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               تسجيل دخول
             </button>
           </p>
-
-          <GraduateFooter />
         </div>
+
+        {/* outside the sticky bar: the footer must not take half of a short phone screen */}
+        <GraduateFooter />
       </main>
     </div>
   );
