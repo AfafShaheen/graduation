@@ -142,7 +142,10 @@ function App() {
         <Route
           path="/"
           element={
-            hasSeenStartGuide() ? (
+            hasVerifySession && !PREVIEW ? (
+              // the account is created and waits for its code: there is nothing to go back to
+              <Navigate to="/otp" replace />
+            ) : hasSeenStartGuide() ? (
               <GraduationFormStep1
                 onNavigateToLogin={() => navigate("/login")}
                 onNext={() => navigate("/register")}
@@ -156,12 +159,14 @@ function App() {
         <Route
           path="/register"
           element={
-            hasValidRegistration || PREVIEW ? (
+            hasVerifySession && !PREVIEW ? (
+              <Navigate to="/otp" replace />
+            ) : hasValidRegistration || PREVIEW ? (
               <GraduationFormStep2
                 onBack={() => navigate("/")}
                 onNavigateToLogin={() => navigate("/login")}
                 onNext={() => {
-                  navigate("/otp");
+                  navigate("/otp", { replace: true }); // the form is not a step to come back to
                 }}
               />
             ) : (
@@ -177,7 +182,6 @@ function App() {
               <Otp
                 mode="register"
                 email={getGraduateEmail() || undefined}
-                onBack={() => navigate("/register")}
                 onVerified={() => navigate("/questions", { replace: true })}
               />
             ) : (

@@ -97,3 +97,14 @@ test('the guide mark belongs to the graduate in the token, not to a per-tab e-ma
   assert.equal(getGraduateId(), null);
   delete globalThis.window; delete globalThis.localStorage; delete globalThis.sessionStorage;
 });
+
+test('once the account waits for its code there is no way back to the first two steps', () => {
+  const app = read('App.jsx');
+  const route = (path) => app.slice(app.indexOf('path="' + path + '"'), app.indexOf('path="' + path + '"') + 700);
+  assert.ok(route('/').includes('hasVerifySession && !PREVIEW'), 'step 1 sends him to the code');
+  assert.ok(route('/register').includes('hasVerifySession && !PREVIEW'), 'step 2 sends him to the code');
+  assert.ok(app.includes('navigate("/otp", { replace: true })'), 'the history keeps no step 2 entry');
+  const otp = route('/otp');
+  assert.ok(!otp.includes('onBack'), 'the code page has no back arrow in registration');
+  assert.match(read('pages/student/Otp.jsx'), /<StageHeader current="register"[^>]*onBack={onBack}/);
+});
