@@ -32,14 +32,16 @@ test('the college filter and the college column are still there', () => {
   assert.ok(filters.includes('الكلية'), 'college filter label must stay');
   assert.ok(filters.includes('collegeId'), 'college filter field must stay');
   const table = read('../src/pages/admin/roster/RosterTable.jsx');
-  assert.ok(table.includes('<th>الكلية والتخصص</th>'), 'college column header must stay');
+  assert.ok(table.includes("case 'college'"), 'college column must stay');
+  assert.ok(read('../src/utils/rosterView.js').includes("label: 'الكلية والتخصص'"), 'college column label must stay');
   const utils = read('../src/utils/roster.js');
   assert.ok(utils.includes("collegeId: 'college_id'"), 'college query key must stay');
 });
 
-test('the roster table has seven columns (file column removed)', () => {
+test('the roster columns are chosen by the admin and there is no file column', () => {
   const table = read('../src/pages/admin/roster/RosterTable.jsx');
-  const headers = table.match(/<th>[^<]+<\/th>/g) || [];
-  assert.equal(headers.length, 7, `expected 7 <th> cells, got ${headers.length}`);
-  assert.ok(table.includes('colSpan={7}'), 'empty-state colSpan must match the column count');
+  const view = read('../src/utils/rosterView.js');
+  assert.ok(table.includes('{c.label}'), 'headers come from the column list');
+  assert.ok(table.includes('colSpan={span}'), 'empty-state colSpan must follow the visible columns');
+  assert.ok(!view.includes('file') && !view.includes('الملف'), 'no file column');
 });

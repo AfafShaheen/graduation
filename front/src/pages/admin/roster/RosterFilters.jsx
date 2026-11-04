@@ -1,12 +1,5 @@
-import React from 'react';
-import {
-  REGISTRATION_OPTIONS,
-  TOP_OPTIONS,
-  TICKET_OPTIONS,
-  PAYMENT_OPTIONS,
-  ENTRY_OPTIONS,
-  TICKET_TYPE_OPTIONS,
-} from '../../../utils/roster.js';
+import React, { useState } from 'react';
+import { EXTRA_FILTERS, QUICK_STATUSES, activeQuick, applyQuick, activeExtras } from '../../../utils/rosterView.js';
 
 function SelectField({ label, value, options, onChange }) {
   return (
@@ -24,6 +17,10 @@ function SelectField({ label, value, options, onChange }) {
   );
 }
 
+/*
+ * Search, the ceremony and the college are always in sight. The status chips are shortcuts to the
+ * "registration" and "ticket" filters. The rest of the filters wait under "فلاتر إضافية".
+ */
 export default function RosterFilters({
   filters,
   searchText,
@@ -36,36 +33,34 @@ export default function RosterFilters({
   colleges,
   events = [],
 }) {
+  const [showExtra, setShowExtra] = useState(false);
   const set = (key) => (value) => onChange({ ...filters, [key]: value });
   const collegeOptions = colleges.map((c) => ({ value: String(c.id), label: c.name }));
   const eventOptions = events.map((e) => ({ value: String(e.id), label: e.name }));
+  const quick = activeQuick(filters);
+  const extras = activeExtras(filters);
 
   return (
     <section className="exc-card rost-filters" aria-label="البحث والفلاتر">
       <div className="rost-filters-head">
         <div>
           <h4 className="exc-card-title">البحث والفلاتر</h4>
-          <p className="exc-card-sub">كل الفلاتر بتشتغل مع بعضها، والنتائج بتتحدّث مباشرة.</p>
+          <p className="exc-card-sub">كل الفلاتر تعمل معاً، والنتائج تتحدّث مباشرة.</p>
         </div>
         <div className="rost-filters-buttons">
           <button type="button" className="rost-btn" onClick={onReset} disabled={!canReset}>
             <span className="exc-symbol" style={{ fontSize: '18px' }}>filter_alt_off</span>
-            <span>إعادة الضبط</span>
+            <span>مسح الكل</span>
           </button>
-          <button
-            type="button"
-            className="rost-btn solid"
-            onClick={onExport}
-            disabled={exporting}
-          >
+          <button type="button" className="rost-btn solid" onClick={onExport} disabled={exporting}>
             <span className="exc-symbol" style={{ fontSize: '18px' }}>download</span>
             <span>{exporting ? 'جارٍ التصدير...' : 'تصدير Excel'}</span>
           </button>
         </div>
       </div>
 
-      <div className="rost-filter-grid">
-        <label className="rost-field rost-field-wide">
+      <div className="rost-main-row">
+        <label className="rost-field rost-field-search">
           <span>بحث بالاسم أو الرقم الجامعي</span>
           <input
             type="text"
@@ -76,16 +71,53 @@ export default function RosterFilters({
             onChange={(e) => onSearchText(e.target.value)}
           />
         </label>
-
         <SelectField label="الحفل" value={filters.eventId} options={eventOptions} onChange={set('eventId')} />
         <SelectField label="الكلية" value={filters.collegeId} options={collegeOptions} onChange={set('collegeId')} />
-        <SelectField label="التسجيل" value={filters.registration} options={REGISTRATION_OPTIONS} onChange={set('registration')} />
-        <SelectField label="الأوائل" value={filters.topRank} options={TOP_OPTIONS} onChange={set('topRank')} />
-        <SelectField label="التذكرة" value={filters.ticket} options={TICKET_OPTIONS} onChange={set('ticket')} />
-        <SelectField label="الدفع" value={filters.payment} options={PAYMENT_OPTIONS} onChange={set('payment')} />
-        <SelectField label="الدخول" value={filters.entry} options={ENTRY_OPTIONS} onChange={set('entry')} />
-        <SelectField label="نوع التذكرة" value={filters.ticketType} options={TICKET_TYPE_OPTIONS} onChange={set('ticketType')} />
       </div>
+
+      <div className="rost-chips" role="group" aria-label="حالة الخريج">
+        {QUICK_STATUSES.map((q) => (
+          <button
+            key={q.key}
+            type="button"
+            className={`rost-chip ${quick === q.key ? 'on' : ''} ${q.warn ? 'warn' : ''}`.trim()}
+            aria-pressed={quick === q.key}
+            onClick={() => onChange(applyQuick(filters, q.key))}
+          >
+            {q.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          className="rost-more"
+          aria-expanded={showExtra}
+          onClick={() => setShowExtra((v) => !v)}
+        >
+          <span className="exc-symbol" style={{ fontSize: '18px' }}>filter_alt</span>
+          <span>فلاتر إضافية{extras.length ? ` (${extras.length})` : ''}</span>
+        </button>
+      </div>
+
+      {showExtra && (
+        <div className="rost-filter-grid">
+          {EXTRA_FILTERS.map((f) => (
+            <SelectField key={f.key} label={f.label} value={filters[f.key]} options={f.options} onChange={set(f.key)} />
+          ))}
+        </div>
+      )}
+
+      {extras.length > 0 && (
+        <div className="rost-tags" aria-label="الفلاتر المفعّلة">
+          {extras.map((tag) => (
+            <span key={tag.key} className="rost-tag">
+              {tag.label}
+              <button type="button" aria-label={`إزالة ${tag.label}`} onClick={() => set(tag.key)('')}>
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

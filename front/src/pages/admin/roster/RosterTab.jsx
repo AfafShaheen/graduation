@@ -3,6 +3,8 @@ import RosterFilters from './RosterFilters.jsx';
 import RosterTable from './RosterTable.jsx';
 import RosterDrawer from './RosterDrawer.jsx';
 import Pagination from './Pagination.jsx';
+import ColumnChooser from './ColumnChooser.jsx';
+import { DEFAULT_COLUMNS, loadColumns, saveColumns, toggleColumn } from '../../../utils/rosterView.js';
 import { useAdminRoster, exportRosterXlsx } from '../hooks/useAdminRoster.js';
 import { useAdminEvents } from '../hooks/useAdminEvents.js';
 import { listColleges, ApiError } from '../../../api/admin.js';
@@ -29,6 +31,8 @@ export default function RosterTab() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   const [colleges, setColleges] = useState([]);
+  // the columns the admin chose are kept in this browser
+  const [columns, setColumns] = useState(loadColumns);
   const appliedSearch = useRef('');
   const { events } = useAdminEvents({ limit: 100 });
 
@@ -90,6 +94,11 @@ export default function RosterTab() {
     setPage(1);
   };
 
+  const changeColumns = (next) => {
+    setColumns(next);
+    saveColumns(next);
+  };
+
   const handlePageSize = (size) => {
     setPageSize(size);
     setPage(1);
@@ -143,9 +152,16 @@ export default function RosterTab() {
       <section className="exc-card flush">
         <div className="rost-list-head">
           <h4 className="exc-card-title">قائمة الخريجين</h4>
-          <span className="rost-count">
-            {loading && items.length === 0 ? '...' : `${total} خريج`}
-          </span>
+          <div className="rost-list-tools">
+            <span className="rost-count">
+              {loading && items.length === 0 ? '...' : `${total} خريج`}
+            </span>
+            <ColumnChooser
+              columns={columns}
+              onToggle={(key) => changeColumns(toggleColumn(columns, key))}
+              onDefault={() => changeColumns([...DEFAULT_COLUMNS])}
+            />
+          </div>
         </div>
 
         <RosterTable
@@ -154,6 +170,7 @@ export default function RosterTab() {
           error={error}
           selectedId={selectedId}
           onSelect={handleSelect}
+          columns={columns}
         />
 
         {total > 0 && (
