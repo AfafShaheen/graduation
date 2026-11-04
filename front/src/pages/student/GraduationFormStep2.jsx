@@ -80,6 +80,14 @@ export default function GraduationFormStep2({
     }
   };
 
+  // a field is judged when he leaves it (an untouched empty one is left alone)
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    if (!validators[name]) return;
+    if (!submitted && String(value).trim() === "") return;
+    setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
+  };
+
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
   };
@@ -202,6 +210,7 @@ export default function GraduationFormStep2({
           {/* autoComplete="off": المتصفح ما يعبي الحقول لحاله */}
           <form
             onSubmit={handleSubmit}
+            onBlur={handleBlur}
             noValidate
             autoComplete="off"
             style={{ marginTop: "16px" }}

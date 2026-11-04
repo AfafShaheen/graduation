@@ -193,6 +193,14 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     }
   };
 
+  // checking while he fills the form: a field is judged when he leaves it (an untouched empty one is left alone)
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    if (!validators[name]) return;
+    if (!submitted && String(value).trim() === '') return;
+    setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
+  };
+
   const handleNextStep = async (e) => {
     e.preventDefault();
     if (isLoading) return;
@@ -260,12 +268,12 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
             </div>
             <div>
               <h2 className="card-title">ألف مبروك التخرج! 🎓</h2>
-              <p className="card-subtitle">سجّل بياناتك لتأكيد حجز تذكرتك الرقمية</p>
+              <p className="card-subtitle">سجّل بياناتك لتأكيد حجز تذكرتك الرقمية. تستغرق نحو 3 دقائق.</p>
             </div>
           </div>
 
 
-          <form onSubmit={handleNextStep} noValidate>
+          <form onSubmit={handleNextStep} onBlur={handleBlur} noValidate>
             {/* الاسم والكنية */}
                         {unverifiedNotice && (
               <div className="info-box" style={{ marginBottom: 12 }} role="status">
@@ -299,6 +307,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               </p>
             </div>
 
+            <h3 className="form-section-title">هويتك</h3>
             <div className="form-group grid-two-cols">
               <div>
                 <label htmlFor="reg-firstName" className="form-label">
@@ -357,6 +366,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               <FieldError message={errors.gender} />
             </div>
 
+            <h3 className="form-section-title">دراستك</h3>
             {/* الكلية */}
             <div className="form-group">
               <label htmlFor="reg-faculty" className="form-label">
@@ -493,6 +503,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               <FieldError message={errors.gpa} />
             </div>
 
+            <h3 className="form-section-title">عائلتك</h3>
             {/* اسم الأب والأم */}
             <div className="form-group grid-two-cols">
               <div>

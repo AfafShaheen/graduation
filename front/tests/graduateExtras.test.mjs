@@ -64,3 +64,15 @@ test('the pages use them, and nothing ticks on the status page', () => {
   assert.match(status, /payment_submitted_at/);
   assert.doesNotMatch(status, /setNow|useNow/);
 });
+
+test('registration forms judge a field when he leaves it and group the first step', () => {
+  const one = read('pages/student/GraduationFormStep1.jsx');
+  const two = read('pages/student/GraduationFormStep2.jsx');
+  assert.ok(one.includes('onBlur={handleBlur}'));
+  assert.ok(two.includes('onBlur={handleBlur}'));
+  for (const title of ['هويتك', 'دراستك', 'عائلتك']) assert.ok(one.includes(`>${title}</h3>`), title);
+  assert.ok(one.includes('تستغرق نحو 3 دقائق'));
+  // the drafts stay in the tab only and never hold the password
+  assert.ok(one.includes("useFormDraft('step1'"));
+  assert.ok(two.includes('useFormDraft("step2", { phone: "", email: "" })'));
+});
