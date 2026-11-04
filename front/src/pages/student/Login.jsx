@@ -213,7 +213,7 @@ export default function Login({
                     spellCheck="false"
                     dir="ltr"
                     className="lg-input"
-                    placeholder="student@albaath-univ.edu.sy"
+                    placeholder="student@gmail.com"
                     value={formData.email}
                     onChange={handleInputChange}
                     aria-invalid={!!errors.email}

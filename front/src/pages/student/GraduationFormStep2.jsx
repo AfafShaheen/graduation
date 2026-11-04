@@ -278,7 +278,7 @@ export default function GraduationFormStep2({
                   autoCapitalize="none"
                   spellCheck="false"
                   className={`form-input ${errors.email ? "error" : ""}`}
-                  placeholder="student@albaath-univ.edu.sy"
+                  placeholder="student@gmail.com"
                   style={{ paddingRight: "40px", textAlign: "left" }}
                   value={formData.email}
                   onChange={handleInputChange}

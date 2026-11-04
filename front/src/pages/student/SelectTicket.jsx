@@ -9,6 +9,7 @@ import { getGraduateToken } from '../../api/session';
 import { CEREMONY_TITLE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
 import { closesInText } from '../../utils/countdown';
+import { registrationNotice } from '../../utils/ceremonyState';
 
 /* صيغة العدد بالعربي: 1 مرافق، 2 مرافقان، 3-10 مرافقين، 11+ مرافقاً */
 const companionsText = (n, afterPreposition = false) => {
@@ -46,7 +47,9 @@ export default function SelectTicket({ onBack }) {
   const [actionError, setActionError] = useState('');
 
   const options = (data?.options || []).map(buildOption);
-  const registrationOpen = !!data?.registration?.is_open;
+  // open, not started, closed, or the ceremony is over: the page shows only the matching notice when not open
+  const notice = data ? registrationNotice(data.registration, data.event?.event_date) : null;
+  const registrationOpen = notice?.kind === 'open';
 
   const load = useCallback(async () => {
     const accessValue = getGraduateToken();
@@ -136,7 +139,7 @@ export default function SelectTicket({ onBack }) {
             <p className="st-closes" role="status">{closesInText(data?.registration?.end)}</p>
           )}
 
-          {!loading && !error && !registrationOpen && (
+          {!loading && !error && notice && !registrationOpen && (
             <section className="st-notice-card" aria-live="polite">
               <div className="st-notice-icon-bg">
                 <span className="st-symbol" style={{ fontSize: '18px', fontWeight: 'bold' }}>
@@ -144,10 +147,8 @@ export default function SelectTicket({ onBack }) {
                 </span>
               </div>
               <div>
-                <h4 className="st-notice-headline">التسجيل مغلق</h4>
-                <p className="st-notice-body">
-                  لم يعد التسجيل متاحاً لهذه الدفعة. يرجى متابعة الإعلانات الرسمية.
-                </p>
+                <h4 className="st-notice-headline">{notice.headline}</h4>
+                <p className="st-notice-body">{notice.body}</p>
               </div>
             </section>
           )}
@@ -162,7 +163,7 @@ export default function SelectTicket({ onBack }) {
             </section>
           )}
 
-          {!loading && !error && (
+          {!loading && !error && registrationOpen && (
             <section className="st-options-list" aria-label="باقات التذاكر" role="radiogroup">
               {options.map((option) => (
                 <div
@@ -211,7 +212,7 @@ export default function SelectTicket({ onBack }) {
             </section>
           )}
 
-          {data?.info_text && (
+          {registrationOpen && data?.info_text && (
             <section className="st-notice-card">
               <div className="st-notice-icon-bg">
                 <span className="st-symbol" style={{ fontSize: '18px', fontWeight: 'bold' }}>
@@ -236,20 +237,24 @@ export default function SelectTicket({ onBack }) {
 
         <div className="st-bottom-dock">
           <HelpFooter />
-          <button
-            className="st-action-btn"
-            type="button"
-            onClick={handleContinue}
-            disabled={!registrationOpen || selectedType == null || submitting}
-          >
-            <span>{submitting ? 'جارٍ التأكيد...' : 'تأكيد الاختيار ومتابعة الدفع'}</span>
-            <span className="st-symbol" style={{ fontSize: '20px' }}>
-              arrow_back
-            </span>
-          </button>
-          <div className="st-dock-caption">
-            الدفع عبر شام كاش بتحويل مباشر، وتُؤكَّد تذكرتك بعد التحقق من الإيصال
-          </div>
+          {registrationOpen && (
+            <>
+              <button
+                className="st-action-btn"
+                type="button"
+                onClick={handleContinue}
+                disabled={selectedType == null || submitting}
+              >
+                <span>{submitting ? 'جارٍ التأكيد...' : 'تأكيد الاختيار ومتابعة الدفع'}</span>
+                <span className="st-symbol" style={{ fontSize: '20px' }}>
+                  arrow_back
+                </span>
+              </button>
+              <div className="st-dock-caption">
+                الدفع عبر شام كاش بتحويل مباشر، وتُؤكَّد تذكرتك بعد التحقق من الإيصال
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

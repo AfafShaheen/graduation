@@ -57,7 +57,7 @@ test('review time: fixed send time, usual range, and a delay message after 24 ho
 });
 
 test('the pages use them, and nothing ticks on the status page', () => {
-  assert.match(read('pages/student/MyTicket.jsx'), /welcomeText\(faculty\)/);
+  assert.match(read('pages/student/MyTicket.jsx'), /welcomeText\(faculty,/);
   assert.match(read('pages/student/MyTicket.jsx'), /eventCountdownText/);
   assert.match(read('pages/student/SelectTicket.jsx'), /closesInText/);
   const status = read('pages/student/OrderStatus.jsx');
@@ -75,4 +75,41 @@ test('registration forms judge a field when he leaves it and group the first ste
   // the drafts stay in the tab only and never hold the password
   assert.ok(one.includes("useFormDraft('step1'"));
   assert.ok(two.includes('useFormDraft("step2", { phone: "", email: "" })'));
+});
+
+import { ceremonyEnded, registrationNotice, ENDED_TEXT, CLOSED_TEXT } from '../src/utils/ceremonyState.js';
+
+test('after the ceremony, or with registration closed, the package page says so', () => {
+  const now = new Date('2027-01-05T10:00:00Z');
+  assert.equal(ceremonyEnded('2027-01-02', now), true);
+  assert.equal(ceremonyEnded('2027-01-05', now), false, 'the day of the ceremony is not over yet');
+  assert.equal(ceremonyEnded('2027-01-09', now), false);
+
+  const ended = registrationNotice({ is_open: false }, '2027-01-02', now);
+  assert.deepEqual([ended.kind, ended.headline, ended.body], ['ended', 'انتهى الحفل', ENDED_TEXT]);
+
+  const closed = registrationNotice({ is_open: false, end: '2026-12-01T00:00:00Z' }, '2027-01-09', now);
+  assert.deepEqual([closed.kind, closed.headline, closed.body], ['closed', 'التسجيل مغلق', CLOSED_TEXT]);
+
+  const early = registrationNotice({ is_open: false, start: '2027-02-01T00:00:00Z' }, '2027-03-01', now);
+  assert.equal(early.kind, 'not_started');
+  assert.match(early.body, /2027/);
+
+  assert.equal(registrationNotice({ is_open: true }, '2027-01-09', now).kind, 'open');
+  // the ceremony being over wins even if the registration window was never closed
+  assert.equal(registrationNotice({ is_open: true }, '2027-01-02', now).kind, 'ended');
+});
+
+test('a confirmed ticket after the ceremony keeps the normal page with a closing sentence', () => {
+  assert.equal(
+    welcomeText('كلية الهندسة', { ended: true }),
+    'انتهى حفل التخرج. مبارك تخرجك من كلية الهندسة، ونتمنى لك التوفيق في مسيرتك.',
+  );
+  assert.equal(eventCountdownText(-3), '', 'no countdown once the ceremony is over');
+  assert.match(read('pages/student/MyTicket.jsx'), /ceremonyEnded\(event\?\.event_date\)/);
+  const page = read('pages/student/SelectTicket.jsx');
+  assert.match(page, /registrationNotice\(/);
+  assert.ok(!page.includes('albaath'));
+  assert.ok(!read('pages/student/Login.jsx').includes('albaath'));
+  assert.ok(!read('pages/student/GraduationFormStep2.jsx').includes('albaath'));
 });

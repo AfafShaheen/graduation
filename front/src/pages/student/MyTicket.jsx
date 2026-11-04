@@ -12,6 +12,7 @@ import GraduateFooter from '../../components/GraduateFooter';
 import { ID_PROOF_TEXT } from '../../config/graduateTexts';
 import { welcomeText } from '../../utils/welcome';
 import { daysUntil, eventCountdownText } from '../../utils/countdown';
+import { ceremonyEnded } from '../../utils/ceremonyState';
 import { downloadQrPng, downloadQrPngs, qrFileName } from '../../utils/qrDownload';
 
 const formatEventDate = (value) => {
@@ -102,7 +103,8 @@ export default function MyTicket() {
   const eventDateText = formatEventDate(event?.event_date);
   const eventTimeText = formatEventTime(event?.event_time);
   const topRank = topRankLabel(data?.top_rank);
-  const countdown = eventCountdownText(daysUntil(event?.event_date));
+  const ended = ceremonyEnded(event?.event_date);
+  const countdown = ended ? '' : eventCountdownText(daysUntil(event?.event_date));
 
   // ===== تنزيل رموز QR كصور =====
   const graduateItem = graduateCode
@@ -140,7 +142,7 @@ export default function MyTicket() {
 
         <div className="tk-main-stage">
           <section className="tk-welcome" aria-label="ترحيب">
-            <p className="tk-welcome-text">{welcomeText(faculty)}</p>
+            <p className="tk-welcome-text">{welcomeText(faculty, { ended })}</p>
             {countdown && <p className="tk-countdown">{countdown}</p>}
           </section>
 
