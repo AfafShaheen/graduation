@@ -1239,6 +1239,18 @@
               }
             ]
           },
+          "payment_submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Submitted At"
+          },
           "qr_codes": {
             "anyOf": [
               {
@@ -1374,6 +1386,17 @@
           "note_instruction": {
             "title": "Note Instruction",
             "type": "string"
+          },
+          "note_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note Text"
           },
           "qr_image_url": {
             "anyOf": [
