@@ -9,10 +9,16 @@ import { getGraduateToken } from '../../api/session';
 import topRankLabel, { TOP_STUDENT_TITLE } from '../../utils/topRank';
 import { CEREMONY_TITLE } from '../../config/brand';
 import GraduateFooter from '../../components/GraduateFooter';
-import { ID_PROOF_TEXT } from '../../config/graduateTexts';
+import { ID_PROOF_TEXT, GROUP_TEXT } from '../../config/graduateTexts';
 import { welcomeText } from '../../utils/welcome';
 import { daysUntil, eventCountdownText } from '../../utils/countdown';
-import { ceremonyEnded } from '../../utils/ceremonyState';
+import {
+  ceremonyEnded,
+  endedTicketStatus,
+  COMPANION_ATTENDED,
+  COMPANION_NOT_SCANNED,
+} from '../../utils/ceremonyState';
+import { formatEventTime12 } from '../../utils/eventTime';
 import { formatShortCode } from '../../utils/shortCode';
 import { downloadQrPng, downloadQrPngs, shareQrPng, qrFileName } from '../../utils/qrDownload';
 
@@ -21,14 +27,6 @@ const formatEventDate = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return new Intl.DateTimeFormat('ar-SY-u-nu-latn', { dateStyle: 'full' }).format(date);
-};
-
-/* "18:30:00" -> "18:30" */
-const formatEventTime = (value) => {
-  if (!value) return '';
-  const parts = String(value).split(':');
-  if (parts.length < 2) return String(value);
-  return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
 };
 
 const SHARE_TEXT = 'رمز دخولك إلى حفل التخرج. أبرزه عند الباب بعد دخول الخريج.';
@@ -116,10 +114,13 @@ export default function MyTicket() {
   const universityId = profile?.university_id || '—';
   const eventTitle = event?.name || CEREMONY_TITLE;
   const eventDateText = formatEventDate(event?.event_date);
-  const eventTimeText = formatEventTime(event?.event_time);
+  const eventTimeText = formatEventTime12(event?.event_time);
   const topRank = topRankLabel(data?.top_rank);
   const ended = ceremonyEnded(event?.event_date);
   const countdown = ended ? '' : eventCountdownText(daysUntil(event?.event_date));
+  // after the ceremony the ticket shows whether the gate scanned the graduate's own code
+  const attended = Boolean(graduateCode?.scanned);
+  const endedStatus = ended ? endedTicketStatus(attended) : null;
 
   // ===== تنزيل رموز QR كصور =====
   const graduateItem = graduateCode
@@ -161,13 +162,17 @@ export default function MyTicket() {
   return (
     <div className="tk-app-container">
       <main className="tk-mobile-shell">
-        <StageHeader current="ticket" guide="ticket" action={{ label: 'مشاركة التذكرة', icon: 'share', onClick: handleShare }} />
+        <StageHeader current="ticket" guide="ticket" action={ended ? undefined : { label: 'مشاركة التذكرة', icon: 'share', onClick: handleShare }} />
 
         <div className="tk-main-stage">
           <section className="tk-welcome" aria-label="ترحيب">
             <p className="tk-welcome-text">{welcomeText(faculty, { ended })}</p>
             {countdown && <p className="tk-countdown" key={countdown}>{countdown}</p>}
           </section>
+
+          {endedStatus && (
+            <p className={`tk-ended-banner ${endedStatus.tone}`} role="status">{endedStatus.text}</p>
+          )}
 
           <div className="tk-status-header">
             <div className="tk-status-group">
@@ -176,7 +181,7 @@ export default function MyTicket() {
               </span>
               <span className="tk-status-title">تذكرة الخريج الرسمية</span>
             </div>
-            <span className="tk-badge-confirmed">مؤكدة</span>
+            <span className={`tk-badge-confirmed${ended ? ' tk-badge-ended' : ''}`}>{ended ? 'انتهى الحفل' : 'مؤكدة'}</span>
           </div>
 
           <section className="tk-card-box">
@@ -247,7 +252,7 @@ export default function MyTicket() {
                 </div>
               )}
 
-              <div className="tk-qr-box">
+              <div className={`tk-qr-box${ended ? ' tk-ended' : ''}`}>
                 <div
                   className="tk-qr-relative"
                   ref={(el) => {
@@ -267,7 +272,10 @@ export default function MyTicket() {
                   )}
                 </div>
                 {graduateCode && <ShortCode value={graduateCode.short_code} />}
-                {graduateCode && (
+                {graduateCode && ended && (
+                  <p className={`tk-attend ${attended ? 'yes' : 'no'}`}>{attended ? COMPANION_ATTENDED : COMPANION_NOT_SCANNED}</p>
+                )}
+                {graduateCode && !ended && (
                   <button type="button" className="tk-qr-download" onClick={() => downloadOne(graduateItem)}>
                     <span className="tk-symbol" style={{ fontSize: '16px' }}>download</span>
                     <span>تنزيل رمزي كصورة</span>
@@ -278,6 +286,7 @@ export default function MyTicket() {
           </section>
 
           {/* تذكير: إثبات الشخصية مطلوب يوم الحفل */}
+          {!ended && (
           <section className="tk-id-reminder" role="note">
             <span className="tk-symbol tk-id-reminder-icon" aria-hidden="true">badge</span>
             <div className="tk-id-reminder-body">
@@ -285,6 +294,7 @@ export default function MyTicket() {
               <p className="tk-id-reminder-text">{ID_PROOF_TEXT}</p>
             </div>
           </section>
+          )}
 
 
           {companionCodes.length > 0 && (
@@ -298,6 +308,7 @@ export default function MyTicket() {
                 </div>
               </div>
 
+              {!ended && (
               <div className="tk-companions-important" role="note">
                 <p className="tk-companions-important-title">
                   <span className="tk-symbol" style={{ fontSize: '18px' }}>priority_high</span>
@@ -310,10 +321,11 @@ export default function MyTicket() {
                   <li>لا تنشر الرموز ولا تعطها لغير مرافقيك: إذا استخدم شخص آخر الرمز، لن يتمكن مرافقك من الدخول به.</li>
                 </ul>
               </div>
+              )}
 
               <div className="tk-companions-grid">
                 {companionCodes.map((code, idx) => (
-                  <div key={code.id} className="tk-companion-card">
+                  <div key={code.id} className={`tk-companion-card${ended ? ' tk-ended' : ''}`}>
                     <div
                       className="tk-companion-qr"
                       ref={(el) => {
@@ -330,9 +342,11 @@ export default function MyTicket() {
                     </div>
                     <span className="tk-companion-name">المرافق {idx + 1}</span>
                     <span className="tk-companion-status">
-                      {code.scanned ? 'مستخدم' : 'قيد الانتظار'}
+                      {ended ? (code.scanned ? COMPANION_ATTENDED : COMPANION_NOT_SCANNED) : code.scanned ? 'مستخدم' : 'قيد الانتظار'}
                     </span>
                     <ShortCode value={code.short_code} />
+                    {!ended && (
+                    <>
                     <button
                       type="button"
                       className="tk-qr-download"
@@ -349,16 +363,18 @@ export default function MyTicket() {
                       <span className="tk-symbol" style={{ fontSize: '16px' }}>share</span>
                       <span>إرسال لمرافقك</span>
                     </button>
+                    </>
+                    )}
                   </div>
                 ))}
               </div>
-              {shareNote && (
+              {!ended && shareNote && (
                 <p className="tk-share-note" role="status">{shareNote}</p>
               )}
             </section>
           )}
 
-          {event?.whatsapp_group_link && (
+          {!ended && event?.whatsapp_group_link && (
             <div className="tk-actions-group">
               <a
                 className="tk-btn-secondary"
@@ -371,9 +387,11 @@ export default function MyTicket() {
                 </span>
                 <span>الانضمام إلى مجموعة الحفل</span>
               </a>
+              <p className="tk-download-note">{GROUP_TEXT}</p>
             </div>
           )}
 
+          {!ended && (
           <div className="tk-actions-group">
             <button
               type="button"
@@ -390,6 +408,7 @@ export default function MyTicket() {
               تُحفظ صورة منفصلة لكل رمز. إذا سألك المتصفح عن السماح بتنزيل عدة ملفات، اختر «السماح».
             </p>
           </div>
+          )}
 
           <GraduateFooter />
         </div>

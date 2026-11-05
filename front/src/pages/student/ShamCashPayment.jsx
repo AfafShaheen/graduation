@@ -171,7 +171,7 @@ export default function ShamCashPayment({ onBack }) {
     if (name === 'transferAmount') value = toDigits(value);
 
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (submitted) {
+    if ((submitted || errors[name]) && validators[name]) {
       setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
     }
   };

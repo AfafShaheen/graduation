@@ -5,14 +5,13 @@ import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
 import useContactPhone from '../../hooks/useContactPhone';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
-import HelpFooter from '../../components/HelpFooter';
+import GraduateFooter from '../../components/GraduateFooter';
 import UnionBrand from '../../components/UnionBrand';
 import {
   ID_PROOF_TEXT,
   NO_REFUND_TEXT,
   PAYMENT_NOTE_TEXT,
   QR_REQUIRED_TEXT,
-  GROUP_TEXT,
 } from '../../config/graduateTexts';
 
 /* ==========================================================================
@@ -163,11 +162,6 @@ const PHASES = {
           'لا يمكن إدخال مرافقين أكثر من العدد المحدّد في تذكرتك.',
         ],
       },
-      {
-        icon: 'forum',
-        title: 'مجموعة الحفل',
-        bullets: [GROUP_TEXT],
-      },
     ],
     warning: { tone: 'orange', text: `إثبات الشخصية إلزامي: ${ID_PROOF_TEXT}` },
   },
@@ -310,14 +304,9 @@ export default function GraduateGuide({ phase = 'package', mode = 'required', on
             </section>
           )}
 
-          {/* الختام */}
-          <section className="guide-closing">
-            <div className="guide-closing-help">
-              <HelpFooter phone={contactPhone} />
-            </div>
-
-            <p className="guide-closing-wish">نتمنى لك حفلاً لا يُنسى! 🎓</p>
-          </section>
+          {/* the same footer as every other page; the wish only closes the ticket guide */}
+          {resolvedPhase === 'ticket' && <p className="guide-wish">نتمنى لك حفلاً لا يُنسى! 🎓</p>}
+          <GraduateFooter phone={contactPhone} />
         </div>
 
         {/* الشريط السفلي: الموافقة والمتابعة */}

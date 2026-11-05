@@ -250,9 +250,6 @@ export default function SelectTicket() {
                   arrow_back
                 </span>
               </button>
-              <div className="st-dock-caption">
-                الدفع عبر شام كاش بتحويل مباشر، وتُؤكَّد تذكرتك بعد التحقق من الإيصال
-              </div>
             </>
           )}
         </div>

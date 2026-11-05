@@ -734,3 +734,21 @@
   color: var(--brand-green);
   user-select: all;
 }
+
+/* the ticket after the ceremony: did the gate scan the graduate's code */
+.tk-ended-banner {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.8;
+  text-align: center;
+}
+.tk-ended-banner.yes { background: #e1f0ea; color: var(--brand-green); border: 1px solid #b9d9cc; }
+.tk-ended-banner.no { background: #efe9df; color: #594138; border: 1px solid #ddd0bd; }
+.tk-badge-ended { background: #efe9df; color: #594138; }
+.tk-ended .tk-qr-svg { opacity: 0.35; }
+.tk-attend { margin: 6px 0 0; font-size: 14px; font-weight: 800; text-align: center; }
+.tk-attend.yes { color: var(--brand-green); }
+.tk-attend.no { color: #7a6a60; }

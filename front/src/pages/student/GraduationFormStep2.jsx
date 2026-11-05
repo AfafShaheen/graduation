@@ -77,7 +77,7 @@ export default function GraduationFormStep2({
     if (name === "password") setPassword(value);
     else setContact((prev) => ({ ...prev, [name]: value }));
 
-    if (submitted) {
+    if ((submitted || errors[name]) && validators[name]) {
       setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
     }
   };

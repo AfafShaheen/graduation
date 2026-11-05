@@ -72,7 +72,7 @@ export default function GraduateQuestions({ onDone }) {
 
   const handleChoice = (name, value) => {
     setAnswers((prev) => ({ ...prev, [name]: value }));
-    if (submitted) {
+    if (submitted || errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: validate(value) }));
     }
   };

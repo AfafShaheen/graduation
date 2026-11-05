@@ -189,8 +189,8 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
       // تغيير الكلية بيرجّع التخصص لـ "لا يوجد" لأن الاختصاصات تابعة للكلية
       ...(name === 'faculty' ? { major: 'none' } : {}),
     }));
-    // بعد أول ضغطة على الزر، الخطأ بيتحدّث مباشرة أثناء الكتابة
-    if (submitted && validators[name]) {
+    // الخطأ بيتحدّث مباشرة أثناء الكتابة: بعد أول ضغطة على الزر، أو ما دام الحقل عليه خطأ (ليزول لحظة يصح)
+    if ((submitted || errors[name]) && validators[name]) {
       setErrors((prev) => ({ ...prev, [name]: validators[name](value) }));
     }
   };

@@ -40,3 +40,14 @@ export function registrationNotice(registration, eventDate, now = new Date()) {
 
 export const ENDED_PENDING_TEXT = 'إن كان لديك استفسار عن دفعتك فتواصل معنا على الواتساب (الرقم في أسفل الصفحة).';
 export const ENDED_REJECTED_TEXT = 'لم يعد بالإمكان إعادة إرسال الدفع. للاستفسار تواصل معنا على الواتساب (الرقم في أسفل الصفحة).';
+
+// The confirmed ticket after the ceremony: did the graduate's own code get scanned at the gate?
+// "scanned" is what the scanners recorded, so the sentence says "registered", not "came".
+export const ENDED_ATTENDED = { tone: 'yes', text: 'سُجّل دخولك إلى الحفل. شكراً لمشاركتنا فرحة التخرج 🎓' };
+export const ENDED_NOT_SCANNED = { tone: 'no', text: 'لم يُسجَّل دخولك إلى الحفل.' };
+export const COMPANION_ATTENDED = 'حضر';
+export const COMPANION_NOT_SCANNED = 'لم يُسجَّل دخوله';
+
+export function endedTicketStatus(graduateScanned) {
+  return graduateScanned ? ENDED_ATTENDED : ENDED_NOT_SCANNED;
+}

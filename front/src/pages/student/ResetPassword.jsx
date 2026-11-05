@@ -84,7 +84,7 @@ export default function ResetPassword({ onBack, onDone }) {
     setFormData(next);
     setSaveError('');
 
-    if (submitted) {
+    if ((submitted || errors[name]) && validators[name]) {
       const updates = { [name]: validators[name](value, next) };
       if (name === 'password') {
         updates.confirmPassword = validators.confirmPassword(next.confirmPassword, next);
