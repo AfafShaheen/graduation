@@ -189,26 +189,6 @@
   margin-bottom: 24px;
 }
 
-/* لوغو الجامعة أبيض، فالخلفية خضرا غامقة ليبين */
-.lg-logo-wrapper {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 14px;
-  border-radius: 50%;
-  background-color: #124d44;
-  padding: 12px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.lg-logo-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 .lg-card-headline {
   font-size: 22px;
   line-height: 32px;

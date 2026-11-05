@@ -1,0 +1,22 @@
+/* The union's symbol and name, centred. The name is the brand red. */
+.ub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 2px;
+  text-align: center;
+}
+.ub-symbol {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  display: block;
+}
+.ub-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #c51a1b;
+}

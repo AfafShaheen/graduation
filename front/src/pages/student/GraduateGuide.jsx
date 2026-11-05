@@ -6,6 +6,7 @@ import unionLogo from '../../assets/only-logo.png';
 import useContactPhone from '../../hooks/useContactPhone';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import HelpFooter from '../../components/HelpFooter';
+import UnionBrand from '../../components/UnionBrand';
 import {
   ID_PROOF_TEXT,
   NO_REFUND_TEXT,
@@ -277,6 +278,7 @@ export default function GraduateGuide({ phase = 'package', mode = 'required', on
         </header>
 
         <div className="guide-body">
+          {phase === 'before' && <UnionBrand />}
           {/* مقدمة */}
           <section className="form-card guide-intro">
             <div>

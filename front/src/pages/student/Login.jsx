@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../../style/Login.css';
 import '../../style/BrandHeader.css';
-import universityLogo from '../../assets/homs-university-white.png';
+import UnionBrand from '../../components/UnionBrand';
 import unionLogo from '../../assets/only-logo.png';
 import { loginGraduate } from '../../api/graduate';
 import { setGraduateSession, setVerificationToken, setGraduateEmail } from '../../api/session';
@@ -176,9 +176,7 @@ export default function Login({
             )}
 
             <div className="lg-card-header">
-              <div className="lg-logo-wrapper">
-                <img src={universityLogo} alt="شعار جامعة حمص" className="lg-logo-img" />
-              </div>
+              <UnionBrand />
 
               <h2 className="lg-card-headline">أهلاً بعودتك</h2>
               <p className="lg-card-subtext">

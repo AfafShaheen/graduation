@@ -181,14 +181,18 @@ test('an error far from the button he pressed is brought into view', () => {
   }
 });
 
-test('the university logo stays only on the graduate login page', () => {
+test('the university logo is gone and the union brand block shows on the first page and the login page', () => {
+  assert.ok(!fs.existsSync(new URL('../src/assets/homs-university-white.png', import.meta.url)));
   const pagesDir = new URL('../src/pages/', import.meta.url);
-  const withLogo = [];
   for (const dir of ['student', 'scanner', 'admin']) {
     for (const f of fs.readdirSync(new URL(dir + '/', pagesDir))) {
       if (!f.endsWith('.jsx')) continue;
-      if (fs.readFileSync(new URL(dir + '/' + f, pagesDir), 'utf-8').includes('homs-university-white')) withLogo.push(f);
+      assert.ok(!fs.readFileSync(new URL(dir + '/' + f, pagesDir), 'utf-8').includes('homs-university-white'), f);
     }
   }
-  assert.deepEqual(withLogo, ['Login.jsx']);
+  assert.ok(read('pages/student/Login.jsx').includes('<UnionBrand />'));
+  assert.ok(read('pages/student/GraduateGuide.jsx').includes("phase === 'before' && <UnionBrand />"));
+  const brand = read('components/UnionBrand.jsx');
+  assert.ok(brand.includes('UNION_NAME') && brand.includes('union-symbol.png'));
+  assert.ok(read('config/brand.js').includes("UNION_NAME = 'اتحاد الطلبة جامعة حمص'"));
 });
