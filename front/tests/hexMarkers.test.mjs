@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf-8');
-const block = (css, selector) => css.match(new RegExp(`^${selector.replace(/\./g, '\.')} \{[^}]*\}`, 'm'))[0];
+const block = (css, selector) => {
+  const start = css.indexOf(`
+${selector} {`);
+  return css.slice(start, css.indexOf('}', start));
+};
 
 test('one hexagon shape is defined once and the small markers use it', () => {
   assert.match(read('src/index.css'), /--hex: polygon\(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%\)/);
