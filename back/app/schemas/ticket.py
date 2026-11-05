@@ -114,6 +114,7 @@ class QrCodeItem(BaseModel):
     id: int
     code_type: QrCodeTypeEnum
     code_value: str
+    short_code: str
     is_activated: bool
     scanned: bool
 

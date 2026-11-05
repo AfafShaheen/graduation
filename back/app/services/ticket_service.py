@@ -355,6 +355,7 @@ async def get_my_ticket_service(db: AsyncSession, graduate: GraduateModel) -> di
                 "id": code.id,
                 "code_type": code.code_type,
                 "code_value": str(code.code_value),
+                "short_code": code.short_code,
                 "is_activated": code.is_activated,
                 "scanned": code.scanned_at is not None,
             }

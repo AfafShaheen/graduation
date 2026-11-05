@@ -37,6 +37,7 @@ from app.core.messages import (
     SCAN_VALID,
     SCAN_WRONG_EVENT,
 )
+from app.core.short_code import normalize_short_code, random_short_code
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.scanner import ScannerModel
 from app.models.ticket import TicketModel, TicketStatusEnum
@@ -132,6 +133,25 @@ def _parse_code_value(code_value: str | uuid.UUID) -> uuid.UUID | None:
         return None
 
 
+async def _allocate_short_codes(db: AsyncSession, kinds: list[bool]) -> list[str]:
+    """One unused short code per entry of ``kinds`` (True = graduate, False = companion)."""
+    chosen: list[str] = []
+    for is_graduate in kinds:
+        while True:
+            candidate = random_short_code(is_graduate)
+            if candidate in chosen:
+                continue
+            taken = (
+                await db.execute(
+                    select(QrCodeModel.id).where(QrCodeModel.short_code == candidate)
+                )
+            ).first()
+            if taken is None:
+                chosen.append(candidate)
+                break
+    return chosen
+
+
 async def issue_qr_codes_for_ticket(
     db: AsyncSession, ticket_id: int
 ) -> list[QrCodeModel]:
@@ -164,16 +184,18 @@ async def issue_qr_codes_for_ticket(
         return list(existing)
 
     companion_count = ticket.companions_count or 0
+    short_codes = await _allocate_short_codes(db, [True] + [False] * companion_count)
     codes = [
         QrCodeModel(
             ticket_id=ticket_id,
             code_type=QrCodeTypeEnum.GRADUATE,
+            short_code=short_codes[0],
             is_activated=True,
         )
     ]
     codes.extend(
-        QrCodeModel(ticket_id=ticket_id, code_type=QrCodeTypeEnum.COMPANION)
-        for _ in range(companion_count)
+        QrCodeModel(ticket_id=ticket_id, code_type=QrCodeTypeEnum.COMPANION, short_code=short_codes[i + 1])
+        for i in range(companion_count)
     )
     db.add_all(codes)
     await db.flush()
@@ -221,22 +243,22 @@ async def scan_qr_code(
     scanners cannot consume the same code simultaneously.
     """
     value = _parse_code_value(code_value)
-    if value is None:
+    short = None if value is not None else normalize_short_code(str(code_value))
+    if value is None and short is None:
         result = ScanResult(ScanDecision.NOT_FOUND, SCAN_UNKNOWN)
         await _audit_scan(db, scanner_id, str(code_value), result)
         return result
 
+    # the QR carries the full UUID; the short code is what a volunteer types by hand
+    lookup = QrCodeModel.code_value == value if value is not None else QrCodeModel.short_code == short
     qr_record = (
-        await db.execute(
-            select(QrCodeModel)
-            .where(QrCodeModel.code_value == value)
-            .with_for_update()
-        )
+        await db.execute(select(QrCodeModel).where(lookup).with_for_update())
     ).scalar_one_or_none()
     if qr_record is None:
         result = ScanResult(ScanDecision.NOT_FOUND, SCAN_UNKNOWN)
-        await _audit_scan(db, scanner_id, str(code_value), result)
+        await _audit_scan(db, scanner_id, str(value or short), result)
         return result
+    value = qr_record.code_value
 
     ticket = await db.get(TicketModel, qr_record.ticket_id)
     if ticket is None:

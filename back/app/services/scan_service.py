@@ -6,15 +6,30 @@ into the JSON contract mandated by D13: always HTTP 200 with a ``valid`` flag
 and never any personal data of the graduate.
 """
 
+import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import messages
 from app.models.scanner import ScannerModel
+from app.services import scan_throttle
 from app.services.qr_service import ScanDecision, ScannerNotFoundError, scan_qr_code
 
 
+def _is_uuid(code: str) -> bool:
+    try:
+        uuid.UUID(code)
+        return True
+    except ValueError:
+        return False
+
+
 async def scan_service(db: AsyncSession, code: str, scanner: ScannerModel) -> dict:
+    # a code typed by hand is a short code: wrong ones are counted and limited
+    manual = not _is_uuid(code)
+    if manual:
+        await scan_throttle.check(scanner.id)
     try:
         result = await scan_qr_code(db, code, scanner.id)
     except ScannerNotFoundError:
@@ -22,6 +37,9 @@ async def scan_service(db: AsyncSession, code: str, scanner: ScannerModel) -> di
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=messages.SCANNER_NOT_FOUND,
         )
+
+    if manual and result.decision == ScanDecision.NOT_FOUND:
+        await scan_throttle.record_failure(scanner.id)
 
     return {
         "valid": result.decision == ScanDecision.SUCCESS,

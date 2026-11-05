@@ -1,13 +1,19 @@
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, DateTime, Enum, CheckConstraint, Index, text
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Enum, CheckConstraint, Index, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from app.core.short_code import random_short_code
 from app.models.base import Base
 import enum
 
 class QrCodeTypeEnum(str, enum.Enum):
     GRADUATE = "GRADUATE"
     COMPANION = "COMPANION"
+
+def _default_short_code(context) -> str:
+    # fallback for rows created without going through qr_service (which checks for clashes)
+    return random_short_code(context.get_current_parameters().get("code_type") == QrCodeTypeEnum.GRADUATE)
+
 
 class QrCodeModel(Base):
     __tablename__ = "qr_codes"
@@ -16,6 +22,7 @@ class QrCodeModel(Base):
     ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False, index=True)
     code_type = Column(Enum(QrCodeTypeEnum, name="qr_code_type"), nullable=False, index=True)
     code_value = Column(UUID(as_uuid=True), nullable=False, server_default=func.gen_random_uuid(), unique=True, index=True)
+    short_code = Column(String(9), nullable=False, unique=True, index=True, default=_default_short_code)
     is_activated = Column(Boolean, nullable=False, default=False, index=True)
     scanned_at = Column(DateTime(timezone=True))
     scanned_by_scanner_id = Column(Integer, ForeignKey("scanners.id", ondelete="SET NULL"), index=True)

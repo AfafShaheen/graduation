@@ -1512,12 +1512,17 @@
           "scanned": {
             "title": "Scanned",
             "type": "boolean"
+          },
+          "short_code": {
+            "title": "Short Code",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "code_type",
           "code_value",
+          "short_code",
           "is_activated",
           "scanned"
         ],

@@ -238,6 +238,7 @@ async def get_graduate_full_details_service(db: AsyncSession, graduate_id: int) 
                 "ticket_id": q.ticket_id,
                 "code_type": q.code_type,
                 "code_value": str(q.code_value),
+                "short_code": q.short_code,
                 "is_activated": q.is_activated,
                 "scanned": q.scanned_at is not None,
                 "scanned_at": q.scanned_at.isoformat() if q.scanned_at else None,
