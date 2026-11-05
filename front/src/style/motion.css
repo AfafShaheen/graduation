@@ -1,0 +1,71 @@
+/*
+ * Motion of the graduate journey (medium level). CSS only, nothing but opacity and transform.
+ * PageTransition puts data-dir = forward | back | fade on the wrapper; admin and scanner pages
+ * have none, so nothing here touches them. Everything is off for people who asked their phone
+ * to reduce motion.
+ *
+ * The page is RTL: the next page arrives from the left, an earlier one from the right.
+ */
+.pt {
+  display: contents;
+}
+.pt h1:focus,
+.pt h2:focus {
+  outline: none;
+}
+
+@keyframes pt-forward {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pt-back {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pt-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pt-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pt-tab {
+  from { opacity: 0.35; transform: scale(0.86); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The header and the tabs stay put; what is under them moves. */
+  .pt[data-dir='forward'] main > :not(.sh-header):not(.sh-tabs-wrap) {
+    animation: pt-forward 0.26s ease backwards;
+  }
+  .pt[data-dir='back'] main > :not(.sh-header):not(.sh-tabs-wrap) {
+    animation: pt-back 0.26s ease backwards;
+  }
+  .pt[data-dir='fade'] main > :not(.sh-header):not(.sh-tabs-wrap) {
+    animation: pt-fade 0.18s ease backwards;
+  }
+
+  /* The cards of a page come in one after another (the first five only). */
+  .pt[data-dir] main [class*='main-stage'] > * {
+    animation: pt-rise 0.3s ease backwards;
+  }
+  .pt[data-dir] main [class*='main-stage'] > :nth-child(2) { animation-delay: 0.06s; }
+  .pt[data-dir] main [class*='main-stage'] > :nth-child(3) { animation-delay: 0.12s; }
+  .pt[data-dir] main [class*='main-stage'] > :nth-child(4) { animation-delay: 0.18s; }
+  .pt[data-dir] main [class*='main-stage'] > :nth-child(5) { animation-delay: 0.24s; }
+
+  /* The current stage tab settles into place. */
+  .pt[data-dir] .sh-tab.current .sh-tab-btn {
+    animation: pt-tab 0.3s ease backwards;
+  }
+
+  /* A light press on every button of the journey. */
+  .pt main button {
+    transition: transform 0.12s ease;
+  }
+  .pt main button:not(:disabled):active {
+    transform: scale(0.97);
+  }
+}

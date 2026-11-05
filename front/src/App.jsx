@@ -18,6 +18,7 @@ import Login from "./pages/student/Login";
 import GraduateGuide from "./pages/student/GraduateGuide";
 import StageGuide from "./pages/student/StageGuide";
 import PageSkeleton from "./components/PageSkeleton";
+import PageTransition from "./components/PageTransition";
 import ResetPassword from "./pages/student/ResetPassword";
 import SelectTicket from "./pages/student/SelectTicket";
 import ShamCashPayment from "./pages/student/ShamCashPayment";
@@ -78,10 +79,6 @@ function App() {
   const { pathname } = location;
 
   const [pendingPayments, setPendingPayments] = useState(0);
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
   usePageMeta({ path: pathname });
 
   // العدّاد الموحّد: طلبات الدفع بانتظار المراجعة في كل الحفلات (stats/v2 → attention.processing)
@@ -137,6 +134,7 @@ function App() {
   return (
     <AdminStatsProvider pendingPayments={pendingPayments} refreshPendingPayments={refreshPendingPayments}>
       <Suspense fallback={<PageSkeleton />}>
+      <PageTransition>
       <Routes>
         {/* ===== التسجيل ===== */}
         <Route
@@ -617,6 +615,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </PageTransition>
       </Suspense>
     </AdminStatsProvider>
   );
