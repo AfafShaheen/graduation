@@ -1,0 +1,44 @@
+.le {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  background: var(--brand-cream);
+}
+.le-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border: 1px solid #eedebd;
+  border-radius: 24px;
+  padding: 24px 20px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.le-title { margin: 0 0 8px; font-size: 20px; font-weight: 800; color: var(--brand-green); }
+.le-text { margin: 0 0 18px; font-size: 14px; line-height: 1.8; color: #594138; }
+.le-retry {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--brand-green);
+  color: #ffffff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.le-link {
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--brand-green);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}

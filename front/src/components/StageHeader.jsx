@@ -5,6 +5,8 @@ import unionLogo from '../assets/only-logo.png';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../config/brand';
 import { stageTabs } from '../utils/stageTabs';
 import { guidePath, pathForStage } from '../utils/stage';
+import { logoutGraduate } from '../api/graduate';
+import { clearGraduateSession, getGraduateToken, hasGraduateSession } from '../api/session';
 
 /*
  * The top of every graduate page of the journey: the brand header, the "إرشادات" button
@@ -27,6 +29,17 @@ export default function StageHeader({ current, sub = '', guide, onBack, action, 
     const timer = setTimeout(() => setNote(''), 3500);
     return () => clearTimeout(timer);
   }, [note]);
+
+  // sign out of this phone (a shared phone must not stay open on his ticket)
+  const signOut = async () => {
+    try {
+      await logoutGraduate(getGraduateToken());
+    } catch {
+      /* the server could not be reached: the session is still removed here */
+    }
+    clearGraduateSession();
+    navigate('/login', { replace: true });
+  };
 
   const tabs = stageTabs(current, { canChangePackage });
   const openGuide = () => {
@@ -66,12 +79,20 @@ export default function StageHeader({ current, sub = '', guide, onBack, action, 
         </div>
         <div className="sh-subband">
           <span className="sh-badge">{BATCH_BADGE}</span>
-          {guide && (
-            <button type="button" className="sh-guide" onClick={openGuide}>
-              <span className="material-symbols-outlined" aria-hidden="true">menu_book</span>
-              <span>إرشادات</span>
-            </button>
-          )}
+          <span className="sh-actions">
+            {guide && (
+              <button type="button" className="sh-guide" onClick={openGuide}>
+                <span className="material-symbols-outlined" aria-hidden="true">menu_book</span>
+                <span>إرشادات</span>
+              </button>
+            )}
+            {hasGraduateSession() && (
+              <button type="button" className="sh-guide" onClick={signOut}>
+                <span className="material-symbols-outlined" aria-hidden="true">logout</span>
+                <span>خروج</span>
+              </button>
+            )}
+          </span>
         </div>
       </header>
 

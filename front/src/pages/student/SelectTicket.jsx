@@ -35,7 +35,7 @@ const buildOption = (o) => {
 
 const formatPrice = (value) => Number(value).toLocaleString('en-US');
 
-export default function SelectTicket({ onBack }) {
+export default function SelectTicket() {
   const navigate = useNavigate();
 
   const [data, setData] = useState(null);
@@ -49,6 +49,8 @@ export default function SelectTicket({ onBack }) {
   // open, not started, closed, or the ceremony is over: the page shows only the matching notice when not open
   const notice = data ? registrationNotice(data.registration, data.event?.event_date) : null;
   const registrationOpen = notice?.kind === 'open';
+  // he can go back to the payment only once a package was chosen (changing the package)
+  const canGoBack = data?.selected_companions_count != null;
 
   const load = useCallback(async () => {
     const accessValue = getGraduateToken();
@@ -114,7 +116,7 @@ export default function SelectTicket({ onBack }) {
   return (
     <div className="st-app-container">
       <div className="st-mobile-shell">
-        <StageHeader current="package" guide="package" onBack={() => (onBack ? onBack() : window.history.back())} />
+        <StageHeader current="package" guide="package" onBack={canGoBack ? () => navigate('/payment') : undefined} />
 
         <main className="st-main-stage">
           {registrationOpen && (

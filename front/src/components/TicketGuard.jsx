@@ -1,10 +1,11 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { hasGraduateSession, getGraduateId } from "../api/session";
 import { pendingGuideFor } from "../utils/guideAck";
 import { guidePath } from "../utils/stage";
 import { routeForTicket } from "../utils/ticketRoute";
 import useMyTicket from "../hooks/useMyTicket";
 import PageSkeleton from "./PageSkeleton";
+import LoadError from "./LoadError";
 
 export { routeForTicket };
 
@@ -31,7 +32,8 @@ export default function TicketGuard({ children }) {
 
 function TicketGuardInner({ children }) {
   const location = useLocation();
-  const { data, loading, error } = useMyTicket();
+  const navigate = useNavigate();
+  const { data, loading, error, reload } = useMyTicket();
 
   if (!hasValidGraduateSession()) {
     return <Navigate to="/login" replace />;
@@ -40,7 +42,9 @@ function TicketGuardInner({ children }) {
     return <PageSkeleton />;
   }
   if (error) {
-    return <Navigate to="/login" replace />;
+    // only an invalid session sends him to the login page; a network or server problem can be retried
+    if (error.status === 401 || error.status === 403) return <Navigate to="/login" replace />;
+    return <LoadError onRetry={reload} onLogin={() => navigate("/login")} />;
   }
 
   const target = routeForTicket(data);

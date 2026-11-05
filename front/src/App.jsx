@@ -19,6 +19,7 @@ import GraduateGuide from "./pages/student/GraduateGuide";
 import StageGuide from "./pages/student/StageGuide";
 import PageSkeleton from "./components/PageSkeleton";
 import PageTransition from "./components/PageTransition";
+import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/student/ResetPassword";
 import SelectTicket from "./pages/student/SelectTicket";
 import ShamCashPayment from "./pages/student/ShamCashPayment";
@@ -143,6 +144,9 @@ function App() {
             hasVerifySession && !PREVIEW ? (
               // the account is created and waits for its code: there is nothing to go back to
               <Navigate to="/otp" replace />
+            ) : hasValidGraduate && !PREVIEW ? (
+              // already signed in: registration is behind him, the guard sends him to his stage
+              <Navigate to="/tickets" replace />
             ) : hasSeenStartGuide() ? (
               <GraduationFormStep1
                 onNavigateToLogin={() => navigate("/login")}
@@ -159,6 +163,8 @@ function App() {
           element={
             hasVerifySession && !PREVIEW ? (
               <Navigate to="/otp" replace />
+            ) : hasValidGraduate && !PREVIEW ? (
+              <Navigate to="/tickets" replace />
             ) : hasValidRegistration || PREVIEW ? (
               <GraduationFormStep2
                 onBack={() => navigate("/")}
@@ -277,7 +283,7 @@ function App() {
           path="/tickets"
           element={
             <TicketGuard>
-              <SelectTicket onBack={() => navigate("/login")} />
+              <SelectTicket />
             </TicketGuard>
           }
         />
@@ -613,7 +619,7 @@ function App() {
         <Route path="/guide/:stage" element={<StageGuide />} />
         <Route path="/guide" element={<Navigate to="/tickets" replace />} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       </PageTransition>
       </Suspense>
