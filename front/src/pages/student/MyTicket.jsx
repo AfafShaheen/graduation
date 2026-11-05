@@ -151,7 +151,7 @@ export default function MyTicket() {
         <div className="tk-main-stage">
           <section className="tk-welcome" aria-label="ترحيب">
             <p className="tk-welcome-text">{welcomeText(faculty, { ended })}</p>
-            {countdown && <p className="tk-countdown">{countdown}</p>}
+            {countdown && <p className="tk-countdown" key={countdown}>{countdown}</p>}
           </section>
 
           <div className="tk-status-header">

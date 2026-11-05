@@ -69,3 +69,55 @@
     transform: scale(0.97);
   }
 }
+
+/* ---------- The small moments (still opacity / transform only) ---------- */
+@keyframes pt-overlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pt-dialog {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pt-shake {
+  0%, 100% { transform: none; }
+  25% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+}
+@keyframes pt-pop {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pt-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: none; }
+}
+@keyframes pt-grow-y {
+  from { transform: scaleY(0); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The "are you sure?" box before the payment is sent. */
+  .sc-confirm-overlay { animation: pt-overlay 0.18s ease backwards; }
+  .sc-confirm { animation: pt-dialog 0.22s ease backwards; }
+
+  /* An error message appears with a small rise; an invalid field shakes once. */
+  .pt [role='alert'] { animation: pt-rise 0.25s ease backwards; }
+  .pt [aria-invalid='true'] { animation: pt-shake 0.28s ease; }
+
+  /* The countdown changes with a soft fade (it is keyed by its text, not by the second). */
+  .tk-countdown { animation: pt-fade 0.3s ease backwards; }
+
+  /* Scanner results: the verdict icon pops in. */
+  .scan-res-checkmark-circle,
+  .scan-err-circle-icon,
+  .wrong-cer-icon-wrapper { animation: pt-pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) backwards; }
+
+  /* Admin statistics: bars grow when the page opens. The page is RTL, so they grow from the right. */
+  .st2-progress span,
+  .st2-meter span,
+  .st2-rate-fill,
+  .st2-stack span { transform-origin: right center; animation: pt-grow-x 0.6s ease backwards; }
+  .st2-hour-bar { transform-origin: center bottom; animation: pt-grow-y 0.6s ease backwards; }
+}

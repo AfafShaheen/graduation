@@ -43,3 +43,19 @@ test('the routes are wrapped once and the old scroll effect is gone', () => {
   assert.match(comp, /scrollRestoration/);
   assert.match(comp, /querySelector\('main h2'\)/);
 });
+
+test('the small moments are all in the same file and respect reduced motion', () => {
+  const css = read('src/style/motion.css');
+  const reduced = css.split('@media (prefers-reduced-motion: no-preference)');
+  assert.ok(reduced.length >= 3, 'every animation sits inside a no-preference block');
+  for (const selector of ['.sc-confirm', "[aria-invalid='true']", '.tk-countdown', '.scan-err-circle-icon', '.st2-hour-bar']) {
+    assert.ok(css.includes(selector), `${selector} has a motion rule`);
+  }
+  // nothing animates outside the no-preference blocks except the keyframes themselves
+  const outside = css.replace(/@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}\n/g, '').replace(/@keyframes [\w-]+ \{[\s\S]*?\n\}/g, '');
+  assert.doesNotMatch(outside, /animation\s*:/);
+});
+
+test('the countdown is keyed by its text so it fades only when the text changes', () => {
+  assert.match(read('src/pages/student/MyTicket.jsx'), /className="tk-countdown" key=\{countdown\}/);
+});
