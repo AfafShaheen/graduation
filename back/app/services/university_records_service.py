@@ -101,6 +101,9 @@ _TOP_NOT_HONOR = {
     "0",
 }
 _TOP_YES = {"نعم", "yes", "true", "y"}
+# A word that turns any sentence about the top students into a "no" ("غير من الأوائل").
+_TOP_NEGATIONS = {"لا", "ليس", "ليست", "غير", "بدون", "no", "not"}
+_TOP_EMPTY_MARKS = {"-", "--", "—", "–", "_", "x", "×"}
 _ARABIC_NAME_PATTERN = re.compile(r"^[\u0621-\u063A\u0641-\u064A\s]+$")
 
 
@@ -141,8 +144,9 @@ def parse_top_status_from_file(value: Any) -> int | None:
     """Parse the ``حالة الطالب من الأوائل`` cell into a stored code (A2.3).
 
     Returns one of:
-    - ``None``: no usable information (column absent/empty) -> fall back to the
-      dense rank computed from the GPA.
+    - ``None``: this cell cannot be read. The caller decides: an empty or unreadable
+      cell in a file that HAS the column means "not a top student" (the file is the
+      authority); only a file without the column falls back to the GPA ranking.
     - ``0``: the file says the student is *not* among the top students.
     - ``-1``: the file says the student *is* among the top students but does not
       name the rank.
@@ -154,7 +158,10 @@ def parse_top_status_from_file(value: Any) -> int | None:
     if not text or text.lower() == "nan":
         return None
     normalized = normalize_arabic(text).casefold()
-    if normalized in _TOP_NOT_HONOR:
+    if normalized in _TOP_NOT_HONOR or normalized in _TOP_EMPTY_MARKS:
+        return 0
+    # "غير من الأوائل" and the like contain "اوائل" but say the opposite
+    if _TOP_NEGATIONS & set(normalized.split()):
         return 0
     if normalized in {"1", "١"}:
         return 1
@@ -687,9 +694,14 @@ async def upsert_records(
         gender = normalize_gender(_cell_text(row, "gender")) or _cell_text(row, "gender")
         gpa_val = parse_gpa(row.get("gpa"))
         major_raw = _cell_text(row, "major")
-        top_rank_from_file = (
-            parse_top_status_from_file(row.get("top_status")) if "top_status" in row else None
-        )
+        if "top_status" in row:
+            # the file has the column, so the file decides: an empty or unreadable cell is
+            # "not among the top students" (never computed from the GPA)
+            top_rank_from_file = parse_top_status_from_file(row.get("top_status"))
+            if top_rank_from_file is None:
+                top_rank_from_file = 0
+        else:
+            top_rank_from_file = None  # no column at all: the GPA ranking is the fallback
         phone = normalize_phone(row.get("phone")) if "phone" in row else None
         
         normalized_college_name = normalize_arabic(college_name)

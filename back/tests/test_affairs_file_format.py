@@ -554,3 +554,53 @@ async def test_legacy_full_name_payload_matches_split_record(
 )
 def test_parse_gpa_accepts_excel_fractions_and_arabic_formats(raw, expected):
     assert parse_gpa(raw) == expected
+
+
+# --------------------------------------------------------------------------- #
+# The file is the authority on the top students when it has the column
+# --------------------------------------------------------------------------- #
+
+
+async def test_empty_top_cell_in_a_file_with_the_column_means_not_top(
+    client, db, make_event, make_college, make_admin
+):
+    """A blank cell must not fall back to the GPA ranking: that counted people as top
+    students although the file did not list them."""
+    event = await make_event()
+    await make_college(event.id, name=_COLLEGE)
+    token = await _admin_token(client, make_admin)
+
+    headers = ["university_id", "full_name", "father_name", "mother_name", "college", "gender", "gpa", "حالة الطالب من الأوائل"]
+    rows = [
+        ("402001", "محمد أحمد", "خالد", "سعاد", _COLLEGE, "ذكر", "95.00", "الأول"),
+        # the highest GPA of the group, but the file leaves his cell empty
+        ("402002", "علي حسن", "خالد", "سعاد", _COLLEGE, "ذكر", "99.00", None),
+        ("402003", "سامر عمر", "خالد", "سعاد", _COLLEGE, "ذكر", "90.00", "-"),
+        ("402004", "رامي زيد", "خالد", "سعاد", _COLLEGE, "ذكر", "88.00", "غير من الأوائل"),
+    ]
+    resp = await _upload(client, token, event.id, headers, rows)
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["errors"] == []
+
+    assert (await _get_record(db, "402001")).top_rank_from_file == 1
+    assert (await _get_record(db, "402002")).top_rank_from_file == 0
+    assert (await _get_record(db, "402003")).top_rank_from_file == 0
+    assert (await _get_record(db, "402004")).top_rank_from_file == 0
+
+
+async def test_a_file_without_the_column_still_falls_back_to_the_gpa_ranking(
+    client, db, make_event, make_college, make_admin
+):
+    event = await make_event()
+    await make_college(event.id, name=_COLLEGE)
+    token = await _admin_token(client, make_admin)
+
+    resp = await _upload(
+        client,
+        token,
+        event.id,
+        ["university_id", "full_name", "father_name", "mother_name", "college", "gender", "gpa"],
+        [("403001", "محمد أحمد", "خالد", "سعاد", _COLLEGE, "ذكر", "95.00")],
+    )
+    assert resp.status_code == 200, resp.text
+    assert (await _get_record(db, "403001")).top_rank_from_file is None
