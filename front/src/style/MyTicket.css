@@ -716,3 +716,21 @@
 
 .tk-share-note { margin: 10px 0 0; font-size: 13px; line-height: 1.7; color: var(--brand-green); font-weight: 700; }
 .tk-qr-share { margin-top: 6px; }
+
+/* the manual code under a QR image */
+.tk-short-code {
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.tk-short-code-label { font-size: 12px; font-weight: 700; color: #594138; }
+.tk-short-code-value {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--brand-green);
+  user-select: all;
+}

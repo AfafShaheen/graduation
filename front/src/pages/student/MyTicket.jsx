@@ -13,6 +13,7 @@ import { ID_PROOF_TEXT } from '../../config/graduateTexts';
 import { welcomeText } from '../../utils/welcome';
 import { daysUntil, eventCountdownText } from '../../utils/countdown';
 import { ceremonyEnded } from '../../utils/ceremonyState';
+import { formatShortCode } from '../../utils/shortCode';
 import { downloadQrPng, downloadQrPngs, shareQrPng, qrFileName } from '../../utils/qrDownload';
 
 const formatEventDate = (value) => {
@@ -31,6 +32,17 @@ const formatEventTime = (value) => {
 };
 
 const SHARE_TEXT = 'رمز دخولك إلى حفل التخرج. أبرزه عند الباب بعد دخول الخريج.';
+
+// the manual code under a QR image, for a volunteer to type when the image will not scan
+function ShortCode({ value }) {
+  if (!value) return null;
+  return (
+    <p className="tk-short-code">
+      <span className="tk-short-code-label">الرمز اليدوي</span>
+      <bdi className="tk-short-code-value" dir="ltr">{formatShortCode(value)}</bdi>
+    </p>
+  );
+}
 
 export default function MyTicket() {
   const { data, loading, error, reload } = useMyTicket();
@@ -114,12 +126,15 @@ export default function MyTicket() {
     ? {
         codeId: graduateCode.id,
         filename: qrFileName('GRADUATE', 0, universityId),
-        lines: [`رمز الخريج: ${studentName}`, eventTitle],      }
+        lines: [`رمز الخريج: ${studentName}`, eventTitle],
+        shortCode: graduateCode.short_code,
+      }
     : null;
   const companionItems = companionCodes.map((code, idx) => ({
     codeId: code.id,
     filename: qrFileName('COMPANION', idx + 1, universityId),
     lines: [`المرافق ${idx + 1}`, `مرافق الخريج: ${studentName}`],
+    shortCode: code.short_code,
   }));
 
   // يُستدعى من الأزرار فقط (خارج الرسم)
@@ -135,11 +150,11 @@ export default function MyTicket() {
     }
   };
   const downloadOne = (item) => {
-    downloadQrPng(svgFor(item.codeId), item.filename, item.lines);
+    downloadQrPng(svgFor(item.codeId), item.filename, item.lines, item.shortCode);
   };
   // sends the companion his own code through the phone's share sheet (WhatsApp...)
   const shareOne = async (item) => {
-    const result = await shareQrPng(svgFor(item.codeId), item.filename, item.lines, SHARE_TEXT);
+    const result = await shareQrPng(svgFor(item.codeId), item.filename, item.lines, SHARE_TEXT, item.shortCode);
     setShareNote(result === 'downloaded' ? 'تم تنزيل الصورة على جهازك، أرسلها لمرافقك من الاستديو أو من واتساب.' : '');
   };
 
@@ -251,7 +266,7 @@ export default function MyTicket() {
                     <p className="tk-student-faculty">لم يصدر رمز التحقق بعد.</p>
                   )}
                 </div>
-                {graduateCode && <span className="tk-meta-label">{graduateCode.code_value}</span>}
+                {graduateCode && <ShortCode value={graduateCode.short_code} />}
                 {graduateCode && (
                   <button type="button" className="tk-qr-download" onClick={() => downloadOne(graduateItem)}>
                     <span className="tk-symbol" style={{ fontSize: '16px' }}>download</span>
@@ -317,7 +332,7 @@ export default function MyTicket() {
                     <span className="tk-companion-status">
                       {code.scanned ? 'مستخدم' : 'قيد الانتظار'}
                     </span>
-                    <span className="tk-meta-label">{code.code_value}</span>
+                    <ShortCode value={code.short_code} />
                     <button
                       type="button"
                       className="tk-qr-download"

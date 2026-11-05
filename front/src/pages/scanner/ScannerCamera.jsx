@@ -12,8 +12,8 @@ import { eventTitle, formatEventDate } from '../../utils/eventLabel';
 import { CEREMONY_TITLE } from '../../config/brand';
 import { cameraErrorText } from '../../utils/cameraError';
 import useDialogA11y from '../../hooks/useDialogA11y';
+import { scannableCode } from '../../utils/shortCode';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function ScannerCamera({ onLogout }) {
   const navigate = useNavigate();
@@ -361,13 +361,13 @@ export default function ScannerCamera({ onLogout }) {
 
   const handleManualSubmit = (e) => {
     e.preventDefault();
-    const code = manualCode.trim();
-    if (!code) {
-      setManualError('أدخل رمز التذكرة (UUID)');
+    if (!manualCode.trim()) {
+      setManualError('أدخل الرمز اليدوي المكتوب تحت رمز QR');
       return;
     }
-    if (!UUID_REGEX.test(code)) {
-      setManualError('صيغة الرمز غير صحيحة (يجب أن يكون UUID صالحاً)');
+    const code = scannableCode(manualCode);
+    if (!code) {
+      setManualError('الرمز غير صحيح: حرفان ثم سبعة أرقام، مثل KM 4829173');
       return;
     }
 
@@ -503,7 +503,7 @@ export default function ScannerCamera({ onLogout }) {
           <div className="scan-cam-actions">
             <button type="button" className="scan-cam-manual-btn" onClick={() => setIsModalOpen(true)}>
               <span className="scan-cam-symbol">keyboard</span>
-              <span>إدخال يدوي لرمز التذكرة (UUID)</span>
+              <span>إدخال الرمز اليدوي</span>
             </button>
 
             <button
@@ -563,7 +563,7 @@ export default function ScannerCamera({ onLogout }) {
               </div>
 
               <p className="scan-cam-modal-desc">
-                أدخل رمز التذكرة الفريد (UUID) المطبوع أسفل الرمز الشريطي للتحقق الفوري.
+                اكتب الرمز اليدوي المكتوب تحت رمز QR: حرفان ثم سبعة أرقام.
               </p>
 
               <form onSubmit={handleManualSubmit} noValidate>
@@ -573,7 +573,9 @@ export default function ScannerCamera({ onLogout }) {
                   autoFocus
                   autoComplete="off"
                   className={`scan-cam-input ${manualError ? 'error' : ''}`}
-                  placeholder="مثال: c0293b1d-8a4e-4f2b-9e11-123456789abc"
+                  placeholder="مثال: KM 4829173"
+                  autoCapitalize="characters"
+                  maxLength={20}
                   value={manualCode}
                   aria-invalid={!!manualError}
                   onChange={(e) => {
