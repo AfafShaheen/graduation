@@ -3,13 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AdminAddCeremony from './AdminAddCeremony';
 import { getAdminEvent } from './hooks/useAdminEvents.js';
 import { ApiError } from '../../api/admin.js';
-
-const toDamascusDate = (iso) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Damascus' });
-};
+import { toDamascusLocal } from '../../utils/ceremonyWindow.js';
 
 const fmtPrice = (v) => {
   if (v === null || v === undefined || v === '') return '';
@@ -80,8 +74,8 @@ export default function AdminEditCeremonyRoute({
     ceremonyDate: event.event_date
       ? `${event.event_date.slice(0, 10)}T${event.event_time ? event.event_time.slice(0, 5) : '00:00'}`
       : '',
-    startDate: toDamascusDate(event.registration_start),
-    endDate: toDamascusDate(event.registration_end),
+    startDate: toDamascusLocal(event.registration_start),
+    endDate: toDamascusLocal(event.registration_end),
     whatsappLink: event.whatsapp_group_link || '',
     packages: Array.isArray(event.packages)
       ? event.packages.map((p, index) => ({

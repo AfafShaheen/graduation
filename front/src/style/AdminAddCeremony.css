@@ -464,25 +464,6 @@
   color: var(--brand-green);
 }
 
-.add-cer-extend-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 10px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 700;
-  background-color: #ffffff;
-  color: var(--brand-orange);
-  border: 1px solid rgba(202, 75, 0, 0.4);
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.add-cer-extend-btn:hover {
-  background-color: #f8edd9;
-}
-
 /* الكليات (Chips) */
 .add-cer-chips-grid {
   display: flex;

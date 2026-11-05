@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import '../../style/AdminAddCeremony.css';
+import { normalizeLocal, windowErrors, toServerDateTime } from '../../utils/ceremonyWindow.js';
 import AdminSidebar from '../../components/AdminSidebar';
 import { createAdminEvent, updateAdminEvent } from './hooks/useAdminEvents.js';
 import { ApiError, listColleges, listUniversityFiles, linkUniversityFile, adminBlob, downloadBlob } from '../../api/admin.js';
@@ -242,6 +243,12 @@ export default function AdminAddCeremony({
 
   const errFor = (key) => fieldErrors[key];
 
+  // the registration window is checked while he types, not only when he saves
+  const startLocal = normalizeLocal(startDate, '00:00');
+  const endLocal = normalizeLocal(endDate, '23:59');
+  const windowIssues = windowErrors({ ceremony: ceremonyDate, start: startLocal, end: endLocal });
+  const dateErr = (key) => windowIssues[key] || errFor(key);
+
   // الباقات مقفلة بعد بدء التسجيل (نفس قيد الخادم FR-16)
   const packagesLocked = isEdit && registrationStarted;
 
@@ -419,16 +426,10 @@ export default function AdminAddCeremony({
       ? `${ceremonyDate.slice(11, 16)}:00`
       : null;
 
-    if (ceremonyDate && endDate) {
-      const ceremonyKey = ceremonyDate.length >= 16
-        ? ceremonyDate.slice(0, 16)
-        : `${ceremonyDate.slice(0, 10)}T00:00`;
-      const endKey = `${endDate}T23:59`;
-      const startKey = startDate ? `${startDate}T00:00` : null;
-      if (endKey >= ceremonyKey || (startKey && startKey >= ceremonyKey)) {
-        setSubmitError('يجب أن تنتهي فترة التسجيل قبل موعد الحفل.');
-        return;
-      }
+    const dateIssue = windowIssues.registration_end || windowIssues.registration_start;
+    if (dateIssue) {
+      setSubmitError(dateIssue);
+      return;
     }
 
     const base = {
@@ -436,8 +437,8 @@ export default function AdminAddCeremony({
       event_date: ceremonyDate ? ceremonyDate.slice(0, 10) : ceremonyDate,
       event_time: eventTime,
       seat_prefix: null,
-      registration_start: startDate ? `${startDate}T00:00:00+03:00` : startDate,
-      registration_end: endDate ? `${endDate}T23:59:59+03:00` : endDate,
+      registration_start: toServerDateTime(startLocal),
+      registration_end: toServerDateTime(endLocal),
       whatsapp_group_link: whatsappLink,
     };
 
@@ -656,37 +657,33 @@ export default function AdminAddCeremony({
                   </label>
                   <input
                     id="start-date"
-                    type="date"
+                    type="datetime-local"
                     className="add-cer-input"
-                    value={startDate}
+                    value={startLocal}
                     onChange={(e) => setStartDate(e.target.value)}
+                    aria-invalid={!!dateErr('registration_start')}
                     required
                   />
-                  {errFor('registration_start') && (
-                    <p className="add-cer-file-error" role="alert">{errFor('registration_start')}</p>
+                  {dateErr('registration_start') && (
+                    <p className="add-cer-file-error" role="alert">{dateErr('registration_start')}</p>
                   )}
                 </div>
 
                 <div className="add-cer-field-group">
-                  <div className="add-cer-label-row">
-                    <label className="add-cer-label" htmlFor="end-date">
-                      نهاية التسجيل <span className="add-cer-req">*</span>
-                    </label>
-                    <button type="button" className="add-cer-extend-btn">
-                      <span className="add-cer-symbol" style={{ fontSize: '14px' }}>update</span>
-                      <span>تمديد الفترة</span>
-                    </button>
-                  </div>
+                  <label className="add-cer-label" htmlFor="end-date">
+                    نهاية التسجيل <span className="add-cer-req">*</span>
+                  </label>
                   <input
                     id="end-date"
-                    type="date"
+                    type="datetime-local"
                     className="add-cer-input"
-                    value={endDate}
+                    value={endLocal}
                     onChange={(e) => setEndDate(e.target.value)}
+                    aria-invalid={!!dateErr('registration_end')}
                     required
                   />
-                  {errFor('registration_end') && (
-                    <p className="add-cer-file-error" role="alert">{errFor('registration_end')}</p>
+                  {dateErr('registration_end') && (
+                    <p className="add-cer-file-error" role="alert">{dateErr('registration_end')}</p>
                   )}
                 </div>
               </div>

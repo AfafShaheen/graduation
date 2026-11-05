@@ -20,6 +20,10 @@ def _normalize_seat_prefix(value: Optional[str]) -> Optional[str]:
     return value
 
 
+REGISTRATION_END_AFTER_START = "يجب أن تكون نهاية التسجيل بعد بدايته."
+REGISTRATION_BEFORE_CEREMONY = "يجب أن تنتهي فترة التسجيل قبل موعد الحفل أو عنده."
+
+
 def registration_before_ceremony(
     registration_start: datetime | None,
     registration_end: datetime | None,
@@ -51,8 +55,11 @@ def registration_before_ceremony(
         ceremony = datetime.combine(event_date, event_time or time.min, tzinfo=tz)
     else:
         ceremony = datetime.combine(event_date, event_time or time.min)
-    if start >= ceremony or end >= ceremony:
-        raise ValueError("يجب أن تنتهي فترة التسجيل قبل موعد الحفل.")
+    if end <= start:
+        raise ValueError(REGISTRATION_END_AFTER_START)
+    # the registration may close exactly when the ceremony starts, never after it
+    if end > ceremony:
+        raise ValueError(REGISTRATION_BEFORE_CEREMONY)
 
 
 def _validate_seat_prefix(value: Optional[str]) -> Optional[str]:
@@ -84,8 +91,8 @@ class EventCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_dates(self) -> "EventCreate":
-        if self.registration_end < self.registration_start:
-            raise ValueError("تاريخ نهاية التسجيل يجب ألا يكون قبل تاريخ بداية التسجيل.")
+        if self.registration_end <= self.registration_start:
+            raise ValueError(REGISTRATION_END_AFTER_START)
         registration_before_ceremony(
             self.registration_start,
             self.registration_end,
@@ -118,8 +125,8 @@ class EventUpdate(BaseModel):
 
     @model_validator(mode="after")
     def validate_dates(self) -> "EventUpdate":
-        if self.registration_start and self.registration_end and self.registration_end < self.registration_start:
-            raise ValueError("تاريخ نهاية التسجيل يجب ألا يكون قبل تاريخ بداية التسجيل.")
+        if self.registration_start and self.registration_end and self.registration_end <= self.registration_start:
+            raise ValueError(REGISTRATION_END_AFTER_START)
         return self
 
 class CollegeItem(BaseModel):

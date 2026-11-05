@@ -222,3 +222,63 @@ async def test_ticket_options_expose_event_time(
     assert response.status_code == 200, response.text
     assert response.json()["event"]["event_time"] == "18:30:00"
     assert response.json()["event"]["event_date"] == date(2030, 6, 1).isoformat()
+
+
+async def test_registration_end_must_be_after_its_start(client, make_admin):
+    headers = await _admin_token(client, make_admin)
+    for end in ("2030-05-01T09:00:00+03:00", "2030-04-30T09:00:00+03:00"):  # equal, and earlier
+        response = await client.post(
+            "/api/admin/events",
+            json=_event_body(
+                ["كلية الآداب"],
+                event_date="2030-06-01",
+                event_time="18:00:00",
+                registration_start="2030-05-01T09:00:00+03:00",
+                registration_end=end,
+            ),
+            headers=headers,
+        )
+        assert response.status_code == 422, response.text
+        assert "نهاية التسجيل بعد بدايته" in response.text
+
+
+async def test_registration_may_close_exactly_when_the_ceremony_starts(client, make_admin):
+    headers = await _admin_token(client, make_admin)
+    response = await client.post(
+        "/api/admin/events",
+        json=_event_body(
+            ["كلية العلوم"],
+            event_date="2030-06-01",
+            event_time="18:00:00",
+            registration_start="2030-05-01T09:00:00+03:00",
+            registration_end="2030-06-01T18:00:00+03:00",
+        ),
+        headers=headers,
+    )
+    assert response.status_code in (200, 201), response.text
+
+    one_minute_late = await client.post(
+        "/api/admin/events",
+        json=_event_body(
+            ["كلية الطب"],
+            event_date="2030-06-01",
+            event_time="18:00:00",
+            registration_start="2030-05-01T09:00:00+03:00",
+            registration_end="2030-06-01T18:01:00+03:00",
+        ),
+        headers=headers,
+    )
+    assert one_minute_late.status_code == 422, one_minute_late.text
+    assert "قبل موعد الحفل أو عنده" in one_minute_late.text
+
+
+async def test_update_keeps_the_same_two_rules(client, make_admin, make_event):
+    event = await make_event()
+    headers = await _admin_token(client, make_admin)
+    response = await client.put(
+        f"/api/admin/events/{event.id}",
+        json={"registration_start": "2030-05-02T09:00:00+03:00", "registration_end": "2030-05-01T09:00:00+03:00"},
+        headers=headers,
+    )
+    assert response.status_code in (400, 422), response.text
+    assert "نهاية التسجيل بعد بدايته" in response.text
