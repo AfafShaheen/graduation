@@ -38,7 +38,8 @@
 .guide-number {
   width: 30px;
   height: 30px;
-  border-radius: 9999px;
+  border-radius: 0;
+  clip-path: var(--hex);
   background-color: #124d44;
   color: #ffffff;
   font-size: 14px;

@@ -365,9 +365,10 @@
 .st-radio-circle {
   width: 24px;
   height: 24px;
-  border-radius: 9999px;
-  border: 2px solid #e2bfb2;
-  background-color: transparent;
+  border-radius: 0;
+  clip-path: var(--hex);
+  border: 0;
+  background-color: #dcc8b6;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,7 +380,6 @@
 
 .st-selected .st-radio-circle {
   background-color: #124d44;
-  border-color: #124d44;
   color: #ffffff;
 }
 
@@ -427,7 +427,8 @@
 .st-notice-icon-bg {
   width: 32px;
   height: 32px;
-  border-radius: 9999px;
+  border-radius: 0;
+  clip-path: var(--hex);
   background-color: rgba(202, 75, 0, 0.12);
   flex-shrink: 0;
   display: flex;
