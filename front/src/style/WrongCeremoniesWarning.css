@@ -4,10 +4,10 @@
    ========================================================================== */
 
 .wrong-cer-app-container {
-  --wc-green: #124d44;
-  --wc-orange: #ca4b00;
+  --wc-green: var(--brand-green);
+  --wc-orange: var(--brand-orange);
   --wc-accent: #ff7a2f;
-  --wc-cream: #fcf6ed;
+  --wc-cream: var(--brand-cream);
   --wc-sand: #f8edd9;
   --wc-line: #eedebd;
   --wc-text: #201b0f;

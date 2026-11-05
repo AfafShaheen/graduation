@@ -4,11 +4,11 @@
    ========================================================================== */
 
    .scan-cam-app-container {
-    --sc-green: #124d44;
+    --sc-green: var(--brand-green);
     --sc-green-deep: #0d3a33;
-    --sc-orange: #ca4b00;
+    --sc-orange: var(--brand-orange);
     --sc-accent: #ff7a2f;
-    --sc-cream: #fcf6ed;
+    --sc-cream: var(--brand-cream);
     --sc-sand: #f8edd9;
     --sc-line: #eedebd;
     --sc-text: #201b0f;
@@ -624,11 +624,11 @@
   }
   
   .scan-cam-input.error {
-    border-color: #ba1a1a;
+    border-color: var(--brand-danger);
   }
   
   .scan-cam-error-text {
-    color: #ba1a1a;
+    color: var(--brand-danger);
     font-size: 12px;
     font-weight: 700;
     margin: 4px 0 0 0;

@@ -6,7 +6,7 @@
 .sc-app-container {
   display: flex;
   justify-content: center;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   color: #201b0f;
   min-height: 100vh;
   min-height: 100dvh;
@@ -20,7 +20,7 @@
 .sc-mobile-shell {
   width: 100%;
   max-width: 100%;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -67,9 +67,9 @@
 /* الهيدر العلوي */
 .sc-header-main {
   width: 100%;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
-  border-top: 3px solid #ca4b00;
+  border-top: 3px solid var(--brand-orange);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -185,7 +185,7 @@
   font-size: 13px;
   line-height: 18px;
   font-weight: 700;
-  color: #124d44;
+  color: var(--brand-green);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -195,7 +195,7 @@
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   animation: sc-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -238,7 +238,7 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -262,7 +262,7 @@
   width: min(176px, 52vw);
   height: auto;
   aspect-ratio: 1;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .sc-qr-caption {
@@ -303,7 +303,7 @@
 }
 
 .sc-account-strip--primary {
-  border: 2px solid #124d44;
+  border: 2px solid var(--brand-green);
   background: #f1f8f6;
 }
 .sc-account-strip .sc-account-number {
@@ -317,7 +317,7 @@
 .sc-copy-btn {
   background-color: #ffffff;
   border: 1px solid #e2bfb2;
-  color: #124d44;
+  color: var(--brand-green);
   padding: 8px 14px;
   border-radius: 9999px;
   display: flex;
@@ -363,7 +363,7 @@
   font-size: 20px;
   line-height: 28px;
   font-weight: 800;
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-variant-numeric: tabular-nums;
 }
 
@@ -380,7 +380,7 @@
 }
 
 .sc-notice-icon {
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-size: 20px;
   flex-shrink: 0;
   margin-top: 1px;
@@ -413,7 +413,7 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -442,7 +442,7 @@
 }
 
 .sc-star {
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-size: 13px;
 }
 
@@ -471,12 +471,12 @@
 }
 
 .sc-input:focus {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
 }
 
 .sc-input.error {
-  border-color: #ba1a1a;
+  border-color: var(--brand-danger);
 }
 
 .sc-input.error:focus {
@@ -494,7 +494,7 @@
 
 /* رسالة الخطأ تحت الحقل */
 .sc-error-text {
-  color: #ba1a1a;
+  color: var(--brand-danger);
   font-size: 12px;
   font-weight: 700;
   margin: 0;
@@ -523,7 +523,7 @@
   height: 52px;
   margin-top: 4px;
   border-radius: 9999px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   font-family: inherit;
   font-size: 16px;
@@ -651,16 +651,16 @@
   justify-content: space-between;
   gap: 8px;
   background: #ffffff;
-  border: 1px dashed #124d44;
+  border: 1px dashed var(--brand-green);
   border-radius: 12px;
   padding: 8px 10px;
 }
-.sc-note-copy-text { font-size: 14px; font-weight: 800; color: #124d44; overflow-wrap: anywhere; }
+.sc-note-copy-text { font-size: 14px; font-weight: 800; color: var(--brand-green); overflow-wrap: anywhere; }
 .sc-note-copy-btn {
   flex-shrink: 0;
   border: 0;
   border-radius: 9999px;
-  background: #124d44;
+  background: var(--brand-green);
   color: #ffffff;
   font: inherit;
   font-size: 13px;
@@ -693,7 +693,7 @@
 .sc-confirm-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid #eedebd; }
 .sc-confirm-row:first-child { border-top: 0; }
 .sc-confirm-row dt { color: #594138; font-size: 13px; }
-.sc-confirm-row dd { margin: 0; font-weight: 800; color: #124d44; overflow-wrap: anywhere; text-align: left; }
+.sc-confirm-row dd { margin: 0; font-weight: 800; color: var(--brand-green); overflow-wrap: anywhere; text-align: left; }
 .sc-confirm-note { margin: 10px 0 14px; font-size: 13px; line-height: 1.7; color: #594138; }
 .sc-confirm-actions { display: flex; flex-direction: column; gap: 8px; }
 .sc-confirm-yes, .sc-confirm-no {
@@ -705,8 +705,8 @@
   font-weight: 800;
   cursor: pointer;
 }
-.sc-confirm-yes { background: #124d44; color: #ffffff; border: 0; }
-.sc-confirm-no { background: #ffffff; color: #124d44; border: 1.5px solid #124d44; }
+.sc-confirm-yes { background: var(--brand-green); color: #ffffff; border: 0; }
+.sc-confirm-no { background: #ffffff; color: var(--brand-green); border: 1.5px solid var(--brand-green); }
 .sc-confirm-yes:disabled, .sc-confirm-no:disabled { opacity: 0.6; cursor: default; }
 
 .sc-help-link {
@@ -716,6 +716,6 @@
   text-align: center;
   font-size: 14px;
   font-weight: 700;
-  color: #124d44;
+  color: var(--brand-green);
   text-decoration: underline;
 }

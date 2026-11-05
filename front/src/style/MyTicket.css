@@ -6,7 +6,7 @@
 .tk-app-container {
   display: flex;
   justify-content: center;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   color: #201b0f;
   min-height: 100vh;
   min-height: 100dvh;
@@ -20,7 +20,7 @@
 .tk-mobile-shell {
   width: 100%;
   max-width: 100%;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -66,9 +66,9 @@
 /* الهيدر العلوي */
 .tk-header-main {
   width: 100%;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
-  border-top: 3px solid #ca4b00;
+  border-top: 3px solid var(--brand-orange);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -212,7 +212,7 @@
 }
 
 .tk-card-banner {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   padding: 12px 20px;
   display: flex;
   align-items: center;
@@ -230,7 +230,7 @@
 }
 
 .tk-banner-pill {
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   color: #ffffff;
   padding: 2px 10px;
   border-radius: 9999px;
@@ -250,7 +250,7 @@
   font-size: 20px;
   line-height: 28px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -289,9 +289,9 @@
   display: block;
 }
 
-.tk-seat-box { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 12px auto 16px; padding: 14px 24px; border-radius: 16px; background: #f1f8f6; border: 2px solid #124d44; width: fit-content; min-width: 180px; }
-.tk-seat-label { font-size: 13px; color: #124d44; font-weight: 600; }
-.tk-seat-number { font-size: 40px; line-height: 1.1; font-weight: 800; color: #124d44; letter-spacing: 1px; }
+.tk-seat-box { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 12px auto 16px; padding: 14px 24px; border-radius: 16px; background: #f1f8f6; border: 2px solid var(--brand-green); width: fit-content; min-width: 180px; }
+.tk-seat-label { font-size: 13px; color: var(--brand-green); font-weight: 600; }
+.tk-seat-number { font-size: 40px; line-height: 1.1; font-weight: 800; color: var(--brand-green); letter-spacing: 1px; }
 .tk-seat-hint { font-size: 12px; color: #725b51; text-align: center; }
 
 .tk-meta-value {
@@ -331,7 +331,7 @@
   width: 100%;
   height: 100%;
   display: block;
-  color: #124d44;
+  color: var(--brand-green);
   fill: currentColor;
 }
 
@@ -339,7 +339,7 @@
   position: absolute;
   width: 36px;
   height: 36px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   border-radius: 9999px;
   display: flex;
@@ -382,7 +382,7 @@
 
 .tk-id-reminder-icon {
   font-size: 22px;
-  color: #ca4b00;
+  color: var(--brand-orange);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -396,7 +396,7 @@
   font-size: 14px;
   line-height: 22px;
   font-weight: 800;
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .tk-id-reminder-text {
@@ -448,7 +448,7 @@
 
 .tk-companions-hint {
   font-size: 12px;
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -501,7 +501,7 @@
   gap: 6px;
   font-size: 13px;
   font-weight: 800;
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .tk-companions-important ul {
@@ -519,9 +519,9 @@
   gap: 4px;
   padding: 6px 12px;
   border-radius: 9999px;
-  border: 1px solid #124d44;
+  border: 1px solid var(--brand-green);
   background-color: #ffffff;
-  color: #124d44;
+  color: var(--brand-green);
   font-family: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -549,7 +549,7 @@
   width: 32px;
   height: 32px;
   border-radius: 9999px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -580,7 +580,7 @@
 .tk-btn-primary {
   width: 100%;
   height: 52px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   border-radius: 9999px;
   display: flex;
@@ -608,7 +608,7 @@
   width: 100%;
   height: 44px;
   background-color: transparent;
-  color: #124d44;
+  color: var(--brand-green);
   border-radius: 9999px;
   display: flex;
   align-items: center;
@@ -708,11 +708,11 @@
   padding: 12px 14px;
   border-radius: 16px;
   background: #e8f5f1;
-  border: 1px solid #124d44;
-  color: #124d44;
+  border: 1px solid var(--brand-green);
+  color: var(--brand-green);
 }
 .tk-welcome-text { margin: 0; font-size: 14px; font-weight: 800; line-height: 1.8; }
 .tk-countdown { margin: 6px 0 0; font-size: 13px; font-weight: 700; color: #8a3200; }
 
-.tk-share-note { margin: 10px 0 0; font-size: 13px; line-height: 1.7; color: #124d44; font-weight: 700; }
+.tk-share-note { margin: 10px 0 0; font-size: 13px; line-height: 1.7; color: var(--brand-green); font-weight: 700; }
 .tk-qr-share { margin-top: 6px; }

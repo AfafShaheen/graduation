@@ -1,7 +1,7 @@
 .adm-app-container {
-  --uf-accent: #124d44;
+  --uf-accent: var(--brand-green);
   --uf-border: #eedebd;
-  --uf-bg: #fcf6ed;
+  --uf-bg: var(--brand-cream);
   --uf-ink: #201b0f;
 }
 
@@ -52,7 +52,7 @@
   padding: 12px 16px;
   border-radius: 12px;
   background: #fdecea;
-  color: #ba1a1a;
+  color: var(--brand-danger);
   font-weight: 600;
 }
 
@@ -173,7 +173,7 @@
 
 .uf-btn.danger {
   background: #fdecea;
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }
 
 .uf-delete-options {
@@ -273,12 +273,12 @@
 
 .uf-badge.imported {
   background: #e6f4ef;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .uf-badge.failed {
   background: #fdecea;
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }
 
 .uf-item-body {
@@ -318,7 +318,7 @@
 
 .uf-confirm-text {
   font-size: 13px;
-  color: #ba1a1a;
+  color: var(--brand-danger);
   font-weight: 700;
 }
 

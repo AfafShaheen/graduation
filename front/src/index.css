@@ -1,4 +1,10 @@
 :root {
+  /* Brand colours: change them here and every page follows. */
+  --brand-green: #124d44;  /* the union green (the brand book gives #134F47, practically the same) */
+  --brand-orange: #ca4b00; /* the book orange #E85B0D is 3.5:1 on white, so text and buttons use this darker one */
+  --brand-red: #c51a1b;
+  --brand-danger: #ba1a1a;
+  --brand-cream: #fcf6ed;
   --hex: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); /* small markers are hexagons */
   color-scheme: only light;
 }

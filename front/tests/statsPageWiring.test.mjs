@@ -36,7 +36,9 @@ test('the page only uses the colours of the app', () => {
   const hexes = (css) => new Set((css.match(/#[0-9a-fA-F]{3,6}\b/g) || []).map((h) => h.toLowerCase()));
   // soft tints and two intermediate greens (funnel) of the app's own red, orange and green
   const tints = new Set(['#fff1e6', '#fdecea', '#e8f5f1', '#fbe6d4', '#e1f0ea', '#8a3200', '#2f7a63', '#5fa08a']);
-  const allowed = new Set([...hexes(dashboard), ...tints, '#fff']);
+  // the brand colours are defined once, in the :root of index.css
+  const brand = hexes(fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf-8').split('}')[0]);
+  const allowed = new Set([...hexes(dashboard), ...brand, ...tints, '#fff']);
   const foreign = [...hexes(stats)].filter((h) => !allowed.has(h));
   assert.deepEqual(foreign, [], `colours that are not in the app: ${foreign.join(', ')}`);
   const view = read('pages/admin/stats/StatsView.jsx') + read('utils/stats.js');

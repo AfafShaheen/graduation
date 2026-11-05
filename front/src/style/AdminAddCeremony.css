@@ -5,7 +5,7 @@
 
 .add-cer-app-container {
   font-family: "Ghroob", "Cairo", sans-serif;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   color: #201b0f;
   min-height: 100vh;
   min-height: 100dvh;
@@ -23,7 +23,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   z-index: 60;
 }
 
@@ -72,7 +72,7 @@
   justify-content: center;
   background: #ffffff;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -86,7 +86,7 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -110,7 +110,7 @@
 }
 
 .add-cer-breadcrumb button:hover {
-  color: #124d44;
+  color: var(--brand-green);
   text-decoration: underline;
 }
 
@@ -146,7 +146,7 @@
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .add-cer-help-btn {
@@ -155,8 +155,8 @@
   gap: 8px;
   padding: 8px 18px;
   border-radius: 9999px;
-  border: 1px solid #124d44;
-  color: #124d44;
+  border: 1px solid var(--brand-green);
+  color: var(--brand-green);
   background: transparent;
   font-size: 13px;
   font-weight: 700;
@@ -168,7 +168,7 @@
 }
 
 .add-cer-help-btn:hover {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -211,7 +211,7 @@
   border-radius: 9999px;
   background-color: #f8edd9;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -222,7 +222,7 @@
   font-size: 20px;
   line-height: 28px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -244,7 +244,7 @@
   border: 1px solid rgba(202, 75, 0, 0.25);
   font-size: 12px;
   font-weight: 700;
-  color: #124d44;
+  color: var(--brand-green);
   white-space: nowrap;
 }
 
@@ -252,7 +252,7 @@
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .add-cer-header-tags {
@@ -270,7 +270,7 @@
   border-radius: 9999px;
   background-color: transparent;
   border: 1px solid rgba(202, 75, 0, 0.35);
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;
@@ -291,7 +291,7 @@
   border-radius: 9999px;
   background-color: #ffffff;
   border: 1px solid rgba(18, 77, 68, 0.35);
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;
@@ -345,7 +345,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #124d44;
+  color: var(--brand-green);
   font-weight: 800;
   font-size: 15px;
   margin: 0;
@@ -365,7 +365,7 @@
 }
 
 .add-cer-hint.with-icon .add-cer-symbol {
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-size: 16px;
   flex-shrink: 0;
 }
@@ -395,7 +395,7 @@
 }
 
 .add-cer-req {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .add-cer-label-row {
@@ -427,7 +427,7 @@
 }
 
 .add-cer-input:focus {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
 }
 
@@ -461,7 +461,7 @@
 }
 .add-cer-input-icon.right {
   right: 14px;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .add-cer-extend-btn {
@@ -473,7 +473,7 @@
   font-size: 12px;
   font-weight: 700;
   background-color: #ffffff;
-  color: #ca4b00;
+  color: var(--brand-orange);
   border: 1px solid rgba(202, 75, 0, 0.4);
   cursor: pointer;
   font-family: inherit;
@@ -524,9 +524,9 @@
 }
 
 .add-cer-chip input[type="checkbox"]:checked + .add-cer-chip-box {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
-  border-color: #124d44;
+  border-color: var(--brand-green);
 }
 
 .add-cer-chip input[type="checkbox"]:focus-visible + .add-cer-chip-box {
@@ -557,7 +557,7 @@
   padding: 2px 8px;
   border-radius: 9999px;
   background-color: #ffffff;
-  color: #ca4b00;
+  color: var(--brand-orange);
   border: 1px solid rgba(202, 75, 0, 0.3);
 }
 
@@ -567,9 +567,9 @@
 }
 
 .add-cer-chip-manage .add-cer-chip-box {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
-  border-color: #124d44;
+  border-color: var(--brand-green);
   padding-left: 10px;
 }
 
@@ -603,9 +603,9 @@
   gap: 6px;
   padding: 8px 16px;
   border-radius: 9999px;
-  border: 1px dashed #124d44;
+  border: 1px dashed var(--brand-green);
   background-color: #ffffff;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -631,7 +631,7 @@
 .add-cer-pkg-card {
   padding: 14px 16px;
   border-radius: 18px;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   border: 1px solid #eedebd;
   display: flex;
   flex-direction: column;
@@ -681,12 +681,12 @@
 
 .add-cer-pkg-icon-btn:hover:not(:disabled) {
   border-color: #e2bfb2;
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }
 
 .add-cer-pkg-icon-btn.add {
-  background-color: #124d44;
-  border-color: #124d44;
+  background-color: var(--brand-green);
+  border-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -710,7 +710,7 @@
 .add-cer-count-input {
   font-size: 18px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   font-variant-numeric: tabular-nums;
 }
 
@@ -724,13 +724,13 @@
 
 .add-cer-pkg-badge.green {
   background-color: rgba(18, 77, 68, 0.12);
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .add-cer-price-input {
   font-size: 20px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   padding-left: 56px;
   font-variant-numeric: tabular-nums;
 }
@@ -765,7 +765,7 @@
   border-radius: 9999px;
   background-color: rgba(202, 75, 0, 0.08);
   border: 1px solid rgba(202, 75, 0, 0.3);
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-size: 12px;
   font-weight: 700;
 }
@@ -788,7 +788,7 @@
   gap: 10px;
   padding: 14px 32px;
   border-radius: 9999px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   font-size: 15px;
   font-weight: 700;
@@ -814,7 +814,7 @@
   border-radius: 9999px;
   background: transparent;
   border: 1px solid #e2bfb2;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -933,7 +933,7 @@
   text-align: center;
   border: 2px dashed #e2bfb2;
   border-radius: 20px;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
@@ -941,12 +941,12 @@
 .add-cer-dropzone:hover,
 .add-cer-dropzone:focus-visible,
 .add-cer-dropzone.over {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   background-color: #f8edd9;
   outline: none;
 }
 
-.add-cer-dropzone.error { border-color: #ba1a1a; }
+.add-cer-dropzone.error { border-color: var(--brand-danger); }
 
 .add-cer-drop-icon {
   display: inline-flex;
@@ -956,23 +956,23 @@
   height: 56px;
   border-radius: 9999px;
   background-color: rgba(18, 77, 68, 0.08);
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .add-cer-drop-title {
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
-.add-cer-drop-title span { color: #ca4b00; text-decoration: underline; }
+.add-cer-drop-title span { color: var(--brand-orange); text-decoration: underline; }
 
 .add-cer-file-error {
   margin: 0;
   font-size: 12px;
   font-weight: 700;
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }
 
 .add-cer-file-chip {
@@ -981,7 +981,7 @@
   gap: 8px;
   padding: 10px 14px;
   border-radius: 14px;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   border: 1px solid #eedebd;
   font-size: 13px;
 }
@@ -993,7 +993,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 700;
-  color: #124d44;
+  color: var(--brand-green);
   direction: ltr;
   text-align: right;
 }
@@ -1011,7 +1011,7 @@
   cursor: pointer;
 }
 
-.add-cer-file-remove:hover { background-color: #f8edd9; color: #ba1a1a; }
+.add-cer-file-remove:hover { background-color: #f8edd9; color: var(--brand-danger); }
 
 .add-cer-columns { display: flex; flex-direction: column; gap: 8px; }
 
@@ -1022,7 +1022,7 @@
   border-radius: 9999px;
   background-color: #f8edd9;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 12px;
   font-weight: 700;
 }

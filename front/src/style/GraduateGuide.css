@@ -40,7 +40,7 @@
   height: 30px;
   border-radius: 0;
   clip-path: var(--hex);
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   font-size: 14px;
   font-weight: 800;
@@ -56,11 +56,11 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .guide-section-icon {
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-size: 22px;
 }
 
@@ -90,7 +90,7 @@
   width: 7px;
   height: 7px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 /* خطوات مرقمة */
@@ -123,7 +123,7 @@
   border-radius: 9999px;
   background-color: #f8edd9;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 12px;
   font-weight: 800;
   display: flex;
@@ -176,11 +176,11 @@
 
 .guide-status-chip.orange {
   background-color: rgba(202, 75, 0, 0.12);
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .guide-status-chip.green {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -220,7 +220,7 @@
 }
 
 .guide-warning.orange .material-symbols-outlined {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .guide-warning.red {
@@ -230,7 +230,7 @@
 }
 
 .guide-warning.red .material-symbols-outlined {
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }
 
 /* أسئلة سريعة */
@@ -243,7 +243,7 @@
 .guide-faq-item {
   padding: 10px 12px;
   border-radius: 12px;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   border: 1px solid #f2e7d3;
 }
 
@@ -251,7 +251,7 @@
   margin: 0 0 2px 0;
   font-size: 13px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .guide-faq-a {
@@ -269,7 +269,7 @@
   gap: 10px;
   padding: 14px 16px;
   border-radius: 20px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -334,17 +334,17 @@
   gap: 10px;
   padding: 12px 14px;
   background: #e8f5f1;
-  border: 1.5px solid #124d44;
+  border: 1.5px solid var(--brand-green);
   border-radius: 16px;
   font-size: 14px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   cursor: pointer;
   user-select: none;
 }
 
 .guide-check:focus-within {
-  outline: 2px solid #ca4b00;
+  outline: 2px solid var(--brand-orange);
   outline-offset: 2px;
 }
 
@@ -358,7 +358,7 @@
 .guide-check input {
   width: 18px;
   height: 18px;
-  accent-color: #124d44;
+  accent-color: var(--brand-green);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -392,7 +392,7 @@
   border: 1px solid #eedebd;
   border-radius: 12px;
   background: #fff;
-  color: #124d44;
+  color: var(--brand-green);
   font: inherit;
   font-size: 14px;
   font-weight: 700;

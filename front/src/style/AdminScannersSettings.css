@@ -5,7 +5,7 @@
 
    .scan-set-app-container {
     font-family: 'Ghroob', 'Cairo', sans-serif;
-    background-color: #fcf6ed;
+    background-color: var(--brand-cream);
     color: #201b0f;
     min-height: 100vh;
     min-height: 100dvh;
@@ -23,7 +23,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background-color: #ca4b00;
+    background-color: var(--brand-orange);
     z-index: 60;
   }
   
@@ -71,7 +71,7 @@
     justify-content: center;
     background: #ffffff;
     border: 1px solid #eedebd;
-    color: #124d44;
+    color: var(--brand-green);
     cursor: pointer;
     flex-shrink: 0;
   }
@@ -85,7 +85,7 @@
     font-size: 16px;
     line-height: 24px;
     font-weight: 800;
-    color: #124d44;
+    color: var(--brand-green);
     margin: 0;
   }
   
@@ -127,7 +127,7 @@
     width: 8px;
     height: 8px;
     border-radius: 9999px;
-    background-color: #ca4b00;
+    background-color: var(--brand-orange);
   }
   
   .scan-set-help-btn {
@@ -136,8 +136,8 @@
     gap: 8px;
     padding: 8px 18px;
     border-radius: 9999px;
-    border: 1px solid #124d44;
-    color: #124d44;
+    border: 1px solid var(--brand-green);
+    color: var(--brand-green);
     background: transparent;
     font-size: 13px;
     font-weight: 700;
@@ -147,7 +147,7 @@
   }
   
   .scan-set-help-btn:hover {
-    background-color: #124d44;
+    background-color: var(--brand-green);
     color: #ffffff;
   }
   
@@ -165,7 +165,7 @@
     font-size: 22px;
     line-height: 32px;
     font-weight: 800;
-    color: #124d44;
+    color: var(--brand-green);
     margin: 0;
   }
   
@@ -188,13 +188,13 @@
     width: 10px;
     height: 10px;
     border-radius: 9999px;
-    background-color: #ca4b00;
+    background-color: var(--brand-orange);
   }
   
   .scan-set-pulse-label {
     font-size: 13px;
     font-weight: 800;
-    color: #ca4b00;
+    color: var(--brand-orange);
   }
   
   .scan-set-pulse-venue {
@@ -211,7 +211,7 @@
     border-radius: 9999px;
     background-color: rgba(18, 77, 68, 0.1);
     border: 1px solid rgba(18, 77, 68, 0.3);
-    color: #124d44;
+    color: var(--brand-green);
     font-size: 13px;
     font-weight: 700;
   }
@@ -244,14 +244,14 @@
   }
   
   .scan-set-tab-btn.active {
-    background-color: #124d44;
+    background-color: var(--brand-green);
     color: #ffffff;
-    border-color: #124d44;
+    border-color: var(--brand-green);
   }
   
   .scan-set-tab-btn.inactive {
     background-color: #ffffff;
-    color: #124d44;
+    color: var(--brand-green);
   }
   
   .scan-set-tab-btn.inactive:hover {
@@ -261,14 +261,14 @@
   .scan-set-tab-count {
     padding: 2px 8px;
     border-radius: 9999px;
-    background-color: #ca4b00;
+    background-color: var(--brand-orange);
     color: #ffffff;
     font-size: 12px;
     font-weight: 700;
   }
   
   .scan-set-tab-btn.inactive .scan-set-tab-count {
-    background-color: #124d44;
+    background-color: var(--brand-green);
   }
   
   .scan-set-live-pill {
@@ -331,7 +331,7 @@
     font-size: 16px;
     line-height: 24px;
     font-weight: 800;
-    color: #124d44;
+    color: var(--brand-green);
     margin: 0;
   }
   
@@ -348,7 +348,7 @@
     border-radius: 9999px;
     background-color: #f8edd9;
     border: 1px solid #eedebd;
-    color: #124d44;
+    color: var(--brand-green);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -358,7 +358,7 @@
   .scan-set-title-icon.orange {
     background-color: rgba(202, 75, 0, 0.12);
     border-color: rgba(202, 75, 0, 0.25);
-    color: #ca4b00;
+    color: var(--brand-orange);
   }
   
   .scan-set-hint {
@@ -371,7 +371,7 @@
   /* B5.1: خطأ ميداني صغير تحت الحقل (نفس حجم scan-set-hint) */
   .scan-set-field-error {
     font-size: 12px;
-    color: #ba1a1a;
+    color: var(--brand-danger);
     margin: 0;
     line-height: 1.6;
     font-weight: 600;
@@ -381,7 +381,7 @@
     padding: 2px 12px;
     border-radius: 9999px;
     background-color: #f8edd9;
-    color: #124d44;
+    color: var(--brand-green);
     font-size: 12px;
     font-weight: 800;
   }
@@ -440,7 +440,7 @@
   
   .scan-set-input:focus,
   .scan-set-select:focus {
-    border-color: #124d44;
+    border-color: var(--brand-green);
     box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
   }
   
@@ -475,7 +475,7 @@
     gap: 8px;
     padding: 12px 28px;
     border-radius: 9999px;
-    background-color: #124d44;
+    background-color: var(--brand-green);
     color: #ffffff;
     font-size: 14px;
     font-weight: 700;
@@ -502,8 +502,8 @@
     padding: 10px 20px;
     border-radius: 9999px;
     background-color: transparent;
-    color: #124d44;
-    border: 1px solid #124d44;
+    color: var(--brand-green);
+    border: 1px solid var(--brand-green);
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
@@ -512,7 +512,7 @@
   }
   
   .scan-set-btn-outline:hover {
-    background-color: #124d44;
+    background-color: var(--brand-green);
     color: #ffffff;
   }
   
@@ -526,7 +526,7 @@
     border-radius: 9999px;
     border: 1px solid #e2bfb2;
     background-color: #ffffff;
-    color: #124d44;
+    color: var(--brand-green);
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
@@ -541,7 +541,7 @@
   
   .scan-set-btn-small.danger {
     background-color: transparent;
-    color: #ba1a1a;
+    color: var(--brand-danger);
     border-color: rgba(186, 26, 26, 0.4);
   }
   
@@ -550,8 +550,8 @@
   }
   
   .scan-set-btn-small.success {
-    background-color: #124d44;
-    border-color: #124d44;
+    background-color: var(--brand-green);
+    border-color: var(--brand-green);
     color: #ffffff;
   }
   
@@ -565,7 +565,7 @@
     gap: 6px;
     background: none;
     border: none;
-    color: #124d44;
+    color: var(--brand-green);
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
@@ -626,7 +626,7 @@
     align-items: center;
     gap: 10px;
     font-weight: 800;
-    color: #124d44;
+    color: var(--brand-green);
     direction: ltr;
     justify-content: flex-end;
   }
@@ -637,7 +637,7 @@
     border-radius: 9999px;
     background-color: #f8edd9;
     border: 1px solid #eedebd;
-    color: #124d44;
+    color: var(--brand-green);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -670,27 +670,27 @@
   .scan-set-chip.gate {
     background-color: #f8edd9;
     border: 1px solid #eedebd;
-    color: #124d44;
+    color: var(--brand-green);
   }
   
   .scan-set-chip.gate .scan-set-symbol {
-    color: #ca4b00;
+    color: var(--brand-orange);
   }
   
   .scan-set-chip.active {
-    background-color: #124d44;
+    background-color: var(--brand-green);
     color: #ffffff;
   }
   
   .scan-set-chip.pending {
     background-color: rgba(202, 75, 0, 0.1);
     border: 1px solid rgba(202, 75, 0, 0.4);
-    color: #ca4b00;
+    color: var(--brand-orange);
   }
   
   .scan-set-chip.frozen {
     background-color: rgba(186, 26, 26, 0.1);
-    color: #ba1a1a;
+    color: var(--brand-danger);
   }
   
   .scan-set-actions-cell {
@@ -708,7 +708,7 @@
   
   .scan-set-table-footer {
     padding: 14px 16px;
-    background-color: #fcf6ed;
+    background-color: var(--brand-cream);
     border-top: 1px solid #f2e7d3;
     display: flex;
     flex-direction: column;
@@ -719,7 +719,7 @@
   
   .scan-set-ssl {
     font-weight: 700;
-    color: #124d44;
+    color: var(--brand-green);
   }
   
   /* إعدادات الدفع */
@@ -829,7 +829,7 @@
     .scan-set-table td { display: table-cell; }
   
     .scan-set-table thead tr {
-      background-color: #124d44;
+      background-color: var(--brand-green);
       color: #ffffff;
       font-size: 13px;
       font-weight: 800;
@@ -860,20 +860,20 @@
     border-radius: 9999px;
     background-color: rgba(186, 26, 26, 0.08);
     border: 1px solid rgba(186, 26, 26, 0.35);
-    color: #ba1a1a;
+    color: var(--brand-danger);
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 12px;
   }
   
   .scan-set-btn-outline.danger {
-    color: #ba1a1a;
+    color: var(--brand-danger);
     border-color: rgba(186, 26, 26, 0.4);
   }
   
   .scan-set-btn-outline.danger:hover {
     background-color: rgba(186, 26, 26, 0.08);
-    color: #ba1a1a;
+    color: var(--brand-danger);
   }
   /* ملاحظة تحت نموذج إضافة الماسح: تمتد على كامل الشبكة ولا تؤثر على محاذاة الحقول */
   .scan-set-form-note {
@@ -888,4 +888,4 @@
   }
   
 .scan-set-qr-account { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 12px; }
-.scan-set-qr-account-value { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: #124d44; word-break: break-all; }
+.scan-set-qr-account-value { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: var(--brand-green); word-break: break-all; }

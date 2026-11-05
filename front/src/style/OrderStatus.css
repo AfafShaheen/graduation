@@ -6,7 +6,7 @@
 .os-app-container {
   display: flex;
   justify-content: center;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   color: #201b0f;
   min-height: 100vh;
   min-height: 100dvh;
@@ -20,7 +20,7 @@
 .os-mobile-shell {
   width: 100%;
   max-width: 100%;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -67,9 +67,9 @@
 /* الهيدر العلوي */
 .os-header-main {
   width: 100%;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
-  border-top: 3px solid #ca4b00;
+  border-top: 3px solid var(--brand-orange);
   position: sticky;
   top: 0;
   z-index: 30;
@@ -185,7 +185,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 13px;
   font-weight: 700;
 }
@@ -194,7 +194,7 @@
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   animation: os-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -206,7 +206,7 @@
 /* تحذير مهم: متابعة حالة الطلب مسؤولية الخريج */
 .os-critical-warning {
   background-color: #fff0e6;
-  border: 2px solid #ca4b00;
+  border: 2px solid var(--brand-orange);
   border-right-width: 6px;
   border-radius: 20px;
   padding: 16px;
@@ -227,7 +227,7 @@
   width: 32px;
   height: 32px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   color: #ffffff;
   font-size: 20px;
   display: flex;
@@ -286,7 +286,7 @@
   height: 72px;
   margin-bottom: 14px;
   border-radius: 50%;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   padding: 12px;
   box-sizing: border-box;
   display: flex;
@@ -308,7 +308,7 @@
   border-radius: 9999px;
   background-color: #fff0e6;
   border: 1px solid rgba(202, 75, 0, 0.4);
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-size: 13px;
   font-weight: 700;
   margin-bottom: 12px;
@@ -328,7 +328,7 @@
   font-size: 19px;
   line-height: 28px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0 0 8px 0;
 }
 
@@ -346,7 +346,7 @@
 }
 
 .os-card-subtext .highlight {
-  color: #124d44;
+  color: var(--brand-green);
   font-weight: 700;
 }
 
@@ -398,7 +398,7 @@
 }
 
 .os-meta-val.primary {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 /* قسم مجموعة الواتساب */
@@ -423,7 +423,7 @@
   font-size: 15px;
   line-height: 20px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -431,7 +431,7 @@
   font-size: 12px;
   line-height: 14px;
   font-weight: 700;
-  color: #ca4b00;
+  color: var(--brand-orange);
   display: block;
 }
 
@@ -439,7 +439,7 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -459,7 +459,7 @@
   height: 52px;
   margin-top: 6px;
   border-radius: 9999px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
@@ -572,7 +572,7 @@
 .os-delay-box {
   margin: 12px 0 0;
   padding: 12px;
-  border: 1px solid #ca4b00;
+  border: 1px solid var(--brand-orange);
   border-radius: 14px;
   background: #fff1e6;
   color: #8a3200;

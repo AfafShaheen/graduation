@@ -1,7 +1,7 @@
 .adm-app-container {
-  --col-accent: #124d44;
+  --col-accent: var(--brand-green);
   --col-border: #eedebd;
-  --col-bg: #fcf6ed;
+  --col-bg: var(--brand-cream);
   --col-ink: #201b0f;
 }
 
@@ -56,7 +56,7 @@
   padding: 12px 16px;
   border-radius: 12px;
   background: #fdecea;
-  color: #ba1a1a;
+  color: var(--brand-danger);
   font-weight: 600;
   box-sizing: border-box;
 }

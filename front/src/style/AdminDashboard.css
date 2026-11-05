@@ -6,7 +6,7 @@
 /* حاوية الصفحة */
 .adm-app-container {
   font-family: 'Ghroob', 'Cairo', sans-serif;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   color: #201b0f;
   min-height: 100vh;
   min-height: 100dvh;
@@ -27,7 +27,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   z-index: 60;
 }
 
@@ -76,7 +76,7 @@
   justify-content: center;
   background: #ffffff;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -90,7 +90,7 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -132,7 +132,7 @@
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .adm-help-btn {
@@ -141,8 +141,8 @@
   gap: 8px;
   padding: 8px 18px;
   border-radius: 9999px;
-  border: 1px solid #124d44;
-  color: #124d44;
+  border: 1px solid var(--brand-green);
+  color: var(--brand-green);
   background: transparent;
   font-size: 13px;
   font-weight: 700;
@@ -152,7 +152,7 @@
 }
 
 .adm-help-btn:hover {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -185,7 +185,7 @@
   width: 10px;
   height: 10px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   animation: adm-pulse 2s infinite;
 }
 
@@ -197,7 +197,7 @@
 .adm-pulse-label {
   font-size: 13px;
   font-weight: 800;
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .adm-pulse-venue {
@@ -209,7 +209,7 @@
   font-size: 22px;
   line-height: 32px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -255,7 +255,7 @@
 .adm-btn-primary {
   padding: 10px 20px;
   border-radius: 9999px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   font-weight: 700;
   font-size: 13px;
@@ -270,7 +270,7 @@
 }
 
 .adm-btn-primary.orange {
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .adm-btn-primary.orange:hover {
@@ -279,12 +279,12 @@
 
 .adm-btn-primary.outline {
   background-color: transparent;
-  border-color: #124d44;
-  color: #124d44;
+  border-color: var(--brand-green);
+  color: var(--brand-green);
 }
 
 .adm-btn-primary.outline:hover {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -309,7 +309,7 @@
   border-radius: 9999px;
   background: transparent;
   border: none;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -372,7 +372,7 @@
   margin-bottom: 12px;
   font-size: 13px;
   font-weight: 700;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .adm-highlight-title {
@@ -401,7 +401,7 @@
   font-size: 40px;
   line-height: 1.1;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   font-variant-numeric: tabular-nums;
 }
 
@@ -427,13 +427,13 @@
 }
 
 .adm-pill-box.dark {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
 .adm-pill-box.light {
   background-color: #ffffff;
-  border: 2px solid #ca4b00;
+  border: 2px solid var(--brand-orange);
 }
 
 .adm-pill-head {
@@ -451,7 +451,7 @@
 }
 
 .adm-pill-label.orange {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .adm-pill-icon {
@@ -476,7 +476,7 @@
 }
 
 .adm-pill-value.orange {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .adm-pill-note {
@@ -511,7 +511,7 @@
 }
 
 .adm-capacity-value {
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .adm-capacity-bar {
@@ -528,11 +528,11 @@
 }
 
 .adm-seg.green {
-  background-color: #124d44;
+  background-color: var(--brand-green);
 }
 
 .adm-seg.orange {
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 /* بطاقة المؤشرات */
@@ -609,12 +609,12 @@
 .adm-stat-value {
   font-size: 30px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   font-variant-numeric: tabular-nums;
 }
 
 .adm-stat-value.orange {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .adm-stat-unit {
@@ -636,7 +636,7 @@
 
 .adm-stat-rate {
   font-weight: 800;
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .adm-progress-mini {
@@ -649,7 +649,7 @@
 
 .adm-progress-mini div {
   height: 100%;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   border-radius: 9999px;
 }
 
@@ -661,14 +661,14 @@
 }
 
 .adm-tiny-badge.solid {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
 .adm-tiny-badge.outline {
   background-color: #ffffff;
-  border: 1px solid #ca4b00;
-  color: #ca4b00;
+  border: 1px solid var(--brand-orange);
+  color: var(--brand-orange);
 }
 
 .adm-split-stats {
@@ -685,7 +685,7 @@
 }
 
 .adm-split-number.red {
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }
 
 .adm-split-label {
@@ -722,11 +722,11 @@
 }
 
 .adm-ticket-type-row strong.green {
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .adm-ticket-type-row strong.orange {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 /* القسم السفلي */
@@ -756,11 +756,11 @@
 }
 
 .adm-legend-dot.green {
-  background-color: #124d44;
+  background-color: var(--brand-green);
 }
 
 .adm-legend-dot.orange {
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .adm-faculty-list {
@@ -785,7 +785,7 @@
 }
 
 .adm-faculty-ratio {
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .adm-faculty-bar {
@@ -835,17 +835,17 @@
 }
 
 .adm-chip.confirmed {
-  color: #124d44;
+  color: var(--brand-green);
   background-color: rgba(18, 77, 68, 0.12);
 }
 
 .adm-chip.review {
-  color: #ca4b00;
+  color: var(--brand-orange);
   background-color: rgba(202, 75, 0, 0.12);
 }
 
 .adm-chip.rejected {
-  color: #ba1a1a;
+  color: var(--brand-danger);
   background-color: rgba(186, 26, 26, 0.12);
 }
 
@@ -916,7 +916,7 @@
 }
 
 .adm-cols-item input {
-  accent-color: #124d44;
+  accent-color: var(--brand-green);
   width: 16px;
   height: 16px;
 }
@@ -934,7 +934,7 @@
 }
 
 .adm-table thead th {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   font-size: 13px;
   font-weight: 800;
@@ -964,7 +964,7 @@
   height: 40px;
   border-radius: 9999px;
   background-color: #f8edd9;
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-weight: 800;
   font-size: 13px;
   display: flex;
@@ -1005,7 +1005,7 @@
   border-radius: 9999px;
   background-color: #f8edd9;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
@@ -1018,22 +1018,22 @@
   padding: 6px 12px;
   border-radius: 12px;
   background-color: #ffffff;
-  border: 1px solid #124d44;
-  color: #124d44;
+  border: 1px solid var(--brand-green);
+  color: var(--brand-green);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .adm-seat-pill.hold {
-  border-color: #ca4b00;
-  color: #ca4b00;
+  border-color: var(--brand-orange);
+  color: var(--brand-orange);
   border-style: dashed;
 }
 
 .adm-seat-pill.suspended {
-  border-color: #ba1a1a;
-  color: #ba1a1a;
+  border-color: var(--brand-danger);
+  color: var(--brand-danger);
   background-color: rgba(186, 26, 26, 0.06);
 }
 
@@ -1064,7 +1064,7 @@
 
 .adm-row-icon:hover {
   background-color: #f8edd9;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .adm-row-btn {
@@ -1080,8 +1080,8 @@
 }
 
 .adm-row-btn.solid {
-  background-color: #ca4b00;
-  border: 1px solid #ca4b00;
+  background-color: var(--brand-orange);
+  border: 1px solid var(--brand-orange);
   color: #ffffff;
 }
 
@@ -1090,12 +1090,12 @@
 }
 
 .adm-row-btn.danger {
-  border: 1px solid #ba1a1a;
-  color: #ba1a1a;
+  border: 1px solid var(--brand-danger);
+  color: var(--brand-danger);
 }
 
 .adm-row-btn.danger:hover {
-  background-color: #ba1a1a;
+  background-color: var(--brand-danger);
   color: #ffffff;
 }
 
@@ -1105,7 +1105,7 @@
   padding: 5px 12px;
   border-radius: 10px;
   background-color: rgba(186, 26, 26, 0.08);
-  color: #ba1a1a;
+  color: var(--brand-danger);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.5;
@@ -1162,7 +1162,7 @@
 }
 
 .adm-page-btn.active {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 

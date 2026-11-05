@@ -10,9 +10,9 @@
   gap: 6px;
   padding: 8px 12px;
   border-radius: 9999px;
-  border: 1px solid #124d44;
+  border: 1px solid var(--brand-green);
   background: transparent;
-  color: #124d44;
+  color: var(--brand-green);
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -21,7 +21,7 @@
 }
 
 .vol-back-btn:hover {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -48,7 +48,7 @@
 }
 
 .vol-stat.highlight {
-  border: 2px solid #ca4b00;
+  border: 2px solid var(--brand-orange);
 }
 
 .vol-stat-label {
@@ -65,11 +65,11 @@
 }
 
 .vol-stat-value.green {
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .vol-stat-value.orange {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 /* التصفية */
@@ -114,7 +114,7 @@
 }
 
 .vol-input:focus {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
 }
 
@@ -184,7 +184,7 @@
 }
 
 .vol-count strong {
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 16px;
 }
 
@@ -261,7 +261,7 @@
 }
 
 .vol-chip.yes {
-  color: #124d44;
+  color: var(--brand-green);
   background-color: rgba(18, 77, 68, 0.12);
 }
 
@@ -314,9 +314,9 @@
   gap: 4px;
   padding: 8px 14px;
   border-radius: 9999px;
-  border: 1px solid #124d44;
+  border: 1px solid var(--brand-green);
   background: transparent;
-  color: #124d44;
+  color: var(--brand-green);
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -325,7 +325,7 @@
 }
 
 .vol-page-btn:hover:not(:disabled) {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -392,7 +392,7 @@
     padding: 0;
   }
   .vol-table tbody tr:hover {
-    background-color: #fcf6ed;
+    background-color: var(--brand-cream);
   }
   .vol-table td {
     display: table-cell;

@@ -4,11 +4,11 @@
    ========================================================================== */
 
 .scan-err-app-container {
-  --se-green: #124d44;
-  --se-orange: #ca4b00;
+  --se-green: var(--brand-green);
+  --se-orange: var(--brand-orange);
   --se-red: #b3261e;
   --se-red-deep: #8f1d17;
-  --se-cream: #fcf6ed;
+  --se-cream: var(--brand-cream);
   --se-sand: #f8edd9;
   --se-line: #eedebd;
   --se-text: #201b0f;

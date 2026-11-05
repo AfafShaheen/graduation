@@ -4,7 +4,7 @@
 .ev-app-container {
   display: flex;
   justify-content: center;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   color: #201b0f;
   min-height: 100vh;
   min-height: 100dvh;
@@ -18,7 +18,7 @@
 .ev-mobile-shell {
   width: 100%;
   max-width: 100%;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -64,9 +64,9 @@
 /* الهيدر العلوي */
 .ev-header-main {
   width: 100%;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
-  border-top: 3px solid #ca4b00;
+  border-top: 3px solid var(--brand-orange);
   position: sticky;
   top: 0;
   z-index: 30;
@@ -177,7 +177,7 @@
 }
 
 .ev-progress-percent {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .ev-progress-bar {
@@ -188,7 +188,7 @@
 }
 
 .ev-progress-fill {
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   border-radius: 9999px;
 }
 
@@ -221,7 +221,7 @@
   width: 64px;
   height: 64px;
   border-radius: 9999px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -233,7 +233,7 @@
   font-size: 18px;
   line-height: 28px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0 0 8px 0;
 }
 
@@ -275,7 +275,7 @@
   font-family: inherit;
   font-size: 12px;
   line-height: 14px;
-  color: #ca4b00;
+  color: var(--brand-orange);
   font-weight: 700;
   background: transparent;
   border: none;
@@ -333,7 +333,7 @@
   font-family: inherit;
   font-size: 22px;
   font-weight: 700;
-  color: #124d44;
+  color: var(--brand-green);
   background-color: #fffdfa;
   border: 1px solid #e2bfb2;
   border-radius: 12px;
@@ -343,7 +343,7 @@
 }
 
 .ev-otp-field:focus {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.15);
   background-color: #ffffff;
 }
@@ -354,9 +354,9 @@
 
 /* رمز خاطئ */
 .ev-otp-field.error {
-  border-color: #ba1a1a;
+  border-color: var(--brand-danger);
   background-color: #fdecec;
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }
 
 /* رمز صحيح: المربعات تصير خضراء */
@@ -399,7 +399,7 @@
 }
 
 .ev-error-text {
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }
 
 .ev-success-text {
@@ -428,7 +428,7 @@
 }
 
 .ev-timer-badge.expired {
-  color: #ba1a1a;
+  color: var(--brand-danger);
   font-weight: 700;
 }
 
@@ -458,7 +458,7 @@
 }
 
 .ev-resend-btn.active {
-  color: #ca4b00;
+  color: var(--brand-orange);
   cursor: pointer;
 }
 
@@ -507,7 +507,7 @@
 }
 
 .ev-support-link:hover {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 /* الشريط السفلي والزر */
@@ -527,7 +527,7 @@
 .ev-submit-btn {
   width: 100%;
   height: 52px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   font-family: inherit;
   font-size: 16px;
@@ -627,7 +627,7 @@
 .ev-change-email-label {
   font-size: 14px;
   font-weight: 600;
-  color: #124d44;
+  color: var(--brand-green);
 }
 .ev-change-email-input {
   width: 100%;
@@ -643,7 +643,7 @@
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .ev-change-email-input:focus {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
 }
 .ev-change-email-input.has-error {
@@ -671,7 +671,7 @@
 }
 .ev-change-email-save {
   border: none;
-  background: #124d44;
+  background: var(--brand-green);
   color: #fff;
 }
 .ev-change-email-save:hover:not(:disabled) {

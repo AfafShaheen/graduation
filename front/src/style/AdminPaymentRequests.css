@@ -5,7 +5,7 @@
 
 .pay-req-app-container {
   font-family: 'Ghroob', 'Cairo', sans-serif;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   color: #201b0f;
   /* يمنع الوضع الداكن التلقائي في المتصفح من قلب ألوان الحقول (textarea/select) */
   color-scheme: light;
@@ -25,7 +25,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   z-index: 60;
 }
 
@@ -73,7 +73,7 @@
   justify-content: center;
   background: #ffffff;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -87,7 +87,7 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -141,7 +141,7 @@
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .pay-req-help-btn {
@@ -150,8 +150,8 @@
   gap: 8px;
   padding: 8px 18px;
   border-radius: 9999px;
-  border: 1px solid #124d44;
-  color: #124d44;
+  border: 1px solid var(--brand-green);
+  color: var(--brand-green);
   background: transparent;
   font-size: 13px;
   font-weight: 700;
@@ -161,7 +161,7 @@
 }
 
 .pay-req-help-btn:hover {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -179,7 +179,7 @@
   font-size: 22px;
   line-height: 32px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -202,7 +202,7 @@
   width: 10px;
   height: 10px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .pay-req-pulse-label {
@@ -236,7 +236,7 @@
 }
 
 .pay-req-stat-card.orange {
-  border: 2px solid #ca4b00;
+  border: 2px solid var(--brand-orange);
 }
 
 .pay-req-stat-label {
@@ -247,19 +247,19 @@
 }
 
 .pay-req-stat-label.orange {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .pay-req-stat-value {
   font-size: 30px;
   line-height: 1.2;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 4px 0 0 0;
   font-variant-numeric: tabular-nums;
 }
 
-.pay-req-stat-value.orange { color: #ca4b00; }
+.pay-req-stat-value.orange { color: var(--brand-orange); }
 .pay-req-stat-value.small { font-size: 22px; }
 
 .pay-req-stat-unit {
@@ -277,14 +277,14 @@
   gap: 4px;
 }
 
-.pay-req-stat-note.orange { color: #ca4b00; font-weight: 700; }
+.pay-req-stat-note.orange { color: var(--brand-orange); font-weight: 700; }
 
 .pay-req-stat-icon {
   width: 48px;
   height: 48px;
   border-radius: 9999px;
   background-color: #f8edd9;
-  color: #124d44;
+  color: var(--brand-green);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -293,7 +293,7 @@
 
 .pay-req-stat-icon.orange {
   background-color: rgba(202, 75, 0, 0.12);
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 /* الفلاتر */
@@ -322,7 +322,7 @@
 }
 
 .pay-req-search-input:focus {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
 }
 
@@ -381,7 +381,7 @@
 }
 
 .pay-req-table-header {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   padding: 16px;
   display: flex;
@@ -460,7 +460,7 @@
 
 .pay-req-table tbody tr.row-mismatch {
   background-color: rgba(202, 75, 0, 0.06);
-  border-right: 4px solid #ca4b00;
+  border-right: 4px solid var(--brand-orange);
 }
 
 .pay-req-table td[data-label]::before {
@@ -479,7 +479,7 @@
 
 .pay-req-person-name {
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 14px;
 }
 
@@ -493,7 +493,7 @@
 .pay-req-num {
   font-size: 13px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   font-variant-numeric: tabular-nums;
   direction: ltr;
   unicode-bidi: embed;
@@ -502,12 +502,12 @@
 .pay-req-amount {
   font-weight: 800;
   font-size: 14px;
-  color: #124d44;
+  color: var(--brand-green);
   font-variant-numeric: tabular-nums;
 }
 
 .pay-req-amount.ok { color: #19794F; }
-.pay-req-amount.bad { color: #ba1a1a; }
+.pay-req-amount.bad { color: var(--brand-danger); }
 
 .pay-req-unit {
   font-size: 12px;
@@ -523,7 +523,7 @@
   border-radius: 9999px;
   background-color: #f8edd9;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -536,7 +536,7 @@
 .pay-req-ticket-chip.group {
   background-color: rgba(202, 75, 0, 0.1);
   border-color: rgba(202, 75, 0, 0.25);
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .pay-req-txref {
@@ -553,7 +553,7 @@
 
 .pay-req-txref.mismatch {
   background-color: #ffffff;
-  border-color: #ca4b00;
+  border-color: var(--brand-orange);
 }
 
 .pay-req-match {
@@ -576,7 +576,7 @@
   gap: 4px;
   padding: 2px 10px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
@@ -622,7 +622,7 @@
 }
 
 .pay-req-btn-confirm {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -632,7 +632,7 @@
 
 .pay-req-btn-reject {
   background-color: transparent;
-  color: #ba1a1a;
+  color: var(--brand-danger);
   border-color: rgba(186, 26, 26, 0.4);
 }
 
@@ -641,9 +641,9 @@
 }
 
 .pay-req-btn-reject.warn {
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   color: #ffffff;
-  border-color: #ca4b00;
+  border-color: var(--brand-orange);
 }
 
 .pay-req-btn-reject.warn:hover {
@@ -665,7 +665,7 @@
 
 .pay-req-table-footer {
   padding: 14px 16px;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   border-top: 1px solid #f2e7d3;
   display: flex;
   flex-direction: column;
@@ -675,7 +675,7 @@
 }
 
 .pay-req-table-footer strong {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .pay-req-pager {
@@ -697,8 +697,8 @@
 }
 
 .pay-req-page-btn.active {
-  background-color: #124d44;
-  border-color: #124d44;
+  background-color: var(--brand-green);
+  border-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -805,7 +805,7 @@
 .pay-req-modal-title {
   margin: 0 0 6px;
   font-size: 18px;
-  color: #124d44;
+  color: var(--brand-green);
 }
 .pay-req-modal-sub {
   margin: 0 0 16px;
@@ -817,7 +817,7 @@
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #124d44;
+  color: var(--brand-green);
 }
 .pay-req-modal-textarea {
   width: 100%;
@@ -838,7 +838,7 @@
 }
 .pay-req-modal-textarea:focus {
   outline: none;
-  border-color: #124d44;
+  border-color: var(--brand-green);
 }
 /* أزرار أسباب الرفض الجاهزة (RejectReasonPresets) + سطر التلميح والعدّاد */
 .pay-req-presets {
@@ -850,7 +850,7 @@
 .pay-req-preset-btn {
   border: 1px solid #d7e0dd;
   background: #f4faf8;
-  color: #124d44;
+  color: var(--brand-green);
   border-radius: 999px;
   padding: 5px 10px;
   font-family: inherit;
@@ -858,7 +858,7 @@
   cursor: pointer;
 }
 .pay-req-preset-btn:hover {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   background: #e7f3ef;
 }
 .pay-req-modal-meta {
@@ -880,7 +880,7 @@
 .pay-req-modal-error {
   margin: 8px 0 0;
   font-size: 13px;
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 .pay-req-modal-actions {
   display: flex;
@@ -891,7 +891,7 @@
 .pay-req-modal-cancel {
   border: 1px solid #d7e0dd;
   background: #f5f7f6;
-  color: #124d44;
+  color: var(--brand-green);
   border-radius: 10px;
   padding: 8px 18px;
   font-size: 14px;

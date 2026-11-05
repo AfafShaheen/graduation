@@ -6,7 +6,7 @@
 .lg-app-container {
   display: flex;
   justify-content: center;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   color: #201b0f;
   min-height: 100vh;
   min-height: 100dvh;
@@ -20,7 +20,7 @@
 .lg-mobile-shell {
   width: 100%;
   max-width: 100%;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -66,9 +66,9 @@
 /* الهيدر العلوي */
 .lg-header-main {
   width: 100%;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
-  border-top: 3px solid #ca4b00;
+  border-top: 3px solid var(--brand-orange);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -193,7 +193,7 @@
   font-size: 22px;
   line-height: 32px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0 0 8px 0;
 }
 
@@ -239,7 +239,7 @@
   font-size: 12px;
   line-height: 14px;
   font-weight: 700;
-  color: #ca4b00;
+  color: var(--brand-orange);
   text-decoration: none;
   transition: color 0.15s ease;
 }
@@ -257,12 +257,12 @@
 }
 
 .lg-input-wrapper:focus-within {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
 }
 
 .lg-input-wrapper.error {
-  border-color: #ba1a1a;
+  border-color: var(--brand-danger);
 }
 
 .lg-input-wrapper.error:focus-within {
@@ -297,7 +297,7 @@
 }
 
 .lg-input-icon-left:hover {
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .lg-input {
@@ -346,7 +346,7 @@
 
 /* رسالة الخطأ تحت الحقل */
 .lg-error-text {
-  color: #ba1a1a;
+  color: var(--brand-danger);
   font-size: 12px;
   font-weight: 700;
   margin: 0;
@@ -359,7 +359,7 @@
   height: 52px;
   margin-top: 8px;
   border-radius: 9999px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   font-family: inherit;
   font-size: 16px;
@@ -400,7 +400,7 @@
 
 .lg-register-link {
   font-weight: 700;
-  color: #ca4b00;
+  color: var(--brand-orange);
   text-decoration: none;
 }
 

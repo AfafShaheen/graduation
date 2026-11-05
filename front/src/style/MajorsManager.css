@@ -60,7 +60,7 @@
 
 .maj-input:focus {
   outline: none;
-  border-color: #124d44;
+  border-color: var(--brand-green);
 }
 
 .maj-btn {
@@ -74,7 +74,7 @@
 }
 
 .maj-btn.primary {
-  background: #124d44;
+  background: var(--brand-green);
   color: #ffffff;
 }
 
@@ -86,7 +86,7 @@
 
 .maj-btn.danger {
   background: #fdecea;
-  color: #ba1a1a;
+  color: var(--brand-danger);
   border-color: #f5c2c0;
 }
 
@@ -98,7 +98,7 @@
 .maj-error {
   font-size: 13px;
   font-weight: 700;
-  color: #ba1a1a;
+  color: var(--brand-danger);
   margin: 0 0 12px;
 }
 
@@ -138,7 +138,7 @@
 .maj-confirm-text {
   font-size: 13px;
   font-weight: 700;
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }
 
 .maj-empty {

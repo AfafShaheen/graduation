@@ -5,7 +5,7 @@
 
 .cer-app-container {
   font-family: 'Ghroob', 'Cairo', sans-serif;
-  background-color: #fcf6ed;
+  background-color: var(--brand-cream);
   color: #201b0f;
   min-height: 100vh;
   min-height: 100dvh;
@@ -24,7 +24,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   z-index: 60;
 }
 
@@ -73,7 +73,7 @@
   justify-content: center;
   background: #ffffff;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -87,7 +87,7 @@
   font-size: 16px;
   line-height: 24px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -125,7 +125,7 @@
 .cer-icon-action-btn.small {
   width: 36px;
   height: 36px;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .cer-notif-dot {
@@ -135,7 +135,7 @@
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .cer-help-btn {
@@ -144,8 +144,8 @@
   gap: 8px;
   padding: 8px 18px;
   border-radius: 9999px;
-  border: 1px solid #124d44;
-  color: #124d44;
+  border: 1px solid var(--brand-green);
+  color: var(--brand-green);
   background: transparent;
   font-size: 13px;
   font-weight: 700;
@@ -155,7 +155,7 @@
 }
 
 .cer-help-btn:hover {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -188,7 +188,7 @@
   width: 40px;
   height: 40px;
   border-radius: 9999px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -225,13 +225,13 @@
   width: 10px;
   height: 10px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .cer-pulse-label {
   font-size: 13px;
   font-weight: 800;
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .cer-pulse-venue {
@@ -243,7 +243,7 @@
   font-size: 22px;
   line-height: 32px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   margin: 0;
 }
 
@@ -261,7 +261,7 @@
   gap: 8px;
   padding: 12px 24px;
   border-radius: 9999px;
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
   font-weight: 700;
   font-size: 14px;
@@ -308,7 +308,7 @@
 }
 
 .cer-search-input:focus {
-  border-color: #124d44;
+  border-color: var(--brand-green);
   box-shadow: 0 0 0 3px rgba(18, 77, 68, 0.12);
 }
 
@@ -416,7 +416,7 @@
   border-radius: 9999px;
   background-color: #f8edd9;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -427,7 +427,7 @@
   font-size: 15px;
   line-height: 22px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .cer-name-code {
@@ -450,7 +450,7 @@
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 /* التاريخ والمكان */
@@ -475,7 +475,7 @@
 }
 
 .cer-info-line.venue {
-  color: #124d44;
+  color: var(--brand-green);
   font-weight: 700;
 }
 
@@ -485,11 +485,11 @@
 }
 
 .cer-info-line.strong .cer-symbol {
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .cer-info-line.venue .cer-symbol {
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 .cer-period {
@@ -512,7 +512,7 @@
 }
 
 .cer-chip.open {
-  background-color: #124d44;
+  background-color: var(--brand-green);
   color: #ffffff;
 }
 
@@ -523,7 +523,7 @@
 
 .cer-chip.upcoming {
   background-color: rgba(202, 75, 0, 0.12);
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .cer-chip-dot {
@@ -545,7 +545,7 @@
   border-radius: 9999px;
   background-color: #f8edd9;
   border: 1px solid #eedebd;
-  color: #124d44;
+  color: var(--brand-green);
   font-size: 12px;
   font-weight: 700;
 }
@@ -567,7 +567,7 @@
 .cer-capacity-booked {
   font-size: 16px;
   font-weight: 800;
-  color: #124d44;
+  color: var(--brand-green);
   font-variant-numeric: tabular-nums;
 }
 
@@ -587,11 +587,11 @@
 .cer-capacity-fill {
   height: 100%;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
 }
 
 .cer-capacity-fill.full {
-  background-color: #124d44;
+  background-color: var(--brand-green);
 }
 
 .cer-capacity-foot {
@@ -604,11 +604,11 @@
 
 .cer-capacity-left {
   font-weight: 800;
-  color: #ca4b00;
+  color: var(--brand-orange);
 }
 
 .cer-capacity-left.done {
-  color: #124d44;
+  color: var(--brand-green);
 }
 
 /* الإجراءات */
@@ -670,7 +670,7 @@
   .cer-table td { display: table-cell; }
 
   .cer-table thead tr {
-    background-color: #124d44;
+    background-color: var(--brand-green);
     color: #ffffff;
     font-size: 14px;
     font-weight: 800;
@@ -737,7 +737,7 @@
 .cer-modal-error {
   font-size: 13px;
   font-weight: 700;
-  color: #ba1a1a;
+  color: var(--brand-danger);
   margin: 0 0 16px;
 }
 
@@ -764,7 +764,7 @@
 }
 
 .cer-modal-confirm {
-  background: #ba1a1a;
+  background: var(--brand-danger);
   color: #ffffff;
 }
 
@@ -775,5 +775,5 @@
 }
 
 .cer-icon-action-btn.danger:hover {
-  color: #ba1a1a;
+  color: var(--brand-danger);
 }

@@ -49,8 +49,8 @@
   height: 100dvh;
   width: min(288px, 85vw);
   z-index: 45;
-  background-color: #124d44;
-  border-top: 3px solid #ca4b00;
+  background-color: var(--brand-green);
+  border-top: 3px solid var(--brand-orange);
   box-sizing: border-box;
   overflow-y: auto;
   /* مخفي افتراضياً على الشاشات الصغيرة */
@@ -170,7 +170,7 @@
   top: 8px;
   bottom: 8px;
   width: 4px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   border-radius: 9999px;
 }
 
@@ -179,7 +179,7 @@
   padding: 2px 8px;
   font-size: 12px;
   border-radius: 9999px;
-  background-color: #ca4b00;
+  background-color: var(--brand-orange);
   color: #ffffff;
   font-weight: 700;
 }
@@ -258,7 +258,7 @@
     border-radius: 9999px;
     align-items: center;
     justify-content: center;
-    background-color: #124d44;
+    background-color: var(--brand-green);
     color: #ffffff;
     border: none;
     cursor: pointer;
