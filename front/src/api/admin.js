@@ -7,6 +7,11 @@ function buildQuery(params) {
   const searchParams = new URLSearchParams();
   for (const [key, value] of Object.entries(params || {})) {
     if (value === undefined || value === null || value === "") continue;
+    // a list is sent as repeated keys (?action=A&action=B), which is what the server reads
+    if (Array.isArray(value)) {
+      value.forEach((item) => searchParams.append(key, item));
+      continue;
+    }
     searchParams.append(key, value);
   }
   const query = searchParams.toString();

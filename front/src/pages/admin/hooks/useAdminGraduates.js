@@ -49,6 +49,19 @@ export async function updateGraduateEmail(id, newEmail) {
   return await adminRequest(`/api/admin/graduates/${id}/email`, { method: "PUT", body: { new_email: newEmail } });
 }
 
+// Exceptional admin action: the four names exactly as they must be printed.
+export async function updateGraduateName(id, names) {
+  return await adminRequest(`/api/admin/graduates/${id}/name`, {
+    method: "PUT",
+    body: {
+      first_name: names.firstName,
+      last_name: names.lastName,
+      father_name: names.fatherName,
+      mother_name: names.motherName,
+    },
+  });
+}
+
 // Exceptional admin action: confirm the graduate's e-mail without the OTP
 // code so he can log in normally (single graduate only, no bulk).
 export async function verifyGraduateEmail(id) {

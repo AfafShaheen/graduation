@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { namesOf, nameDraftError } from '../../../utils/graduateNames.js';
 import {
   getGraduateDetail,
   manualCheckIn,
   revertScan,
   revertPayment,
   updateGraduateEmail,
+  updateGraduateName,
   verifyGraduateEmail,
 } from '../hooks/useAdminGraduates.js';
 import { ApiError } from '../../../api/admin.js';
@@ -83,6 +85,14 @@ const ACTIONS = [
   },
 ];
 
+const NAME_FIELDS = [
+  ['firstName', 'الاسم'],
+  ['lastName', 'الكنية'],
+  ['fatherName', 'اسم الأب'],
+  ['motherName', 'اسم الأم'],
+];
+const EMPTY_NAMES = { firstName: '', lastName: '', fatherName: '', motherName: '' };
+
 export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice }) {
   useDialogA11y(true);
   const graduateId = row.registration.graduate_id;
@@ -93,6 +103,8 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
   const [error, setError] = useState('');
   const [editingEmail, setEditingEmail] = useState(false);
   const [emailDraft, setEmailDraft] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(EMPTY_NAMES);
   const closeRef = useRef(null);
   const latest = useRef(0);
 
@@ -135,6 +147,34 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
       await loadDetail();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'تعذّر تنفيذ الإجراء، حاول مجدداً.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openNameEdit = () => {
+    setEditingEmail(false);
+    setNameDraft(namesOf(detail, row));
+    setEditingName((v) => !v);
+  };
+
+  const saveName = async (e) => {
+    e.preventDefault();
+    const problem = nameDraftError(nameDraft);
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const res = await updateGraduateName(graduateId, nameDraft);
+      onNotice(res?.message || 'تم تحديث الاسم.');
+      setEditingName(false);
+      await onChanged();
+      await loadDetail();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'تعذّر تحديث الاسم.');
     } finally {
       setBusy(false);
     }
@@ -348,12 +388,17 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
                 className="exc-action-btn"
                 disabled={busy || stale}
                 onClick={() => {
+                  setEditingName(false);
                   setEmailDraft(row.registration.email || '');
                   setEditingEmail((v) => !v);
                 }}
               >
                 <span className="exc-symbol">mark_email_read</span>
                 <span>تعديل البريد</span>
+              </button>
+              <button type="button" className="exc-action-btn" disabled={busy || stale || !detail} onClick={openNameEdit}>
+                <span className="exc-symbol">badge</span>
+                <span>تعديل الاسم</span>
               </button>
             </div>
           )}
@@ -401,6 +446,35 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
                   حفظ البريد
                 </button>
                 <button type="button" className="exc-btn-small" onClick={() => setEditingEmail(false)}>
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          )}
+
+          {editingName && (
+            <form className="exc-email-form exc-name-form" onSubmit={saveName}>
+              <p className="exc-card-sub" style={{ margin: 0 }}>
+                الأسماء كما ستُطبع على الشهادة. التشكيل والمسافات الزائدة تُزال تلقائياً.
+              </p>
+              {NAME_FIELDS.map(([key, label]) => (
+                <label key={key} className="rost-field">
+                  <span>{label}</span>
+                  <input
+                    type="text"
+                    className="rost-input"
+                    value={nameDraft[key]}
+                    maxLength={100}
+                    onChange={(e) => setNameDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+                    required
+                  />
+                </label>
+              ))}
+              <div className="exc-email-actions">
+                <button type="submit" className="exc-btn-small solid" disabled={busy}>
+                  حفظ الاسم
+                </button>
+                <button type="button" className="exc-btn-small" onClick={() => setEditingName(false)}>
                   إلغاء
                 </button>
               </div>

@@ -1,29 +1,45 @@
 ﻿import { useEffect, useState, useCallback } from "react";
 import { adminRequest, ApiError } from "../../../api/admin.js";
 
-export function useAdminAudit({ eventId = null, exceptionalOnly = true, limit = 50, offset = 0 } = {}) {
+// The audit log for the filters and the page asked for. `query` comes from utils/auditFilters.js.
+export function useAdminAudit(query, { enabled = true } = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const key = JSON.stringify(query);
 
   const fetchAudit = useCallback(async () => {
+    if (!enabled) return;
     setLoading(true);
     setError(null);
     try {
-      const query = { limit, offset, exceptional_only: exceptionalOnly };
-      if (eventId) query.event_id = eventId;
-      const res = await adminRequest("/api/admin/audit-logs", { query });
+      const res = await adminRequest("/api/admin/audit-logs", { query: JSON.parse(key) });
       setData(res);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "حدث خطأ غير متوقع.");
     } finally {
       setLoading(false);
     }
-  }, [eventId, exceptionalOnly, limit, offset]);
+  }, [key, enabled]);
 
   useEffect(() => {
     fetchAudit();
   }, [fetchAudit]);
 
   return { data, loading, error, refetch: fetchAudit };
+}
+
+// The groups of actions for the filter menu (labels come from the server).
+export function useAuditActionMenu() {
+  const [menu, setMenu] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    adminRequest("/api/admin/audit-logs/actions")
+      .then((res) => alive && setMenu(res))
+      .catch(() => alive && setMenu({ exceptional: [], groups: [] })); // the log still works without the menu
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return menu;
 }

@@ -315,3 +315,8 @@
 @media (max-width: 720px) {
   .rost-main-row { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* a checkbox with its sentence, in a filter grid */
+.rost-check-row { display: flex; align-items: center; gap: 8px; min-height: 40px; font-weight: 600; }
+.rost-check-row input { width: 18px; height: 18px; accent-color: var(--brand-green); }
+.exc-name-form .rost-field { display: flex; flex-direction: column; gap: 4px; }
