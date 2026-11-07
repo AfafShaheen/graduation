@@ -109,25 +109,37 @@ def decode_registration_token(token: str) -> dict:
         )
 
 
-async def check_step1_rate_limit(university_id: str) -> None:
-    key = f"rate_limit:step1:{university_id}"
+# Verification attempts. One person (one address) may try 10 times in 5 minutes for a university id;
+# all addresses together may try 60 times. So nobody can lock another student out of registering
+# from his own phone, and a distributed guess is still stopped.
+STEP1_ATTEMPTS_PER_ADDRESS = 10
+STEP1_ATTEMPTS_PER_ID = 60
+STEP1_WINDOW_SECONDS = 300
+
+
+async def check_step1_rate_limit(university_id: str, client_ip: str | None = None) -> None:
+    per_address = f"rate_limit:step1:{university_id}:{client_ip or 'unknown'}"
+    per_id = f"rate_limit:step1:{university_id}"
     try:
-        attempts = await redis_client.get(key)
-        if attempts and int(attempts) >= 10:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=messages.VERIFY_RATE_LIMITED
-            )
-        await redis_client.incr(key)
-        await redis_client.expire(key, 300)
+        for key, limit in ((per_address, STEP1_ATTEMPTS_PER_ADDRESS), (per_id, STEP1_ATTEMPTS_PER_ID)):
+            attempts = await redis_client.get(key)
+            if attempts and int(attempts) >= limit:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=messages.VERIFY_RATE_LIMITED,
+                )
+        for key in (per_address, per_id):
+            # the window starts at the first attempt and is never pushed back by later ones
+            await redis_client.set(key, 0, ex=STEP1_WINDOW_SECONDS, nx=True)
+            await redis_client.incr(key)
     except HTTPException:
         raise
     except Exception as exc:
         logger.warning("Redis step1 rate-limit check failed (%s); failing open", exc)
 
 
-async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
-    await check_step1_rate_limit(data.university_id)
+async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1, client_ip: str | None = None) -> dict:
+    await check_step1_rate_limit(data.university_id, client_ip)
 
     event = await get_college_event(db, data.college_id)
     if event is None:
@@ -140,7 +152,9 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1) -> dict:
     uni_record_result = await db.execute(
         select(UniversityRecordModel).where(
             UniversityRecordModel.university_id == data.university_id,
-            UniversityRecordModel.college_id == data.college_id
+            UniversityRecordModel.college_id == data.college_id,
+            # the ceremony of this college now: an older ceremony may still hold a stale copy
+            UniversityRecordModel.event_id == event.id,
         )
     )
     uni_record = uni_record_result.scalar_one_or_none()

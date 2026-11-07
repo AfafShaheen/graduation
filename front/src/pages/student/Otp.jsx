@@ -4,6 +4,7 @@ import '../../style/Otp.css';
 import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
 import { verifyOtp, resendOtp, changeEmail, forgotPassword } from '../../api/graduate';
+import { toLatinDigits } from '../../utils/digits';
 import { setGraduateSession, clearVerificationToken, setGraduateEmail, getVerificationToken, getGraduateEmail, setResetCode } from '../../api/session';
 import GraduateFooter from '../../components/GraduateFooter';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
@@ -196,7 +197,7 @@ export default function Otp({
   // التنقل الآلي بين حقول الـ OTP
   const handleInputChange = (index, value) => {
     if (locked) return;
-    const digits = value.replace(/\D/g, '');
+    const digits = toLatinDigits(value).replace(/\D/g, '');
     resetFeedback();
 
     if (digits.length > 2) {
@@ -231,7 +232,7 @@ export default function Otp({
   const handlePaste = (e) => {
     e.preventDefault();
     if (locked) return;
-    const digits = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, CODE_LENGTH);
+    const digits = toLatinDigits(e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, CODE_LENGTH);
     if (!digits) return;
     resetFeedback();
     fillFrom(0, digits);

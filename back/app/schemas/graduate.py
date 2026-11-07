@@ -1,9 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, model_validator
 from datetime import datetime
 from typing import Optional, Literal
 from decimal import Decimal
 from uuid import UUID
 
+from app.core.digits import ascii_digits
 from app.core.security import validate_password_policy
 
 NAME_REGEX = r"^[\u0600-\u06FFa-zA-Z\s]{2,255}$"
@@ -22,6 +23,12 @@ class UserVerifyStep1(BaseModel):
     gpa: Optional[Decimal] = Field(None, ge=0, le=100, max_digits=5, decimal_places=2)
     top_rank: Optional[Literal[1, 2, 3]] = None
 
+    @field_validator("university_id", mode="before")
+    @classmethod
+    def _latin_digits(cls, value):
+        # a phone with an Arabic keypad sends ٢٠١٩... : it is the same number
+        return ascii_digits(value.strip()) if isinstance(value, str) else value
+
     @model_validator(mode="after")
     def _require_a_name(self):
         # Either the split names (first + last) or the legacy full name (D4).
@@ -35,6 +42,11 @@ class RegisterStep2Request(BaseModel):
     email: EmailStr
     phone: str = Field(..., pattern=PHONE_REGEX, description="Phone number must contain digits only.")
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters long.")
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def _latin_phone_digits(cls, value):
+        return ascii_digits(value.strip()) if isinstance(value, str) else value
 
     @model_validator(mode="after")
     def _enforce_password_policy(self):

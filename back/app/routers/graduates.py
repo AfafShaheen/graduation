@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
+from app.services.login_throttle import client_ip
 from app.core.deps import get_current_graduate
 from app.models.graduate import GraduateModel
 from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request, GraduateMeResponse
@@ -37,8 +38,8 @@ from app.services.volunteer_service import (
 router = APIRouter(prefix="/api/graduates", tags=["Graduates & Registration"])
 
 @router.post("/verify-step1", status_code=status.HTTP_200_OK)
-async def verify_step1_endpoint(data: UserVerifyStep1, db: AsyncSession = Depends(get_db)):
-    return await verify_step1_service(db, data)
+async def verify_step1_endpoint(data: UserVerifyStep1, request: Request, db: AsyncSession = Depends(get_db)):
+    return await verify_step1_service(db, data, client_ip(request))
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_step2_endpoint(data: RegisterStep2Request, db: AsyncSession = Depends(get_db)):

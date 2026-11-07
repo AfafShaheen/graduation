@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import List, Dict, Any
 from fastapi import UploadFile, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, text
 from app.models.university_record import UniversityRecordModel
 from app.models.college import CollegeModel
 from app.models.event import EventModel
@@ -17,12 +17,16 @@ from app.models.graduate import GraduateModel
 from app.models.major import MajorModel
 from app.services.graduate_service import normalize_arabic
 from app.services.college_links import colleges_for_event
+from app.services.registration_window import get_college_event
 from app.services.audit_log import ActorType, record_audit
+from app.core.digits import ascii_digits
 from app.core.redis import delete_matching, redis_client
 
 logger = logging.getLogger(__name__)
 
 # One limit for every university-data upload (records and files endpoints).
+# advisory-lock key of the import of a ceremony (the base keeps it away from other users of locks)
+_IMPORT_LOCK_BASE = 7_300_000_000
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 _READ_CHUNK_BYTES = 1024 * 1024
 FILE_TOO_LARGE_MESSAGE = "حجم الملف كبير جداً. الحد الأقصى المسموح 10 ميغابايت."
@@ -130,9 +134,7 @@ def normalize_phone(value: Any) -> str | None:
     text = str(value).strip()
     if not text or text.lower() == "nan":
         return None
-    arabic_indic = "٠١٢٣٤٥٦٧٨٩"
-    ascii_digits = "[REDACTED]"
-    text = text.translate(str.maketrans(arabic_indic, ascii_digits))
+    text = ascii_digits(text)
     leading_plus = text.startswith("+")
     digits = re.sub(r"[^0-9]", "", text)
     if not digits:
@@ -181,7 +183,8 @@ def parse_top_status_from_file(value: Any) -> int | None:
 
 
 def _is_valid_arabic_name(value: str) -> bool:
-    return bool(value and _ARABIC_NAME_PATTERN.fullmatch(value))
+    # diacritics (shadda, fatha...) are removed first: they are not letters but they are not an error
+    return bool(value and _ARABIC_NAME_PATTERN.fullmatch(normalize_arabic(value)))
 
 
 def split_full_name(full_name: str | None) -> tuple[str, str]:
@@ -214,6 +217,11 @@ def _cell_text(row: Dict[str, Any], key: str) -> str:
     if text.endswith(".0") and text[:-2].isdigit():
         return text[:-2]
     return text
+
+
+def _is_blank_row(row: Dict[str, Any]) -> bool:
+    """A row with no value at all (Excel keeps empty formatted rows in the sheet)."""
+    return all(_cell_text(row, key) == "" for key in row)
 
 
 def _record_error(
@@ -367,14 +375,15 @@ def _read_csv(contents: bytes) -> "pd.DataFrame":
         text = contents.decode("cp1256")
     if "\x00" in text:
         raise ValueError("الملف يبدو ثنائياً وليس ملف CSV نصي صالح.")
-    return pd.read_csv(io.StringIO(text), sep=_detect_csv_delimiter(text))
+    # dtype=str: ids and phone numbers keep their leading zeros (numbers are not guessed)
+    return pd.read_csv(io.StringIO(text), sep=_detect_csv_delimiter(text), dtype=str)
 
 
 def _parse_contents(filename: str, contents: bytes) -> "pd.DataFrame":
     if filename.endswith(".csv"):
         return _read_csv(contents)
     if filename.endswith(".xlsx"):
-        return pd.read_excel(io.BytesIO(contents))
+        return pd.read_excel(io.BytesIO(contents), dtype=str)
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="نوع الملف غير مدعوم. يرجى رفع ملف Excel (.xlsx) أو CSV (.csv).",
@@ -435,7 +444,7 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
     errors: List[Dict[str, Any]] = []
     required_cols = {"university_id", "father_name", "mother_name", "college", "gender", "gpa"}
 
-    if not records:
+    if not records or all(_is_blank_row(r) for r in records):
         return [{"row": 0, "field": "", "message": "الملف فارغ أو لا يحتوي على بيانات."}]
 
     file_cols = set(records[0].keys())
@@ -472,7 +481,9 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
     unmatched_colleges: List[str] = []
 
     for idx, row in enumerate(records, start=2): # Row 1 is header
-        uni_id = _cell_text(row, "university_id")
+        if _is_blank_row(row):
+            continue  # the row numbers in the messages stay the ones of the sheet
+        uni_id = ascii_digits(_cell_text(row, "university_id"))
         first_name = _cell_text(row, "first_name")
         last_name = _cell_text(row, "last_name")
         full_name = _cell_text(row, "full_name")
@@ -639,6 +650,12 @@ async def upsert_records(
     It is only written when given, so an import that has no file never erases
     the provenance of an existing record.
     """
+    # One import per ceremony at a time: a second upload of the same file (a double click, two
+    # admins) waits here until the first one commits, then sees its rows instead of colliding.
+    await db.execute(
+        text("SELECT pg_advisory_xact_lock(CAST(:key AS BIGINT))"),
+        {"key": _IMPORT_LOCK_BASE + int(event_id)},
+    )
     colleges = await colleges_for_event(db, event_id)
     college_map = {normalize_arabic(c.name): c.id for c in colleges}
 
@@ -676,7 +693,9 @@ async def upsert_records(
     }
 
     for row in records:
-        uni_id = _cell_text(row, "university_id")
+        if _is_blank_row(row):
+            continue
+        uni_id = ascii_digits(_cell_text(row, "university_id"))
         first_name_raw = _cell_text(row, "first_name")
         last_name_raw = _cell_text(row, "last_name")
         legacy_full = _cell_text(row, "full_name")
@@ -968,12 +987,15 @@ async def diagnose_university_record(
     intentionally restricted to admins (privacy / S5): end users keep getting the
     generic failure only.
     """
-    record_res = await db.execute(
-        select(UniversityRecordModel).where(
-            UniversityRecordModel.university_id == data.university_id,
-            UniversityRecordModel.college_id == data.college_id,
-        )
-    )
+    # the record of the ceremony the college belongs to now (an older ceremony may keep a stale copy)
+    current_event = await get_college_event(db, data.college_id)
+    record_filters = [
+        UniversityRecordModel.university_id == data.university_id,
+        UniversityRecordModel.college_id == data.college_id,
+    ]
+    if current_event is not None:
+        record_filters.append(UniversityRecordModel.event_id == current_event.id)
+    record_res = await db.execute(select(UniversityRecordModel).where(*record_filters))
     record = record_res.scalar_one_or_none()
 
     if record is None:

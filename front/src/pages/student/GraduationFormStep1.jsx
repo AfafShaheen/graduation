@@ -1,4 +1,5 @@
 import useRevealOnShow from '../../hooks/useRevealOnShow';
+import { toLatinDigits } from '../../utils/digits';
 import StageHeader from '../../components/StageHeader';
 import React, { useState, useEffect } from 'react';
 import '../../style/GraduationForm.css';
@@ -172,6 +173,9 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
   const handleInputChange = (e) => {
     let { name, value } = e.target;
+
+    // an Arabic keypad types ٢٠١٩...: it is the same university id
+    if (name === 'studentId') value = toLatinDigits(value);
 
     if (name === 'gpa') {
       value = value

@@ -8,6 +8,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import EventModel
+from app.models.graduate import GraduateModel
 from app.models.university_file import UniversityFileModel
 from app.models.university_record import UniversityRecordModel
 from app.services.audit_log import ActorType, record_audit
@@ -162,10 +163,12 @@ async def _import_into_event(
         }
 
     if previous_event_id is not None and previous_event_id != event_id:
+        # records of graduates who already registered stay: they are part of the roster
         await db.execute(
             delete(UniversityRecordModel).where(
                 UniversityRecordModel.file_id == record.id,
                 UniversityRecordModel.event_id == previous_event_id,
+                UniversityRecordModel.university_id.not_in(select(GraduateModel.university_id)),
             )
         )
 
@@ -308,10 +311,23 @@ async def delete_university_file(
     original_name = record.original_name
     event_id = record.event_id
     deleted_records = 0
+    kept_registered = 0
     if delete_records:
+        # a graduate who already registered keeps his record (the roster, the ticket and the
+        # statistics are built on it); only the records nobody registered from are removed
+        registered_ids = select(GraduateModel.university_id)
+        kept_registered = (
+            await db.scalar(
+                select(func.count(UniversityRecordModel.id)).where(
+                    UniversityRecordModel.file_id == record.id,
+                    UniversityRecordModel.university_id.in_(registered_ids),
+                )
+            )
+        ) or 0
         result = await db.execute(
             delete(UniversityRecordModel).where(
-                UniversityRecordModel.file_id == record.id
+                UniversityRecordModel.file_id == record.id,
+                UniversityRecordModel.university_id.not_in(registered_ids),
             )
         )
         deleted_records = result.rowcount or 0
@@ -322,7 +338,7 @@ async def delete_university_file(
         admin["admin_id"],
         "DELETE_UNIVERSITY_FILE",
         f"file_id={file_id}",
-        f"Deleted file {original_name}; deleted_records={deleted_records}",
+        f"Deleted file {original_name}; deleted_records={deleted_records}; kept_registered={kept_registered}",
         event_id=event_id,
     )
     await db.commit()
@@ -341,8 +357,14 @@ async def delete_university_file(
         "status": "success",
         "message": (
             "تم حذف الملف والسجلات المستوردة منه."
+            + (
+                f" وأُبقي {kept_registered} سجل لخريجين سجّلوا بالفعل."
+                if kept_registered
+                else ""
+            )
             if delete_records
             else "تم حذف الملف مع إبقاء السجلات المستوردة."
         ),
         "deleted_records": deleted_records,
+        "kept_registered": kept_registered,
     }
