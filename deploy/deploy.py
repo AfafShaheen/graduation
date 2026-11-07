@@ -154,12 +154,34 @@ def list_local_files(root, patterns):
 
 # --------------------------------------------------------------------------- FTP
 
+class _FTPTLSReuse(ftplib.FTP_TLS):
+    """FTP over TLS whose data connections reuse the TLS session of the control connection.
+
+    Some servers refuse (or silently stall) a data-channel handshake that does not reuse it, which
+    shows up as "_ssl.c: The handshake operation timed out" in the middle of an upload.
+    """
+
+    def ntransfercmd(self, cmd, rest=None):
+        conn, size = ftplib.FTP.ntransfercmd(self, cmd, rest)
+        if self._prot_p:
+            conn = self.context.wrap_socket(
+                conn, server_hostname=self.host, session=self.sock.session
+            )
+        return conn, size
+
+
+# What a flaky line (or a busy shared host) throws in the middle of an upload: the file is simply
+# sent again over a fresh connection. A permanent answer from the server (error_perm) is not retried.
+_TRANSIENT_FTP_ERRORS = (OSError, ssl.SSLError, EOFError, ftplib.error_temp)
+_UPLOAD_ATTEMPTS = 5
+
+
 class Remote:
     def __init__(self, cfg):
         ftp_cfg = cfg["ftp"]
         self.host = ftp_cfg["host"]
         self.port = int(ftp_cfg.get("port", 21))
-        self.user = ftp_cfg["user"]
+        self.user = ftp_cfg["user"].strip()  # a stray space in the config must not become part of the name
         self.use_tls = ftp_cfg.get("tls", True)
         self.verify_tls = ftp_cfg.get("verify_tls", False)
         self.password = os.environ.get("DEPLOY_FTP_PASSWORD") or getpass.getpass(
@@ -167,18 +189,17 @@ class Remote:
         )
         self.ftp = None
 
-    def connect(self):
-        step(f"Connecting to {self.host}:{self.port} as {self.user} "
-             f"({'FTPS' if self.use_tls else 'plain FTP'})")
+    def _open(self):
+        """A new logged-in connection (used by connect and by the reconnect after a failure)."""
         try:
             if self.use_tls:
                 ctx = ssl.create_default_context() if self.verify_tls else ssl._create_unverified_context()
-                ftp = ftplib.FTP_TLS(context=ctx, timeout=60)
+                ftp = _FTPTLSReuse(context=ctx, timeout=120)
                 ftp.connect(self.host, self.port)
                 ftp.login(self.user, self.password)
                 ftp.prot_p()
             else:
-                ftp = ftplib.FTP(timeout=60)
+                ftp = ftplib.FTP(timeout=120)
                 ftp.connect(self.host, self.port)
                 ftp.login(self.user, self.password)
         except ftplib.error_perm as e:
@@ -187,10 +208,36 @@ class Remote:
             raise DeployError(f"Could not connect to FTP: {e}") from None
         ftp.set_pasv(True)
         ftp.encoding = "utf-8"
+        return ftp
+
+    def connect(self):
+        step(f"Connecting to {self.host}:{self.port} as {self.user} "
+             f"({'FTPS' if self.use_tls else 'plain FTP'})")
+        ftp = self._open()
         self.ftp = ftp
         say(f"    connected, FTP root is '{ftp.pwd()}'")
         self.root = ftp.pwd().rstrip("/") or ""
         return self
+
+    def _reconnect(self):
+        if self.ftp:
+            try:
+                self.ftp.close()
+            except Exception:
+                pass
+        self.ftp = self._open()
+
+    def _retrying(self, label, action):
+        """Run an FTP action; on a connection problem reconnect and run it again (a few times)."""
+        for attempt in range(1, _UPLOAD_ATTEMPTS + 1):
+            try:
+                return action()
+            except _TRANSIENT_FTP_ERRORS as e:
+                if attempt == _UPLOAD_ATTEMPTS:
+                    raise DeployError(f"{label}: failed {attempt} times, last error: {e}") from None
+                say(f"    ! {label}: {type(e).__name__}: {e} - reconnecting (try {attempt + 1} of {_UPLOAD_ATTEMPTS})")
+                time.sleep(min(3 * attempt, 15))
+                self._reconnect()
 
     def close(self):
         if self.ftp:
@@ -235,13 +282,20 @@ class Remote:
             made.add(sub)
 
     def upload(self, local_path, remote_path, made_dirs):
-        self.makedirs(posixpath.dirname(remote_path), made_dirs)
-        with open(local_path, "rb") as f:
-            self.ftp.storbinary(f"STOR {self._abs(remote_path)}", f)
+        self._retrying(f"mkdir {posixpath.dirname(remote_path)}",
+                       lambda: self.makedirs(posixpath.dirname(remote_path), made_dirs))
+
+        def send():
+            with open(local_path, "rb") as f:
+                self.ftp.storbinary(f"STOR {self._abs(remote_path)}", f)
+
+        self._retrying(remote_path, send)
 
     def upload_bytes(self, data, remote_path, made_dirs):
-        self.makedirs(posixpath.dirname(remote_path), made_dirs)
-        self.ftp.storbinary(f"STOR {self._abs(remote_path)}", io.BytesIO(data))
+        self._retrying(f"mkdir {posixpath.dirname(remote_path)}",
+                       lambda: self.makedirs(posixpath.dirname(remote_path), made_dirs))
+        self._retrying(remote_path,
+                       lambda: self.ftp.storbinary(f"STOR {self._abs(remote_path)}", io.BytesIO(data)))
 
     def read_bytes(self, remote_path):
         buf = io.BytesIO()
