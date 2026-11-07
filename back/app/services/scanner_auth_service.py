@@ -111,6 +111,12 @@ async def login_scanner(data: ScannerLoginRequest, db: AsyncSession, client_ip: 
             detail=messages.SCANNER_LOGIN_FAILED,
         )
 
+    # two old accounts of one ceremony that differ only by capitals ("Gate1" and "gate1", allowed
+    # before the name stopped being case sensitive): the exact spelling wins, the event is not asked
+    if len(matches) > 1 and len({scanner.event_id for scanner in matches}) == 1:
+        exact = [scanner for scanner in matches if scanner.username == data.username.strip()]
+        matches = exact[:1] or sorted(matches, key=lambda scanner: scanner.id)[:1]
+
     if len(matches) > 1:
         matching_event_ids = [scanner.event_id for scanner in matches]
         events = (

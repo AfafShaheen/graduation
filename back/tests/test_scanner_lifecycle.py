@@ -169,6 +169,23 @@ async def test_the_username_is_not_case_sensitive(client, make_event, admin_head
     assert (await _create_scanner(client, admin_headers, event.id, "GATE1")).status_code == 409
 
 
+async def test_two_old_accounts_that_differ_only_by_capitals_each_log_in_with_their_own_spelling(client, make_event, make_admin, make_scanner):
+    """Accounts made before the name stopped being case sensitive: the exact spelling picks the account."""
+    event = await make_event()
+    admin = await make_admin()
+    first = await make_scanner(admin.id, event.id, username="Door1", pw=_SCANNER_PW)
+    second = await make_scanner(admin.id, event.id, username="door1", pw=_SCANNER_PW)  # even the same password
+    for typed, expected in (("Door1", first.id), ("door1", second.id)):
+        resp = await _login(client, username=typed)
+        assert resp.status_code == 200, (typed, resp.text)
+        from jose import jwt
+        from app.core.security import ALGORITHM, secret_key
+        claims = jwt.decode(resp.json()["access_token"], secret_key, algorithms=[ALGORITHM])
+        assert int(claims["sub"]) == expected, typed
+    other = await _login(client, username="DOOR1")  # neither spelling: the oldest account
+    assert other.status_code == 200
+
+
 async def test_changing_a_capital_letter_is_not_a_fresh_set_of_login_tries(client, make_event, admin_headers):
     event = await make_event()
     await _create_scanner(client, admin_headers, event.id, "gate1")
