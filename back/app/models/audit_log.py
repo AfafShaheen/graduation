@@ -6,6 +6,7 @@ import enum
 class ActorTypeEnum(str, enum.Enum):
     ADMIN = "ADMIN"
     SCANNER = "SCANNER"
+    GRADUATE = "GRADUATE"
 
 class AuditLogModel(Base):
     __tablename__ = "audit_logs"

@@ -7,9 +7,15 @@ from app.core.database import get_db
 from app.core.deps import get_current_admin
 from app.schemas.audit_log import AuditLogList
 from app.services.audit_log import ActorType
-from app.services.audit_viewer_service import list_audit_logs_service
+from app.services.audit_viewer_service import action_menu, list_audit_logs_service
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Audit Log"])
+
+
+@router.get("/audit-logs/actions", status_code=status.HTTP_200_OK)
+async def audit_log_actions(admin: dict = Depends(get_current_admin)):
+    """The actions the filter menu of the audit log offers, grouped, with their Arabic labels."""
+    return action_menu()
 
 
 @router.get("/audit-logs", response_model=AuditLogList, status_code=status.HTTP_200_OK)

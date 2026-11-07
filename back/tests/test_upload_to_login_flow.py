@@ -137,7 +137,7 @@ async def test_whole_road_from_file_to_login(client, db, setup, sent_otps):
     login = await _register_and_login(client, sent_otps, college.id, "900001", "road@example.com")
     me = await _me(client, login)
     assert me["university_id"] == "900001"
-    assert me["full_name"] == "محمد احمد"
+    assert me["full_name"] == "محمد أحمد"  # as the graduate typed it
     assert me["college_name"] == _COLLEGE
 
 
@@ -573,3 +573,46 @@ async def test_nobody_without_a_token_can_upload_or_list_files(client, setup):
     assert (await client.post(f"/api/admin/events/{event.id}/university-records",
                               files={"file": ("a.xlsx", _xlsx([_row("900045")]), "application/octet-stream")})).status_code in (401, 403)
     assert (await client.delete("/api/admin/university-files/1")).status_code in (401, 403)
+
+
+# ------------------------------------------------------------------ the admin confirms an e-mail
+async def test_admin_can_confirm_an_email_and_the_graduate_logs_in_at_once(client, db, setup, sent_otps):
+    event, college, headers = setup
+    await _upload(client, headers, event.id, _xlsx([_row("900050")]))
+    step1 = await client.post("/api/graduates/verify-step1", json=_verify_body(college.id, "900050"))
+    reg = await client.post(
+        "/api/graduates/register",
+        json={"registration_token": step1.json()["registration_token"], "email": "stuck@example.com", "phone": _PHONE, _PW_FIELD: _GRAD_PW},
+    )
+    assert reg.status_code == 201
+    old_code = sent_otps[-1][1]
+    graduate_id = reg.json()["graduate_id"]
+    assert (await client.post("/api/auth/graduate/login", json={"email": "stuck@example.com", _PW_FIELD: _GRAD_PW})).status_code == 403
+
+    done = await client.post(f"/api/admin/graduates/{graduate_id}/verify-email", headers=headers)
+    assert done.status_code == 200, done.text
+    assert (await client.post(f"/api/admin/graduates/{graduate_id}/verify-email", headers=headers)).status_code == 400  # already
+
+    login = await client.post("/api/auth/graduate/login", json={"email": "stuck@example.com", _PW_FIELD: _GRAD_PW})
+    assert login.status_code == 200, login.text
+
+    # the code he never used is dead, and the action is written in the log
+    replay = await client.post(
+        "/api/auth/verify-otp",
+        headers={"Authorization": f"Bearer {reg.json()['verification_token']}"},
+        json={"code": old_code},
+    )
+    assert replay.status_code >= 400
+    from app.models.audit_log import AuditLogModel
+    rows = (await db.execute(select(AuditLogModel).where(AuditLogModel.action == "VERIFY_EMAIL"))).scalars().all()
+    assert len(rows) == 1 and rows[0].graduate_id == graduate_id
+    assert "stuck@example.com" not in (rows[0].details or ""), "the log must not hold the e-mail address"
+
+
+async def test_only_an_admin_can_confirm_an_email(client, setup, sent_otps):
+    event, college, headers = setup
+    await _upload(client, headers, event.id, _xlsx([_row("900051")]))
+    login = await _register_and_login(client, sent_otps, college.id, "900051", "plain@example.com")
+    auth = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    assert (await client.post("/api/admin/graduates/1/verify-email", headers=auth)).status_code in (401, 403)
+    assert (await client.post("/api/admin/graduates/1/verify-email")).status_code in (401, 403)

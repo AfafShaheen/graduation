@@ -285,6 +285,59 @@ async def admin_force_update_email_service(db: AsyncSession, graduate_id: int, n
     return {"status": "success", "message": "تم تحديث البريد الإلكتروني بنجاح."}
 
 
+async def admin_update_name_service(db: AsyncSession, graduate_id: int, data, admin: dict) -> dict:
+    """Exceptional action: set the four names of a graduate exactly as they must be printed.
+
+    Used for a graduate who typed a name wrongly, and for those who registered before the names
+    were kept as typed. The log keeps the old and the new value of every name that changed.
+    """
+    grad = await db.get(GraduateModel, graduate_id)
+    if not grad:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="لم يتم العثور على الخريج.")
+
+    new_values = {
+        "first_name": data.first_name,
+        "last_name": data.last_name,
+        "father_name": data.father_name,
+        "mother_name": data.mother_name,
+    }
+    labels = {
+        "first_name": "الاسم",
+        "last_name": "الكنية",
+        "father_name": "اسم الأب",
+        "mother_name": "اسم الأم",
+    }
+    changes = []
+    for field, new in new_values.items():
+        old = getattr(grad, field)
+        if old != new:
+            changes.append(f"{labels[field]}: {old or '—'} ← {new}")
+            setattr(grad, field, new)
+    if not changes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="لم يتغير أي اسم.")
+    grad.full_name = f"{grad.first_name} {grad.last_name}"
+    db.add(grad)
+
+    resolved = await resolve_college_event(db, grad.college_id) if grad.college_id else None
+    await record_audit(
+        db,
+        ActorType.ADMIN,
+        admin["admin_id"],
+        "UPDATE_NAME",
+        f"Graduate ID {graduate_id}",
+        " | ".join(changes),
+        event_id=resolved.id if resolved else None,
+        graduate_id=graduate_id,
+    )
+    await db.commit()
+    await invalidate_admin_cache()
+    return {
+        "status": "success",
+        "message": "تم تحديث الاسم بنجاح.",
+        "full_name": grad.full_name,
+    }
+
+
 async def manual_check_in_service(db: AsyncSession, graduate_id: int, admin: dict) -> dict:
     # Find graduate ticket and QR code
     tickets_res = await db.execute(select(TicketModel).where(TicketModel.graduate_id == graduate_id))

@@ -25,6 +25,7 @@ from app.models.audit_log import AuditLogModel
 class ActorType(str, enum.Enum):
     ADMIN = "ADMIN"
     SCANNER = "SCANNER"
+    GRADUATE = "GRADUATE"
 
 
 _COLUMN_WIDTH = 255

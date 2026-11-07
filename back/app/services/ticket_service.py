@@ -32,6 +32,7 @@ from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.ticket import TicketModel, TicketStatusEnum
 from app.schemas.ticket import PaymentSubmitRequest, TicketSelectRequest
 from app.services.admin_graduate_service import invalidate_admin_cache
+from app.services.graduate_audit import audit_graduate
 from app.services.registration_window import (
     ensure_registration_open,
     get_graduate_event,
@@ -171,6 +172,11 @@ async def select_ticket_service(
             db.add(existing)
             await db.flush()
             await db.refresh(existing)
+            await audit_graduate(
+                db, graduate, "PACKAGE_CHANGED",
+                f"عدد المرافقين {existing.companions_count}، السعر {existing.price}.",
+                ticket_id=existing.id, event_id=event.id,
+            )
             # Commit first so a concurrent request cannot re-cache pre-commit data.
             await db.commit()
             await invalidate_admin_cache()
@@ -194,6 +200,11 @@ async def select_ticket_service(
             detail=messages.TICKET_ALREADY_EXISTS,
         )
     await db.refresh(ticket)
+    await audit_graduate(
+        db, graduate, "PACKAGE_SELECTED",
+        f"عدد المرافقين {ticket.companions_count}، السعر {ticket.price}.",
+        ticket_id=ticket.id, event_id=event.id,
+    )
 
     # Commit first so a concurrent request cannot re-cache pre-commit data.
     await db.commit()
@@ -296,6 +307,12 @@ async def submit_payment_service(
             status_code=status.HTTP_409_CONFLICT,
             detail=messages.TRANSACTION_ALREADY_USED,
         )
+
+    await audit_graduate(
+        db, graduate, "PAYMENT_SUBMITTED",
+        f"المبلغ {data.amount}، رقم العملية {data.transaction_number}.",
+        ticket_id=ticket.id, event_id=event.id if event is not None else None,
+    )
 
     # Commit first so a concurrent request cannot re-cache pre-commit data.
     await db.commit()

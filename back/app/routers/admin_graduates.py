@@ -3,11 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_admin
-from app.schemas.admin_graduate import AdminUpdateEmailRequest
+from app.schemas.admin_graduate import AdminUpdateEmailRequest, AdminUpdateNameRequest
 from app.services.admin_graduate_service import (
     search_graduates_service,
     get_graduate_full_details_service,
     admin_force_update_email_service,
+    admin_update_name_service,
     manual_check_in_service,
     verify_email_service,
     revert_scan_service,
@@ -61,6 +62,15 @@ async def update_graduate_email(
     admin: dict = Depends(get_current_admin)
 ):
     return await admin_force_update_email_service(db, graduate_id, data.new_email, admin)
+
+@router.put("/graduates/{graduate_id}/name", status_code=status.HTTP_200_OK)
+async def update_graduate_name(
+    graduate_id: int,
+    data: AdminUpdateNameRequest,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin)
+):
+    return await admin_update_name_service(db, graduate_id, data, admin)
 
 @router.post("/graduates/{graduate_id}/manual-check-in", status_code=status.HTTP_200_OK)
 async def manual_check_in(

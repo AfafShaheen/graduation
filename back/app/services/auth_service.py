@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from fastapi import HTTPException, status
 from app.models.graduate import GraduateModel
 from app.models.otp_code import OtpCodeModel
+from app.services.graduate_audit import audit_graduate
 from app.services.email_service import (
     OtpPurpose,
     generate_otp,
@@ -154,6 +155,7 @@ async def mark_email_verified(db: AsyncSession, graduate_id: int) -> None:
     grad = await fetch_graduate(db, graduate_id)
     if grad:
         grad.email_verified = True
+        await audit_graduate(db, grad, "EMAIL_VERIFIED", "تم تأكيد البريد برمز التحقق.")
         await db.commit()
 
 
@@ -216,6 +218,7 @@ async def update_graduate_password(db: AsyncSession, grad: GraduateModel, new_pa
     password_hash = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
     grad.password_hash = password_hash
     db.add(grad)
+    await audit_graduate(db, grad, "PASSWORD_RESET", "استُعيدت كلمة السر برمز التحقق.")
     await db.commit()
     await refresh_store.revoke_subject(str(grad.id), "graduate")
 

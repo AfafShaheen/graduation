@@ -4,7 +4,8 @@
       "ActorType": {
         "enum": [
           "ADMIN",
-          "SCANNER"
+          "SCANNER",
+          "GRADUATE"
         ],
         "title": "ActorType",
         "type": "string"
@@ -116,6 +117,35 @@
           "new_email"
         ],
         "title": "AdminUpdateEmailRequest",
+        "type": "object"
+      },
+      "AdminUpdateNameRequest": {
+        "description": "The four names of a graduate, exactly as they should be printed.",
+        "properties": {
+          "father_name": {
+            "title": "Father Name",
+            "type": "string"
+          },
+          "first_name": {
+            "title": "First Name",
+            "type": "string"
+          },
+          "last_name": {
+            "title": "Last Name",
+            "type": "string"
+          },
+          "mother_name": {
+            "title": "Mother Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "first_name",
+          "last_name",
+          "father_name",
+          "mother_name"
+        ],
+        "title": "AdminUpdateNameRequest",
         "type": "object"
       },
       "AuditActor": {
@@ -3601,6 +3631,31 @@
         ]
       }
     },
+    "/api/admin/audit-logs/actions": {
+      "get": {
+        "description": "The actions the filter menu of the audit log offers, grouped, with their Arabic labels.",
+        "operationId": "audit_log_actions_api_admin_audit_logs_actions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Audit Log Actions",
+        "tags": [
+          "Admin Audit Log"
+        ]
+      }
+    },
     "/api/admin/auth/login": {
       "post": {
         "operationId": "login_api_admin_auth_login_post",
@@ -4932,6 +4987,61 @@
           }
         ],
         "summary": "Manual Check In",
+        "tags": [
+          "Admin Graduate Management & Exceptional Actions"
+        ]
+      }
+    },
+    "/api/admin/graduates/{graduate_id}/name": {
+      "put": {
+        "operationId": "update_graduate_name_api_admin_graduates__graduate_id__name_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "graduate_id",
+            "required": true,
+            "schema": {
+              "title": "Graduate Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUpdateNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Graduate Name",
         "tags": [
           "Admin Graduate Management & Exceptional Actions"
         ]

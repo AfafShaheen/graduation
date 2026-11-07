@@ -150,6 +150,7 @@ def payment_note_text(graduate) -> str:
 AUDIT_ROLE_LABELS = {
     "ADMIN": "مسؤول الاتحاد",
     "SCANNER": "ماسح",
+    "GRADUATE": "خريج",
 }
 
 AUDIT_ACTION_LABELS = {
@@ -158,8 +159,11 @@ AUDIT_ACTION_LABELS = {
     "EVENT_COLLEGES_UPDATED": "تعديل كليات الحفل",
     "DELETE_EVENT": "حذف حفل",
     "UPLOAD_UNIVERSITY_RECORDS": "رفع سجلات جامعية",
+    "UPLOAD_UNIVERSITY_FILE": "رفع ملف جامعي",
+    "DELETE_UNIVERSITY_FILE": "حذف ملف جامعي",
     "DELETE_UNIVERSITY_RECORD": "حذف سجل جامعي",
     "UPDATE_EMAIL": "تعديل بريد إلكتروني",
+    "UPDATE_NAME": "تعديل اسم خريج",
     "MANUAL_CHECK_IN": "تسجيل دخول يدوي",
     "REVERT_SCAN": "إلغاء مسح خاطئ",
     "REVERT_PAYMENT": "إرجاع الدفع لقيد المعالجة",
@@ -177,6 +181,12 @@ AUDIT_ACTION_LABELS = {
     "DATA_EXPORTED": "تصدير بيانات",
     "ROSTER_EXPORTED": "تصدير قائمة الخريجين",
     "qr_scanned": "محاولة مسح",
+    "ACCOUNT_CREATED": "إنشاء حساب خريج",
+    "EMAIL_VERIFIED": "تأكيد البريد برمز التحقق",
+    "PACKAGE_SELECTED": "اختيار باقة",
+    "PACKAGE_CHANGED": "تغيير الباقة",
+    "PAYMENT_SUBMITTED": "إرسال بيانات الدفع",
+    "PASSWORD_RESET": "استعادة كلمة السر",
 }
 
 

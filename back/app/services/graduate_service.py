@@ -11,10 +11,12 @@ from app.models.major import MajorModel
 from app.schemas.graduate import UserVerifyStep1, RegisterStep2Request
 from app.services.email_service import OtpPurpose
 from app.services.auth_service import issue_and_send_otp
+from app.services.graduate_audit import audit_graduate
 from app.services.ranking_service import compute_top_rank
 from sqlalchemy.exc import IntegrityError
 from app.core import messages
 from app.core.redis import redis_client
+from app.core.names import clean_typed_name, name_key, normalize_arabic as _normalize_arabic
 from app.core.security import secret_key, create_verification_token
 from app.services.settings_service import get_setting, CONTACT_PHONE
 from app.services.registration_window import get_college_event, ensure_registration_open
@@ -50,15 +52,8 @@ async def _no_event_for_college(db: AsyncSession) -> str:
     return messages.append_contact_phone(messages.NO_EVENT_FOR_COLLEGE, phone)
 
 
-def normalize_arabic(text: str) -> str:
-    if not text:
-        return ""
-    text = re.sub(r'[\u0617-\u061A\u064B-\u0652]', '', text)
-    text = re.sub(r'[أإآ]', 'ا', text)
-    text = text.replace('ة', 'ه')
-    text = text.replace('ى', 'ي')
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
+# the spelling rules live in app/core/names.py (matching is loose, what is typed is what is stored)
+normalize_arabic = _normalize_arabic
 
 
 _TOP_ANY = "ANY"
@@ -69,17 +64,17 @@ def _names_match(record: UniversityRecordModel, data: UserVerifyStep1) -> bool:
     if data.first_name is not None and data.last_name is not None:
         if record.first_name is not None and record.last_name is not None:
             return (
-                normalize_arabic(record.first_name) == normalize_arabic(data.first_name)
-                and normalize_arabic(record.last_name) == normalize_arabic(data.last_name)
+                name_key(record.first_name) == name_key(data.first_name)
+                and name_key(record.last_name) == name_key(data.last_name)
             )
         composed = f"{data.first_name} {data.last_name}"
-        return normalize_arabic(composed) == normalize_arabic(record.full_name)
+        return name_key(composed) == name_key(record.full_name)
 
     # Legacy payload: a single full name.
     if record.first_name is not None and record.last_name is not None:
         composed = f"{record.first_name} {record.last_name}"
-        return normalize_arabic(data.full_name or "") == normalize_arabic(composed)
-    return normalize_arabic(data.full_name or "") == normalize_arabic(record.full_name)
+        return name_key(data.full_name or "") == name_key(composed)
+    return name_key(data.full_name or "") == name_key(record.full_name)
 
 
 def _top_rank_error(code: str, message: str) -> HTTPException:
@@ -172,8 +167,8 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1, client_i
         )
 
     if (
-        normalize_arabic(uni_record.father_name) != normalize_arabic(data.father_name) or
-        normalize_arabic(uni_record.mother_name) != normalize_arabic(data.mother_name) or
+        name_key(uni_record.father_name) != name_key(data.father_name) or
+        name_key(uni_record.mother_name) != name_key(data.mother_name) or
         normalize_arabic(uni_record.gender) != normalize_arabic(data.gender)
     ):
         raise HTTPException(
@@ -266,6 +261,12 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1, client_i
         "college_id": data.college_id,
         "gpa": str(gpa_to_store) if gpa_to_store is not None else None,
         "top_rank": data.top_rank,
+        # what he typed (cleaned) is what the account keeps and what is printed; the file's
+        # spelling is only used to recognise him
+        "typed_first_name": clean_typed_name(data.first_name) or None,
+        "typed_last_name": clean_typed_name(data.last_name) or None,
+        "typed_father_name": clean_typed_name(data.father_name) or None,
+        "typed_mother_name": clean_typed_name(data.mother_name) or None,
     }
     registration_token = create_registration_token(token_payload)
 
@@ -309,6 +310,18 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
         father_name = record.father_name
         mother_name = record.mother_name
         major_id = record.major_id
+
+    # the names he typed replace the file's spelling (a token from before this rule has none)
+    typed_first = payload.get("typed_first_name")
+    typed_last = payload.get("typed_last_name")
+    if typed_first and typed_last:
+        first_name = typed_first
+        last_name = typed_last
+        full_name = f"{typed_first} {typed_last}"
+    if payload.get("typed_father_name"):
+        father_name = payload["typed_father_name"]
+    if payload.get("typed_mother_name"):
+        mother_name = payload["typed_mother_name"]
 
     if not university_id or not college_id:
         raise HTTPException(
@@ -379,6 +392,7 @@ async def register_step2_service(db: AsyncSession, data: RegisterStep2Request) -
         db.add(new_graduate)
         await db.flush()
         await db.refresh(new_graduate)
+        await audit_graduate(db, new_graduate, "ACCOUNT_CREATED", "تم إنشاء الحساب من بيانات سجل جامعي.", event_id=event.id)
     except IntegrityError:
         # Race between two concurrent registrations (unique email/university id).
         await db.rollback()
