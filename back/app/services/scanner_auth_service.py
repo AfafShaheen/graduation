@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from jose import jwt
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import messages
@@ -77,16 +77,19 @@ def create_scanner_access_token(scanner: ScannerModel, family: str | None = None
 
 
 async def login_scanner(data: ScannerLoginRequest, db: AsyncSession, client_ip: str | None = None) -> dict:
-    await check_scanner_login_rate_limit(data.username, client_ip)
+    # the user name is not case sensitive (a volunteer reads it aloud or types it on a phone), and the
+    # failure counter is kept per lower-case name so a changed capital letter is not a fresh set of tries
+    username = data.username.strip().lower()
+    await check_scanner_login_rate_limit(username, client_ip)
 
     result = await db.execute(
-        select(ScannerModel).where(ScannerModel.username == data.username)
+        select(ScannerModel).where(func.lower(ScannerModel.username) == username)
     )
     candidates = list(result.scalars().all())
 
     if not candidates:
         verify_password(data.password, _DUMMY_HASH)
-        await increment_scanner_login_failure(data.username, client_ip)
+        await increment_scanner_login_failure(username, client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=messages.SCANNER_LOGIN_FAILED,
@@ -102,7 +105,7 @@ async def login_scanner(data: ScannerLoginRequest, db: AsyncSession, client_ip: 
         matches = [scanner for scanner in matches if scanner.event_id == data.event_id]
 
     if not matches:
-        await increment_scanner_login_failure(data.username, client_ip)
+        await increment_scanner_login_failure(username, client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=messages.SCANNER_LOGIN_FAILED,
@@ -135,7 +138,7 @@ async def login_scanner(data: ScannerLoginRequest, db: AsyncSession, client_ip: 
 
     scanner = matches[0]
 
-    await reset_scanner_login_failure(data.username, client_ip)
+    await reset_scanner_login_failure(username, client_ip)
 
     family = uuid.uuid4().hex
     access_value = create_scanner_access_token(scanner, family)

@@ -6,7 +6,7 @@ never returned. Every change is written to the audit log.
 """
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,6 +36,19 @@ async def create_scanner_service(
     if event is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=messages.EVENT_NOT_FOUND
+        )
+
+    # "Gate1" and "gate1" are the same name at the door: refuse the second one on the same event
+    clash = await db.scalar(
+        select(ScannerModel.id).where(
+            ScannerModel.event_id == data.event_id,
+            func.lower(ScannerModel.username) == data.username.lower(),
+        )
+    )
+    if clash is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=messages.SCANNER_USERNAME_TAKEN,
         )
 
     scanner = ScannerModel(
