@@ -211,12 +211,6 @@ export default function OrderStatus() {
                 )}
               </section>
 
-
-              <div className="os-reassurance-bar">
-                <span className="os-symbol" style={{ color: '#ca4b00', fontSize: '19px', flexShrink: 0 }}>
-                  notifications_active
-                </span>
-              </div>
             </>
           )}
         </div>

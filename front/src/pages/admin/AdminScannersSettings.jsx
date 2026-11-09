@@ -32,7 +32,8 @@ export default function AdminScannersSettings({
 
   // ===== قسم الماسحين =====
   const { events } = useAdminEvents({ limit: 100 });
-  const [scannerEventId, setScannerEventId] = useState('');
+  const [scannerEventId, setScannerEventId] = useState(''); // the ceremony of the NEW account
+  const [listEventId, setListEventId] = useState(''); // the table: '' = every ceremony
   const [newScannerUser, setNewScannerUser] = useState('');
   const [newScannerPass, setNewScannerPass] = useState('');
   const [creating, setCreating] = useState(false);
@@ -45,7 +46,7 @@ export default function AdminScannersSettings({
   }, [events, scannerEventId]);
 
   const { scanners, loading: scannersLoading, error: scannersError, refetch: refetchScanners } =
-    useAdminScanners(scannerEventId || null);
+    useAdminScanners(listEventId || null);
 
   // إغلاق القائمة بزر Escape
   useEffect(() => {
@@ -248,6 +249,17 @@ export default function AdminScannersSettings({
                   <h4>جدول الماسحين المعتمدين والمشرفين</h4>
                   <span className="scan-set-count-pill">{countLabel(scannersCount, "حساب", "حسابان", "حسابات", "حساباً")}</span>
                 </div>
+                <select
+                  className="scan-set-select scan-set-list-filter"
+                  aria-label="عرض ماسحات حفل"
+                  value={listEventId}
+                  onChange={(e) => setListEventId(e.target.value)}
+                >
+                  <option value="">كل الحفلات</option>
+                  {events.map((ev) => (
+                    <option key={ev.id} value={String(ev.id)}>{ev.name}</option>
+                  ))}
+                </select>
                 <button type="button" className="scan-set-refresh-btn" onClick={() => refetchScanners()}>
                   <span className="scan-set-symbol" style={{ fontSize: '18px' }}>refresh</span>
                   <span>تحديث الحالة الميدانية</span>
