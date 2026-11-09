@@ -4,6 +4,7 @@ import '../../style/ScanSuccessResult.css';
 import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
+import { scanWho } from '../../utils/scanWho';
 
 const PREVIEW_RESULT = {
   message: "معاينة ناجحة",
@@ -27,6 +28,7 @@ export default function ScanSuccessResult({
 
   const data = result || location.state?.result || PREVIEW_RESULT;
   const isGraduate = data.code_type !== 'COMPANION';
+  const who = scanWho(data);
 
   const handleNext = () => {
     if (onNextScan) {
@@ -115,10 +117,18 @@ export default function ScanSuccessResult({
                 <span>{isGraduate ? 'خريج أصيل' : 'مرافق'}</span>
               </span>
               <span className="scan-res-time">
-                <span className="scan-res-symbol" style={{ fontSize: '16px', color: '#ca4b00' }}>schedule</span>
+                <span className="scan-res-symbol" style={{ fontSize: '16px', color: 'var(--brand-orange)' }}>schedule</span>
                 <span>الآن — {formatTime(scanTime)}</span>
               </span>
             </div>
+
+            {who && (
+              <div className="scan-res-who">
+                <span className="scan-res-who-label">{who.isCompanion ? who.role : 'الخريج'}</span>
+                <strong className="scan-res-who-name">{who.name}</strong>
+                {who.isCompanion && <span className="scan-res-who-sub">{who.label}</span>}
+              </div>
+            )}
           </section>
 
           {/* زر المسح التالي */}

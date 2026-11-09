@@ -70,9 +70,7 @@ export default function WrongCeremoniesWarning({
                     <span>الحفل المخصص:</span>
                   </div>
                   <div className="wrong-cer-compare-value orange">
-                    {/* D13: backend does not return personal data */}
-                    —
-                    <small>—</small>
+                    {scanResult?.ticket_event_name || '—'}
                   </div>
                 </div>
 
@@ -85,23 +83,11 @@ export default function WrongCeremoniesWarning({
                 </div>
               </div>
 
-              <div className="wrong-cer-grad">
-                <div className="wrong-cer-grad-row">
-                  <span className="wrong-cer-muted">اسم الخريج المسجل:</span>
-                  {/* D13: backend does not return personal data */}
-                  <span className="wrong-cer-grad-name">—</span>
-                </div>
-                <div className="wrong-cer-grad-row">
-                  <span className="wrong-cer-muted">الكلية والقسم:</span>
-                  {/* D13: backend does not return personal data */}
-                  <span className="wrong-cer-grad-faculty">—</span>
-                </div>
-              </div>
             </div>
 
             <div className="wrong-cer-guide">
               <span className="wrong-cer-symbol" style={{ fontSize: '18px' }}>info</span>
-              <p>يُرجى إرشاد الخريج أو ذويه للعودة في التاريخ المعتمد بالدعوة الرسمية.</p>
+              <p>يُرجى توجيه حامل التذكرة إلى بوابة الحفل المذكور أعلاه، فلا تُستعمل تذكرته هنا.</p>
             </div>
           </div>
         </main>

@@ -2097,13 +2097,57 @@
               }
             ]
           },
+          "companion_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Companion Number"
+          },
+          "companions_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Companions Count"
+          },
           "decision": {
             "title": "Decision",
             "type": "string"
           },
+          "graduate_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graduate Name"
+          },
           "message": {
             "title": "Message",
             "type": "string"
+          },
+          "ticket_event_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ticket Event Name"
           },
           "valid": {
             "title": "Valid",

@@ -457,19 +457,21 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
               <p className="exc-card-sub" style={{ margin: 0 }}>
                 الأسماء كما ستُطبع على الشهادة. التشكيل والمسافات الزائدة تُزال تلقائياً.
               </p>
-              {NAME_FIELDS.map(([key, label]) => (
-                <label key={key} className="rost-field">
-                  <span>{label}</span>
-                  <input
-                    type="text"
-                    className="rost-input"
-                    value={nameDraft[key]}
-                    maxLength={100}
-                    onChange={(e) => setNameDraft((prev) => ({ ...prev, [key]: e.target.value }))}
-                    required
-                  />
-                </label>
-              ))}
+              <div className="exc-name-fields">
+                {NAME_FIELDS.map(([key, label]) => (
+                  <label key={key} className="rost-field">
+                    <span>{label}</span>
+                    <input
+                      type="text"
+                      className="rost-input"
+                      value={nameDraft[key]}
+                      maxLength={100}
+                      onChange={(e) => setNameDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+                      required
+                    />
+                  </label>
+                ))}
+              </div>
               <div className="exc-email-actions">
                 <button type="submit" className="exc-btn-small solid" disabled={busy}>
                   حفظ الاسم

@@ -57,3 +57,7 @@ class ScanResponse(BaseModel):
     decision: str
     message: str
     code_type: Optional[QrCodeTypeEnum] = None
+    graduate_name: Optional[str] = None  # name and surname on the ticket (this ceremony only)
+    companion_number: Optional[int] = None  # which companion, for a companion's code
+    companions_count: Optional[int] = None  # of how many
+    ticket_event_name: Optional[str] = None  # the other ceremony, for a ticket of another one

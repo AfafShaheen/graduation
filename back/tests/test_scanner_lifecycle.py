@@ -68,6 +68,11 @@ async def _scan(client, headers, code):
     return await client.post("/api/scanner/scan", json={"code": str(code)}, headers=headers)
 
 
+def _name_of(graduate):
+    """The name the volunteer sees: name and surname, or the full name when there is no split."""
+    return " ".join(p for p in (graduate.first_name, graduate.last_name) if p) or graduate.full_name
+
+
 def _by_type(codes):
     graduate = next(c for c in codes if c.code_type == QrCodeTypeEnum.GRADUATE)
     companions = [c for c in codes if c.code_type == QrCodeTypeEnum.COMPANION]
@@ -206,7 +211,7 @@ async def test_the_whole_family_at_the_gate(client, db, make_event, make_college
     assert early.json()["valid"] is False and early.json()["decision"] == "NOT_ACTIVATED"
 
     first = await _scan(client, gate, grad_code.code_value)
-    assert first.json() == {"valid": True, "decision": "SUCCESS", "message": first.json()["message"], "code_type": "GRADUATE"}
+    assert first.json()["valid"] is True and first.json()["decision"] == "SUCCESS" and first.json()["code_type"] == "GRADUATE"
 
     for companion in companions:
         ok = await _scan(client, gate, companion.code_value)
@@ -266,14 +271,87 @@ async def test_two_scanners_on_one_code_at_the_same_moment_let_one_in(client, db
     assert decisions == ["ALREADY_USED", "SUCCESS"], decisions
 
 
-async def test_the_answer_never_holds_personal_data(client, db, make_event, make_college, make_graduate, make_ticket, admin_headers):
+async def test_the_answer_names_the_ticket_but_holds_nothing_else_personal(client, db, make_event, make_college, make_graduate, make_ticket, admin_headers):
     event = await make_event()
     _, gate, _ = await _gate(client, admin_headers, event)
     graduate, _, codes = await _ticket(db, make_college, make_graduate, make_ticket, event, "800006")
     grad_code, _ = _by_type(codes)
     resp = await _scan(client, gate, grad_code.code_value)
-    assert set(resp.json()) == {"valid", "decision", "message", "code_type"}
-    assert graduate.full_name not in resp.text and graduate.university_id not in resp.text
+    body = resp.json()
+    assert set(body) <= {"valid", "decision", "message", "code_type", "graduate_name", "companion_number", "companions_count", "ticket_event_name"}
+    assert body["graduate_name"] == _name_of(graduate)
+    # a name and a surname, nothing that identifies the person any further
+    for secret in (graduate.university_id, graduate.email, graduate.phone):
+        assert secret and secret not in resp.text, secret
+
+
+async def test_the_volunteer_sees_whose_ticket_it_is_and_which_companion(client, db, make_event, make_college, make_graduate, make_ticket, admin_headers):
+    event = await make_event()
+    _, gate, _ = await _gate(client, admin_headers, event)
+    graduate, _, codes = await _ticket(db, make_college, make_graduate, make_ticket, event, "800011", companions=3)
+    grad_code, companions = _by_type(codes)
+    name = _name_of(graduate)
+
+    # a companion before the graduate: refused, but the volunteer knows whom to wait for
+    early = (await _scan(client, gate, companions[1].code_value)).json()
+    assert early["decision"] == "NOT_ACTIVATED" and early["graduate_name"] == name
+    assert early["companion_number"] == 2 and early["companions_count"] == 3
+
+    first = (await _scan(client, gate, grad_code.code_value)).json()
+    assert first["graduate_name"] == name and first["code_type"] == "GRADUATE"
+    assert first.get("companion_number") is None
+
+    ok = (await _scan(client, gate, companions[0].code_value)).json()
+    assert ok["decision"] == "SUCCESS" and ok["graduate_name"] == name
+    assert (ok["companion_number"], ok["companions_count"]) == (1, 3)
+
+    again = (await _scan(client, gate, companions[0].code_value)).json()
+    assert again["decision"] == "ALREADY_USED" and again["graduate_name"] == name and again["companion_number"] == 1
+
+
+async def test_a_ticket_not_confirmed_still_says_whose_it_is_and_an_unknown_code_says_nothing(client, db, make_event, make_college, make_graduate, make_ticket, admin_headers):
+    event = await make_event()
+    _, gate, _ = await _gate(client, admin_headers, event)
+    graduate, ticket, codes = await _ticket(db, make_college, make_graduate, make_ticket, event, "800012", companions=0)
+    grad_code, _ = _by_type(codes)
+    await client.post(f"/api/admin/tickets/{ticket.id}/revert-payment", headers=admin_headers)
+    held = (await _scan(client, gate, grad_code.code_value)).json()
+    assert held["decision"] == "TICKET_NOT_CONFIRMED" and held["graduate_name"]
+    unknown = (await _scan(client, gate, "KM0000000")).json()
+    assert unknown["decision"] == "NOT_FOUND" and unknown.get("graduate_name") is None
+
+
+# ------------------------------------------------------------------ one scanner, one ceremony
+async def test_a_scanner_of_one_ceremony_cannot_scan_the_tickets_of_another(client, db, make_event, make_college, make_graduate, make_ticket, admin_headers):
+    """Engineering and the Institute are two ceremonies: each gate admits only its own."""
+    engineering = await make_event(name="حفل الهندسة")
+    institute = await make_event(name="حفل المعهد")
+    _, engineering_gate, _ = await _gate(client, admin_headers, engineering, "eng1")
+    _, institute_gate, _ = await _gate(client, admin_headers, institute, "inst1")
+    graduate, _, codes = await _ticket(db, make_college, make_graduate, make_ticket, institute, "800013")
+    grad_code, companions = _by_type(codes)
+
+    refused = (await _scan(client, engineering_gate, grad_code.code_value)).json()
+    assert refused["valid"] is False and refused["decision"] == "WRONG_EVENT"
+    assert refused["ticket_event_name"] == "حفل المعهد", "the volunteer can send the person to the right gate"
+    assert refused.get("graduate_name") is None, "no name is shown for another ceremony's ticket"
+    assert (await _scan(client, engineering_gate, companions[0].short_code)).json()["decision"] == "WRONG_EVENT"
+    await db.refresh(grad_code)
+    assert grad_code.scanned_at is None, "the wrong gate consumed nothing"
+
+    assert (await _scan(client, institute_gate, grad_code.code_value)).json()["decision"] == "SUCCESS"
+
+
+async def test_two_colleges_of_one_ceremony_share_the_same_gates(client, db, make_event, make_college, make_graduate, make_ticket, admin_headers):
+    """A ceremony may hold several colleges: a scanner of that ceremony admits all of them."""
+    event = await make_event(name="حفل مشترك")
+    _, gate, _ = await _gate(client, admin_headers, event)
+    college_a = await make_college(event.id, name="كلية أ")
+    college_b = await make_college(event.id, name="كلية ب")
+    _, _, codes_a = await _ticket(db, make_college, make_graduate, make_ticket, event, "800014", college=college_a)
+    _, _, codes_b = await _ticket(db, make_college, make_graduate, make_ticket, event, "800015", college=college_b)
+    for codes in (codes_a, codes_b):
+        assert (await _scan(client, gate, _by_type(codes)[0].code_value)).json()["decision"] == "SUCCESS"
 
 
 async def test_bad_scan_requests_are_refused_cleanly(client, make_event, admin_headers):

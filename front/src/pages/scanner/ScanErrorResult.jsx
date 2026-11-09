@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import '../../style/ScanErrorResult.css';
 import unionLogo from '../../assets/only-logo.png';
 import { getScannerEvent } from '../../api/session';
+import { scanWho } from '../../utils/scanWho';
 
 const META = {
   already_used: {
@@ -76,6 +77,7 @@ export default function ScanErrorResult({
   const errorType = errorTypeProp || state.errorType || queryError || state.result?.decision?.toLowerCase() || 'already_used';
   const ceremonyName = getScannerEvent()?.name ?? state.event?.name ?? 'حفل التخرج';
   const resultMessage = result?.message || state.result?.message;
+  const who = scanWho(result || state.result);
 
   const meta = META[errorType] || META[errorType.toLowerCase()] || META.already_used;
   const isCompanionError = errorType === 'companion_error' || errorType === 'not_activated';
@@ -134,6 +136,14 @@ export default function ScanErrorResult({
                 <span>{meta.reason}</span>
               </span>
             </div>
+
+            {who && (
+              <div className="scan-err-who">
+                <span className="scan-err-who-label">{who.isCompanion ? who.role : 'الخريج'}</span>
+                <strong className="scan-err-who-name">{who.name}</strong>
+                {who.isCompanion && <span className="scan-err-who-sub">{who.label}</span>}
+              </div>
+            )}
 
             {isCompanionError && (
               <div className="scan-err-body">

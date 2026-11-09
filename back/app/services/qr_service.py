@@ -38,6 +38,8 @@ from app.core.messages import (
     SCAN_WRONG_EVENT,
 )
 from app.core.short_code import normalize_short_code, random_short_code
+from app.models.event import EventModel
+from app.models.graduate import GraduateModel
 from app.models.qr_code import QrCodeModel, QrCodeTypeEnum
 from app.models.scanner import ScannerModel
 from app.models.ticket import TicketModel, TicketStatusEnum
@@ -69,6 +71,13 @@ class ScanResult:
     graduate_id: int | None = None
     code_type: QrCodeTypeEnum | None = None
     ticket_id: int | None = None
+    # What the volunteer at the door needs to see (set only when the code belongs to this scanner's
+    # ceremony): whose ticket it is, and which companion of how many. Never an id, e-mail or phone.
+    graduate_name: str | None = None
+    companion_number: int | None = None
+    companions_count: int | None = None
+    # For a ticket of ANOTHER ceremony: the name of that ceremony, so the person can be directed there.
+    ticket_event_name: str | None = None
 
 
 class QrServiceError(Exception):
@@ -222,6 +231,30 @@ async def activate_companion_codes(db: AsyncSession, ticket_id: int) -> int:
     return result.rowcount
 
 
+async def _who(db: AsyncSession, ticket: TicketModel, qr_record: QrCodeModel) -> dict:
+    """The name on the ticket and, for a companion, his number among the companions."""
+    graduate = await db.get(GraduateModel, ticket.graduate_id)
+    name = None
+    if graduate is not None:
+        name = " ".join(p for p in (graduate.first_name, graduate.last_name) if p) or graduate.full_name
+    who: dict = {"graduate_name": name}
+    if qr_record.code_type == QrCodeTypeEnum.COMPANION:
+        companion_ids = (
+            await db.execute(
+                select(QrCodeModel.id)
+                .where(
+                    QrCodeModel.ticket_id == ticket.id,
+                    QrCodeModel.code_type == QrCodeTypeEnum.COMPANION,
+                )
+                .order_by(QrCodeModel.id)
+            )
+        ).scalars().all()
+        if qr_record.id in companion_ids:
+            who["companion_number"] = companion_ids.index(qr_record.id) + 1
+        who["companions_count"] = len(companion_ids)
+    return who
+
+
 async def scan_qr_code(
     db: AsyncSession, code_value: str | uuid.UUID, scanner_id: int
 ) -> ScanResult:
@@ -270,6 +303,7 @@ async def scan_qr_code(
     if scanner is None:
         raise ScannerNotFoundError(scanner_id)
     if scanner.event_id != ticket.event_id:
+        other_event = await db.get(EventModel, ticket.event_id)
         result = ScanResult(
             ScanDecision.WRONG_EVENT,
             SCAN_WRONG_EVENT,
@@ -277,9 +311,12 @@ async def scan_qr_code(
             ticket.graduate_id,
             qr_record.code_type,
             ticket.id,
+            ticket_event_name=other_event.name if other_event is not None else None,
         )
         await _audit_scan(db, scanner_id, str(value), result)
         return result
+
+    who = await _who(db, ticket, qr_record)
 
     if ticket.status != TicketStatusEnum.CONFIRMED:
         result = ScanResult(
@@ -289,6 +326,7 @@ async def scan_qr_code(
             ticket.graduate_id,
             qr_record.code_type,
             ticket.id,
+            **who,
         )
         await _audit_scan(db, scanner_id, str(value), result)
         return result
@@ -301,6 +339,7 @@ async def scan_qr_code(
             ticket.graduate_id,
             qr_record.code_type,
             ticket.id,
+            **who,
         )
         await _audit_scan(db, scanner_id, str(value), result)
         return result
@@ -313,6 +352,7 @@ async def scan_qr_code(
             ticket.graduate_id,
             qr_record.code_type,
             ticket.id,
+            **who,
         )
         await _audit_scan(db, scanner_id, str(value), result)
         return result
@@ -330,6 +370,7 @@ async def scan_qr_code(
         qr_record.id,
         ticket.graduate_id,
         qr_record.code_type,
+        **who,
     )
     await _audit_scan(db, scanner_id, str(value), result)
     return result

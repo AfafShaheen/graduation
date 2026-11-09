@@ -41,9 +41,20 @@ async def scan_service(db: AsyncSession, code: str, scanner: ScannerModel) -> di
     if manual and result.decision == ScanDecision.NOT_FOUND:
         await scan_throttle.record_failure(scanner.id)
 
-    return {
+    response = {
         "valid": result.decision == ScanDecision.SUCCESS,
         "decision": result.decision.value,
         "message": result.message,
         "code_type": result.code_type.value if result.code_type else None,
     }
+    # the volunteer sees whose ticket it is (name and surname only) and which companion; the
+    # name of another ceremony is given so the person can be sent there
+    for key, value in (
+        ("graduate_name", result.graduate_name),
+        ("companion_number", result.companion_number),
+        ("companions_count", result.companions_count),
+        ("ticket_event_name", result.ticket_event_name),
+    ):
+        if value is not None:
+            response[key] = value
+    return response

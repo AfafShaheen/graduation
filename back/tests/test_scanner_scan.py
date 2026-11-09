@@ -345,7 +345,13 @@ async def test_scan_response_has_no_personal_data(
         headers=_auth(access_value),
         json={"code": str(codes[0].code_value)},
     )
-    assert set(resp.json().keys()) == {"valid", "decision", "message", "code_type"}
+    # the volunteer sees a name; nothing that identifies the person any further
+    assert set(resp.json().keys()) <= {
+        "valid", "decision", "message", "code_type",
+        "graduate_name", "companion_number", "companions_count", "ticket_event_name",
+    }
+    for leaked in ("university_id", "email", "phone", "graduate_id", "unique_graduate_code"):
+        assert leaked not in resp.json()
 
 
 async def test_concurrent_scan_same_code_one_success(

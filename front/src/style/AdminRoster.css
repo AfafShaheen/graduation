@@ -320,3 +320,15 @@
 .rost-check-row { display: flex; align-items: center; gap: 8px; min-height: 40px; font-weight: 600; }
 .rost-check-row input { width: 18px; height: 18px; accent-color: var(--brand-green); }
 .exc-name-form .rost-field { display: flex; flex-direction: column; gap: 4px; }
+
+/* the exceptional actions of the drawer: two per row, rounded rectangles (never circles) */
+.rost-drawer .exc-actions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rost-drawer .exc-action-btn { border-radius: 16px; min-height: 52px; padding: 10px 12px; text-align: center; line-height: 1.4; }
+@media (max-width: 380px) { .rost-drawer .exc-actions-grid { grid-template-columns: 1fr; } }
+
+/* the name edit: one field per line on a phone, two per row when there is room */
+.exc-email-form.exc-name-form { flex-direction: column; align-items: stretch; gap: 12px; }
+.exc-name-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.exc-name-form .rost-input { width: 100%; box-sizing: border-box; direction: rtl; text-align: right; min-height: 44px; font-size: 15px; }
+.exc-name-form .exc-email-actions { width: 100%; }
+@media (max-width: 420px) { .exc-name-fields { grid-template-columns: 1fr; } }

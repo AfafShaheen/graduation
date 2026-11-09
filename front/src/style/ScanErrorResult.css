@@ -333,3 +333,14 @@
   .scan-err-app-container { padding: 40px 0; }
   .scan-err-mobile-frame { max-width: 640px; height: calc(100dvh - 80px); }
 }
+/* whose ticket it is, so the volunteer knows whom he is talking to */
+.scan-err-who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.scan-err-who-label { font-size: 13px; font-weight: 700; opacity: 0.8; }
+.scan-err-who-name { font-size: 24px; line-height: 1.4; font-weight: 800; overflow-wrap: anywhere; }
+.scan-err-who-sub { font-size: 12px; font-weight: 700; opacity: 0.8; }
