@@ -8,6 +8,7 @@ import useFormDraft from '../../hooks/useFormDraft';
 import CollegeCatalogField from '../../components/CollegeCatalogField';
 import { BATCH_BADGE } from '../../config/brand';
 import { cleanServerMessage } from '../../utils/cleanServerMessage.js';
+import UploadErrorsTable from '../../components/UploadErrorsTable';
 
 /* مفاتيح مسودة نموذج الحفل الجديد (localStorage) */
 const CEREMONY_DRAFT_KEYS = [
@@ -123,10 +124,10 @@ export default function AdminAddCeremony({
   const [dataFiles, setDataFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(true);
   const [filesError, setFilesError] = useState('');
-  const [selectedFileId, setSelectedFileId] = useState('');
+  const [selectedFileIds, setSelectedFileIds] = useState([]); // several files may feed one ceremony
   const [linkBusy, setLinkBusy] = useState(false);
-  const [linkNotice, setLinkNotice] = useState('');
-  const [linkErrors, setLinkErrors] = useState([]);
+  const [fileResults, setFileResults] = useState({}); // id -> { state: 'ok' | 'failed', text, errors }
+  const [createdEventId, setCreatedEventId] = useState(null); // set when the ceremony exists but a file failed
 
   // تصدير الأسماء المسجّلة إلى Excel
   const [exportBusy, setExportBusy] = useState(false);
@@ -143,8 +144,9 @@ export default function AdminAddCeremony({
         setDataFiles(items);
         // في وضع التعديل: preselect الملف المرتبط بهذا الحفل
         if (isEdit && eventId != null) {
-          const linked = items.find((f) => String(f.event_id) === String(eventId));
-          if (linked) setSelectedFileId(String(linked.id));
+          setSelectedFileIds(
+            items.filter((f) => String(f.event_id) === String(eventId)).map((f) => String(f.id)),
+          );
         }
       } catch {
         if (alive) setFilesError('تعذّر تحميل ملفات بيانات الخريجين.');
@@ -316,6 +318,11 @@ export default function AdminAddCeremony({
     );
   };
 
+  const setResult = (fileId, result) =>
+    setFileResults((prev) => ({ ...prev, [String(fileId)]: result }));
+
+  // Links ONE file to the ceremony and imports it. Each file has its own result, so a failure of one
+  // never hides the others.
   const linkSelectedFile = async (fileId, targetEventId, { skipConfirm = false } = {}) => {
     const file = dataFiles.find((f) => String(f.id) === String(fileId));
     if (!file || targetEventId == null) return false;
@@ -323,8 +330,7 @@ export default function AdminAddCeremony({
 
     setLinkBusy(true);
     setFilesError('');
-    setLinkNotice('');
-    setLinkErrors([]);
+    setResult(fileId, { state: 'busy', text: 'جارٍ الاستيراد...', errors: [] });
     try {
       const res = await linkUniversityFile(Number(fileId), Number(targetEventId));
       const errors = Array.isArray(res?.errors) ? res.errors : [];
@@ -336,18 +342,16 @@ export default function AdminAddCeremony({
         ),
       );
       if (errors.length > 0) {
-        setLinkErrors(errors);
-        setFilesError(`لم يتم الاستيراد: ${errors.length} أخطاء`);
+        setResult(fileId, { state: 'failed', text: `لم يُستورد: ${errors.length} خطأ في الملف`, errors });
         return false;
       }
       const imp = res?.import;
-      if (imp) {
-        setLinkNotice(
-          `أُضيف ${imp.added ?? 0}، حُدّث ${imp.updated ?? 0}، تُجوهل ${imp.skipped ?? 0} من أصل ${imp.total ?? 0}`,
-        );
-      } else {
-        setLinkNotice(`تم ربط الملف «${file.original_name}» بالحفل واستيراد بيانات الخريجين تبعا له.`);
-      }
+      const text = imp
+        ? `أُضيف ${imp.added ?? 0}، حُدّث ${imp.updated ?? 0}، تُجوهل ${imp.skipped ?? 0} من أصل ${imp.total ?? 0}${
+            imp.skipped_registered ? ` · لم يُعدَّل ${imp.skipped_registered} (سجّلوا بالفعل)` : ''
+          }`
+        : 'تم ربط الملف بالحفل.';
+      setResult(fileId, { state: 'ok', text, errors: [] });
       return true;
     } catch (err) {
       const msg =
@@ -356,29 +360,35 @@ export default function AdminAddCeremony({
           : err instanceof ApiError && err.message
           ? err.message
           : 'تعذّر ربط الملف بالحفل.';
-      setFilesError(msg);
+      setResult(fileId, { state: 'failed', text: msg, errors: [] });
       return false;
     } finally {
       setLinkBusy(false);
     }
   };
 
-  // اختيار الملف من القائمة: في الحفل الجديد يُربط بعد الحفظ، وفي التعديل يُربط فوراً
-  const handleFileSelect = async (e) => {
-    const value = e.target.value;
-    if (!value) return;
-    const previous = selectedFileId;
-    setSelectedFileId(value);
-    if (isEdit && eventId != null) {
-      const ok = await linkSelectedFile(value, eventId);
-      if (!ok) setSelectedFileId(previous);
+  // A file is ticked or unticked. New ceremony: it is remembered and linked after the ceremony is saved.
+  // Existing ceremony: a ticked file is linked at once (a file linked here already cannot be unticked).
+  const handleFileToggle = async (fileId, checked) => {
+    const id = String(fileId);
+    if (!checked) {
+      setSelectedFileIds((prev) => prev.filter((x) => x !== id));
+      setFileResults((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       return;
     }
-    // الحفل الجديد: نتأكد هون إن الملف مش مرتبط بحفل تاني، والربط بيصير بعد الحفظ
-    const file = dataFiles.find((f) => String(f.id) === String(value));
-    if (file && file.event_id != null && !confirmReassign(file)) {
-      setSelectedFileId(previous);
+    const file = dataFiles.find((f) => String(f.id) === id);
+    if (!file) return;
+    if (isEdit && eventId != null) {
+      const ok = await linkSelectedFile(id, eventId);
+      if (ok) setSelectedFileIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      return;
     }
+    if (file.event_id != null && !confirmReassign(file)) return;
+    setSelectedFileIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
   };
 
   // تصدير الأسماء المسجّلة على الموقع إلى Excel
@@ -398,6 +408,7 @@ export default function AdminAddCeremony({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (createdEventId != null) return; // already created: only its files need attention
     setSubmitError('');
     setFieldErrors({});
     setCollegeError('');
@@ -463,8 +474,18 @@ export default function AdminAddCeremony({
       const id = eventId ?? result?.id ?? result?.event_id;
 
       // ربط ملف بيانات الخريجين بالحفل الجديد (بعد إنشاء الحفل وحصوله على رقم)
-      if (!isEdit && selectedFileId && id != null) {
-        await linkSelectedFile(selectedFileId, id, { skipConfirm: true });
+      let failedFiles = 0;
+      if (!isEdit && id != null) {
+        for (const fileId of selectedFileIds) {
+          const ok = await linkSelectedFile(fileId, id, { skipConfirm: true });
+          if (!ok) failedFiles += 1;
+        }
+      }
+      if (failedFiles > 0) {
+        // the ceremony exists: stay here so the errors of each file can be read, and never save it twice
+        setCreatedEventId(id);
+        clearCeremonyDrafts();
+        return;
       }
 
       clearCeremonyDrafts();
@@ -867,72 +888,72 @@ export default function AdminAddCeremony({
                     <span>ملف بيانات الخريجين</span>
                   </h4>
                   <p className="add-cer-hint" style={{ marginTop: '2px' }}>
-                    اختر الملف الذي رفعته في صفحة «ملفات البيانات» وسيُربط بهذا الحفل، وتُستورد أسماء الخريجين منه فوراً.
+                    اختر الملفات التي رفعتها في صفحة «ملفات البيانات» (ملفاً أو أكثر)، وتُستورد أسماء الخريجين منها.
                   </p>
                 </div>
               </div>
 
-              <select
-                className="add-cer-input add-cer-select"
-                value={selectedFileId}
-                onChange={handleFileSelect}
-                disabled={linkBusy || filesLoading}
-                aria-label="ملف بيانات الخريجين"
-              >
-                <option value="">
-                  {filesLoading ? 'جارٍ تحميل الملفات...' : 'بدون ملف بيانات'}
-                </option>
-                {dataFiles.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {`${f.original_name} · ${f.rows_total} صف${f.event_id ? ' · مرتبط بحفل' : ''}`}
-                  </option>
-                ))}
-              </select>
-
-              {linkNotice && (
-                <p className="add-cer-hint with-icon" style={{ color: '#1b7a4b' }}>
-                  <span className="add-cer-symbol">check_circle</span>
-                  <span>{linkNotice}</span>
-                </p>
-              )}
+              <div className="add-cer-filelist" role="group" aria-label="ملفات بيانات الخريجين">
+                {filesLoading && <p className="add-cer-hint">جارٍ تحميل الملفات...</p>}
+                {!filesLoading && dataFiles.length === 0 && (
+                  <p className="add-cer-hint">لا توجد ملفات مرفوعة بعد. ارفع ملفاً من صفحة «ملفات البيانات».</p>
+                )}
+                {dataFiles.map((f) => {
+                  const id = String(f.id);
+                  const linkedHere = isEdit && String(f.event_id) === String(eventId);
+                  const elsewhere = f.event_id != null && !linkedHere;
+                  const result = fileResults[id];
+                  const colleges = (f.colleges || []).map((c) => c.name).filter(Boolean).join('، ');
+                  return (
+                    <div key={f.id} className="add-cer-fileitem">
+                      <label className="add-cer-filecheck">
+                        <input
+                          type="checkbox"
+                          checked={selectedFileIds.includes(id)}
+                          disabled={linkBusy || linkedHere || createdEventId != null}
+                          onChange={(e) => handleFileToggle(id, e.target.checked)}
+                        />
+                        <span className="add-cer-filename">{f.original_name}</span>
+                        <span className="add-cer-filemeta">
+                          {f.rows_total} صف{colleges ? ` · ${colleges}` : ''}
+                          {linkedHere ? ' · مرتبط بهذا الحفل' : elsewhere ? ' · مرتبط بحفل آخر' : ''}
+                        </span>
+                      </label>
+                      {result && (
+                        <p className={`add-cer-filestatus ${result.state}`} role={result.state === 'failed' ? 'alert' : 'status'}>
+                          {result.text}
+                        </p>
+                      )}
+                      {result?.errors?.length > 0 && (
+                        <details className="add-cer-fileerrors">
+                          <summary>عرض الأخطاء ({result.errors.length})</summary>
+                          <UploadErrorsTable errors={result.errors} count={result.errors.length} />
+                        </details>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
               {filesError && (
                 <p className="add-cer-file-error" role="alert">{filesError}</p>
               )}
 
-              {linkErrors.length > 0 && (
-                <div className="add-cer-file-error" role="alert" style={{ marginTop: '8px' }}>
-                  <p style={{ fontWeight: 'bold', margin: '0 0 8px' }}>
-                    لم يتم الاستيراد: {linkErrors.length} أخطاء في المطابقة.
+              {createdEventId != null && (
+                <div className="add-cer-file-error" role="alert">
+                  <p style={{ fontWeight: 'bold', margin: '0 0 6px' }}>
+                    تم إنشاء الحفل، لكن بعض الملفات لم تُستورد. راجع الأخطاء أعلاه.
                   </p>
                   <p style={{ margin: '0 0 8px' }}>
-                    راجع الصف والحقل والقيمة الموجودة لمعرفة سبب رفض كل سجل.
+                    صحّح الملف المرفوض ثم اربطه من «تعديل الحفل»، ولا تحفظ الحفل مرة ثانية.
                   </p>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الصف</th>
-                          <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الحقل</th>
-                          <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>القيمة الموجودة</th>
-                          <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>المشكلة</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {linkErrors.slice(0, 50).map((e, i) => (
-                          <tr key={i}>
-                            <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.row ?? '—'}</td>
-                            <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.field ?? '—'}</td>
-                            <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.value || 'فارغة'}</td>
-                            <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.message ?? ''}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {linkErrors.length > 50 && (
-                    <p style={{ margin: '8px 0' }}>و {linkErrors.length - 50} خطأ آخر</p>
-                  )}
+                  <button
+                    type="button"
+                    className="add-cer-btn-cancel"
+                    onClick={() => (onSubmitSuccess ? onSubmitSuccess({ id: createdEventId }) : window.location.assign('/admin/ceremonies'))}
+                  >
+                    الانتقال إلى الحفلات
+                  </button>
                 </div>
               )}
 
@@ -944,8 +965,8 @@ export default function AdminAddCeremony({
                 <span className="add-cer-symbol">info</span>
                 <span>
                   {isEdit
-                    ? 'الملف بيتربط بالحفل مباشرة وبتستورد بياناتو فوراً.'
-                    : 'يُحفظ الحفل الجديد أولاً، ثم يُربط الملف المختار، أو يُحفظ بدون ملف بيانات.'}
+                    ? 'الملف يُربط بالحفل فور اختياره وتُستورد بياناته. يمكنك اختيار أكثر من ملف.'
+                    : 'اختر ملفاً أو أكثر. يُحفظ الحفل أولاً، ثم يُربط كل ملف ويُستورد على حدة، وفشل ملف لا يوقف الباقي.'}
                 </span>
               </p>
             </div>

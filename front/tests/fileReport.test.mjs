@@ -6,7 +6,7 @@ const read = (p) => fs.readFileSync(new URL(`../src/${p}`, import.meta.url), 'ut
 
 test('a failed file says why, in the answer and later in the list', () => {
   const page = read('pages/admin/AdminUniversityFiles.jsx');
-  assert.ok(page.includes('function UploadErrorsTable'));
+  assert.ok(page.includes("import UploadErrorsTable from '../../components/UploadErrorsTable'"));
   assert.equal((page.match(/<UploadErrorsTable/g) || []).length, 2, 'the answer of the upload and the list');
   assert.ok(page.includes("f.status === 'failed'") && page.includes('لم يُستورد شيء'));
   assert.ok(page.includes('عرض الأخطاء ('));

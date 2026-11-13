@@ -1007,3 +1007,17 @@
   font-size: 12px;
   font-weight: 700;
 }
+
+/* the data files of a ceremony: one row per file, with the result of its own import */
+.add-cer-filelist { display: flex; flex-direction: column; gap: 8px; }
+.add-cer-fileitem { border: 1px solid #eedebd; border-radius: 14px; padding: 10px 12px; background: #fff; }
+.add-cer-filecheck { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; cursor: pointer; }
+.add-cer-filecheck input { width: 18px; height: 18px; accent-color: var(--brand-green); }
+.add-cer-filename { font-weight: 700; color: var(--brand-green); overflow-wrap: anywhere; }
+.add-cer-filemeta { font-size: 12px; color: #594138; flex-basis: 100%; padding-inline-start: 28px; }
+.add-cer-filestatus { margin: 6px 0 0; font-size: 13px; font-weight: 700; }
+.add-cer-filestatus.ok { color: #1b7a4b; }
+.add-cer-filestatus.failed { color: #ba1a1a; }
+.add-cer-filestatus.busy { color: #594138; }
+.add-cer-fileerrors { margin-top: 8px; }
+.add-cer-fileerrors summary { cursor: pointer; font-weight: 700; }
