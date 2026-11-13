@@ -1,4 +1,6 @@
 import StageHeader from '../../components/StageHeader';
+import BottomSheet from '../../components/BottomSheet';
+import { NO_REFUND_TEXT } from '../../config/graduateTexts';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/SelectTicket.css';
@@ -43,6 +45,7 @@ export default function SelectTicket() {
   const [error, setError] = useState('');
   const [selectedType, setSelectedType] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [ruleOpen, setRuleOpen] = useState(false); // the no-refund rule, shown just before he confirms
   const [actionError, setActionError] = useState('');
 
   const options = (data?.options || []).map(buildOption);
@@ -235,6 +238,25 @@ export default function SelectTicket() {
           )}
         </main>
 
+        <BottomSheet open={ruleOpen} title="قبل أن تتابع" onClose={() => setRuleOpen(false)}>
+          <p className="bs-rule">{NO_REFUND_TEXT}</p>
+          <div className="bs-actions">
+            <button
+              type="button"
+              className="bs-yes"
+              onClick={() => {
+                setRuleOpen(false);
+                handleContinue();
+              }}
+            >
+              فهمت، تابع
+            </button>
+            <button type="button" className="bs-no" onClick={() => setRuleOpen(false)}>
+              رجوع لتغيير الباقة
+            </button>
+          </div>
+        </BottomSheet>
+
         <div className="st-bottom-dock">
           <HelpFooter />
           {registrationOpen && (
@@ -242,7 +264,7 @@ export default function SelectTicket() {
               <button
                 className="st-action-btn"
                 type="button"
-                onClick={handleContinue}
+                onClick={() => setRuleOpen(true)}
                 disabled={selectedType == null || submitting}
               >
                 <span>{submitting ? 'جارٍ التأكيد...' : 'تأكيد الاختيار ومتابعة الدفع'}</span>

@@ -1,4 +1,6 @@
 import StageHeader from '../../components/StageHeader';
+import { PAYMENT_STEPS } from '../../config/paymentSteps';
+import { guideKeyOf } from '../../config/guideKeys';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/ShamCashPayment.css';
@@ -266,6 +268,19 @@ export default function ShamCashPayment({ onBack }) {
               بوابة السداد الإلكتروني المعتمدة
             </span>
           </div>
+
+          {/* the same four steps as the guide, in front of the fields they concern */}
+          <ol className="sc-steps" aria-label="خطوات الدفع">
+            {PAYMENT_STEPS.map((text, i) => (
+              <li key={text} className="sc-step">
+                <span className="sc-step-no" aria-hidden="true">{i + 1}</span>
+                <span className="sc-step-body">
+                  {guideKeyOf(text) && <strong className="sc-step-key">{guideKeyOf(text)}</strong>}
+                  <span className="sc-step-text">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
 
 
           {loading && <p className="sc-qr-caption">جارٍ تحميل معلومات الدفع...</p>}

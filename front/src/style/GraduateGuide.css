@@ -356,3 +356,19 @@
   line-height: 1.9;
   color: var(--brand-green);
 }
+
+/* a card per point: a key sentence over the full text, and a line that says how much there is to read */
+.guide-reading { margin: 8px 0 0; font-size: 12px; font-weight: 700; color: var(--brand-orange); }
+.guide-cards { gap: 8px; }
+.guide-list.guide-cards li.guide-card::before { display: none; }
+.guide-list.guide-cards li.guide-card { padding-right: 0; }
+.guide-card {
+  padding: 10px 12px;
+  background: var(--brand-cream);
+  border: 1px solid #eedebd;
+  border-radius: 14px;
+}
+.guide-card-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.guide-card-key { font-size: 14px; font-weight: 700; line-height: 1.6; color: var(--brand-green); }
+.guide-card-text { font-size: 13px; line-height: 1.9; color: #594138; overflow-wrap: anywhere; }
+.guide-steps.guide-cards li.guide-card { align-items: flex-start; }

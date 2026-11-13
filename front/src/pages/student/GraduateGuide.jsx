@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { guideKeyOf, guideReading } from '../../config/guideKeys';
+import { PAYMENT_STEPS } from '../../config/paymentSteps';
+import { countLabel } from '../../utils/countLabel';
 import '../../style/GraduationForm.css';
 import '../../style/GraduateGuide.css';
 import '../../style/BrandHeader.css';
@@ -10,7 +13,6 @@ import UnionBrand from '../../components/UnionBrand';
 import {
   ID_PROOF_TEXT,
   NO_REFUND_TEXT,
-  PAYMENT_NOTE_TEXT,
   QR_REQUIRED_TEXT,
 } from '../../config/graduateTexts';
 
@@ -101,12 +103,7 @@ const PHASES = {
       {
         icon: 'payments',
         title: 'خطوات الدفع',
-        steps: [
-          'امسح رمز QR أو انسخ رقم حساب شام كاش من صفحة الدفع.',
-          'اكتب المبلغ المطلوب كما يظهر في الصفحة.',
-          PAYMENT_NOTE_TEXT,
-          'عُد إلى الصفحة وأدخل: رقم العملية، والمبلغ المحوّل، واسم المرسل كما يظهر في إشعار التحويل.',
-        ],
+        steps: PAYMENT_STEPS,
       },
     ],
     warning: { tone: 'orange', text: 'راجع المبلغ والملاحظة قبل التحويل، فالتحويل الخاطئ يؤخر تأكيد تذكرتك.' },
@@ -176,11 +173,28 @@ function SectionHeader({ number, icon, title }) {
   );
 }
 
+// One point = one card: a key sentence that says what is asked, and under it the full text.
+function GuideCardBody({ text }) {
+  const key = guideKeyOf(text);
+  return key ? (
+    <span className="guide-card-body">
+      <strong className="guide-card-key">{key}</strong>
+      <span className="guide-card-text">{text}</span>
+    </span>
+  ) : (
+    <span className="guide-card-body">
+      <span className="guide-card-text">{text}</span>
+    </span>
+  );
+}
+
 function BulletList({ items }) {
   return (
-    <ul className="guide-list">
+    <ul className="guide-list guide-cards">
       {items.map((text) => (
-        <li key={text}>{text}</li>
+        <li key={text} className="guide-card">
+          <GuideCardBody text={text} />
+        </li>
       ))}
     </ul>
   );
@@ -205,6 +219,7 @@ export default function GraduateGuide({ phase = 'package', mode = 'required', on
 
   const resolvedPhase = PHASES[phase] ? phase : 'package';
   const phaseConfig = PHASES[resolvedPhase];
+  const reading = guideReading(phaseConfig);
 
   const [acknowledged, setAcknowledged] = useState(false);
 
@@ -220,10 +235,10 @@ export default function GraduateGuide({ phase = 'package', mode = 'required', on
       {section.bullets && <BulletList items={section.bullets} />}
 
       {section.steps && (
-        <ol className="guide-steps">
+        <ol className="guide-steps guide-cards">
           {section.steps.map((text) => (
-            <li key={text}>
-              <span>{text}</span>
+            <li key={text} className="guide-card">
+              <GuideCardBody text={text} />
             </li>
           ))}
         </ol>
@@ -277,6 +292,10 @@ export default function GraduateGuide({ phase = 'package', mode = 'required', on
             <div>
               <h2 className="card-title">{phaseConfig.title}</h2>
               <p className="card-subtitle">{phaseConfig.subtitle}</p>
+              <p className="guide-reading">
+                {countLabel(reading.cards, 'نقطة', 'نقطتان', 'نقاط', 'نقطة', 'واحدة')} ·{' '}
+                {reading.minutes === 1 ? 'قراءتها دقيقة واحدة' : `قراءتها ${reading.minutes} دقائق`}
+              </p>
             </div>
           </section>
 

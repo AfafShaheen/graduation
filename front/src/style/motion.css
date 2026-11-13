@@ -121,3 +121,12 @@
   .st2-stack span { transform-origin: right center; animation: pt-grow-x 0.6s ease backwards; }
   .st2-hour-bar { transform-origin: center bottom; animation: pt-grow-y 0.6s ease backwards; }
 }
+
+@keyframes bs-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bs-overlay { animation: pt-overlay 0.18s ease backwards; }
+  .bs-sheet { animation: bs-up 0.26s ease backwards; }
+}
