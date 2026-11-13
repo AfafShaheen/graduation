@@ -38,6 +38,44 @@ function apiErrorMessage(err, fallback) {
   return fallback;
 }
 
+// The errors of a failed import: row, field, the value found in the file and what is wrong.
+function UploadErrorsTable({ errors, count, onDownload }) {
+  const th = { textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' };
+  const td = { padding: '4px 8px', borderBottom: '1px solid #eee' };
+  return (
+    <>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <thead>
+            <tr>
+              <th style={th}>الصف</th>
+              <th style={th}>الحقل</th>
+              <th style={th}>القيمة الموجودة</th>
+              <th style={th}>المشكلة</th>
+            </tr>
+          </thead>
+          <tbody>
+            {errors.slice(0, 50).map((e, i) => (
+              <tr key={i}>
+                <td style={td}>{e?.row ?? '—'}</td>
+                <td style={td}>{e?.field ?? '—'}</td>
+                <td style={td}>{e?.value || 'فارغة'}</td>
+                <td style={td}>{e?.message ?? ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {count > 50 && <p style={{ margin: '8px 0' }}>و {count - 50} خطأ آخر</p>}
+      {onDownload && (
+        <button type="button" className="uf-btn ghost" onClick={onDownload} style={{ marginTop: '8px' }}>
+          تنزيل الأخطاء (CSV)
+        </button>
+      )}
+    </>
+  );
+}
+
 export default function AdminUniversityFiles({
   adminName = 'مسؤول الاتحاد',
   adminRole = 'الاتحاد الوطني لطلبة سورية',
@@ -138,6 +176,7 @@ export default function AdminUniversityFiles({
         added: imp.added ?? 0,
         updated: imp.updated ?? 0,
         skipped: imp.skipped ?? 0,
+        registered: imp.skipped_registered ?? 0,
         total: imp.total ?? 0,
       };
     }
@@ -348,39 +387,11 @@ export default function AdminUniversityFiles({
                   .map(([field, count]) => `${field}: ${count}`)
                   .join(' · ')}
               </p>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الصف</th>
-                      <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>الحقل</th>
-                      <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>القيمة الموجودة</th>
-                      <th style={{ textAlign: 'right', padding: '4px 8px', borderBottom: '1px solid #ccc' }}>المشكلة</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.errors.slice(0, 50).map((e, i) => (
-                      <tr key={i}>
-                        <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.row ?? '—'}</td>
-                        <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.field ?? '—'}</td>
-                        <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.value || 'فارغة'}</td>
-                        <td style={{ padding: '4px 8px', borderBottom: '1px solid #eee' }}>{e?.message ?? ''}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {report.errors.length > 50 && (
-                <p style={{ margin: '8px 0' }}>و {report.errors.length - 50} خطأ آخر</p>
-              )}
-              <button
-                type="button"
-                className="uf-btn ghost"
-                onClick={() => downloadErrorsCsv(report.errors)}
-                style={{ marginTop: '8px' }}
-              >
-                تنزيل الأخطاء (CSV)
-              </button>
+              <UploadErrorsTable
+                errors={report.errors}
+                count={report.errors.length}
+                onDownload={() => downloadErrorsCsv(report.errors)}
+              />
             </div>
           )}
 
@@ -396,7 +407,14 @@ export default function AdminUniversityFiles({
                 fontWeight: 'bold',
               }}
             >
-              أُضيف {report.added}، حُدّث {report.updated}، تُجوهل {report.skipped} من أصل {report.total}
+              {report.added + report.updated === 0
+                ? `لم يُضَف ولم يُحدَّث أي سجل من أصل ${report.total} صف.`
+                : `أُضيف ${report.added}، حُدّث ${report.updated}، تُجوهل ${report.skipped} من أصل ${report.total}`}
+              {report.registered > 0 && (
+                <span style={{ display: 'block', fontWeight: 'normal', marginTop: 4 }}>
+                  {report.registered} صفاً لم تُعدَّل لأن أصحابها سجّلوا بالفعل (تبقى بياناتهم كما تحقّقوا بها).
+                </span>
+              )}
             </div>
           )}
 
@@ -465,9 +483,30 @@ export default function AdminUniversityFiles({
                     <div className="uf-item-line">
                       <span className="uf-item-key">نتيجة الاستيراد:</span>
                       <span className="uf-item-val">
-                        مضاف {f.rows_imported} · محدّث {f.rows_updated} · متجاهل {f.rows_skipped}
+                        {f.status === 'failed' ? (
+                          <strong style={{ color: '#ba1a1a' }}>
+                            لم يُستورد شيء: {f.error_count || (f.errors || []).length} خطأ في الملف
+                          </strong>
+                        ) : (
+                          <>
+                            مضاف {f.rows_imported} · محدّث {f.rows_updated} · متجاهل {f.rows_skipped}
+                            {f.rows_skipped_registered > 0 && ` · لم يُعدَّل ${f.rows_skipped_registered} (سجّلوا بالفعل)`}
+                          </>
+                        )}
                       </span>
                     </div>
+                    {f.status === 'failed' && (f.errors || []).length > 0 && (
+                      <details className="uf-item-errors">
+                        <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                          عرض الأخطاء ({f.error_count || f.errors.length})
+                        </summary>
+                        <UploadErrorsTable
+                          errors={f.errors}
+                          count={f.error_count || f.errors.length}
+                          onDownload={() => downloadErrorsCsv(f.errors)}
+                        />
+                      </details>
+                    )}
                   </div>
 
                   {linkingId === f.id ? (

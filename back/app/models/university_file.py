@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, BigInteger, ForeignKey, DateTime, text
+from sqlalchemy import Column, Integer, String, BigInteger, ForeignKey, DateTime, Text, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.models.base import Base
@@ -29,6 +29,11 @@ class UniversityFileModel(Base):
     rows_imported = Column(Integer, nullable=False, server_default=text("0"))
     rows_updated = Column(Integer, nullable=False, server_default=text("0"))
     rows_skipped = Column(Integer, nullable=False, server_default=text("0"))
+    # rows left alone because the graduate had already registered (his data is kept as he was verified)
+    rows_skipped_registered = Column(Integer, nullable=False, server_default=text("0"))
+    # a failed import keeps why: the number of errors and the first 200 of them (JSON)
+    error_count = Column(Integer, nullable=False, server_default=text("0"))
+    errors_json = Column(Text, nullable=True)
     status = Column(String(20), nullable=False, server_default=text("'uploaded'"))
     uploaded_by = Column(Integer, ForeignKey("admins.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

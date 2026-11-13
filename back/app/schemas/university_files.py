@@ -7,6 +7,13 @@ class UniversityFileCollegeItem(BaseModel):
     name: str
     rows: int
 
+class UniversityFileErrorItem(BaseModel):
+    row: Optional[int] = None
+    field: Optional[str] = None
+    value: Optional[str] = None
+    message: str = ""
+
+
 class UniversityFileItem(BaseModel):
     id: int
     event_id: Optional[int] = None
@@ -17,6 +24,9 @@ class UniversityFileItem(BaseModel):
     rows_imported: int
     rows_updated: int
     rows_skipped: int
+    rows_skipped_registered: int = 0
+    error_count: int = 0
+    errors: List[UniversityFileErrorItem] = []
     status: str
     colleges: List[UniversityFileCollegeItem] = []
     created_at: datetime

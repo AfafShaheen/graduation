@@ -2493,6 +2493,50 @@
         "title": "UniversityFileCollegeItem",
         "type": "object"
       },
+      "UniversityFileErrorItem": {
+        "properties": {
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          },
+          "message": {
+            "default": "",
+            "title": "Message",
+            "type": "string"
+          },
+          "row": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "title": "UniversityFileErrorItem",
+        "type": "object"
+      },
       "UniversityFileItem": {
         "properties": {
           "colleges": {
@@ -2507,6 +2551,19 @@
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "error_count": {
+            "default": 0,
+            "title": "Error Count",
+            "type": "integer"
+          },
+          "errors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/UniversityFileErrorItem"
+            },
+            "title": "Errors",
+            "type": "array"
           },
           "event_id": {
             "anyOf": [
@@ -2544,6 +2601,11 @@
           },
           "rows_skipped": {
             "title": "Rows Skipped",
+            "type": "integer"
+          },
+          "rows_skipped_registered": {
+            "default": 0,
+            "title": "Rows Skipped Registered",
             "type": "integer"
           },
           "rows_total": {

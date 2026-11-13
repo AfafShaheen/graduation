@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import uuid
@@ -73,6 +74,11 @@ async def _event_or_404(db: AsyncSession, event_id: int) -> EventModel:
     return event
 
 
+# how many errors of a failed import are kept with the file, and how many the list shows
+_KEPT_ERRORS = 200
+_SHOWN_ERRORS = 50
+
+
 async def _build_file_item(db: AsyncSession, record: UniversityFileModel) -> Dict[str, Any]:
     rows = (
         await db.execute(
@@ -108,6 +114,13 @@ async def _build_file_item(db: AsyncSession, record: UniversityFileModel) -> Dic
         event = await db.get(EventModel, record.event_id)
         event_name = event.name if event else None
 
+    errors: list = []
+    if record.status == "failed" and record.errors_json:
+        try:
+            errors = json.loads(record.errors_json)[:_SHOWN_ERRORS]
+        except ValueError:
+            errors = []
+
     return {
         "id": record.id,
         "event_id": record.event_id,
@@ -118,6 +131,9 @@ async def _build_file_item(db: AsyncSession, record: UniversityFileModel) -> Dic
         "rows_imported": record.rows_imported,
         "rows_updated": record.rows_updated,
         "rows_skipped": record.rows_skipped,
+        "rows_skipped_registered": record.rows_skipped_registered,
+        "error_count": record.error_count,
+        "errors": errors,
         "status": record.status,
         "colleges": colleges_payload,
         "created_at": record.created_at,
@@ -150,6 +166,9 @@ async def _import_into_event(
 
     if errors:
         record.status = "failed"
+        record.error_count = len(errors)
+        record.errors_json = json.dumps(errors[:_KEPT_ERRORS], ensure_ascii=False)
+        record.rows_imported = record.rows_updated = record.rows_skipped = record.rows_skipped_registered = 0
         await db.commit()
         if discard_file_on_failure:
             # A fresh upload that failed validation is not kept on disk; the
@@ -176,6 +195,9 @@ async def _import_into_event(
     record.rows_imported = counts["added"]
     record.rows_updated = counts["updated"]
     record.rows_skipped = counts["skipped"]
+    record.rows_skipped_registered = counts["skipped_registered"]
+    record.error_count = 0
+    record.errors_json = None
     record.status = "imported"
 
     await record_audit(
@@ -280,6 +302,9 @@ async def link_university_file(
     record.rows_imported = 0
     record.rows_updated = 0
     record.rows_skipped = 0
+    record.rows_skipped_registered = 0
+    record.error_count = 0
+    record.errors_json = None
     await db.flush()
 
     path = record.storage_path
