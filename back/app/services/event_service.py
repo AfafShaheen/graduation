@@ -78,6 +78,17 @@ async def invalidate_events_cache() -> None:
         logger.warning("Event cache invalidation failed", exc_info=True)
 
 
+DUPLICATE_EVENT_NAME = "يوجد حفل بهذا الاسم من قبل. اختر اسماً مختلفاً."
+
+
+async def _assert_name_free(db: AsyncSession, name: str, except_id: int | None = None) -> None:
+    query = select(EventModel.id).where(func.lower(EventModel.name) == name.lower())
+    if except_id is not None:
+        query = query.where(EventModel.id != except_id)
+    if (await db.execute(query.limit(1))).scalars().first() is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=DUPLICATE_EVENT_NAME)
+
+
 async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict) -> dict:
     try:
         registration_before_ceremony(
@@ -88,6 +99,8 @@ async def create_event_service(db: AsyncSession, data: EventCreate, admin: dict)
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    await _assert_name_free(db, data.name)
 
     college_names = _dedupe_college_names(data.college_names)
 
@@ -273,6 +286,8 @@ async def update_event_service(db: AsyncSession, event_id: int, data: EventUpdat
     update_data = data.model_dump(exclude_unset=True)
 
     packages = update_data.pop("packages", None)
+    if update_data.get("name") is not None and update_data["name"].lower() != (ev.name or "").lower():
+        await _assert_name_free(db, update_data["name"], except_id=event_id)
     college_names = update_data.pop("college_names", None)
 
     # FR-16: Package definitions are frozen once registration starts.

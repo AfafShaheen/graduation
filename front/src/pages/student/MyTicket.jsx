@@ -1,4 +1,5 @@
 import StageHeader from '../../components/StageHeader';
+import { TICKET_DAY_POINTS } from '../../config/stageTexts';
 import VolunteerQuestionsCard from '../../components/VolunteerQuestionsCard';
 import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -163,7 +164,7 @@ export default function MyTicket() {
   return (
     <div className="tk-app-container">
       <main className="tk-mobile-shell">
-        <StageHeader current="ticket" guide="ticket" action={ended ? undefined : { label: 'مشاركة التذكرة', icon: 'share', onClick: handleShare }} />
+        <StageHeader current="ticket" action={ended ? undefined : { label: 'مشاركة التذكرة', icon: 'share', onClick: handleShare }} />
 
         <div className="tk-main-stage">
           <section className="tk-welcome" aria-label="ترحيب">
@@ -294,6 +295,18 @@ export default function MyTicket() {
               <h3 className="tk-id-reminder-title">لا تنسَ إحضار إثبات شخصيتك</h3>
               <p className="tk-id-reminder-text">{ID_PROOF_TEXT}</p>
             </div>
+          </section>
+          )}
+
+          {/* what to remember on the day (it used to be a separate guide page) */}
+          {!ended && (
+          <section className="tk-day-points" aria-label="تعليمات يوم الحفل">
+            <h3 className="tk-day-points-title">تعليمات يوم الحفل</h3>
+            <ul className="tk-day-points-list">
+              {TICKET_DAY_POINTS.map((text) => (
+                <li key={text}>{text}</li>
+              ))}
+            </ul>
           </section>
           )}
 

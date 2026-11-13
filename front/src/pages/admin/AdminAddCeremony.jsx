@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import '../../style/AdminAddCeremony.css';
+import { ceremonyFieldErrors, cleanCeremonyName } from '../../utils/ceremonyChecks';
 import { normalizeLocal, windowErrors, toServerDateTime } from '../../utils/ceremonyWindow.js';
 import AdminSidebar from '../../components/AdminSidebar';
 import { createAdminEvent, updateAdminEvent } from './hooks/useAdminEvents.js';
@@ -125,6 +126,7 @@ export default function AdminAddCeremony({
   const [filesLoading, setFilesLoading] = useState(true);
   const [filesError, setFilesError] = useState('');
   const [selectedFileIds, setSelectedFileIds] = useState([]); // several files may feed one ceremony
+  const [fileQuery, setFileQuery] = useState(''); // narrows the drop-down when there are many files
   const [linkBusy, setLinkBusy] = useState(false);
   const [fileResults, setFileResults] = useState({}); // id -> { state: 'ok' | 'failed', text, errors }
   const [createdEventId, setCreatedEventId] = useState(null); // set when the ceremony exists but a file failed
@@ -418,6 +420,13 @@ export default function AdminAddCeremony({
       return;
     }
 
+    const formErrors = ceremonyFieldErrors({ name: ceremonyName, whatsappLink });
+    if (Object.keys(formErrors).length > 0) {
+      setFieldErrors(formErrors);
+      setSubmitError('يرجى تصحيح الحقول المميّزة بالأحمر ثم إعادة المحاولة.');
+      return;
+    }
+
     const collegeNames = selectedCollegeNames();
     if (collegeNames.length === 0) {
       setSubmitError('اختر كلية واحدة على الأقل لهذا الحفل');
@@ -444,13 +453,13 @@ export default function AdminAddCeremony({
     }
 
     const base = {
-      name: ceremonyName,
+      name: cleanCeremonyName(ceremonyName),
       event_date: ceremonyDate ? ceremonyDate.slice(0, 10) : ceremonyDate,
       event_time: eventTime,
       seat_prefix: null,
       registration_start: toServerDateTime(startLocal),
       registration_end: toServerDateTime(endLocal),
-      whatsapp_group_link: whatsappLink,
+      whatsapp_group_link: whatsappLink.trim(),
     };
 
     try {
@@ -525,6 +534,26 @@ export default function AdminAddCeremony({
       setSubmitting(false);
     }
   };
+
+  // the files already chosen (or showing a result), and the ones still offered in the drop-down
+  const fileMeta = (f) => {
+    const colleges = (f.colleges || []).map((c) => c.name).filter(Boolean).join('، ');
+    const linkedHere = isEdit && String(f.event_id) === String(eventId);
+    const elsewhere = f.event_id != null && !linkedHere;
+    return `${f.rows_total} صف${colleges ? ` · ${colleges}` : ''}${
+      linkedHere ? ' · مرتبط بهذا الحفل' : elsewhere ? ' · مرتبط بحفل آخر' : ''
+    }`;
+  };
+  const chosenFiles = dataFiles.filter(
+    (f) => selectedFileIds.includes(String(f.id)) || fileResults[String(f.id)],
+  );
+  const chosenIds = new Set(chosenFiles.map((f) => String(f.id)));
+  const queryText = fileQuery.trim().toLowerCase();
+  const availableFiles = dataFiles.filter(
+    (f) =>
+      !chosenIds.has(String(f.id)) &&
+      (!queryText || String(f.original_name || '').toLowerCase().includes(queryText)),
+  );
 
   return (
     <div className="add-cer-app-container">
@@ -893,32 +922,31 @@ export default function AdminAddCeremony({
                 </div>
               </div>
 
-              <div className="add-cer-filelist" role="group" aria-label="ملفات بيانات الخريجين">
+              {/* chosen files: one row each, with the result of its own import */}
+              <div className="add-cer-filelist" role="list" aria-label="الملفات المختارة">
                 {filesLoading && <p className="add-cer-hint">جارٍ تحميل الملفات...</p>}
                 {!filesLoading && dataFiles.length === 0 && (
                   <p className="add-cer-hint">لا توجد ملفات مرفوعة بعد. ارفع ملفاً من صفحة «ملفات البيانات».</p>
                 )}
-                {dataFiles.map((f) => {
+                {chosenFiles.map((f) => {
                   const id = String(f.id);
                   const linkedHere = isEdit && String(f.event_id) === String(eventId);
-                  const elsewhere = f.event_id != null && !linkedHere;
                   const result = fileResults[id];
-                  const colleges = (f.colleges || []).map((c) => c.name).filter(Boolean).join('، ');
                   return (
-                    <div key={f.id} className="add-cer-fileitem">
-                      <label className="add-cer-filecheck">
-                        <input
-                          type="checkbox"
-                          checked={selectedFileIds.includes(id)}
-                          disabled={linkBusy || linkedHere || createdEventId != null}
-                          onChange={(e) => handleFileToggle(id, e.target.checked)}
-                        />
+                    <div key={f.id} className="add-cer-fileitem" role="listitem">
+                      <div className="add-cer-filecheck">
                         <span className="add-cer-filename">{f.original_name}</span>
-                        <span className="add-cer-filemeta">
-                          {f.rows_total} صف{colleges ? ` · ${colleges}` : ''}
-                          {linkedHere ? ' · مرتبط بهذا الحفل' : elsewhere ? ' · مرتبط بحفل آخر' : ''}
-                        </span>
-                      </label>
+                        <button
+                          type="button"
+                          className="add-cer-fileremove"
+                          aria-label={`إزالة الملف ${f.original_name}`}
+                          disabled={linkBusy || linkedHere || createdEventId != null}
+                          onClick={() => handleFileToggle(id, false)}
+                        >
+                          إزالة
+                        </button>
+                        <span className="add-cer-filemeta">{fileMeta(f)}</span>
+                      </div>
                       {result && (
                         <p className={`add-cer-filestatus ${result.state}`} role={result.state === 'failed' ? 'alert' : 'status'}>
                           {result.text}
@@ -934,6 +962,42 @@ export default function AdminAddCeremony({
                   );
                 })}
               </div>
+
+              {/* the rest of the files sit in a drop-down, so a long list never fills the page */}
+              {!filesLoading && dataFiles.length > 0 && createdEventId == null && (
+                <div className="add-cer-filepicker">
+                  {dataFiles.length > 6 && (
+                    <input
+                      type="search"
+                      className="add-cer-input"
+                      placeholder="ابحث باسم الملف"
+                      aria-label="ابحث في ملفات البيانات"
+                      value={fileQuery}
+                      onChange={(e) => setFileQuery(e.target.value)}
+                    />
+                  )}
+                  <select
+                    className="add-cer-select"
+                    aria-label="إضافة ملف بيانات"
+                    value=""
+                    disabled={linkBusy || availableFiles.length === 0}
+                    onChange={(e) => {
+                      if (e.target.value) handleFileToggle(e.target.value, true);
+                    }}
+                  >
+                    <option value="">
+                      {availableFiles.length === 0
+                        ? fileQuery.trim() ? 'لا ملف بهذا الاسم' : 'لا توجد ملفات أخرى'
+                        : chosenFiles.length ? 'إضافة ملف آخر...' : 'اختر ملفاً...'}
+                    </option>
+                    {availableFiles.map((f) => (
+                      <option key={f.id} value={String(f.id)}>
+                        {f.original_name} — {fileMeta(f)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {filesError && (
                 <p className="add-cer-file-error" role="alert">{filesError}</p>

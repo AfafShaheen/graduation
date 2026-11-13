@@ -4,10 +4,12 @@ import fs from 'node:fs';
 
 const read = (p) => fs.readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf-8');
 
-test('a ceremony takes several data files, ticked from a list', () => {
+test('a ceremony takes several data files, chosen from a drop-down', () => {
   const form = read('pages/admin/AdminAddCeremony.jsx');
   assert.ok(form.includes('const [selectedFileIds, setSelectedFileIds] = useState([])'));
-  assert.ok(form.includes('type="checkbox"') && form.includes('handleFileToggle(id, e.target.checked)'));
+  assert.ok(!form.includes('type="checkbox"'), 'no list of every file on the page');
+  assert.ok(form.includes('aria-label="إضافة ملف بيانات"') && form.includes('availableFiles.map'));
+  assert.ok(form.includes('dataFiles.length > 6'), 'a search box appears when there are many files');
   assert.ok(!form.includes('selectedFileId,') && !form.includes('setSelectedFileId('), 'the single-file state is gone');
   assert.ok(!form.includes('add-cer-select"\n                value={selectedFileId}'));
 });
@@ -30,10 +32,11 @@ test('each file shows its own result and its own errors', () => {
   assert.ok(!form.includes('const [linkErrors'), 'no shared error list for all files');
 });
 
-test('files already linked to the ceremony cannot be unticked, files of another ceremony are marked', () => {
+test('files already linked to the ceremony cannot be removed, files of another ceremony are marked', () => {
   const form = read('pages/admin/AdminAddCeremony.jsx');
   assert.ok(form.includes('disabled={linkBusy || linkedHere || createdEventId != null}'));
   assert.ok(form.includes("' · مرتبط بحفل آخر'") && form.includes("' · مرتبط بهذا الحفل'"));
+  assert.ok(form.includes('onClick={() => handleFileToggle(id, false)}'));
   assert.ok(form.includes('confirmReassign(file)'));
 });
 

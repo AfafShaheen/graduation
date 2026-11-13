@@ -13,11 +13,14 @@ const memory = () => {
 };
 
 test('each page after registration belongs to one stage and back', () => {
-  assert.deepEqual(GUIDE_STAGES, ['package', 'payment', 'submitted', 'ticket']);
+  assert.deepEqual(GUIDE_STAGES, ['package']);
   for (const stage of GUIDE_STAGES) assert.equal(stageForPath(pathForStage(stage)), stage);
   assert.equal(stageForPath('/payment-rejected'), null);
   assert.equal(stageForPath('/login'), null);
-  assert.equal(guidePath('payment'), '/guide/payment');
+  assert.equal(stageForPath('/payment'), null, 'the payment page has no guide in front of it');
+  assert.equal(stageForPath('/payment-submitted'), null);
+  assert.equal(stageForPath('/my-ticket'), null);
+  assert.equal(guidePath('package'), '/guide/package');
 });
 
 test('a guide is pending until it is read, per graduate and per stage', () => {
@@ -25,7 +28,7 @@ test('a guide is pending until it is read, per graduate and per stage', () => {
   assert.equal(pendingGuideFor('/tickets', 'a@x.sy', store), 'package');
   ackGuide('a@x.sy', 'package', store);
   assert.equal(pendingGuideFor('/tickets', 'a@x.sy', store), null);
-  assert.equal(pendingGuideFor('/payment', 'a@x.sy', store), 'payment', 'the next stage still needs its guide');
+  assert.equal(pendingGuideFor('/payment', 'a@x.sy', store), null, 'the pages after the package have no guide');
   assert.equal(pendingGuideFor('/tickets', 'b@x.sy', store), 'package', 'another graduate on the same device reads it again');
   assert.equal(ackKey(' A@X.sy ', 'package'), ackKey('a@x.sy', 'package'));
   assert.equal(pendingGuideFor('/payment-rejected', 'a@x.sy', store), null);
@@ -48,10 +51,10 @@ test('the ticket guard sends a graduate to the guide of a stage he has not read'
   assert.match(app, /navigate\("\/tickets", \{ replace: true \}\)/);
 });
 
-test('the guide has no "do not show again" box and the five guides exist', () => {
+test('the guide has no "do not show again" box and the two guides exist', () => {
   const guide = read('pages/student/GraduateGuide.jsx');
   assert.doesNotMatch(guide, /لا تعرض لي هذه الصفحة/);
-  for (const phase of ['before', 'package', 'payment', 'submitted', 'ticket']) {
+  for (const phase of ['before', 'package']) {
     assert.match(guide, new RegExp(`\n  ${phase}: \{`), phase);
   }
   assert.match(guide, /mode === 'required'/);
@@ -107,4 +110,17 @@ test('once the account waits for its code there is no way back to the first two 
   const otp = route('/otp');
   assert.ok(!otp.includes('onBack'), 'the code page has no back arrow in registration');
   assert.match(read('pages/student/Otp.jsx'), /<StageHeader current="register"[^>]*onBack={onBack}/);
+});
+
+test('the payment, waiting and ticket pages say their own words once, in place of their old guides', () => {
+  const guide = read('pages/student/GraduateGuide.jsx');
+  for (const phase of ['payment', 'submitted', 'ticket']) {
+    assert.doesNotMatch(guide, new RegExp(`\n  ${phase}: \\{`), phase);
+  }
+  assert.match(read('pages/student/ShamCashPayment.jsx'), /PAYMENT_WARNING_TEXT/);
+  assert.match(read('pages/student/OrderStatus.jsx'), /REJECTED_RESEND_TEXT/);
+  assert.match(read('pages/student/MyTicket.jsx'), /TICKET_DAY_POINTS\.map/);
+  for (const file of ['ShamCashPayment', 'OrderStatus', 'OrderRejected', 'MyTicket']) {
+    assert.doesNotMatch(read(`pages/student/${file}.jsx`), /guide="(payment|submitted|ticket)"/, file);
+  }
 });

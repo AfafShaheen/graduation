@@ -7,12 +7,10 @@ import { ackGuide, hasAckedGuide } from '../../utils/guideAck';
 const PREVIOUS_LABELS = {
   before: 'إرشادات التسجيل',
   package: 'اختيار الباقة',
-  payment: 'الدفع عبر شام كاش',
-  submitted: 'حالة الطلب',
 };
 
 /*
- * /guide/:stage — the guide of one stage after registration (package, payment, submitted, ticket).
+ * /guide/:stage — the guide of one stage after registration (only the package stage).
  * First time: it must be read ("read and understood") and then the graduate continues to the
  * page of that stage. Afterwards it opens in review mode (read, then go back).
  */

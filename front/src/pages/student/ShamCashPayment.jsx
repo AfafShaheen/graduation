@@ -1,4 +1,5 @@
 import StageHeader from '../../components/StageHeader';
+import { PAYMENT_WARNING_TEXT } from '../../config/stageTexts';
 import { PAYMENT_STEPS } from '../../config/paymentSteps';
 import { guideKeyOf } from '../../config/guideKeys';
 import React, { useEffect, useRef, useState } from 'react';
@@ -259,7 +260,7 @@ export default function ShamCashPayment({ onBack }) {
   return (
     <div className="sc-app-container">
       <main className="sc-mobile-shell">
-        <StageHeader current="payment" guide="payment" canChangePackage onBack={() => (onBack ? onBack() : window.history.back())} />
+        <StageHeader current="payment" canChangePackage onBack={() => (onBack ? onBack() : window.history.back())} />
 
         <div className="sc-main-stage">
           <div className="sc-status-row">
@@ -281,6 +282,10 @@ export default function ShamCashPayment({ onBack }) {
               </li>
             ))}
           </ol>
+          <p className="sc-steps-warning" role="note">
+            <span className="sc-symbol" aria-hidden="true">warning</span>
+            <span>{PAYMENT_WARNING_TEXT}</span>
+          </p>
 
 
           {loading && <p className="sc-qr-caption">جارٍ تحميل معلومات الدفع...</p>}

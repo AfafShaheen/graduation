@@ -1,13 +1,10 @@
-// The stages of a graduate after registration. Each one has a guide page that must be
-// read the first time the stage opens (see guideAck.js).
+// The stages that have a guide page, read once before the page opens (see guideAck.js). Only the
+// package stage has one: the payment, waiting and ticket pages say their own words themselves.
 
-export const GUIDE_STAGES = ['package', 'payment', 'submitted', 'ticket'];
+export const GUIDE_STAGES = ['package'];
 
 const PATH_BY_STAGE = {
   package: '/tickets',
-  payment: '/payment',
-  submitted: '/payment-submitted',
-  ticket: '/my-ticket',
 };
 
 export const pathForStage = (stage) => PATH_BY_STAGE[stage] || '/tickets';

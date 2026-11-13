@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, ConfigDict, model_validator, field_valida
 from datetime import date, datetime, time
 from decimal import Decimal
 from typing import List, Optional
+from urllib.parse import urlparse
 
 _SEAT_PREFIX_RE = re.compile(r"^[^\W\d_]{1,3}$", re.UNICODE)
 _SEAT_PREFIX_ERROR = "بادئة المقاعد يجب أن تكون من 1 إلى 3 أحرف فقط دون أرقام أو رموز."
@@ -62,6 +63,37 @@ def registration_before_ceremony(
         raise ValueError(REGISTRATION_BEFORE_CEREMONY)
 
 
+NAME_BLANK = "اسم الحفل مطلوب ولا يكفي أن يكون مسافات."
+WHATSAPP_LINK_INVALID = "رابط مجموعة واتساب غير صالح: يجب أن يبدأ بـ https:// وأن يكون رابطاً كاملاً بلا مسافات."
+
+
+def _clean_name(value: Optional[str]) -> Optional[str]:
+    """Trim and collapse inner spaces; a name of spaces only is no name."""
+    if value is None:
+        return None
+    cleaned = " ".join(str(value).split())
+    if len(cleaned) < 2:
+        raise ValueError(NAME_BLANK)
+    return cleaned
+
+
+def _clean_whatsapp_link(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    link = str(value).strip()
+    parsed = urlparse(link)
+    if (
+        not link
+        or len(link) > 500
+        or any(ch.isspace() for ch in link)
+        or parsed.scheme not in ("http", "https")
+        or not parsed.netloc
+        or "." not in parsed.netloc
+    ):
+        raise ValueError(WHATSAPP_LINK_INVALID)
+    return link
+
+
 def _validate_seat_prefix(value: Optional[str]) -> Optional[str]:
     value = _normalize_seat_prefix(value)
     if value is not None and not _SEAT_PREFIX_RE.match(value):
@@ -83,6 +115,16 @@ class EventCreate(BaseModel):
     whatsapp_group_link: str
     packages: List[PackageItem] = Field(..., min_length=1)
     college_names: List[str] = Field(..., min_length=1)
+
+    @field_validator("name")
+    @classmethod
+    def clean_name(cls, value: Optional[str]) -> Optional[str]:
+        return _clean_name(value)
+
+    @field_validator("whatsapp_group_link")
+    @classmethod
+    def clean_whatsapp_link(cls, value: Optional[str]) -> Optional[str]:
+        return _clean_whatsapp_link(value)
 
     @field_validator("seat_prefix")
     @classmethod
@@ -117,6 +159,16 @@ class EventUpdate(BaseModel):
     whatsapp_group_link: Optional[str] = None
     packages: Optional[List[PackageItem]] = None
     college_names: Optional[List[str]] = Field(None, min_length=1)
+
+    @field_validator("name")
+    @classmethod
+    def clean_name(cls, value: Optional[str]) -> Optional[str]:
+        return _clean_name(value)
+
+    @field_validator("whatsapp_group_link")
+    @classmethod
+    def clean_whatsapp_link(cls, value: Optional[str]) -> Optional[str]:
+        return _clean_whatsapp_link(value)
 
     @field_validator("seat_prefix")
     @classmethod

@@ -1,4 +1,5 @@
 import StageHeader from '../../components/StageHeader';
+import { REJECTED_RESEND_TEXT } from '../../config/stageTexts';
 import VolunteerQuestionsCard from '../../components/VolunteerQuestionsCard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -72,7 +73,7 @@ export default function OrderStatus() {
   return (
     <div className="os-app-container">
       <main className="os-mobile-shell">
-        <StageHeader current="payment" guide="submitted" sub="قيد المراجعة" />
+        <StageHeader current="payment" sub="قيد المراجعة" />
 
         <div className="os-main-stage">
           {loading && !data && <p className="os-card-subtext">جارٍ تحميل حالة الطلب...</p>}
@@ -117,6 +118,7 @@ export default function OrderStatus() {
                 <p className="os-critical-text">
                   وإن تأخّر طلبك أو واجهتك أي مشكلة، راجعنا قبل موعد الحفل بوقت كافٍ.
                 </p>
+                <p className="os-critical-text">{REJECTED_RESEND_TEXT}</p>
               </section>
 
               {/* while he waits: two optional questions */}

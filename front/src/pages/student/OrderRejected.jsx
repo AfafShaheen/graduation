@@ -36,7 +36,7 @@ export default function OrderRejected() {
   return (
     <div className="or-app-container">
       <main className="or-mobile-shell">
-        <StageHeader current="payment" guide="payment" canChangePackage sub="تم رفض الدفع" />
+        <StageHeader current="payment" canChangePackage sub="تم رفض الدفع" />
 
         <div className="or-content-body">
           <section className="or-card-box">

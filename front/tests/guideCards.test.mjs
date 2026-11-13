@@ -30,7 +30,6 @@ test('the guide shows the key and the FULL text of each point, never one instead
   const guide = read('pages/student/GraduateGuide.jsx');
   assert.ok(guide.includes('<strong className="guide-card-key">{key}</strong>'));
   assert.ok(guide.includes('<span className="guide-card-text">{text}</span>'));
-  assert.ok(guide.includes('steps: PAYMENT_STEPS,'));
   assert.ok(guide.includes('guideReading(phaseConfig)'));
 });
 
@@ -48,6 +47,7 @@ test('the payment page shows the same four steps as the guide, from one source',
   assert.ok(page.includes('PAYMENT_STEPS.map((text, i)'));
   assert.ok(page.indexOf('className="sc-steps"') < page.indexOf('sc-card-box'), 'the steps are above the fields');
   assert.ok(!read('pages/student/GraduateGuide.jsx').includes('امسح رمز QR أو انسخ رقم حساب شام كاش'), 'the steps are not written twice');
+  assert.ok(!read('pages/student/GraduateGuide.jsx').includes('PAYMENT_STEPS'), 'the guide has no payment stage any more');
 });
 
 test('the no-refund rule rises as a short sheet when he confirms the package', () => {

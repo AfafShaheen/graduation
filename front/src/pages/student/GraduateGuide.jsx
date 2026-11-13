@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { BEFORE_YOU_START_TEXT } from '../../config/fieldHints';
 import { guideKeyOf, guideReading } from '../../config/guideKeys';
-import { PAYMENT_STEPS } from '../../config/paymentSteps';
 import { countLabel } from '../../utils/countLabel';
 import '../../style/GraduationForm.css';
 import '../../style/GraduateGuide.css';
@@ -11,22 +10,12 @@ import useContactPhone from '../../hooks/useContactPhone';
 import { CEREMONY_TITLE, BATCH_BADGE } from '../../config/brand';
 import GraduateFooter from '../../components/GraduateFooter';
 import UnionBrand from '../../components/UnionBrand';
-import {
-  ID_PROOF_TEXT,
-  NO_REFUND_TEXT,
-  QR_REQUIRED_TEXT,
-} from '../../config/graduateTexts';
+import { NO_REFUND_TEXT } from '../../config/graduateTexts';
 
 /* ==========================================================================
    دليل التذكرة: صفحة إرشادات بتظهر بعد تسجيل الدخول وقبل اختيار التذكرة
    عدّل النصوص من الثوابت تحت بدون ما تلمس الواجهة
    ========================================================================== */
-
-const PAYMENT_STATUSES = [
-  { label: 'بانتظار الدفع', tone: 'neutral' },
-  { label: 'قيد المعالجة', tone: 'orange' },
-  { label: 'مؤكدة', tone: 'green' },
-];
 
 /* كل مرحلة = صفحة كاملة. لا يوجد قسم أسئلة شائعة. */
 const PHASES = {
@@ -91,72 +80,6 @@ const PHASES = {
     warning: { tone: 'red', text: NO_REFUND_TEXT },
   },
 
-  payment: {
-    subband: 'الدفع عبر شام كاش',
-    title: 'الدفع عبر شام كاش',
-    subtitle: 'حوّل المبلغ ثم أدخل بيانات التحويل.',
-    sections: [
-      {
-        icon: 'payments',
-        title: 'خطوات الدفع',
-        steps: PAYMENT_STEPS,
-      },
-    ],
-    warning: { tone: 'orange', text: 'راجع المبلغ والملاحظة قبل التحويل، فالتحويل الخاطئ يؤخر تأكيد تذكرتك.' },
-  },
-
-  submitted: {
-    subband: 'حالة الطلب',
-    title: 'تم استلام دفعتك',
-    subtitle: 'هذا ما سيحدث الآن.',
-    sections: [
-      {
-        icon: 'pending_actions',
-        title: 'ماذا يحدث الآن؟',
-        bullets: [
-          'يراجع الاتحاد دفعتك ويطابقها مع إشعار شام كاش.',
-          'تستغرق المراجعة عادةً من ساعتين إلى 24 ساعة.',
-          'لن يصلك إشعار تلقائي: عُد إلى الموقع وتحقّق بنفسك. عندما تصبح الحالة «مؤكدة» يظهر رمز QR.',
-        ],
-        statuses: true,
-      },
-      {
-        icon: 'priority_high',
-        title: 'إن حدث تأخير أو رفض',
-        bullets: [
-          'إن رُفض الدفع يظهر لك السبب، ويمكنك إعادة الإرسال ما دام التسجيل مفتوحاً.',
-          'إن تأخّر طلبك أكثر من 24 ساعة، تواصل معنا على الواتساب (الرقم في أسفل الصفحة).',
-        ],
-      },
-    ],
-    warning: { tone: 'red', text: QR_REQUIRED_TEXT },
-  },
-
-  ticket: {
-    subband: 'يوم الحفل',
-    title: 'تذكرتك جاهزة: ماذا بعد؟',
-    subtitle: 'تم تأكيد دفعك. احتفظ بهذه الإرشادات ليوم الحفل.',
-    sections: [
-      {
-        icon: 'qr_code_2',
-        title: 'رموز QR',
-        bullets: [
-          'رمز لك ورمز لكل مرافق، وكل رمز يُستخدم مرة واحدة فقط.',
-          'لا تنشر رموزك، وأعطِ كل مرافق رمزه.',
-          'احتفظ بلقطة شاشة واشحن هاتفك يوم الحفل.',
-        ],
-      },
-      {
-        icon: 'celebration',
-        title: 'يوم الحفل',
-        bullets: [
-          'الخريج يدخل أولاً: رموز المرافقين لا تعمل قبل مسح رمز الخريج، فاحضروا معاً.',
-          'لا يمكن إدخال مرافقين أكثر من العدد المحدّد في تذكرتك.',
-        ],
-      },
-    ],
-    warning: { tone: 'orange', text: `إثبات الشخصية إلزامي: ${ID_PROOF_TEXT}` },
-  },
 };
 
 function SectionHeader({ number, icon, title }) {
@@ -206,7 +129,7 @@ function Warning({ children, tone = 'orange' }) {
 }
 
 /*
-  phase: before | package | payment | submitted | ticket
+  phase: before | package
   mode:  required (first time: must tick "read and understood") | review (already read: just go back)
 */
 export default function GraduateGuide({ phase = 'package', mode = 'required', onContinue, onBack, previous = [], supportPhone = '' }) {
@@ -240,26 +163,6 @@ export default function GraduateGuide({ phase = 'package', mode = 'required', on
         </ol>
       )}
 
-      {section.statuses && (
-        <div className="guide-status-block">
-          <span className="guide-status-label">حالات التذكرة:</span>
-          <div className="guide-status-flow">
-            {PAYMENT_STATUSES.map((status, i) => (
-              <React.Fragment key={status.label}>
-                {i > 0 && (
-                  <span className="material-symbols-outlined guide-status-arrow" aria-hidden="true">
-                    arrow_back
-                  </span>
-                )}
-                <span className={`guide-status-chip ${status.tone}`}>{status.label}</span>
-              </React.Fragment>
-            ))}
-          </div>
-          <p className="guide-status-note">
-            أو <strong>مرفوضة</strong> مع ذكر السبب، ويمكنك إعادة الإرسال.
-          </p>
-        </div>
-      )}
     </section>
   );
 

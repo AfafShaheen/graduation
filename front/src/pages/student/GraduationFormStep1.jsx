@@ -24,7 +24,6 @@ const TOP_RANK_ERROR_CODES = ['TOP_RANK_NOT_HONOR', 'TOP_RANK_SHOULD_BE_HONOR', 
 export function toVerifyStep1Payload(formData, colleges) {
   const college = colleges.find((c) => String(c.id) === String(formData.faculty));
   const major = college?.majors?.find((m) => String(m.id) === String(formData.major));
-  const gpaValue = String(formData.gpa ?? '').trim();
 
   return {
     college_id: college?.id || null,
@@ -35,8 +34,6 @@ export function toVerifyStep1Payload(formData, colleges) {
     father_name: formData.fatherName.trim(),
     mother_name: formData.motherName.trim(),
     gender: GENDER_MAP[formData.gender],
-    // المعدل اختياري (D2): يُرسل فقط عند إدخاله
-    gpa: gpaValue === '' ? null : Number(gpaValue),
     top_rank: TOP_RANK_MAP[formData.topRank] ?? null,
   };
 }
@@ -74,15 +71,6 @@ const validators = {
     if (t.length > 100) return 'الرقم الجامعي طويل جداً';
     return '';
   },
-  gpa: (v) => {
-    const t = String(v ?? '').trim();
-    if (!t) return ''; // المعدل اختياري (D2)
-    const n = Number(t);
-    if (!Number.isFinite(n)) return 'يرجى إدخال المعدل كرقم';
-    if (n < 0 || n > 100) return 'المعدل يجب أن يكون بين 0 و 100';
-    if (!/^\d+(?:\.\d{1,2})?$/.test(t)) return 'المعدل يقبل منزلتين عشريتين كحد أقصى';
-    return '';
-  },
   fatherName: (v) => {
     const t = v.trim();
     if (!t) return 'اسم الأب مطلوب';
@@ -118,7 +106,6 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     major: 'none',
     studentId: '',
     topRank: 'none',
-    gpa: '',
     fatherName: '',
     motherName: '',
   });
@@ -177,16 +164,6 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
 
     // an Arabic keypad types ٢٠١٩...: it is the same university id
     if (name === 'studentId') value = toLatinDigits(value);
-
-    if (name === 'gpa') {
-      value = value
-        .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)) // الأرقام العربية → إنجليزية
-        .replace(/٫/g, '.')
-        .replace(/[^0-9.]/g, ''); // أرقام ونقطة فقط
-      const [whole, ...rest] = value.split('.');
-      value = rest.length ? `${whole}.${rest.join('').slice(0, 2)}` : whole; // نقطة وحدة، ومنزلتين عشريتين
-      if (Number(value) > 100) return; // ما بنقبل أكتر من 100
-    }
 
     setFormData((prev) => ({
       ...prev,
@@ -486,33 +463,6 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 <span className="material-symbols-outlined input-icon">expand_more</span>
               </div>
               <FieldError message={errors.topRank} />
-            </div>
-
-            {/* المعدل كنسبة مئوية */}
-            <div className="form-group">
-              <div className="label-row">
-                <label htmlFor="reg-gpa" className="form-label" style={{ margin: 0 }}>
-                  المعدل (نسبة مئوية)
-                </label>
-                
-              </div>
-              <div className="input-wrapper">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  id="reg-gpa"
-                  name="gpa"
-                  className={`form-input input-with-icon ${errors.gpa ? 'error' : ''}`}
-                  placeholder="مثلاً: 82.5"
-                  value={formData.gpa}
-                  onChange={handleInputChange}
-                  aria-invalid={!!errors.gpa}
-                  aria-describedby="hint-gpa"
-                />
-                <span className="material-symbols-outlined input-icon">percent</span>
-              </div>
-              <p className="field-hint" id="hint-gpa">{FIELD_HINTS.gpa}</p>
-              <FieldError message={errors.gpa} />
             </div>
 
             <h3 className="form-section-title">عائلتك</h3>

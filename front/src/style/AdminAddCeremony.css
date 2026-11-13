@@ -1021,3 +1021,21 @@
 .add-cer-filestatus.busy { color: #594138; }
 .add-cer-fileerrors { margin-top: 8px; }
 .add-cer-fileerrors summary { cursor: pointer; font-weight: 700; }
+
+/* the file drop-down: chosen files above, the rest in a select (with a search box when there are many) */
+.add-cer-filepicker { display: flex; flex-direction: column; gap: 8px; }
+.add-cer-fileremove {
+  margin-inline-start: auto;
+  border: 1px solid #eedebd;
+  background: #fff;
+  color: #ba1a1a;
+  border-radius: 10px;
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.add-cer-fileremove:disabled { opacity: 0.45; cursor: not-allowed; }
+.add-cer-filecheck { cursor: default; }
+.add-cer-filemeta { padding-inline-start: 0; }

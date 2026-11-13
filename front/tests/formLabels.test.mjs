@@ -7,7 +7,7 @@ const read = (p) => fs.readFileSync(new URL(`../src/${p}`, import.meta.url), 'ut
 test('every field of registration step 1 is tied to its label', () => {
   const src = read('pages/student/GraduationFormStep1.jsx');
   const names = [...src.matchAll(/^\s*name="(\w+)"\s*$/gm)].map((m) => m[1]);
-  assert.ok(names.length >= 10);
+  assert.ok(names.length >= 9);
   for (const name of names) {
     assert.match(src, new RegExp(`id="reg-${name}"`), `${name} has no id`);
     assert.match(src, new RegExp(`htmlFor="reg-${name}"`), `${name} has no label`);

@@ -730,3 +730,5 @@
 .sc-step-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .sc-step-key { font-size: 14px; font-weight: 700; color: var(--brand-green); line-height: 1.6; }
 .sc-step-text { font-size: 13px; line-height: 1.9; color: #594138; overflow-wrap: anywhere; }
+
+.sc-steps-warning { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 10px 12px; border-radius: 14px; background: #fff3e8; border: 1px solid #ffcfae; color: #8a3a00; font-size: 13px; font-weight: 700; line-height: 1.7; }
