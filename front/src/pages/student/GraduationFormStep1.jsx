@@ -1,4 +1,5 @@
 import useRevealOnShow from '../../hooks/useRevealOnShow';
+import { FIELD_HINTS } from '../../config/fieldHints';
 import { toLatinDigits } from '../../utils/digits';
 import StageHeader from '../../components/StageHeader';
 import React, { useState, useEffect } from 'react';
@@ -325,7 +326,9 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   value={formData.firstName}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.firstName}
+                  aria-describedby="hint-firstName"
                 />
+                <p className="field-hint" id="hint-firstName">{FIELD_HINTS.firstName}</p>
                 <FieldError message={errors.firstName} />
               </div>
               <div>
@@ -341,7 +344,9 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   value={formData.lastName}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.lastName}
+                  aria-describedby="hint-lastName"
                 />
+                <p className="field-hint" id="hint-lastName">{FIELD_HINTS.lastName}</p>
                 <FieldError message={errors.lastName} />
               </div>
             </div>
@@ -440,7 +445,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 <label htmlFor="reg-studentId" className="form-label" style={{ margin: 0 }}>
                   الرقم الجامعي <span className="required-star">*</span>
                 </label>
-                <span className="label-hint">مكتوب على البطاقة الجامعية</span>
+                
               </div>
               <div className="input-wrapper">
                 <input
@@ -453,9 +458,11 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   value={formData.studentId}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.studentId}
+                  aria-describedby="hint-studentId"
                 />
                 <span className="material-symbols-outlined input-icon">pin</span>
               </div>
+              <p className="field-hint" id="hint-studentId">{FIELD_HINTS.studentId}</p>
               <FieldError message={errors.studentId} />
             </div>
 
@@ -487,7 +494,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                 <label htmlFor="reg-gpa" className="form-label" style={{ margin: 0 }}>
                   المعدل (نسبة مئوية)
                 </label>
-                <span className="label-hint">اختياري، من 0 إلى 100</span>
+                
               </div>
               <div className="input-wrapper">
                 <input
@@ -500,9 +507,11 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   value={formData.gpa}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.gpa}
+                  aria-describedby="hint-gpa"
                 />
                 <span className="material-symbols-outlined input-icon">percent</span>
               </div>
+              <p className="field-hint" id="hint-gpa">{FIELD_HINTS.gpa}</p>
               <FieldError message={errors.gpa} />
             </div>
 
@@ -522,7 +531,9 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   value={formData.fatherName}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.fatherName}
+                  aria-describedby="hint-fatherName"
                 />
+                <p className="field-hint" id="hint-fatherName">{FIELD_HINTS.fatherName}</p>
                 <FieldError message={errors.fatherName} />
               </div>
               <div>
@@ -538,7 +549,9 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
                   value={formData.motherName}
                   onChange={handleInputChange}
                   aria-invalid={!!errors.motherName}
+                  aria-describedby="hint-motherName"
                 />
+                <p className="field-hint" id="hint-motherName">{FIELD_HINTS.motherName}</p>
                 <FieldError message={errors.motherName} />
               </div>
             </div>

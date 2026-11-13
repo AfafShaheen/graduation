@@ -555,3 +555,11 @@
   color: var(--brand-green);
 }
 .form-section-title:first-of-type { margin-top: 4px; }
+
+/* One short sentence under a field (the sentence the guides used to carry) */
+.field-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #725b51;
+}

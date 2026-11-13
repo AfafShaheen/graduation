@@ -1,4 +1,5 @@
 import useRevealOnShow from "../../hooks/useRevealOnShow";
+import { FIELD_HINTS } from '../../config/fieldHints';
 import StageHeader from '../../components/StageHeader';
 import React, { useState } from "react";
 import "../../style/GraduationForm.css";
@@ -257,9 +258,7 @@ export default function GraduationFormStep2({
                 </span>
               </div>
               <FieldError message={errors.phone} />
-              <p className="label-hint" style={{ marginTop: "4px" }}>
-                هذا الرقم هو رقم واتساب للتواصل معك عند الحاجة
-              </p>
+              <p className="field-hint" id="hint-phone">{FIELD_HINTS.phone}</p>
             </div>
 
             {/* البريد الإلكتروني */}
@@ -292,9 +291,7 @@ export default function GraduationFormStep2({
                 </span>
               </div>
               <FieldError message={errors.email} />
-              <p className="label-hint" style={{ marginTop: "4px" }}>
-                سيتم إرسال الرمز عبر بريدك الإلكتروني
-              </p>
+              <p className="field-hint" id="hint-email">{FIELD_HINTS.email}</p>
             </div>
 
             {/* كلمة السر: new-password بتمنع المتصفح من تعبئة كلمات محفوظة */}

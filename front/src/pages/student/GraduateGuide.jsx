@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BEFORE_YOU_START_TEXT } from '../../config/fieldHints';
 import { guideKeyOf, guideReading } from '../../config/guideKeys';
 import { PAYMENT_STEPS } from '../../config/paymentSteps';
 import { countLabel } from '../../utils/countLabel';
@@ -45,12 +46,7 @@ const PHASES = {
       {
         icon: 'checklist',
         title: 'جهّز قبل البدء',
-        bullets: [
-          'اسمك وكنيتك واسم الأب واسم الأم كما هي في سجلات الجامعة.',
-          'رقمك الجامعي ومعدلك.',
-          'بريد إلكتروني تستخدمه فعلاً، لأن رمز التحقق سيصلك عليه.',
-          'رقم واتساب للتواصل.',
-        ],
+        bullets: [BEFORE_YOU_START_TEXT],
       },
       {
         icon: 'format_list_numbered',

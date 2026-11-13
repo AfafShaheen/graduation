@@ -2,13 +2,13 @@
 // full text. The full text is never shortened or removed; it stays under its key sentence, word for word.
 // Short points need no key (the point itself is the sentence), so they are simply absent here.
 import { PAYMENT_NOTE_TEXT } from './graduateTexts.js';
+import { BEFORE_YOU_START_TEXT } from './fieldHints.js';
 
 export const GUIDE_KEYS = {
   // before
   'الخريجون المسجّلون في سجلات الجامعة لهذا الفوج فقط.': 'لخريجي هذا الفوج فقط',
   'يجب أن تكون كليتك مشمولة بالحفل وأن تكون فترة التسجيل مفتوحة.': 'كليتك مشمولة والتسجيل مفتوح',
-  'اسمك وكنيتك واسم الأب واسم الأم كما هي في سجلات الجامعة.': 'أسماؤك كما في الجامعة',
-  'بريد إلكتروني تستخدمه فعلاً، لأن رمز التحقق سيصلك عليه.': 'بريد تستخدمه فعلاً',
+  [BEFORE_YOU_START_TEXT]: 'جهّز قبل أن تبدأ',
   'لكل خريج حساب واحد وتذكرة واحدة.': 'حساب واحد لكل خريج',
   'لا تسجّل لصديقك ببريدك، ولا تعطِ بياناتك لأحد.': 'لا تسجّل عن غيرك',
   // package

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { GUIDE_KEYS, guideKeyOf, guideReading } from '../src/config/guideKeys.js';
 import { PAYMENT_STEPS } from '../src/config/paymentSteps.js';
+import { BEFORE_YOU_START_TEXT } from '../src/config/fieldHints.js';
 import { PAYMENT_NOTE_TEXT, NO_REFUND_TEXT } from '../src/config/graduateTexts.js';
 
 const read = (p) => fs.readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf-8');
@@ -10,7 +11,7 @@ const read = (p) => fs.readFileSync(new URL(`../src/${p}`, import.meta.url), 'ut
 test('every key sentence belongs to a point that exists in the guides, so no key is left over', () => {
   const guide = read('pages/student/GraduateGuide.jsx');
   for (const text of Object.keys(GUIDE_KEYS)) {
-    if (text === PAYMENT_NOTE_TEXT || PAYMENT_STEPS.includes(text)) continue; // written once, in config/paymentSteps.js
+    if (text === PAYMENT_NOTE_TEXT || text === BEFORE_YOU_START_TEXT || PAYMENT_STEPS.includes(text)) continue; // written once, in config/paymentSteps.js
     assert.ok(guide.includes(text), `a key for a text that is not in the guide: ${text.slice(0, 40)}`);
   }
 });
