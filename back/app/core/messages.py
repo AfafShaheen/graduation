@@ -175,6 +175,7 @@ AUDIT_ACTION_LABELS = {
     "SHAMCASH_QR_DELETED": "حذف رمز دفع الشام كاش",
     "SCANNER_CREATED": "إنشاء حساب ماسح",
     "SCANNER_DELETED": "حذف حساب ماسح",
+    "SCANNER_PASSWORD_RESET": "إعادة تعيين كلمة سر ماسح",
     "CREATE_MAJOR": "إنشاء تخصص",
     "UPDATE_MAJOR": "تعديل تخصص",
     "DELETE_MAJOR": "حذف تخصص",

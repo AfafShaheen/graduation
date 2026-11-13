@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import '../../style/AdminScannersSettings.css';
 import AdminSidebar from '../../components/AdminSidebar';
 import { useAdminEvents } from './hooks/useAdminEvents.js';
-import { useAdminScanners, createScanner, deleteScanner } from './hooks/useAdminScanners.js';
+import { useAdminScanners, createScanner, deleteScanner, resetScannerPassword } from './hooks/useAdminScanners.js';
+import { generateScannerPassword, NO_PASSWORD_TEXT } from '../../utils/scannerPassword.js';
 import { ApiError } from '../../api/admin.js';
 import { countLabel } from '../../utils/countLabel.js';
 
@@ -38,6 +39,8 @@ export default function AdminScannersSettings({
   const [newScannerPass, setNewScannerPass] = useState('');
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [resettingId, setResettingId] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
 
   useEffect(() => {
     if (!scannerEventId && events.length > 0) {
@@ -58,7 +61,7 @@ export default function AdminScannersSettings({
   // إخفاء الإشعار تلقائياً
   useEffect(() => {
     if (!notice) return undefined;
-    const t = setTimeout(() => setNotice(''), 3500);
+    const t = setTimeout(() => setNotice(''), notice.includes('كلمة السر الجديدة') ? 20000 : 3500);
     return () => clearTimeout(t);
   }, [notice]);
 
@@ -87,6 +90,33 @@ export default function AdminScannersSettings({
       setActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
     } finally {
       setCreating(false);
+    }
+  };
+
+  // copy the password to the clipboard (the admin reads it to a volunteer or sends it)
+  const handleCopy = async (item) => {
+    if (!item.password) return;
+    try {
+      await navigator.clipboard.writeText(item.password);
+      setCopiedId(item.id);
+      setTimeout(() => setCopiedId((id) => (id === item.id ? null : id)), 1800);
+    } catch {
+      setActionError('تعذّر النسخ، انسخ كلمة السر يدوياً.');
+    }
+  };
+
+  const handleResetPassword = async (item) => {
+    setActionError('');
+    if (!window.confirm(`سيُولَّد كلمة سر جديدة للماسح "${item.username}"، وتتوقف القديمة. هل تريد المتابعة؟`)) return;
+    try {
+      setResettingId(item.id);
+      const res = await resetScannerPassword(item.id);
+      setNotice(`كلمة السر الجديدة للماسح ${item.username}: ${res?.password ?? ''}`);
+      await refetchScanners();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'حدث خطأ غير متوقع.');
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -200,16 +230,26 @@ export default function AdminScannersSettings({
                   <div className="scan-set-input-wrap">
                     <input
                       id="scanner-pass"
-                      type="password"
-                      autoComplete="new-password"
+                      type="text"
+                      dir="ltr"
+                      autoComplete="off"
+                      autoCapitalize="none"
                       className="scan-set-input"
-                      placeholder="••••••••"
+                      placeholder="مثلاً: Gate4852"
                       value={newScannerPass}
                       onChange={(e) => setNewScannerPass(e.target.value)}
                       required
                     />
                     <span className="scan-set-symbol scan-set-input-icon right">key</span>
                   </div>
+                  <button
+                    type="button"
+                    className="scan-set-btn-small"
+                    style={{ marginTop: 6 }}
+                    onClick={() => setNewScannerPass(generateScannerPassword())}
+                  >
+                    توليد كلمة سر سهلة القراءة
+                  </button>
                 </div>
 
                 <div className="scan-set-field">
@@ -273,6 +313,7 @@ export default function AdminScannersSettings({
                   <thead>
                     <tr>
                       <th>اسم المستخدم</th>
+                      <th>كلمة السر</th>
                       <th>الحفل المخصص</th>
                       <th>تاريخ الإنشاء</th>
                       <th style={{ textAlign: 'center' }}>الإجراءات</th>
@@ -281,7 +322,7 @@ export default function AdminScannersSettings({
                   <tbody>
                     {scannersLoading && (
                       <tr>
-                        <td colSpan={4} className="scan-set-empty">جارٍ التحميل...</td>
+                        <td colSpan={5} className="scan-set-empty">جارٍ التحميل...</td>
                       </tr>
                     )}
                     {!scannersLoading && scanners.map((item, index) => (
@@ -293,6 +334,19 @@ export default function AdminScannersSettings({
                           </div>
                         </td>
 
+                        <td data-label="كلمة السر">
+                          {item.password ? (
+                            <span className="scan-set-pass">
+                              <code dir="ltr" className="scan-set-pass-text">{item.password}</code>
+                              <button type="button" className="scan-set-btn-small" onClick={() => handleCopy(item)}>
+                                {copiedId === item.id ? 'تم النسخ' : 'نسخ'}
+                              </button>
+                            </span>
+                          ) : (
+                            <span className="scan-set-pass-missing">{NO_PASSWORD_TEXT}</span>
+                          )}
+                        </td>
+
                         <td data-label="الحفل المخصص">
                           <span className="scan-set-college">{eventName(item.event_id)}</span>
                         </td>
@@ -301,6 +355,14 @@ export default function AdminScannersSettings({
 
                         <td className="scan-set-td-actions">
                           <div className="scan-set-actions-cell">
+                            <button
+                              type="button"
+                              className="scan-set-btn-small"
+                              onClick={() => handleResetPassword(item)}
+                              disabled={resettingId === item.id}
+                            >
+                              {resettingId === item.id ? 'جارٍ التعيين...' : 'إعادة تعيين كلمة السر'}
+                            </button>
                             <button
                               type="button"
                               className="scan-set-btn-small danger"

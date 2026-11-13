@@ -3,11 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_admin
-from app.schemas.scanner import ScannerCreate, ScannerResponse
+from app.schemas.scanner import ScannerCreate, ScannerPasswordReset, ScannerResponse
 from app.services.scanner_service import (
     create_scanner_service,
     delete_scanner_service,
     list_scanners_service,
+    reset_scanner_password_service,
 )
 
 router = APIRouter(prefix="/api/admin/scanners", tags=["Admin Scanners"])
@@ -29,6 +30,16 @@ async def list_scanners(
     admin: dict = Depends(get_current_admin),
 ):
     return await list_scanners_service(db, event_id)
+
+
+@router.post("/{scanner_id}/reset-password", response_model=ScannerResponse, status_code=status.HTTP_200_OK)
+async def reset_scanner_password(
+    scanner_id: int,
+    data: ScannerPasswordReset | None = None,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    return await reset_scanner_password_service(db, scanner_id, admin, data.password if data else None)
 
 
 @router.delete("/{scanner_id}", status_code=status.HTTP_200_OK)

@@ -2223,6 +2223,25 @@
         "title": "ScannerLoginRequest",
         "type": "object"
       },
+      "ScannerPasswordReset": {
+        "additionalProperties": false,
+        "description": "Optional: choose the new password. Left out, one is generated.",
+        "properties": {
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          }
+        },
+        "title": "ScannerPasswordReset",
+        "type": "object"
+      },
       "ScannerResponse": {
         "properties": {
           "created_at": {
@@ -2237,6 +2256,17 @@
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
           },
           "username": {
             "title": "Username",
@@ -5978,6 +6008,70 @@
         ]
       }
     },
+    "/api/admin/scanners/{scanner_id}/reset-password": {
+      "post": {
+        "operationId": "reset_scanner_password_api_admin_scanners__scanner_id__reset_password_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scanner_id",
+            "required": true,
+            "schema": {
+              "title": "Scanner Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ScannerPasswordReset"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Data"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScannerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reset Scanner Password",
+        "tags": [
+          "Admin Scanners"
+        ]
+      }
+    },
     "/api/admin/settings": {
       "get": {
         "operationId": "get_settings_api_admin_settings_get",
@@ -7326,6 +7420,31 @@
           }
         },
         "summary": "Reset Password Endpoint",
+        "tags": [
+          "Auth & OTP"
+        ]
+      }
+    },
+    "/api/auth/verification-status": {
+      "get": {
+        "description": "The code page asks this every few seconds: once an admin confirms the e-mail it gets the session.",
+        "operationId": "verification_status_endpoint_api_auth_verification_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verification Status Endpoint",
         "tags": [
           "Auth & OTP"
         ]

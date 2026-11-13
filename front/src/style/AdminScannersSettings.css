@@ -892,3 +892,8 @@
 
 /* the table of scanners: a filter by ceremony next to the refresh button */
 .scan-set-list-filter { width: auto; min-width: 150px; max-width: 240px; padding: 8px 12px; }
+
+/* the password column: the password as it is, with a copy button */
+.scan-set-pass { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.scan-set-pass-text { font-family: Consolas, 'Courier New', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.04em; background: #f8edd9; padding: 3px 8px; border-radius: 8px; user-select: all; }
+.scan-set-pass-missing { font-size: 12px; color: #7a6a60; }

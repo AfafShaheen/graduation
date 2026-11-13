@@ -86,14 +86,14 @@ async def test_create_list_and_nothing_secret_comes_back(client, db, make_event,
     assert created.status_code == 201, created.text
     body = created.json()
     assert body["username"] == "gate1" and body["event_id"] == event.id
-    assert _PW_FIELD not in str(body).lower() and "hash" not in str(body).lower()
+    assert "hash" not in str(body).lower(), "the hash never leaves; the password itself is shown to the admin"
 
     listed = await client.get("/api/admin/scanners", params={"event_id": event.id}, headers=admin_headers)
     assert [s["username"] for s in listed.json()] == ["gate1"]
-    assert _PW_FIELD not in listed.text.lower() and "hash" not in listed.text.lower()
+    assert "hash" not in listed.text.lower()
 
     rows = (await db.execute(select(AuditLogModel).where(AuditLogModel.action == "SCANNER_CREATED"))).scalars().all()
-    assert len(rows) == 1 and _SCANNER_PW not in (rows[0].details or "")
+    assert len(rows) == 1 and _SCANNER_PW not in (rows[0].details or ""), "the log never holds the password"
 
 
 async def test_creation_rules(client, make_event, admin_headers):

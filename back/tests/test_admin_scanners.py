@@ -41,10 +41,10 @@ async def test_create_scanner_returns_public_fields(client, make_admin, make_eve
 
     assert response.status_code == 201
     body = response.json()
-    assert set(body.keys()) == {"id", "username", "event_id", "created_at"}
+    # the password is shown to the admin as it was typed; the hash never leaves
+    assert set(body.keys()) == {"id", "username", "event_id", "created_at", "password"}
     assert body["username"] == "scanner_a"
     assert body["event_id"] == event.id
-    assert "password" not in response.text
     assert "hash" not in response.text
 
 
@@ -167,7 +167,7 @@ async def test_list_scanners_filter(client, make_admin, make_event):
     items = filtered.json()
     assert len(items) == 1
     assert items[0]["username"] == "scan_one"
-    assert "password" not in filtered.text
+    assert "hash" not in filtered.text
 
 
 async def test_delete_scanner(client, make_admin, make_event, db):

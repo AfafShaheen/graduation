@@ -40,3 +40,18 @@ class ScannerResponse(BaseModel):
     username: str
     event_id: int
     created_at: datetime
+    # shown to the admin as it is; None for a scanner made before copies were kept (reset it once)
+    password: Optional[str] = None
+
+
+class ScannerPasswordReset(BaseModel):
+    """Optional: choose the new password. Left out, one is generated."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    password: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def _check_password(cls, value):
+        return validate_password_policy(value) if value is not None else None
