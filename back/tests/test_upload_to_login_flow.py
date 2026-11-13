@@ -596,13 +596,13 @@ async def test_admin_can_confirm_an_email_and_the_graduate_logs_in_at_once(clien
     login = await client.post("/api/auth/graduate/login", json={"email": "stuck@example.com", _PW_FIELD: _GRAD_PW})
     assert login.status_code == 200, login.text
 
-    # the code he never used is dead, and the action is written in the log
+    # the code he never used is dead; if he types it anyway he is let in (not told "invalid"), and the action is in the log
     replay = await client.post(
         "/api/auth/verify-otp",
         headers={"Authorization": f"Bearer {reg.json()['verification_token']}"},
         json={"code": old_code},
     )
-    assert replay.status_code >= 400
+    assert replay.status_code == 200 and replay.json()["access_token"]
     from app.models.audit_log import AuditLogModel
     rows = (await db.execute(select(AuditLogModel).where(AuditLogModel.action == "VERIFY_EMAIL"))).scalars().all()
     assert len(rows) == 1 and rows[0].graduate_id == graduate_id

@@ -98,6 +98,7 @@ _PUBLIC_ROUTES = {
     ("POST", "/api/graduates/verify-step1"),
     ("POST", "/api/graduates/register"),
     ("POST", "/api/auth/verify-otp"),
+    ("GET", "/api/auth/verification-status"),  # the code page asks it with the verification token
     ("POST", "/api/auth/resend-otp"),
     ("POST", "/api/auth/forgot-password"),
     ("POST", "/api/auth/reset-password"),
