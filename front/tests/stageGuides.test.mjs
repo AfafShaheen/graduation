@@ -77,7 +77,7 @@ test('the tabs: done, current and todo, and when the package tab opens again', (
 });
 
 test('every graduate page of the journey uses the shared header', () => {
-  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'GraduateQuestions', 'Otp', 'SelectTicket', 'ShamCashPayment', 'OrderStatus', 'OrderRejected', 'MyTicket']) {
+  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'Otp', 'SelectTicket', 'ShamCashPayment', 'OrderStatus', 'OrderRejected', 'MyTicket']) {
     const src = read(`pages/student/${file}.jsx`);
     assert.match(src, /<StageHeader\b/, file);
     assert.doesNotMatch(src, /GuideLinkButton/, file);

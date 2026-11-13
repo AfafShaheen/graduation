@@ -1,4 +1,5 @@
 import StageHeader from '../../components/StageHeader';
+import VolunteerQuestionsCard from '../../components/VolunteerQuestionsCard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../style/OrderStatus.css';
@@ -117,6 +118,9 @@ export default function OrderStatus() {
                   وإن تأخّر طلبك أو واجهتك أي مشكلة، راجعنا قبل موعد الحفل بوقت كافٍ.
                 </p>
               </section>
+
+              {/* while he waits: two optional questions */}
+              {!ended && <VolunteerQuestionsCard />}
 
               <section className="os-card-box">
 <div className="os-badge-pending">

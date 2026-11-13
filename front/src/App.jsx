@@ -13,7 +13,6 @@ import TicketGuard from "./components/TicketGuard";
 import GraduationFormStep1 from "./pages/student/GraduationFormStep1";
 import GraduationFormStep2 from "./pages/student/GraduationFormStep2";
 import Otp from "./pages/student/Otp";
-import GraduateQuestions from "./pages/student/GraduateQuestions";
 import Login from "./pages/student/Login";
 import GraduateGuide from "./pages/student/GraduateGuide";
 import StageGuide from "./pages/student/StageGuide";
@@ -186,7 +185,7 @@ function App() {
               <Otp
                 mode="register"
                 email={getGraduateEmail() || undefined}
-                onVerified={() => navigate("/questions", { replace: true })}
+                onVerified={() => navigate("/tickets", { replace: true })}
               />
             ) : (
               <Navigate to="/register" replace />
@@ -194,21 +193,8 @@ function App() {
           }
         />
 
-        {/* ===== بعد تأكيد البريد: سؤالان عن المسؤولية والخبرة، ثم دليل التذكرة، ثم اختيار التذكرة ===== */}
-        <Route
-          path="/questions"
-          element={
-            hasValidGraduate || PREVIEW ? (
-              <GraduateQuestions
-                onDone={() => {
-                  navigate("/tickets", { replace: true }); // الحارس يعرض دليل الباقة أولاً
-                }}
-              />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
+        {/* the old page of the two questions: they are asked while the payment is under review now */}
+        <Route path="/questions" element={<Navigate to="/tickets" replace />} />
 
         {/* ===== تسجيل الدخول ===== */}
         <Route

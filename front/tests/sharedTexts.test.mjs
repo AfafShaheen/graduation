@@ -53,7 +53,7 @@ test('every graduate page ends with the same footer', () => {
   const footer = read('components/GraduateFooter.jsx');
   assert.match(footer, /HelpFooter/);
   assert.match(footer, /CEREMONY_TITLE/);
-  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'GraduateQuestions', 'Login', 'Otp', 'ResetPassword', 'ShamCashPayment', 'OrderStatus', 'OrderRejected', 'MyTicket']) {
+  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'Login', 'Otp', 'ResetPassword', 'ShamCashPayment', 'OrderStatus', 'OrderRejected', 'MyTicket']) {
     assert.match(read(`pages/student/${file}.jsx`), /<GraduateFooter\b/, file);
   }
 });

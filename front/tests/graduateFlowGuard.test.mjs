@@ -41,5 +41,5 @@ test('the waiting page keeps its automatic refresh and the new questions text st
   const waiting = read('pages/student/OrderStatus.jsx');
   assert.match(waiting, /ORDER_POLL_MS/);
   assert.match(waiting, /routeForTicket\(data\)/);
-  assert.match(read('pages/student/GraduateQuestions.jsx'), /ممثلاً لطلاب دفعتك/);
+  assert.match(read('config/volunteerQuestions.js'), /ممثلاً لطلاب دفعتك/);
 });

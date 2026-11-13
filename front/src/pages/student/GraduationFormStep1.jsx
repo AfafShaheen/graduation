@@ -263,7 +263,7 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     <div className="app-container">
       <main className="mobile-shell">
         {/* الهيدر العلوي */}
-        <StageHeader current="register" guide="before" sub="الخطوة 1 من 4 · معلومات التخرج الأساسية" />
+        <StageHeader current="register" guide="before" sub="الخطوة 1 من 3 · معلومات التخرج الأساسية" />
 
 
         {/* بطاقة النموذج */}

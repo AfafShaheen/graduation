@@ -1,4 +1,5 @@
 import StageHeader from '../../components/StageHeader';
+import VolunteerQuestionsCard from '../../components/VolunteerQuestionsCard';
 import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import '../../style/MyTicket.css';
@@ -409,6 +410,8 @@ export default function MyTicket() {
             </p>
           </div>
           )}
+
+          {!ended && <VolunteerQuestionsCard />}
 
           <GraduateFooter />
         </div>

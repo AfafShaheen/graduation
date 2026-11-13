@@ -17,7 +17,7 @@ const { HELP_QUESTION, HELP_EMERGENCY_LABEL } = await import("../src/config/bran
 test("every graduate page imports and renders HelpFooter exactly once", () => {
   // StageGuide only wraps GraduateGuide, which renders the footer itself
   const files = readdirSync(studentDir).filter((f) => f.endsWith(".jsx") && f !== "StageGuide.jsx");
-  assert.ok(files.length >= 12, `expected at least 12 student pages, got ${files.length}`);
+  assert.ok(files.length >= 11, `expected at least 11 student pages, got ${files.length}`);
   for (const f of files) {
     const src = readFileSync(join(studentDir, f), "utf8");
     // GraduateFooter wraps HelpFooter (help block + ceremony name + committee line)

@@ -1,0 +1,42 @@
+/* two optional questions, shown while the graduate waits */
+.vq {
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #eedebd;
+  border-radius: 20px;
+  box-sizing: border-box;
+}
+.vq-title { margin: 0 0 4px; font-size: 16px; font-weight: 800; color: var(--brand-green); }
+.vq-note { margin: 0 0 12px; font-size: 13px; line-height: 1.8; color: #594138; }
+.vq-question { margin: 0 0 12px; }
+.vq-text { margin: 0 0 8px; font-size: 14px; font-weight: 700; line-height: 1.7; color: #201b0f; }
+.vq-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vq-choice {
+  min-height: 44px;
+  border: 1.5px solid #e2bfb2;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #594138;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vq-choice.on { border-color: var(--brand-green); background: var(--brand-green); color: #ffffff; }
+.vq-error { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--brand-danger); }
+.vq-actions { display: flex; gap: 8px; }
+.vq-save, .vq-later {
+  flex: 1;
+  min-height: 46px;
+  border-radius: 9999px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.vq-save { border: 0; background: var(--brand-green); color: #ffffff; }
+.vq-later { border: 1.5px solid var(--brand-green); background: #ffffff; color: var(--brand-green); }
+.vq-save:disabled, .vq-later:disabled { opacity: 0.6; cursor: default; }
+.vq-saved { display: flex; align-items: center; gap: 8px; color: var(--brand-green); font-weight: 700; }
+.vq-saved p { margin: 0; }

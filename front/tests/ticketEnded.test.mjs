@@ -67,7 +67,7 @@ test('the identity sentence does not mention a gown', () => {
 });
 
 test('a field that shows an error is checked again with every key, so the red goes away when it is right', () => {
-  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'GraduateQuestions', 'ShamCashPayment', 'ResetPassword']) {
+  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'ShamCashPayment', 'ResetPassword']) {
     assert.match(read(`pages/student/${file}.jsx`), /submitted \|\| errors\[name\]/, file);
   }
 });

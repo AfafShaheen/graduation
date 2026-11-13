@@ -15,7 +15,7 @@ test('every field of registration step 1 is tied to its label', () => {
 });
 
 test('form-level errors are announced to screen readers', () => {
-  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'GraduateQuestions']) {
+  for (const file of ['GraduationFormStep1', 'GraduationFormStep2']) {
     const src = read(`pages/student/${file}.jsx`);
     const banners = src.match(/<div className="info-box"[^>]*borderColor: '#ba1a1a'/g) || [];
     assert.ok(banners.length > 0, file);

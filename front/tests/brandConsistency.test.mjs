@@ -47,7 +47,6 @@ test('the SEO config carries the fixed ceremony sentence', () => {
 test('every page that showed the old header now imports the brand constants', () => {
   const pages = [
     'pages/student/GraduateGuide.jsx',
-    'pages/student/GraduateQuestions.jsx',
     'pages/student/GraduationFormStep1.jsx',
     'pages/student/GraduationFormStep2.jsx',
     'pages/student/Login.jsx',

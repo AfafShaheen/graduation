@@ -36,9 +36,9 @@ const emptyOtp = () => Array(CODE_LENGTH).fill('');
 const FLOWS = {
   register: {
     subtitle: 'إنشاء حساب',
-    progressTitle: 'خطوة 3 من 4: تأكيد البريد الإلكتروني',
-    percent: '75%',
-    total: 4,
+    progressTitle: 'خطوة 3 من 3: تأكيد البريد الإلكتروني',
+    percent: '100%',
+    total: 3,
     done: 3,
   },
   reset: {
@@ -441,7 +441,7 @@ export default function Otp({
           </section>
           </>
         ) : (
-          <StageHeader current="register" guide="before" sub="الخطوة 3 من 4 · تأكيد البريد الإلكتروني" onBack={onBack} />
+          <StageHeader current="register" guide="before" sub="الخطوة 3 من 3 · تأكيد البريد الإلكتروني" onBack={onBack} />
         )}
 
         {/* محتوى الصفحة الرئيسي */}

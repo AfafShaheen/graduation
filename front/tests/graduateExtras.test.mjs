@@ -174,7 +174,7 @@ test('the package page shows no "choose a package" intro and no university logo 
 
 test('an error far from the button he pressed is brought into view', () => {
   assert.ok(read('hooks/useRevealOnShow.js').includes('scrollIntoView'));
-  for (const file of ['GraduationFormStep1', 'GraduationFormStep2', 'GraduateQuestions']) {
+  for (const file of ['GraduationFormStep1', 'GraduationFormStep2']) {
     const src = read('pages/student/' + file + '.jsx');
     assert.ok(src.includes('useRevealOnShow(errors.general)'), file);
     assert.ok(src.includes('ref={generalRef}'), file);

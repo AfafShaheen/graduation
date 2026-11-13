@@ -23,5 +23,5 @@ export function stageTabs(current, { canChangePackage = false } = {}) {
   });
 }
 
-// "الخطوة 2 من 4" inside the registration tab.
-export const registerStepLabel = (step, total = 4) => `الخطوة ${step} من ${total}`;
+// "الخطوة 2 من 3" inside the registration tab.
+export const registerStepLabel = (step, total = 3) => `الخطوة ${step} من ${total}`;
