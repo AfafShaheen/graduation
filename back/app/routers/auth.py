@@ -10,6 +10,7 @@ from app.schemas.auth import (
 )
 from app.services.auth_service import (
     verify_otp_service,
+    verification_status_service,
     resend_otp_service,
     change_email_service,
     forgot_password_service,
@@ -27,6 +28,15 @@ async def verify_otp_endpoint(
     graduate_id: int = Depends(get_verification_graduate_id),
 ):
     return await verify_otp_service(db, graduate_id, data.code, OtpPurpose.EMAIL_VERIFICATION)
+
+
+@router.get("/verification-status")
+async def verification_status_endpoint(
+    db: AsyncSession = Depends(get_db),
+    graduate_id: int = Depends(get_verification_graduate_id),
+):
+    """The code page asks this every few seconds: once an admin confirms the e-mail it gets the session."""
+    return await verification_status_service(db, graduate_id)
 
 
 @router.post("/resend-otp")

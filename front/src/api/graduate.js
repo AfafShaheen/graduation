@@ -31,6 +31,11 @@ export async function verifyOtp(code, token) {
   });
 }
 
+// Has the e-mail been confirmed (by an admin, for example)? When yes the answer carries the session.
+export async function getVerificationStatus(token) {
+  return request("/api/auth/verification-status", { token });
+}
+
 export async function resendOtp(token) {
   return request("/api/auth/resend-otp", {
     method: "POST",

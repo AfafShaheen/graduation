@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import '../../style/Otp.css';
 import '../../style/BrandHeader.css';
 import unionLogo from '../../assets/only-logo.png';
-import { verifyOtp, resendOtp, changeEmail, forgotPassword } from '../../api/graduate';
+import { verifyOtp, resendOtp, changeEmail, forgotPassword, getVerificationStatus } from '../../api/graduate';
+import { VERIFICATION_POLL_MS, ADMIN_CONFIRMED_MESSAGE, shouldAskVerification } from '../../utils/verificationPoll';
 import { toLatinDigits } from '../../utils/digits';
 import { setGraduateSession, clearVerificationToken, setGraduateEmail, getVerificationToken, getGraduateEmail, setResetCode } from '../../api/session';
 import GraduateFooter from '../../components/GraduateFooter';
@@ -96,6 +97,47 @@ export default function Otp({
     }, 1000);
     return () => clearInterval(interval);
   }, [status]);
+
+  // an admin may confirm the e-mail while this page is open: ask the server now and then (and when the
+  // tab comes back to the front) and move on by ourselves
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  useEffect(() => {
+    if (isResetMode || !verificationToken) return undefined;
+    let stopped = false;
+    const ask = async () => {
+      if (stopped || !shouldAskVerification({
+        hasToken: true,
+        visible: document.visibilityState === 'visible',
+        status: statusRef.current,
+        resetMode: false,
+      })) return;
+      try {
+        const result = await getVerificationStatus(verificationToken);
+        if (stopped || !mounted.current || !result?.verified) return;
+        stopped = true;
+        setGraduateSession({ accessToken: result.access_token, expiresIn: result.expires_in });
+        clearVerificationToken();
+        setStatus('success');
+        setNotice(ADMIN_CONFIRMED_MESSAGE);
+        setTimeout(() => {
+          if (mounted.current && onVerified) onVerified('');
+        }, 1200);
+      } catch {
+        /* a network hiccup or an expired token: the page keeps working with the code */
+      }
+    };
+    const timer = setInterval(ask, VERIFICATION_POLL_MS);
+    document.addEventListener('visibilitychange', ask);
+    window.addEventListener('focus', ask);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', ask);
+      window.removeEventListener('focus', ask);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isResetMode, verificationToken]);
 
   // التحقق التلقائي عند اكتمال الخانات
   useEffect(() => {

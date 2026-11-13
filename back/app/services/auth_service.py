@@ -224,7 +224,44 @@ async def update_graduate_password(db: AsyncSession, grad: GraduateModel, new_pa
 
 
 # High-level service orchestrators calling granular task functions
+def _verified_session(grad: GraduateModel, message: str) -> dict:
+    """The answer of a confirmed e-mail: the graduate is signed in (same as after the right code)."""
+    return {
+        "status": "success",
+        "verified": True,
+        "message": message,
+        "access_token": create_graduate_access_token(grad),
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    }
+
+
+async def verification_status_service(db: AsyncSession, graduate_id: int) -> dict:
+    """Has the e-mail been confirmed (by the code, or by an admin)? The waiting page asks this.
+
+    Confirmed -> the graduate gets his session at once, so an admin's confirmation moves him on without
+    any code. The caller holds the verification token, which is only given after registering or
+    after the right password, so this gives nothing the right code would not.
+    """
+    grad = await fetch_graduate(db, graduate_id)
+    if grad is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="لم يتم العثور على حساب الخريج. يرجى التسجيل من جديد.",
+        )
+    if not grad.email_verified:
+        return {"verified": False}
+    return _verified_session(grad, "تم تأكيد بريدك الإلكتروني.")
+
+
 async def verify_otp_service(db: AsyncSession, graduate_id: int, code: str, purpose: OtpPurpose) -> dict:
+    # an e-mail already confirmed (an admin did it while the code page was open): the old code is dead
+    # but the graduate is not wrong, so he is let through instead of told "invalid"
+    if purpose == OtpPurpose.EMAIL_VERIFICATION:
+        already = await fetch_graduate(db, graduate_id)
+        if already is not None and already.email_verified:
+            return _verified_session(already, "تم تأكيد بريدك الإلكتروني.")
+
     # Check failed attempts in Redis first for speed
     redis_attempts = await check_redis_failed_attempts(str(graduate_id))
     if check_failed_attempts(redis_attempts):
