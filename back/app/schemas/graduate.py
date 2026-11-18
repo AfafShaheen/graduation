@@ -17,7 +17,8 @@ class UserVerifyStep1(BaseModel):
     last_name: Optional[str] = Field(None, pattern=NAME_REGEX, description="Surname (الكنية), letters only.")
     full_name: str = Field(None, pattern=NAME_REGEX, description="Legacy single name field; kept for backwards compatibility (D4).")
     father_name: str = Field(..., pattern=NAME_REGEX, description="Father's name must contain letters only.")
-    mother_name: str = Field(..., pattern=NAME_REGEX, description="Mother's name must contain letters only.")
+    # no longer asked and never matched: kept optional so an old client that still sends it is not refused
+    mother_name: Optional[str] = Field(None, pattern=NAME_REGEX, description="Ignored (not matched).")
     gender: str = Field(..., min_length=3, max_length=10)
     major_id: Optional[int] = Field(None, gt=0)
     gpa: Optional[Decimal] = Field(None, ge=0, le=100, max_digits=5, decimal_places=2)
@@ -62,7 +63,7 @@ class GraduateResponse(BaseModel):
     phone: str
     email_verified: bool
     father_name: str
-    mother_name: str
+    mother_name: Optional[str] = None
     university_id: str
     unique_graduate_code: UUID
     created_at: datetime

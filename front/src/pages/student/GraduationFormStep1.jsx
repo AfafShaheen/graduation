@@ -32,7 +32,6 @@ export function toVerifyStep1Payload(formData, colleges) {
     first_name: formData.firstName.trim(),
     last_name: formData.lastName.trim(),
     father_name: formData.fatherName.trim(),
-    mother_name: formData.motherName.trim(),
     gender: GENDER_MAP[formData.gender],
     top_rank: TOP_RANK_MAP[formData.topRank] ?? null,
   };
@@ -78,13 +77,6 @@ const validators = {
     if (!NAME_REGEX.test(t)) return 'يجب أن يتكون اسم الأب من حروف عربية أو إنجليزية فقط';
     return '';
   },
-  motherName: (v) => {
-    const t = v.trim();
-    if (!t) return 'اسم الأم مطلوب';
-    if (t.length < 2) return 'اسم الأم قصير جداً';
-    if (!NAME_REGEX.test(t)) return 'يجب أن يتكون اسم الأم من حروف عربية أو إنجليزية فقط';
-    return '';
-  },
 };
 
 function FieldError({ message }) {
@@ -107,7 +99,6 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
     studentId: '',
     topRank: 'none',
     fatherName: '',
-    motherName: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -328,6 +319,26 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               </div>
             </div>
 
+            {/* اسم الأب */}
+            <div className="form-group">
+              <label htmlFor="reg-fatherName" className="form-label">
+                اسم الأب <span className="required-star">*</span>
+              </label>
+              <input
+                type="text"
+                id="reg-fatherName"
+                name="fatherName"
+                className={`form-input ${errors.fatherName ? 'error' : ''}`}
+                placeholder="اسم الوالد"
+                value={formData.fatherName}
+                onChange={handleInputChange}
+                aria-invalid={!!errors.fatherName}
+                aria-describedby="hint-fatherName"
+              />
+              <p className="field-hint" id="hint-fatherName">{FIELD_HINTS.fatherName}</p>
+              <FieldError message={errors.fatherName} />
+            </div>
+
             {/* الجنس */}
             <div className="form-group">
               <label htmlFor="reg-gender" className="form-label">
@@ -465,53 +476,12 @@ export default function GraduationFormStep1({ onNext, onNavigateToLogin }) {
               <FieldError message={errors.topRank} />
             </div>
 
-            <h3 className="form-section-title">عائلتك</h3>
-            {/* اسم الأب والأم */}
-            <div className="form-group grid-two-cols">
-              <div>
-                <label htmlFor="reg-fatherName" className="form-label">
-                  اسم الأب <span className="required-star">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="reg-fatherName"
-                  name="fatherName"
-                  className={`form-input ${errors.fatherName ? 'error' : ''}`}
-                  placeholder="اسم الوالد"
-                  value={formData.fatherName}
-                  onChange={handleInputChange}
-                  aria-invalid={!!errors.fatherName}
-                  aria-describedby="hint-fatherName"
-                />
-                <p className="field-hint" id="hint-fatherName">{FIELD_HINTS.fatherName}</p>
-                <FieldError message={errors.fatherName} />
-              </div>
-              <div>
-                <label htmlFor="reg-motherName" className="form-label">
-                  اسم الأم <span className="required-star">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="reg-motherName"
-                  name="motherName"
-                  className={`form-input ${errors.motherName ? 'error' : ''}`}
-                  placeholder="اسم الوالدة"
-                  value={formData.motherName}
-                  onChange={handleInputChange}
-                  aria-invalid={!!errors.motherName}
-                  aria-describedby="hint-motherName"
-                />
-                <p className="field-hint" id="hint-motherName">{FIELD_HINTS.motherName}</p>
-                <FieldError message={errors.motherName} />
-              </div>
-            </div>
-
             {/* الملاحظة التنبيهية */}
             <div className="info-box">
               <span className="material-symbols-outlined info-icon">verified_user</span>
               <p className="info-text">
                 يُرجى إدخال بياناتك كما هي مسجّلة في سجلات الجامعة تماماً (الاسم، الكنية، اسم الأب،
-                اسم الأم، الجنس، الكلية، التخصص والرقم الجامعي)؛ إذ تُقارَن مع كشوفات الجامعة
+                الجنس، الكلية، التخصص والرقم الجامعي)؛ إذ تُقارَن مع كشوفات الجامعة
                 المعتمدة لإصدار التذكرة الرسمية. اختلاف أي حقل يمنع إتمام التحقق.
               </p>
             </div>

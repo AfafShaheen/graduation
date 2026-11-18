@@ -346,7 +346,7 @@ async def test_record_deleted_between_step_one_and_two_asks_to_restart(client, d
 async def test_wrong_details_never_pass_and_the_message_does_not_leak(client, setup):
     event, college, headers = setup
     await _upload(client, headers, event.id, _xlsx([_row("900023")]))
-    wrong = await client.post("/api/graduates/verify-step1", json=_verify_body(college.id, "900023", mother="غير صحيح"))
+    wrong = await client.post("/api/graduates/verify-step1", json=_verify_body(college.id, "900023", father="غير صحيح"))
     unknown = await client.post("/api/graduates/verify-step1", json=_verify_body(college.id, "999999"))
     assert wrong.status_code == 400 and unknown.status_code == 400
     assert wrong.json()["detail"] == unknown.json()["detail"], "the answer must not reveal whether the id exists"
@@ -485,9 +485,9 @@ async def test_someone_guessing_an_id_is_stopped_but_the_real_student_is_not(cli
     stranger = {"X-Forwarded-For": "10.0.0.1"}
     student = {"X-Forwarded-For": "10.0.0.2"}
     for _ in range(10):
-        wrong = await client.post("/api/graduates/verify-step1", json=_verify_body(college.id, "900038", mother="خطأ"), headers=stranger)
+        wrong = await client.post("/api/graduates/verify-step1", json=_verify_body(college.id, "900038", father="خطأ"), headers=stranger)
         assert wrong.status_code == 400
-    blocked = await client.post("/api/graduates/verify-step1", json=_verify_body(college.id, "900038", mother="خطأ"), headers=stranger)
+    blocked = await client.post("/api/graduates/verify-step1", json=_verify_body(college.id, "900038", father="خطأ"), headers=stranger)
     assert blocked.status_code == 429
     real = await client.post("/api/graduates/verify-step1", json=_verify_body(college.id, "900038"), headers=student)
     assert real.status_code == 200, (real.status_code, real.text)
@@ -500,7 +500,7 @@ async def test_many_addresses_together_are_still_stopped(client, setup):
     for n in range(62):
         resp = await client.post(
             "/api/graduates/verify-step1",
-            json=_verify_body(college.id, "900039", mother="خطأ"),
+            json=_verify_body(college.id, "900039", father="خطأ"),
             headers={"X-Forwarded-For": f"10.1.{n // 250}.{n % 250 + 1}"},
         )
         statuses.append(resp.status_code)

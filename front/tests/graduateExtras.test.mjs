@@ -70,7 +70,7 @@ test('registration forms judge a field when he leaves it and group the first ste
   const two = read('pages/student/GraduationFormStep2.jsx');
   assert.ok(one.includes('onBlur={handleBlur}'));
   assert.ok(two.includes('onBlur={handleBlur}'));
-  for (const title of ['هويتك', 'دراستك', 'عائلتك']) assert.ok(one.includes(`>${title}</h3>`), title);
+  for (const title of ['هويتك', 'دراستك']) assert.ok(one.includes(`>${title}</h3>`), title);
   assert.ok(one.includes('تستغرق نحو 3 دقائق'));
   // the drafts stay in the tab only and never hold the password
   assert.ok(one.includes("useFormDraft('step1'"));

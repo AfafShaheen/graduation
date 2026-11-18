@@ -120,7 +120,7 @@
         "type": "object"
       },
       "AdminUpdateNameRequest": {
-        "description": "The four names of a graduate, exactly as they should be printed.",
+        "description": "The three names of a graduate, exactly as they should be printed.",
         "properties": {
           "father_name": {
             "title": "Father Name",
@@ -133,17 +133,12 @@
           "last_name": {
             "title": "Last Name",
             "type": "string"
-          },
-          "mother_name": {
-            "title": "Mother Name",
-            "type": "string"
           }
         },
         "required": [
           "first_name",
           "last_name",
-          "father_name",
-          "mother_name"
+          "father_name"
         ],
         "title": "AdminUpdateNameRequest",
         "type": "object"
@@ -631,8 +626,15 @@
             "title": "Major Name"
           },
           "mother_name": {
-            "title": "Mother Name",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mother Name"
           },
           "phone": {
             "anyOf": [
@@ -671,7 +673,6 @@
           "university_id",
           "full_name",
           "father_name",
-          "mother_name",
           "gender",
           "college_id",
           "imported_at"
@@ -1850,8 +1851,15 @@
             "title": "Major Name"
           },
           "mother_name": {
-            "title": "Mother Name",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mother Name"
           },
           "payment": {
             "$ref": "#/components/schemas/RosterPayment"
@@ -1896,7 +1904,6 @@
           "university_id",
           "full_name",
           "father_name",
-          "mother_name",
           "gender",
           "college_id",
           "college_name",
@@ -2924,8 +2931,15 @@
             "title": "Major Name"
           },
           "mother_name": {
-            "title": "Mother Name",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mother Name"
           },
           "university_id": {
             "title": "University Id",
@@ -2938,7 +2952,6 @@
           "university_id",
           "full_name",
           "father_name",
-          "mother_name",
           "gender",
           "college_id",
           "imported_at"
@@ -3149,10 +3162,17 @@
             "title": "Major Id"
           },
           "mother_name": {
-            "description": "Mother's name must contain letters only.",
-            "pattern": "^[\\u0600-\\u06FFa-zA-Z\\s]{2,255}$",
-            "title": "Mother Name",
-            "type": "string"
+            "anyOf": [
+              {
+                "pattern": "^[\\u0600-\\u06FFa-zA-Z\\s]{2,255}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ignored (not matched).",
+            "title": "Mother Name"
           },
           "top_rank": {
             "anyOf": [
@@ -3182,7 +3202,6 @@
           "college_id",
           "university_id",
           "father_name",
-          "mother_name",
           "gender"
         ],
         "title": "UserVerifyStep1",

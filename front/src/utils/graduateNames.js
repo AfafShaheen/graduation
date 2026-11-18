@@ -1,4 +1,4 @@
-// The four names of a graduate in the admin's name edit.
+// The three names of a graduate in the admin's name edit (the mother's name is no longer used).
 
 const ARABIC_NAME = /^[ء-غف-ي ]{2,100}$/;
 const DIACRITICS_AND_TATWEEL = /[ؗ-ًؚ-ْٰـ]/g;
@@ -15,13 +15,12 @@ export function namesOf(detail, row) {
     firstName: detail?.first_name || firstFromRow,
     lastName: detail?.last_name || rest.join(' '),
     fatherName: detail?.father_name || '',
-    motherName: detail?.mother_name || '',
   };
 }
 
-// '' when the four names can be sent; otherwise the sentence to show
+// '' when the three names can be sent; otherwise the sentence to show
 export function nameDraftError(draft) {
-  const labels = { firstName: 'الاسم', lastName: 'الكنية', fatherName: 'اسم الأب', motherName: 'اسم الأم' };
+  const labels = { firstName: 'الاسم', lastName: 'الكنية', fatherName: 'اسم الأب' };
   for (const [key, label] of Object.entries(labels)) {
     if (!ARABIC_NAME.test(tidyName(draft[key]))) {
       return `${label}: حروف عربية ومسافات فقط، وحرفان على الأقل.`;

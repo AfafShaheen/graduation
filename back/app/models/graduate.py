@@ -20,7 +20,7 @@ class GraduateModel(Base):
     phone = Column(String(50), nullable=False)
     email_verified = Column(Boolean, nullable=False, default=False)
     father_name = Column(String(255), nullable=False)
-    mother_name = Column(String(255), nullable=False)
+    mother_name = Column(String(255), nullable=True)  # no longer asked or matched
     password_hash = Column(String(255), nullable=False)
     university_id = Column(String(100), nullable=False, index=True)
     unique_graduate_code = Column(UUID(as_uuid=True), nullable=False, server_default=func.gen_random_uuid(), unique=True, index=True)

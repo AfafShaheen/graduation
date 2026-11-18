@@ -168,7 +168,6 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1, client_i
 
     if (
         name_key(uni_record.father_name) != name_key(data.father_name) or
-        name_key(uni_record.mother_name) != name_key(data.mother_name) or
         normalize_arabic(uni_record.gender) != normalize_arabic(data.gender)
     ):
         raise HTTPException(
@@ -266,7 +265,6 @@ async def verify_step1_service(db: AsyncSession, data: UserVerifyStep1, client_i
         "typed_first_name": clean_typed_name(data.first_name) or None,
         "typed_last_name": clean_typed_name(data.last_name) or None,
         "typed_father_name": clean_typed_name(data.father_name) or None,
-        "typed_mother_name": clean_typed_name(data.mother_name) or None,
     }
     registration_token = create_registration_token(token_payload)
 

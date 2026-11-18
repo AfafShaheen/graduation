@@ -39,7 +39,7 @@ class UniversityRecordItem(BaseModel):
     university_id: str
     full_name: str
     father_name: str
-    mother_name: str
+    mother_name: Optional[str] = None
     gender: str
     college_id: int
     major_id: Optional[int] = None
@@ -68,7 +68,7 @@ class DiagnosticRecord(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     father_name: str
-    mother_name: str
+    mother_name: Optional[str] = None
     gender: str
     college_id: int
     college_name: Optional[str] = None

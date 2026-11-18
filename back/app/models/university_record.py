@@ -13,7 +13,7 @@ class UniversityRecordModel(Base):
     first_name = Column(String(120), nullable=True)
     last_name = Column(String(120), nullable=True)
     father_name = Column(String(255), nullable=False)
-    mother_name = Column(String(255), nullable=False)
+    mother_name = Column(String(255), nullable=True)  # no longer asked or matched
     gender = Column(String(10), nullable=False)
     college_id = Column(Integer, ForeignKey("colleges.id", ondelete="RESTRICT"), nullable=False, index=True)
     major_id = Column(Integer, ForeignKey("majors.id", ondelete="RESTRICT"), nullable=True, index=True)

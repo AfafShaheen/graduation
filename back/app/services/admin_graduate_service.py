@@ -286,7 +286,7 @@ async def admin_force_update_email_service(db: AsyncSession, graduate_id: int, n
 
 
 async def admin_update_name_service(db: AsyncSession, graduate_id: int, data, admin: dict) -> dict:
-    """Exceptional action: set the four names of a graduate exactly as they must be printed.
+    """Exceptional action: set the three names of a graduate exactly as they must be printed.
 
     Used for a graduate who typed a name wrongly, and for those who registered before the names
     were kept as typed. The log keeps the old and the new value of every name that changed.
@@ -299,13 +299,11 @@ async def admin_update_name_service(db: AsyncSession, graduate_id: int, data, ad
         "first_name": data.first_name,
         "last_name": data.last_name,
         "father_name": data.father_name,
-        "mother_name": data.mother_name,
     }
     labels = {
         "first_name": "الاسم",
         "last_name": "الكنية",
         "father_name": "اسم الأب",
-        "mother_name": "اسم الأم",
     }
     changes = []
     for field, new in new_values.items():

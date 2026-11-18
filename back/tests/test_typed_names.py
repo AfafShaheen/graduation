@@ -67,7 +67,8 @@ async def test_the_account_keeps_the_names_as_typed(client, db, setup, sent_otps
     graduate = (await db.execute(select(GraduateModel).where(GraduateModel.university_id == "920001"))).scalar_one()
     assert (graduate.first_name, graduate.last_name) == ("فاطمة", "أحمد")
     assert graduate.full_name == "فاطمة أحمد"
-    assert graduate.father_name == "عبدالله" and graduate.mother_name == "خديجة"
+    assert graduate.father_name == "عبدالله"
+    assert graduate.mother_name == "خديجه", "the mother name is not asked: the account keeps the file spelling"
     assert (await _me(client, login))["full_name"] == "فاطمة أحمد"
     # the file's record is left as it was
     record = (await db.execute(select(UniversityRecordModel).where(UniversityRecordModel.university_id == "920001"))).scalar_one()
@@ -128,21 +129,23 @@ async def _registered(client, db, setup, sent_otps, uni_id, email):
     return graduate, login
 
 
-_NEW = {"first_name": "فاطمة", "last_name": "الأحمد", "father_name": "عبد الله", "mother_name": "خديجة"}
+_NEW = {"first_name": "فاطمة", "last_name": "الأحمد", "father_name": "عبد الله"}
 
 
 async def test_admin_edits_the_names_and_it_is_logged(client, db, setup, sent_otps):
     event, college, headers = setup
     graduate, login = await _registered(client, db, setup, sent_otps, "920010", "edit@example.com")
 
+    mother_before = graduate.mother_name
     resp = await client.put(f"/api/admin/graduates/{graduate.id}/name", json=_NEW, headers=headers)
     assert resp.status_code == 200, resp.text
     assert resp.json()["full_name"] == "فاطمة الأحمد"
 
     await db.refresh(graduate)
-    assert (graduate.first_name, graduate.last_name, graduate.father_name, graduate.mother_name) == (
-        "فاطمة", "الأحمد", "عبد الله", "خديجة",
+    assert (graduate.first_name, graduate.last_name, graduate.father_name) == (
+        "فاطمة", "الأحمد", "عبد الله",
     )
+    assert graduate.mother_name == mother_before, "the mother name is not part of the edit"
     assert (await _me(client, login))["full_name"] == "فاطمة الأحمد"  # the ticket shows it at once
 
     rows = (await db.execute(select(AuditLogModel).where(AuditLogModel.action == "UPDATE_NAME"))).scalars().all()
@@ -161,7 +164,7 @@ async def test_a_name_edit_is_cleaned_and_validated(client, db, setup, sent_otps
     )
     assert ok.status_code == 200 and ok.json()["full_name"] == "فاطمة الأحمد", ok.text
 
-    for field, bad in [("first_name", "Fatima"), ("last_name", "أحمد1"), ("father_name", "ع"), ("mother_name", ""), ("first_name", "فاطمة!")]:
+    for field, bad in [("first_name", "Fatima"), ("last_name", "أحمد1"), ("father_name", "ع"), ("first_name", "فاطمة!")]:
         resp = await client.put(f"/api/admin/graduates/{graduate.id}/name", json={**_NEW, field: bad}, headers=headers)
         assert resp.status_code == 422, (field, bad, resp.status_code)
 

@@ -89,9 +89,8 @@ const NAME_FIELDS = [
   ['firstName', 'الاسم'],
   ['lastName', 'الكنية'],
   ['fatherName', 'اسم الأب'],
-  ['motherName', 'اسم الأم'],
 ];
-const EMPTY_NAMES = { firstName: '', lastName: '', fatherName: '', motherName: '' };
+const EMPTY_NAMES = { firstName: '', lastName: '', fatherName: '' };
 
 export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice }) {
   useDialogA11y(true);
@@ -249,9 +248,8 @@ export default function RosterDrawer({ row, stale, onClose, onChanged, onNotice 
               <span className="exc-info-sub">{row.major_name || 'بدون تخصص'}</span>
             </div>
             <div>
-              <span className="exc-info-label">اسم الأب / الأم</span>
+              <span className="exc-info-label">اسم الأب</span>
               <div className="exc-info-value">{row.father_name}</div>
-              <span className="exc-info-sub">{row.mother_name}</span>
             </div>
             <div>
               <span className="exc-info-label">الجنس / المعدل</span>

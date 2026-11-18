@@ -53,3 +53,21 @@ async def test_gender_mismatch_is_still_rejected(
     )
 
     assert resp.status_code == 400
+
+
+async def test_the_mother_name_is_neither_asked_nor_matched(client, make_event, make_college, make_university_record):
+    """A wrong or missing mother name never blocks verification (it is not part of the match)."""
+    event = await make_event()
+    college = await make_college(event.id)
+    await make_university_record(
+        event.id, college.id, university_id="777001", full_name="رنا سالم",
+        father_name="أحمد", mother_name="سعاد", gender="female",
+    )
+    base = {
+        "college_id": college.id, "university_id": "777001", "full_name": "رنا سالم",
+        "father_name": "أحمد", "gender": "female", "top_rank": 1,
+    }
+    without = await client.post("/api/graduates/verify-step1", json=base)
+    assert without.status_code == 200, without.text
+    other = await client.post("/api/graduates/verify-step1", json={**base, "mother_name": "اسم آخر"})
+    assert other.status_code == 200, other.text

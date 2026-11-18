@@ -249,7 +249,7 @@ async def test_several_missing_columns_are_in_canonical_order(
 
     assert response.status_code == 400, response.text
     detail = response.json()["detail"]
-    assert detail == "الأعمدة التالية مفقودة في الملف: اسم الأب، اسم الأم، الكلية، الجنس، المعدل"
+    assert detail == "الأعمدة التالية مفقودة في الملف: اسم الأب، الكلية، الجنس، المعدل"
 
 
 async def test_duplicate_field_mapping_is_rejected(

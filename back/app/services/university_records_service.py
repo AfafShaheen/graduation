@@ -413,7 +413,7 @@ async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
             detail="فشل في قراءة أعمدة الملف. تأكد من أن الصف الأول يحتوي على أسماء الأعمدة.",
         )
 
-    required_cols = {"university_id", "father_name", "mother_name", "college", "gender", "gpa"}
+    required_cols = {"university_id", "father_name", "college", "gender", "gpa"}
     file_cols = set(df.columns)
     missing_cols = required_cols - file_cols
     has_split_names = {"first_name", "last_name"}.issubset(file_cols)
@@ -442,7 +442,7 @@ async def parse_file(file: UploadFile) -> List[Dict[str, Any]]:
 
 async def validate_records(records: List[Dict[str, Any]], event_id: int, db: AsyncSession) -> List[Dict[str, Any]]:
     errors: List[Dict[str, Any]] = []
-    required_cols = {"university_id", "father_name", "mother_name", "college", "gender", "gpa"}
+    required_cols = {"university_id", "father_name", "college", "gender", "gpa"}
 
     if not records or all(_is_blank_row(r) for r in records):
         return [{"row": 0, "field": "", "message": "الملف فارغ أو لا يحتوي على بيانات."}]
@@ -536,9 +536,7 @@ async def validate_records(records: List[Dict[str, Any]], event_id: int, db: Asy
                 "يجب أن يحتوي اسم الأب على حروف عربية ومسافات فقط، دون أرقام أو رموز.",
                 father_name,
             )
-        if not mother_name:
-            _record_error(errors, idx, "اسم الأم", "اسم الأم مطلوب.", mother_name)
-        elif not _is_valid_arabic_name(mother_name):
+        if mother_name and not _is_valid_arabic_name(mother_name):  # optional: checked only when written
             _record_error(
                 errors,
                 idx,
@@ -708,7 +706,7 @@ async def upsert_records(
             last_name = None
             full_name = normalize_arabic(legacy_full)
         father_name = normalize_arabic(_cell_text(row, "father_name"))
-        mother_name = normalize_arabic(_cell_text(row, "mother_name"))
+        mother_name = normalize_arabic(_cell_text(row, "mother_name")) or None  # optional column
         college_name = _cell_text(row, "college")
         gender = normalize_gender(_cell_text(row, "gender")) or _cell_text(row, "gender")
         gpa_val = parse_gpa(row.get("gpa"))
@@ -746,7 +744,8 @@ async def upsert_records(
             existing.first_name = first_name
             existing.last_name = last_name
             existing.father_name = father_name
-            existing.mother_name = mother_name
+            if mother_name:  # an empty or missing column never erases a name already kept
+                existing.mother_name = mother_name
             existing.gender = gender
             existing.college_id = college_id
             existing.major_id = major_id
@@ -1058,7 +1057,6 @@ async def diagnose_university_record(
 
     fields += [
         _cmp("father_name", "اسم الأب", record.father_name, data.father_name),
-        _cmp("mother_name", "اسم الأم", record.mother_name, data.mother_name),
         _cmp("gender", "الجنس", record.gender, data.gender),
     ]
 

@@ -15,19 +15,18 @@ _ARABIC_NAME = re.compile(r"^[\u0621-\u063A\u0641-\u064A ]{2,100}$")
 
 
 class AdminUpdateNameRequest(BaseModel):
-    """The four names of a graduate, exactly as they should be printed."""
+    """The three names of a graduate, exactly as they should be printed."""
 
     first_name: str
     last_name: str
     father_name: str
-    mother_name: str
 
-    @field_validator("first_name", "last_name", "father_name", "mother_name", mode="before")
+    @field_validator("first_name", "last_name", "father_name", mode="before")
     @classmethod
     def _clean(cls, value):
         return clean_typed_name(value) if isinstance(value, str) else value
 
-    @field_validator("first_name", "last_name", "father_name", "mother_name")
+    @field_validator("first_name", "last_name", "father_name")
     @classmethod
     def _arabic_letters_only(cls, value: str) -> str:
         if not _ARABIC_NAME.fullmatch(value):
@@ -43,7 +42,7 @@ class GraduateAdminResponse(BaseModel):
     phone: str
     email_verified: bool
     father_name: str
-    mother_name: str
+    mother_name: Optional[str] = None
     university_id: str
     unique_graduate_code: UUID
     created_at: datetime

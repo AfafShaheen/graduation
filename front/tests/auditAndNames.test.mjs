@@ -88,15 +88,15 @@ test('names: tidy, prefill and validate', () => {
   assert.equal(tidyName('  فَاطِمَة   الزهراء '), 'فاطمة الزهراء');
   assert.equal(tidyName('محـمد'), 'محمد');
   assert.deepEqual(namesOf({ first_name: 'فاطمة', last_name: 'أحمد', father_name: 'علي', mother_name: 'منى' }, {}), {
-    firstName: 'فاطمة', lastName: 'أحمد', fatherName: 'علي', motherName: 'منى',
+    firstName: 'فاطمة', lastName: 'أحمد', fatherName: 'علي',
   });
   // an account without split names: the full name is split in two
-  assert.deepEqual(namesOf(null, { full_name: 'محمد عبد الله' }), { firstName: 'محمد', lastName: 'عبد الله', fatherName: '', motherName: '' });
+  assert.deepEqual(namesOf(null, { full_name: 'محمد عبد الله' }), { firstName: 'محمد', lastName: 'عبد الله', fatherName: '' });
 
-  const ok = { firstName: 'فاطمة', lastName: 'الأحمد', fatherName: 'عبد الله', motherName: 'خديجة' };
+  const ok = { firstName: 'فاطمة', lastName: 'الأحمد', fatherName: 'عبد الله' };
   assert.equal(nameDraftError(ok), '');
   assert.equal(nameDraftError({ ...ok, firstName: 'Fatima' }), 'الاسم: حروف عربية ومسافات فقط، وحرفان على الأقل.');
-  assert.match(nameDraftError({ ...ok, motherName: 'م' }), /^اسم الأم/);
+  assert.match(nameDraftError({ ...ok, fatherName: 'ع' }), /^اسم الأب/);
   assert.match(nameDraftError({ ...ok, lastName: '' }), /^الكنية/);
   assert.equal(nameDraftError({ ...ok, firstName: 'فَاطِمَة' }), '', 'diacritics are tidied, not refused');
 });
